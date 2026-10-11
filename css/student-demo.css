@@ -103,6 +103,138 @@ body {
 .dropbtn {
   cursor: pointer;
 }
+.course-section {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 3rem 1.25rem 4rem;
+}
+
+.course-heading {
+  margin-bottom: 1.75rem;
+  text-align: center;
+}
+
+.course-heading h1 {
+  margin: 0.25rem 0;
+  color: #202b3c;
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+}
+
+.course-heading p {
+  margin: 0;
+  color: #647184;
+}
+
+.course-heading .course-eyebrow {
+  color: #5574a5;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.card-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.course-card {
+  display: flex;
+  min-height: 150px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1.25rem;
+  border: 1px solid #e0e6ef;
+  border-radius: 0.85rem;
+  background: #fff;
+  color: #202b3c;
+  text-decoration: none;
+  box-shadow: 0 0.5rem 1.5rem rgba(30, 48, 76, 0.06);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.course-card:hover {
+  transform: translateY(-3px);
+  border-color: #8ca6d0;
+  box-shadow: 0 0.8rem 1.8rem rgba(30, 48, 76, 0.12);
+}
+
+.course-card:focus-visible {
+  outline: 3px solid #5574a5;
+  outline-offset: 3px;
+}
+
+.course-card__title {
+  margin: 0.8rem 0 0.35rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.course-card__description {
+  margin-bottom: 1rem;
+  color: #647184;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.course-card__action {
+  color: #42659b;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.subject-page {
+  max-width: 800px;
+  min-height: 45vh;
+  margin: 0 auto;
+  padding: 4rem 1.25rem;
+}
+
+.subject-page__back {
+  display: inline-block;
+  margin-bottom: 2rem;
+  color: #42659b;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.subject-page__back:hover {
+  text-decoration: underline;
+}
+
+.subject-page__content {
+  padding: clamp(1.5rem, 5vw, 3rem);
+  border: 1px solid #e0e6ef;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 0.8rem 2rem rgba(30, 48, 76, 0.08);
+}
+
+.subject-page__content h1 {
+  margin: 0 0 1rem;
+  color: #202b3c;
+  font-size: clamp(2rem, 5vw, 3rem);
+}
+
+.subject-page__content .course-eyebrow {
+  color: #5574a5;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.subject-page__content p {
+  color: #526174;
+  font-size: 1.05rem;
+  line-height: 1.8;
+}
+
 @media (max-width: 640px) {
   .navbar {
     flex-wrap: wrap;
