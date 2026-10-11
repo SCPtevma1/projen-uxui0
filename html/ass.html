@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>บริการเสริม & ให้คำปรึกษา UX/UI</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Prompt -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                    },
+                    colors: {
+                        slate: {
+                            850: '#172033',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            scroll-behavior: smooth;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-100 min-h-screen transition-colors duration-150">
+
+    <!-- Navigation Bar -->
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6">
+            <div class="flex justify-between items-center h-16">
+                <!-- Brand Title -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-bold text-base">
+                        UX
+                    </div>
+                    <div>
+                        <span class="text-lg font-bold text-slate-900 dark:text-white">บริการเสริม & ให้คำปรึกษา UX UI</span>
+                    </div>
+                </div>
+
+                <!-- Right Actions -->
+                <div class="flex items-center space-x-3">
+                    <!-- Theme Toggle -->
+                    <button onclick="toggleDarkMode()" class="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-lg transition-colors" title="สลับโหมด">
+                        <i class="fa-solid fa-moon text-lg dark:hidden"></i>
+                        <i class="fa-solid fa-sun text-lg hidden dark:block"></i>
+                    </button>
+
+                    <!-- Quote Drawer Trigger -->
+                    <button onclick="toggleQuoteDrawer()" class="relative inline-flex items-center px-3.5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white text-sm font-medium transition-all">
+                        <i class="fa-solid fa-clipboard-list mr-2 text-xs"></i>
+                        <span>รายการที่เลือก</span>
+                        <span id="badge-count" class="ml-2 px-1.5 py-0.5 text-xs bg-blue-600 text-white dark:bg-blue-600 rounded-full font-bold hidden">0</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Header Section -->
+    <section class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 py-8 sm:py-12">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 text-center">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">บริการเสริม</span>
+            <h1 class="text-2xl sm:text-4xl font-bold text-slate-900 dark:text-white mt-1 mb-3">
+                ให้คำปรึกษา UX/UI & บริการทางเทคนิค
+            </h1>
+            <p class="text-slate-600 dark:text-slate-300 text-sm sm:text-base max-w-2xl mx-auto">
+                เลือกบริการที่ต้องการเพื่อประเมินราคา หรือสอบถามรายละเอียดเพิ่มเติมกับทีมงานได้ทันที
+            </p>
+
+            <!-- Search Bar -->
+            <div class="mt-6 max-w-xl mx-auto">
+                <div class="relative flex items-center">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 text-slate-400 text-sm"></i>
+                    <input type="text" id="searchInput" onkeyup="filterServices()" placeholder="ค้นหาบริการ..." class="w-full pl-10 pr-10 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400">
+                    <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-3 text-slate-400 hover:text-slate-600 text-sm">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        <!-- Quick Nav Filters -->
+        <div class="flex items-center space-x-2 overflow-x-auto pb-4 mb-8 custom-scrollbar border-b border-slate-200 dark:border-slate-800">
+            <button onclick="filterCategory('all')" id="cat-all" class="cat-btn px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 whitespace-nowrap">
+                ทั้งหมด
+            </button>
+            <button onclick="filterCategory('customization')" id="cat-customization" class="cat-btn px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium bg-white text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 whitespace-nowrap">
+                หมวดการปรับแต่ง
+            </button>
+            <button onclick="filterCategory('technical')" id="cat-technical" class="cat-btn px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium bg-white text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 whitespace-nowrap">
+                หมวดเทคนิคและระบบหลังบ้าน
+            </button>
+            <button onclick="filterCategory('educational')" id="cat-educational" class="cat-btn px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium bg-white text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 whitespace-nowrap">
+                หมวดสนับสนุนการศึกษา
+            </button>
+            <button onclick="filterCategory('specialized')" id="cat-specialized" class="cat-btn px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium bg-white text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 whitespace-nowrap">
+                หมวดงานดีไซน์เฉพาะทาง
+            </button>
+        </div>
+
+        <!-- Services Grid -->
+        <div id="servicesSection" class="space-y-10">
+            <!-- Populated via JS -->
+        </div>
+
+        <div id="noResults" class="hidden text-center py-12 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+            <p class="text-slate-500 dark:text-slate-400 text-sm">ไม่พบบริการที่คุณค้นหา</p>
+        </div>
+    </main>
+
+    <!-- Selected Items Drawer -->
+    <div id="drawer" class="fixed inset-y-0 right-0 z-40 w-full max-w-md bg-white dark:bg-slate-800 shadow-xl transform translate-x-full transition-transform duration-200 ease-in-out border-l border-slate-200 dark:border-slate-700 flex flex-col">
+        <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+            <h3 class="font-bold text-slate-900 dark:text-white text-base">รายการบริการที่สนใจ</h3>
+            <button onclick="toggleQuoteDrawer()" class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <div id="drawerItems" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+            <!-- JS populated -->
+        </div>
+
+        <div class="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 space-y-3">
+            <div class="flex justify-between text-sm">
+                <span class="text-slate-600 dark:text-slate-400">จำนวนที่เลือก:</span>
+                <span id="drawerCount" class="font-bold text-slate-900 dark:text-white">0 รายการ</span>
+            </div>
+            <button onclick="openModal('contactModal')" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white text-white font-medium text-sm rounded-lg transition-colors">
+                ส่งขอใบเสนอราคา / ปรึกษา
+            </button>
+        </div>
+    </div>
+
+    <!-- Contact Modal -->
+    <div id="contactModal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-xl max-w-lg w-full overflow-hidden shadow-xl border border-slate-200 dark:border-slate-700">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+                <h3 class="font-bold text-slate-900 dark:text-white text-base">แบบฟอร์มขอปรึกษา / ใบเสนอราคา</h3>
+                <button onclick="closeModal('contactModal')" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <form onsubmit="handleFormSubmit(event)" class="p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">ชื่อ - นามสกุล / ชื่อผู้ติดต่อ *</label>
+                    <input type="text" required class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">เบอร์โทรศัพท์ *</label>
+                        <input type="tel" required class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">อีเมล / Line ID</label>
+                        <input type="text" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">รายละเอียดหรือโจทย์ที่ต้องการปรึกษาเพิ่มเติม</label>
+                    <textarea rows="3" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400" placeholder="อธิบายสั้นๆ เกี่ยวกับโปรเจกต์ของคุณ..."></textarea>
+                </div>
+                <div class="pt-2 flex justify-end space-x-2">
+                    <button type="button" onclick="closeModal('contactModal')" class="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm hover:bg-slate-100 dark:hover:bg-slate-700">ยกเลิก</button>
+                    <button type="submit" class="px-4 py-2 rounded-lg bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-medium text-sm hover:bg-slate-800 dark:hover:bg-white">ส่งข้อมูล</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-200 bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 px-4 py-2.5 rounded-lg shadow-lg text-sm flex items-center space-x-2 pointer-events-none">
+        <i class="fa-solid fa-circle-check text-emerald-400 dark:text-emerald-600"></i>
+        <span id="toastText">บันทึกเรียบร้อย</span>
+    </div>
+
+    <script>
+        const serviceData = [
+            {
+                id: 'customization',
+                title: 'หมวดการปรับแต่ง',
+                subtitle: 'เหมาะสำหรับลูกค้าที่ชอบโครงสร้างเว็บเดิม แต่อยากให้เข้ากับแบรนด์ตัวเองมากยิ่งขึ้น',
+                groups: [
+                    {
+                        groupName: null,
+                        items: [
+                            {
+                                title: 'เปลี่ยนธีมสีและฟอนต์ (Color & Font Customization)',
+                                desc: 'ปรับแต่งสี (Color Palette) และฟอนต์ให้ตรงตาม CI ของลูกค้า'
+                            },
+                            {
+                                title: 'เพิ่มหน้าเว็บเพิ่มเติม (Additional Pages)',
+                                desc: 'ออกแบบและเขียนโค้ดหน้าใหม่เพิ่มจากในแพ็คเกจ (เช่น หน้า "โปรโมชั่นพิเศษ" หรือ "กิจกรรม")'
+                            },
+                            {
+                                title: 'เปลี่ยนรูปภาพและคอนเทนต์ (Content & Image Update)',
+                                desc: 'บริการนำรูปและข้อความของลูกค้าใส่ลงในหน้าเว็บให้พร้อมใช้งาน'
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'technical',
+                title: 'หมวดเทคนิคและระบบหลังบ้าน',
+                subtitle: 'บริการเกี่ยวกับระบบฐานข้อมูล เซิร์ฟเวอร์ และการปรับปรุงโครงสร้างเทคนิค',
+                groups: [
+                    {
+                        groupName: null,
+                        items: [
+                            {
+                                title: 'บริการติดตั้งระบบ (Setup & Installation)',
+                                desc: 'บริการนำระบบไปวางใน XAMPP หรืออัปโหลดขึ้น Hosting จริงให้ลูกค้า'
+                            },
+                            {
+                                title: 'เชื่อมต่อฐานข้อมูล MySQL (Database Connection)',
+                                desc: 'ออกแบบตารางข้อมูลเพิ่มเติมหรือเชื่อมต่อระบบสมัครสมาชิก/ล็อกอิน ให้เข้ากับโปรเจกต์'
+                            },
+                            {
+                                title: 'ทำระบบ Responsive',
+                                desc: 'ปรับจูนให้หน้าเว็บแสดงผลได้สมบูรณ์แบบ 100% บนมือถือและแท็บเล็ต'
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'educational',
+                title: 'หมวดสนับสนุนการศึกษา',
+                subtitle: 'การอธิบายระบบ จัดทำเอกสารวิชาการ แผนผังการทำงาน และแก้ไขบั๊ก',
+                groups: [
+                    {
+                        groupName: null,
+                        items: [
+                            {
+                                title: 'อธิบายโค้ดแบบละเอียด (Code Walkthrough)',
+                                desc: 'บริการอัดวิดีโอหรือ Call อธิบายการทำงานของโค้ดแต่ละส่วน เพื่อให้นำไปพรีเซนต์งานได้'
+                            },
+                            {
+                                title: 'จัดทำเล่มรายงาน / เอกสารประกอบ',
+                                desc: 'ช่วยเรียบเรียงโครงสร้างระบบและ Flowchart เพื่อใช้ประกอบการส่งโปรเจกต์'
+                            }
+                        ]
+                    },
+                    {
+                        groupName: 'การออกแบบโครงสร้างเชิงตรรกะ',
+                        items: [
+                            {
+                                title: 'ออกแบบ ER Diagram และ Database Schema',
+                                desc: 'รับออกแบบตารางฐานข้อมูลที่ถูกต้องตามหลักการ (Normalisation) เพื่อให้ระบบทำงานได้อย่างมีประสิทธิภาพ'
+                            },
+                            {
+                                title: 'เขียน Flowchart หรือ DFD',
+                                desc: 'บริการเขียนแผนผังลำดับขั้นตอนการทำงานของระบบ (Data Flow Diagram) เพื่อใช้ประกอบในเล่มรายงานโปรเจกต์'
+                            },
+                            {
+                                title: 'ออกแบบ Use Case Diagram',
+                                desc: 'ช่วยสรุปขอบเขตหน้าที่ของ User และ Admin ในระบบให้ชัดเจน'
+                            }
+                        ]
+                    },
+                    {
+                        groupName: 'การแก้ปัญหาและปรับปรุงโค้ด',
+                        items: [
+                            {
+                                title: 'บริการแก้บั๊ก (Bug Fixing)',
+                                desc: 'รับแก้ปัญหาโค้ดที่รันไม่ได้ หรือฐานข้อมูลไม่เชื่อมต่อ'
+                            },
+                            {
+                                title: 'อธิบายโค้ดทีละไฟล์',
+                                desc: 'จัดทำเอกสารหรือวิดีโออธิบายว่าไฟล์แต่ละไฟล์ในโปรเจกต์ทำหน้าที่อะไร และโค้ดแต่ละบรรทัดทำงานอย่างไร'
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'specialized',
+                title: 'หมวดงานดีไซน์เฉพาะทาง',
+                subtitle: 'งานออกแบบกราฟิก 3D แผงควบคุมระบบ และงานอินเทอร์เฟซขั้นสูง',
+                groups: [
+                    {
+                        groupName: 'งานดีไซน์แบบ 3 มิติ และความสมจริง',
+                        items: [
+                            {
+                                title: 'Custom 3D Icons',
+                                desc: 'รับออกแบบไอคอน 3D ที่เข้ากับธีมของเว็บไซต์โดยเฉพาะ เพื่อให้หน้าดูมีมิติและพรีเมียมกว่าการใช้รูป 2D ทั่วไป'
+                            },
+                            {
+                                title: 'Product Mockup Design',
+                                desc: 'บริการทำภาพจำลองสินค้า (Mockup) เช่น การนำภาพหน้าจอไปวางในอุปกรณ์ต่าง ๆ ให้ดูเหมือนการใช้งานจริง'
+                            },
+                            {
+                                title: 'Isometric Illustration',
+                                desc: 'การวาดภาพประกอบแบบไอโซเมตริก (มุมมองเฉียง) สำหรับอธิบายขั้นตอนการทำงานที่ซับซ้อน'
+                            }
+                        ]
+                    },
+                    {
+                        groupName: 'ดีไซน์สำหรับระบบควบคุมและแผงวงจร',
+                        items: [
+                            {
+                                title: 'High-Detail Dashboards',
+                                desc: 'รับออกแบบหน้าจอควบคุมที่เน้นข้อมูลจำนวนมาก (Data-Heavy) เช่น หน้าจอสำหรับระบบจัดการหลังบ้านที่ซับซ้อน หรือระบบ Monitor ข้อมูลแบบ Real-time'
+                            },
+                            {
+                                title: 'Tactical & Industrial UI',
+                                desc: 'การออกแบบอินเทอร์เฟซสไตล์ Tactical หรือแนวอุตสาหกรรมที่เน้นความชัดเจนและดูแข็งแรง ซึ่งเป็นเอกลักษณ์ที่หาได้ยากในตลาดทั่วไป'
+                            }
+                        ]
+                    },
+                    {
+                        groupName: 'งานดีไซน์เพื่อการนำเสนอและพอร์ตโฟลิโอ',
+                        items: [
+                            {
+                                title: 'Brand Identity for Startups',
+                                desc: 'ออกแบบโลโก้ (Logo) และกำหนดชุดสี (Color Palette) ให้กับโปรเจกต์ใหม่ ๆ ของนักศึกษาหรือนักธุรกิจ'
+                            },
+                            {
+                                title: 'Portfolio Layout Design',
+                                desc: 'รับจัดหน้าพอร์ตโฟลิโอสำหรับสาย IT โดยเฉพาะ ที่เน้นการโชว์ Code Snippet และผลงานการออกแบบให้ดูเป็นมืออาชีพ'
+                            }
+                        ]
+                    },
+                    {
+                        groupName: 'งานเคลื่อนไหวและปฏิสัมพันธ์',
+                        items: [
+                            {
+                                title: 'Animation Design (Lottie/CSS)',
+                                desc: 'รับออกแบบการเคลื่อนไหวของปุ่มหรือไอคอนเมื่อ User นำเมาส์ไปวาง (Hover effect) หรือการโหลดข้อมูลที่ดูสมูท'
+                            },
+                            {
+                                title: 'Interactive Prototyping',
+                                desc: 'บริการทำตัวอย่างหน้าเว็บที่คลิกเล่นได้จริงแบบรายละเอียดทุกขั้นตอน (High-fidelity Prototype) เพื่อให้นำไปทดสอบกับผู้ใช้จริงก่อนเริ่มเขียนโค้ด'
+                            }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        let selectedItems = new Set();
+        let activeCategory = 'all';
+
+        function renderServices() {
+            const container = document.getElementById('servicesSection');
+            const search = document.getElementById('searchInput').value.toLowerCase().trim();
+            container.innerHTML = '';
+
+            let hasMatches = false;
+
+            serviceData.forEach(cat => {
+                if (activeCategory !== 'all' && cat.id !== activeCategory) return;
+
+                // Check matches
+                let catHasMatches = false;
+
+                const categoryHTML = document.createElement('div');
+                categoryHTML.className = 'bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 sm:p-7 shadow-xs';
+
+                let groupsHTML = '';
+
+                cat.groups.forEach(group => {
+                    const filteredItems = group.items.filter(item => {
+                        if (!search) return true;
+                        return item.title.toLowerCase().includes(search) || item.desc.toLowerCase().includes(search);
+                    });
+
+                    if (filteredItems.length > 0) {
+                        catHasMatches = true;
+                        hasMatches = true;
+
+                        if (group.groupName) {
+                            groupsHTML += `<h4 class="font-bold text-sm text-slate-800 dark:text-slate-200 mt-5 mb-3 pt-3 border-t border-slate-100 dark:border-slate-700/60">${group.groupName}</h4>`;
+                        }
+
+                        groupsHTML += `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">`;
+                        filteredItems.forEach(item => {
+                            const isSelected = selectedItems.has(item.title);
+                            groupsHTML += `
+                                <div class="p-4 rounded-xl border ${isSelected ? 'border-slate-900 bg-slate-50 dark:border-slate-300 dark:bg-slate-700/50' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600'} transition-all flex flex-col justify-between">
+                                    <div>
+                                        <h5 class="font-semibold text-slate-900 dark:text-white text-sm leading-snug mb-1 font-medium">${item.title}</h5>
+                                        <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">${item.desc}</p>
+                                    </div>
+                                    <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700/50 flex justify-end">
+                                        <button onclick="toggleSelect('${item.title.replace(/'/g, "\\'")}')" class="px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${isSelected ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600'}">
+                                            <i class="fa-solid ${isSelected ? 'fa-check' : 'fa-plus'} mr-1"></i>
+                                            ${isSelected ? 'เลือกแล้ว' : 'สนใจบริการ'}
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        groupsHTML += `</div>`;
+                    }
+                });
+
+                if (catHasMatches) {
+                    categoryHTML.innerHTML = `
+                        <div class="mb-5 pb-3 border-b border-slate-100 dark:border-slate-700">
+                            <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">${cat.title}</h2>
+                            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">${cat.subtitle}</p>
+                        </div>
+                        ${groupsHTML}
+                    `;
+                    container.appendChild(categoryHTML);
+                }
+            });
+
+            document.getElementById('noResults').classList.toggle('hidden', hasMatches);
+        }
+
+        function toggleSelect(itemTitle) {
+            if (selectedItems.has(itemTitle)) {
+                selectedItems.delete(itemTitle);
+                showToast('ยกเลิกรายการแล้ว');
+            } else {
+                selectedItems.add(itemTitle);
+                showToast('เพิ่มเข้าในรายการแล้ว');
+            }
+            updateBadge();
+            renderServices();
+            renderDrawer();
+        }
+
+        function updateBadge() {
+            const count = selectedItems.size;
+            const badge = document.getElementById('badge-count');
+            if (count > 0) {
+                badge.innerText = count;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+            document.getElementById('drawerCount').innerText = `${count} รายการ`;
+        }
+
+        function renderDrawer() {
+            const drawerItems = document.getElementById('drawerItems');
+            if (selectedItems.size === 0) {
+                drawerItems.innerHTML = `
+                    <div class="text-center py-12 text-slate-400 text-xs">
+                        ยังไม่มีรายการที่เลือก <br> คลิก "+ สนใจบริการ" เพื่อเลือกรายการที่ต้องการ
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            selectedItems.forEach(itemTitle => {
+                html += `
+                    <div class="p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 flex items-center justify-between">
+                        <span class="text-xs font-medium text-slate-800 dark:text-slate-200">${itemTitle}</span>
+                        <button onclick="toggleSelect('${itemTitle.replace(/'/g, "\\'")}')" class="text-slate-400 hover:text-red-500 text-xs p-1">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            drawerItems.innerHTML = html;
+        }
+
+        function filterCategory(catId) {
+            activeCategory = catId;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.className = "cat-btn px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium bg-white text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 whitespace-nowrap";
+            });
+            const activeBtn = document.getElementById(`cat-${catId}`);
+            if (activeBtn) {
+                activeBtn.className = "cat-btn px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 whitespace-nowrap";
+            }
+            renderServices();
+        }
+
+        function filterServices() {
+            const input = document.getElementById('searchInput').value;
+            document.getElementById('clearSearchBtn').classList.toggle('hidden', !input);
+            renderServices();
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('clearSearchBtn').classList.add('hidden');
+            renderServices();
+        }
+
+        function toggleQuoteDrawer() {
+            document.getElementById('drawer').classList.toggle('translate-x-full');
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            closeModal('contactModal');
+            showToast('ส่งข้อมูลเรียบร้อยแล้ว ทีมงานจะติดต่อกลับโดยเร็วที่สุด');
+            selectedItems.clear();
+            updateBadge();
+            renderServices();
+            renderDrawer();
+            if (!document.getElementById('drawer').classList.contains('translate-x-full')) {
+                toggleQuoteDrawer();
+            }
+        }
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastText').innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+
+        window.onload = function() {
+            renderServices();
+            renderDrawer();
+        };
+    </script>
+</body>
+</html>

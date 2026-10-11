@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANIMEHUB - ศูนย์รวมอนิเมะซับไทย พากย์ไทย และข่าวสารวงการอนิเมะ</title>
+    
+    <!-- Google Fonts: Prompt & Kanit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#090d16',
+                            card: '#0f172a',
+                            border: '#1e293b',
+                            purple: '#6366f1',
+                            pink: '#ec4899',
+                            cyan: '#06b6d4',
+                            glow: 'rgba(99, 102, 241, 0.25)'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Prompt', 'Kanit', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Custom Glassmorphism & Animations -->
+    <style>
+        body {
+            background-color: #090d16;
+            color: #f1f5f9;
+            font-family: 'Prompt', sans-serif;
+            overflow-x: hidden;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-nav {
+            background: rgba(9, 13, 22, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .glow-pink:hover {
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.4);
+        }
+        .glow-purple:hover {
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Custom Scrollbar for inner boxes */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6366f1;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-pink-500 selection:text-white">
+
+    <!-- Navigation Bar -->
+    <header class="sticky top-0 z-50 glass-nav transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 gap-4">
+                
+                <!-- Logo & Brand -->
+                <div class="flex items-center gap-3">
+                    <a href="#" class="flex items-center gap-2 group">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-pink-500 to-cyan-400 p-[2px] transform group-hover:rotate-6 transition-transform">
+                            <div class="w-full h-full bg-brand-dark rounded-[10px] flex items-center justify-center">
+                                <i class="fa-solid fa-play text-pink-500 text-sm pl-0.5"></i>
+                            </div>
+                        </div>
+                        <span class="text-2xl font-bold font-['Kanit'] tracking-wider">
+                            ANIME<span class="text-gradient">HUB</span>
+                        </span>
+                    </a>
+                </div>
+
+                <!-- Navigation Links (Desktop) -->
+                <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-slate-300">
+                    <a href="#hero" class="text-pink-500 font-semibold hover:text-pink-400 transition-colors flex items-center gap-1.5">
+                        <i class="fa-solid fa-house text-xs"></i> หน้าแรก
+                    </a>
+                    <a href="#schedule" class="hover:text-pink-400 transition-colors flex items-center gap-1.5">
+                        <i class="fa-solid fa-calendar-days text-xs"></i> ตารางฉาย
+                    </a>
+                    <a href="#trending" class="hover:text-pink-400 transition-colors flex items-center gap-1.5">
+                        <i class="fa-solid fa-fire text-xs text-orange-400"></i> ติดเทรนด์
+                    </a>
+                    <a href="#episodes" class="hover:text-pink-400 transition-colors flex items-center gap-1.5">
+                        <i class="fa-solid fa-tv text-xs"></i> ตอนล่าสุด
+                    </a>
+                    <a href="#voting" class="hover:text-pink-400 transition-colors flex items-center gap-1.5">
+                        <i class="fa-solid fa-heart text-xs text-pink-500"></i> โหวตตัวละคร
+                    </a>
+                </nav>
+
+                <!-- Global Live Search Bar -->
+                <div class="relative flex-1 max-w-xs hidden sm:block">
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                        <input 
+                            type="text" 
+                            id="searchInput"
+                            placeholder="ค้นหาอนิเมะ, ตัวละคร, สตูดิโอ..."
+                            onkeyup="handleSearch(this.value)"
+                            class="w-full bg-slate-900/80 border border-slate-700/60 rounded-full pl-10 pr-4 py-1.5 text-sm text-slate-200 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                        >
+                    </div>
+                    <!-- Live Search Results Dropdown -->
+                    <div id="searchResults" class="hidden absolute left-0 right-0 top-11 glass-panel rounded-2xl shadow-2xl overflow-hidden z-50 border border-slate-700/50">
+                        <div id="searchResultsList" class="p-2 space-y-1 max-h-80 overflow-y-auto"></div>
+                    </div>
+                </div>
+
+                <!-- Right Action Icons & User -->
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleWatchlistModal()" class="relative p-2.5 rounded-full bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 transition-colors">
+                        <i class="fa-solid fa-bookmark"></i>
+                        <span id="watchlistBadge" class="absolute -top-1 -right-1 w-5 h-5 bg-pink-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">0</span>
+                    </button>
+
+                    <button class="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-medium text-xs px-4 py-2 rounded-full transition-all shadow-lg shadow-indigo-600/20 glow-pink">
+                        <i class="fa-solid fa-user-astronaut"></i>
+                        <span class="hidden sm:inline">เข้าสู่ระบบ</span>
+                    </button>
+
+                    <!-- Mobile Menu Trigger -->
+                    <button onclick="toggleMobileMenu()" class="md:hidden p-2 text-slate-300 hover:text-white">
+                        <i class="fa-solid fa-bars-staggered text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Menu -->
+        <div id="mobileMenu" class="hidden md:hidden glass-panel border-t border-slate-800 px-4 py-4 space-y-3">
+            <input 
+                type="text" 
+                placeholder="ค้นหาอนิเมะ..."
+                onkeyup="handleSearch(this.value)"
+                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-200 mb-2"
+            >
+            <a href="#hero" onclick="toggleMobileMenu()" class="block text-pink-400 font-medium py-1">หน้าแรก</a>
+            <a href="#schedule" onclick="toggleMobileMenu()" class="block text-slate-300 hover:text-white py-1">ตารางฉาย</a>
+            <a href="#trending" onclick="toggleMobileMenu()" class="block text-slate-300 hover:text-white py-1">ติดเทรนด์</a>
+            <a href="#episodes" onclick="toggleMobileMenu()" class="block text-slate-300 hover:text-white py-1">ตอนล่าสุด</a>
+            <a href="#voting" onclick="toggleMobileMenu()" class="block text-slate-300 hover:text-white py-1">โหวตตัวละคร</a>
+        </div>
+    </header>
+
+    <main class="flex-grow space-y-12 pb-16">
+
+        <!-- Hero Carousel Banner Section -->
+        <section id="hero" class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+            <div class="relative rounded-3xl overflow-hidden glass-panel border border-slate-800 shadow-2xl min-h-[440px] flex items-end">
+                
+                <!-- Background Image Overlay with Gradient -->
+                <div id="heroBg" class="absolute inset-0 bg-cover bg-center transition-all duration-700" style="background-image: url('https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1200&auto=format&fit=crop');">
+                    <div class="absolute inset-0 bg-gradient-to-t from-brand-dark via-brand-dark/70 to-transparent"></div>
+                    <div class="absolute inset-0 bg-gradient-to-r from-brand-dark via-brand-dark/50 to-transparent"></div>
+                </div>
+
+                <!-- Hero Content -->
+                <div class="relative z-10 p-6 sm:p-10 max-w-2xl space-y-4">
+                    <div class="flex flex-wrap items-center gap-2 text-xs">
+                        <span id="heroSeason" class="px-3 py-1 rounded-full bg-pink-500/20 text-pink-400 font-semibold border border-pink-500/30">🔥 SEASONAL HIGHLIGHT</span>
+                        <span id="heroStudio" class="px-3 py-1 rounded-full bg-slate-800/80 text-cyan-400 border border-slate-700">MAPPA Studio</span>
+                        <span class="flex items-center gap-1 text-amber-400 font-bold bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
+                            <i class="fa-solid fa-star text-xs"></i> <span id="heroRating">8.95</span>
+                        </span>
+                    </div>
+
+                    <h1 id="heroTitle" class="text-3xl sm:text-5xl font-bold font-['Kanit'] tracking-tight text-white leading-tight">
+                        Jujutsu Kaisen: Shibuya Incident
+                    </h1>
+
+                    <p id="heroDesc" class="text-slate-300 text-sm sm:text-base line-clamp-3 leading-relaxed font-light">
+                        เมื่อม่านพลังงานปริศนาครอบคลุมย่านชิบูย่าในคืนฮาโลวีน เพื่อขังมนุษย์ไว้เป็นตัวประกัน โกโจ ซาโตรุ ต้องเข้าขัดขวางแผนการร้ายของคำสาประดับพิเศษ!
+                    </p>
+
+                    <!-- Hero Action Buttons -->
+                    <div class="flex flex-wrap items-center gap-3 pt-2">
+                        <button onclick="playAnimeTrailer('https://www.youtube.com/embed/dQw4w9WgXcQ')" class="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-indigo-600 hover:from-pink-600 hover:to-indigo-700 text-white font-semibold text-sm px-6 py-3 rounded-full transition-all shadow-lg shadow-pink-500/25 glow-pink">
+                            <i class="fa-solid fa-play"></i> รับชมเลย ตอนที่ 1
+                        </button>
+                        
+                        <button onclick="openAnimeDetails(0)" class="flex items-center gap-2 bg-slate-800/90 hover:bg-slate-700 text-slate-200 font-semibold text-sm px-5 py-3 rounded-full border border-slate-700 transition-all">
+                            <i class="fa-solid fa-circle-info"></i> รายละเอียดเรื่อง
+                        </button>
+
+                        <button onclick="toggleBookmarkCurrentHero()" class="p-3 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all" title="บันทึกเข้าคลัง">
+                            <i class="fa-regular fa-bookmark"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Carousel Slide Indicators -->
+                <div class="absolute right-6 bottom-6 hidden sm:flex items-center gap-2 z-20">
+                    <button onclick="setHeroSlide(0)" class="hero-dot w-8 h-2 rounded-full bg-pink-500 transition-all"></button>
+                    <button onclick="setHeroSlide(1)" class="hero-dot w-2 h-2 rounded-full bg-slate-600 hover:bg-slate-400 transition-all"></button>
+                    <button onclick="setHeroSlide(2)" class="hero-dot w-2 h-2 rounded-full bg-slate-600 hover:bg-slate-400 transition-all"></button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Genre Filters -->
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center gap-3 overflow-x-auto pb-2 hide-scrollbar">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap flex items-center gap-1">
+                    <i class="fa-solid fa-tags text-pink-500"></i> หมวดหมู่:
+                </span>
+                <button onclick="filterGenre('ALL')" class="genre-btn px-4 py-1.5 rounded-full bg-pink-500 text-white text-xs font-medium whitespace-nowrap shadow-sm">ทั้งหมด</button>
+                <button onclick="filterGenre('ISEKAI')" class="genre-btn px-4 py-1.5 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-medium whitespace-nowrap border border-slate-700/60">✨ ต่างโลก (Isekai)</button>
+                <button onclick="filterGenre('ACTION')" class="genre-btn px-4 py-1.5 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-medium whitespace-nowrap border border-slate-700/60">⚔️ แอ็กชัน</button>
+                <button onclick="filterGenre('FANTASY')" class="genre-btn px-4 py-1.5 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-medium whitespace-nowrap border border-slate-700/60">🔮 แฟนตาซี</button>
+                <button onclick="filterGenre('ROMANCE')" class="genre-btn px-4 py-1.5 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-medium whitespace-nowrap border border-slate-700/60">💖 โรแมนติก</button>
+                <button onclick="filterGenre('COMEDY')" class="genre-btn px-4 py-1.5 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-medium whitespace-nowrap border border-slate-700/60">😂 ตลกขบขัน</button>
+                <button onclick="filterGenre('SCI-FI')" class="genre-btn px-4 py-1.5 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-medium whitespace-nowrap border border-slate-700/60">🤖 ไซไฟ/จักรกล</button>
+            </div>
+        </section>
+
+        <!-- Weekly Airing Schedule Section -->
+        <section id="schedule" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold font-['Kanit'] text-white flex items-center gap-2">
+                        <i class="fa-solid fa-clock text-cyan-400"></i> ตารางการอัปเดตประจำสัปดาห์
+                    </h2>
+                    <p class="text-xs text-slate-400">เช็กอนิเมะที่ออกอากาศตอนใหม่ในแต่ละวัน</p>
+                </div>
+
+                <!-- Day Tabs Switcher -->
+                <div class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800 overflow-x-auto hide-scrollbar">
+                    <button onclick="switchDay('MON')" class="day-tab px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition-all">จันทร์</button>
+                    <button onclick="switchDay('TUE')" class="day-tab px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition-all">อังคาร</button>
+                    <button onclick="switchDay('WED')" class="day-tab px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition-all">พุธ</button>
+                    <button onclick="switchDay('THU')" class="day-tab px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition-all">พฤหัสบดี</button>
+                    <button onclick="switchDay('FRI')" class="day-tab px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition-all">ศุกร์</button>
+                    <button onclick="switchDay('SAT')" class="day-tab px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white font-semibold transition-all shadow">เสาร์</button>
+                    <button onclick="switchDay('SUN')" class="day-tab px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition-all">อาทิตย์</button>
+                </div>
+            </div>
+
+            <!-- Schedule Cards Grid -->
+            <div id="scheduleGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <!-- Schedule items dynamically loaded via JS -->
+            </div>
+        </section>
+
+        <!-- Trending Top 10 Section -->
+        <section id="trending" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold font-['Kanit'] text-white flex items-center gap-2">
+                        <i class="fa-solid fa-fire text-orange-500"></i> TOP 10 อนิเมะยอดฮิตประจำสัปดาห์
+                    </h2>
+                    <p class="text-xs text-slate-400">อนิเมะที่มีผู้ชมมากที่สุดในระบบขณะนี้</p>
+                </div>
+            </div>
+
+            <div id="trendingGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <!-- Top 10 Items injected via JS -->
+            </div>
+        </section>
+
+        <!-- Latest Episodes Section -->
+        <section id="episodes" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold font-['Kanit'] text-white flex items-center gap-2">
+                        <i class="fa-solid fa-bolt text-amber-400"></i> ตอนใหม่ล่าสุด (Newly Updated)
+                    </h2>
+                    <p class="text-xs text-slate-400">อัปเดตซับไทย/พากย์ไทย สดใหม่วันต่อวัน</p>
+                </div>
+                <a href="#" class="text-xs font-semibold text-pink-400 hover:text-pink-300 flex items-center gap-1">
+                    ดูทั้งหมด <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                </a>
+            </div>
+
+            <div id="episodesGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <!-- Episode Cards injected via JS -->
+            </div>
+        </section>
+
+        <!-- Community Features & Interactive Widgets -->
+        <section id="voting" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Character / Waifu Voting Widget (2 Cols) -->
+                <div class="lg:col-span-2 glass-panel rounded-3xl p-6 border border-slate-800">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <span class="text-xs font-semibold text-pink-400 tracking-wider uppercase">Weekly Poll</span>
+                            <h3 class="text-xl font-bold font-['Kanit'] text-white">💖 โหวตตัวละครยอดนิยม (Best Character)</h3>
+                        </div>
+                        <span class="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-full border border-slate-700">ปิดโหวตใน 2 วัน</span>
+                    </div>
+
+                    <div id="characterVoteList" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Character vote items rendered via JS -->
+                    </div>
+                </div>
+
+                <!-- Anime OST Player Widget (1 Col) -->
+                <div class="glass-panel rounded-3xl p-6 border border-slate-800 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-xs font-semibold text-cyan-400 tracking-wider uppercase">Anime Jukebox</span>
+                            <i class="fa-solid fa-compact-disc text-2xl text-cyan-400 animate-spin" style="animation-duration: 8s;"></i>
+                        </div>
+                        <h3 class="text-xl font-bold font-['Kanit'] text-white mb-1">🎵 OST เพลงประกอบยอดฮิต</h3>
+                        <p class="text-xs text-slate-400 mb-4">รับฟังเพลงเปิด/เพลงปิดสุดฮิตจากอนิเมะ</p>
+
+                        <!-- Soundtrack List -->
+                        <div class="space-y-3">
+                            <div onclick="playSong('SPECIALZ - King Gnu (Jujutsu Kaisen Season 2)', 'King Gnu')" class="flex items-center justify-between p-2.5 rounded-2xl bg-slate-800/60 hover:bg-slate-700/60 cursor-pointer border border-slate-700/50 transition-all">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-500 to-indigo-600 flex items-center justify-center text-white">
+                                        <i class="fa-solid fa-music"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-semibold text-slate-200">SPECIALZ</div>
+                                        <div class="text-xs text-slate-400">King Gnu • JJK Season 2 OP</div>
+                                    </div>
+                                </div>
+                                <button class="w-8 h-8 rounded-full bg-pink-500/20 text-pink-400 hover:bg-pink-500 hover:text-white flex items-center justify-center text-xs transition-colors">
+                                    <i class="fa-solid fa-play"></i>
+                                </button>
+                            </div>
+
+                            <div onclick="playSong('Bling-Bang-Bang-Born - Creepy Nuts', 'Creepy Nuts')" class="flex items-center justify-between p-2.5 rounded-2xl bg-slate-800/60 hover:bg-slate-700/60 cursor-pointer border border-slate-700/50 transition-all">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center text-white">
+                                        <i class="fa-solid fa-music"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-semibold text-slate-200">Bling-Bang-Bang-Born</div>
+                                        <div class="text-xs text-slate-400">Creepy Nuts • Mashle OP2</div>
+                                    </div>
+                                </div>
+                                <button class="w-8 h-8 rounded-full bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500 hover:text-white flex items-center justify-center text-xs transition-colors">
+                                    <i class="fa-solid fa-play"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mini Audio Bar -->
+                    <div id="audioBar" class="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between">
+                        <div class="text-xs">
+                            <span class="text-slate-400">กำลังเล่น: </span>
+                            <span id="nowPlayingText" class="text-slate-200 font-medium">SPECIALZ - King Gnu</span>
+                        </div>
+                        <button id="audioPlayBtn" onclick="toggleAudio()" class="w-9 h-9 rounded-full bg-gradient-to-r from-pink-500 to-indigo-600 text-white flex items-center justify-center shadow-md">
+                            <i id="audioIcon" class="fa-solid fa-play text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="glass-panel border-t border-slate-800 pt-12 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 pb-8 border-b border-slate-800">
+                <div class="space-y-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-pink-500 flex items-center justify-center text-white font-bold text-xs">
+                            AH
+                        </div>
+                        <span class="text-xl font-bold font-['Kanit'] text-white">ANIME<span class="text-gradient">HUB</span></span>
+                    </div>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        แพลตฟอร์มรวบรวมข้อมูลอนิเมะ ตารางการฉาย ข่าวสาร และคอมมูนิตี้สำหรับแฟนการ์ตูนญี่ปุ่นที่ครบครันที่สุด
+                    </p>
+                </div>
+
+                <div>
+                    <h4 class="text-sm font-semibold text-white mb-3 font-['Kanit']">เมนูด่วน</h4>
+                    <ul class="space-y-2 text-xs text-slate-400">
+                        <li><a href="#hero" class="hover:text-pink-400 transition-colors">หน้าแรก</a></li>
+                        <li><a href="#schedule" class="hover:text-pink-400 transition-colors">ตารางฉายประจำสัปดาห์</a></li>
+                        <li><a href="#trending" class="hover:text-pink-400 transition-colors">อนิเมะยอดฮิต TOP 10</a></li>
+                        <li><a href="#episodes" class="hover:text-pink-400 transition-colors">อนิเมะอัปเดตตอนใหม่</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="text-sm font-semibold text-white mb-3 font-['Kanit']">หมวดหมู่ยอดฮิต</h4>
+                    <ul class="space-y-2 text-xs text-slate-400">
+                        <li><a href="#" class="hover:text-pink-400 transition-colors">ต่างโลก (Isekai)</a></li>
+                        <li><a href="#" class="hover:text-pink-400 transition-colors">ต่อสู้ / แอ็กชัน</a></li>
+                        <li><a href="#" class="hover:text-pink-400 transition-colors">โรแมนติก / คอเมดี้</a></li>
+                        <li><a href="#" class="hover:text-pink-400 transition-colors">สไลซ์ออฟไลฟ์ (Slice of Life)</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="text-sm font-semibold text-white mb-3 font-['Kanit']">ติดตามเรา</h4>
+                    <div class="flex gap-3">
+                        <a href="#" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-pink-500 hover:text-white text-slate-300 flex items-center justify-center transition-all text-sm">
+                            <i class="fa-brands fa-discord"></i>
+                        </a>
+                        <a href="#" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-cyan-500 hover:text-white text-slate-300 flex items-center justify-center transition-all text-sm">
+                            <i class="fa-brands fa-twitter"></i>
+                        </a>
+                        <a href="#" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-indigo-500 hover:text-white text-slate-300 flex items-center justify-center transition-all text-sm">
+                            <i class="fa-brands fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-red-500 hover:text-white text-slate-300 flex items-center justify-center transition-all text-sm">
+                            <i class="fa-brands fa-youtube"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-6 text-center text-xs text-slate-500">
+                &copy; 2026 ANIMEHUB. All rights reserved. เว็บไซต์นี้จัดทำขึ้นเพื่อการสาธิตตัวอย่าง UI/UX สไตล์อนิเมะเท่านั้น
+            </div>
+        </div>
+    </footer>
+
+    <!-- Anime Details & Video Modal -->
+    <div id="animeModal" class="fixed inset-0 bg-brand-dark/80 backdrop-blur-md z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="glass-panel w-full max-w-3xl rounded-3xl overflow-hidden border border-slate-700/80 shadow-2xl max-h-[90vh] flex flex-col">
+            <!-- Modal Header -->
+            <div class="relative h-48 bg-cover bg-center" id="modalBg">
+                <div class="absolute inset-0 bg-gradient-to-t from-brand-card via-brand-card/60 to-transparent"></div>
+                <button onclick="closeAnimeModal()" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/60 hover:bg-pink-500 text-white flex items-center justify-center transition-all">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="p-6 overflow-y-auto space-y-6 flex-grow -mt-16 relative z-10">
+                <div class="flex flex-col sm:flex-row items-start gap-4">
+                    <img id="modalPoster" src="" class="w-28 h-40 object-cover rounded-2xl shadow-xl border-2 border-slate-700 flex-shrink-0">
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <span id="modalRating" class="px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-400 text-xs font-bold border border-amber-500/30">
+                                ★ 8.95
+                            </span>
+                            <span id="modalStudio" class="text-xs text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded-md border border-cyan-500/20">Studio</span>
+                        </div>
+                        <h2 id="modalTitle" class="text-2xl font-bold font-['Kanit'] text-white">Title</h2>
+                        <p id="modalGenre" class="text-xs text-slate-400">Genres</p>
+                        <p id="modalDesc" class="text-sm text-slate-300 font-light leading-relaxed">Synopsis</p>
+                    </div>
+                </div>
+
+                <!-- Simulated Episode Player Grid -->
+                <div class="space-y-3 pt-4 border-t border-slate-800">
+                    <h3 class="text-sm font-semibold font-['Kanit'] text-white flex items-center justify-between">
+                        <span><i class="fa-solid fa-list-ul text-pink-500 mr-2"></i> รายการตอน (Episodes)</span>
+                        <span class="text-xs text-emerald-400">● กำลังฉาย (Airing)</span>
+                    </h3>
+                    <div id="modalEpisodesList" class="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                        <!-- Episode buttons generated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Watchlist Drawer/Modal -->
+    <div id="watchlistModal" class="fixed inset-0 bg-brand-dark/80 backdrop-blur-md z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="glass-panel w-full max-w-md rounded-3xl p-6 border border-slate-700 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-lg font-bold font-['Kanit'] text-white flex items-center gap-2">
+                    <i class="fa-solid fa-bookmark text-pink-500"></i> รายการโปรดของคุณ (Watchlist)
+                </h3>
+                <button onclick="toggleWatchlistModal()" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div id="watchlistContent" class="space-y-3 max-h-80 overflow-y-auto">
+                <p class="text-xs text-slate-400 text-center py-8">ยังไม่มีอนิเมะในรายการโปรด</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Anime Database Sample Data
+        const animeData = [
+            {
+                id: 0,
+                title: "Jujutsu Kaisen: Shibuya Incident",
+                poster: "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=600&auto=format&fit=crop",
+                rating: "8.95",
+                studio: "MAPPA",
+                genre: "ACTION • FANTASY",
+                day: "SAT",
+                episodesCount: 23,
+                desc: "เมื่อม่านพลังงานปริศนาครอบคลุมย่านชิบูย่าในคืนฮาโลวีน เพื่อขังมนุษย์ไว้เป็นตัวประกัน โกโจ ซาโตรุ ต้องเข้าขัดขวางแผนการร้ายของคำสาประดับพิเศษ!",
+                latestEp: "ตอนที่ 23 (จบซีซัน)",
+                isTrending: true,
+                rank: 1
+            },
+            {
+                id: 1,
+                title: "Solo Leveling (มหาศึกเลเวลอัป)",
+                poster: "https://images.unsplash.com/photo-1563089145-599997674d42?q=80&w=600&auto=format&fit=crop",
+                rating: "8.82",
+                studio: "A-1 Pictures",
+                genre: "ACTION • ISEKAI",
+                day: "SUN",
+                episodesCount: 12,
+                desc: "ซองจินอู ฮันเตอร์ระดับ E ผู้ไร้กาจฉายา 'อาวุธที่อ่อนแอที่สุดในโลก' ได้รับโอกาสครั้งที่สองในการตื่นขึ้นมาพร้อมกับระบบเควสต์ที่เพิ่มระดับของเขาได้!",
+                latestEp: "ตอนที่ 12 (ซับไทย)",
+                isTrending: true,
+                rank: 2
+            },
+            {
+                id: 2,
+                title: "Frieren: Beyond Journey's End",
+                poster: "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600&auto=format&fit=crop",
+                rating: "9.35",
+                studio: "Madhouse",
+                genre: "FANTASY • SLICE OF LIFE",
+                day: "FRI",
+                episodesCount: 28,
+                desc: "เรื่องราวของเอลฟ์จอมเวท ฟรีเรน หลังจากเอาชนะจอมมารได้สำเร็จและออกเดินทางสัมผัสชีวิตมนุษย์เพื่อเข้าใจความหมายของเวลาและมิตรภาพ",
+                latestEp: "ตอนที่ 28 (จบซีซัน)",
+                isTrending: true,
+                rank: 3
+            },
+            {
+                id: 3,
+                title: "Demon Slayer: Hashira Training Arc",
+                poster: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600&auto=format&fit=crop",
+                rating: "8.70",
+                studio: "ufotable",
+                genre: "ACTION • FANTASY",
+                day: "SUN",
+                episodesCount: 8,
+                desc: "การฝึกฝนสุดโหดร่วมกับเหล่าเสาหลักแห่งหน่วยพิฆาตอสูร เพื่อเตรียมพร้อมรับมือกับสงครามครั้งสุดท้ายกับมุซัน",
+                latestEp: "ตอนที่ 8 (พากย์ไทย)",
+                isTrending: true,
+                rank: 4
+            },
+            {
+                id: 4,
+                title: "Mashle: Magic and Muscles S2",
+                poster: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop",
+                rating: "8.15",
+                studio: "A-1 Pictures",
+                genre: "COMEDY • FANTASY",
+                day: "SAT",
+                episodesCount: 12,
+                desc: "มัช เบิร์นเดด เด็กหนุ่มผู้ไร้พลังเวทแต่ครอบครองพลังกล้ามเนื้ออันเหนือมนุษย์ ในโรงเรียนเวทมนตร์ระดับท็อป!",
+                latestEp: "ตอนที่ 12 (ซับไทย)",
+                isTrending: true,
+                rank: 5
+            },
+            {
+                id: 5,
+                title: "That Time I Got Reincarnated as a Slime S3",
+                poster: "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=80&w=600&auto=format&fit=crop",
+                rating: "8.40",
+                studio: "Eight Bit",
+                genre: "ISEKAI • FANTASY",
+                day: "FRI",
+                episodesCount: 24,
+                desc: "ริมุรุ เทมเปสต์ สไลม์ผู้แข็งแกร่งต้องรับมือกับการเจรจาทางการเมืองและการโจมตีจากศาสนจักรศักดิ์สิทธิ์ ลูเบเรียส",
+                latestEp: "ตอนที่ 18 (ซับไทย)",
+                isTrending: false,
+                rank: 6
+            }
+        ];
+
+        // Character Voting Data
+        const characters = [
+            { name: "โกโจ ซาโตรุ", anime: "Jujutsu Kaisen", votes: 12450, img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=200&auto=format&fit=crop" },
+            { name: "ฟรีเรน (Frieren)", anime: "Frieren", votes: 11890, img: "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=200&auto=format&fit=crop" },
+            { name: "ซองจินอู", anime: "Solo Leveling", votes: 9800, img: "https://images.unsplash.com/photo-1563089145-599997674d42?q=80&w=200&auto=format&fit=crop" },
+            { name: "เนซึโกะ คามาโดะ", anime: "Demon Slayer", votes: 8940, img: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=200&auto=format&fit=crop" }
+        ];
+
+        // State Management
+        let watchlist = [];
+        let isAudioPlaying = false;
+        let currentHeroIndex = 0;
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            renderSchedule('SAT');
+            renderTrending();
+            renderEpisodes();
+            renderCharacters();
+        });
+
+        // Hero Carousel Handler
+        function setHeroSlide(index) {
+            currentHeroIndex = index;
+            const anime = animeData[index];
+            
+            document.getElementById('heroBg').style.backgroundImage = `url('${anime.poster}')`;
+            document.getElementById('heroTitle').innerText = anime.title;
+            document.getElementById('heroDesc').innerText = anime.desc;
+            document.getElementById('heroRating').innerText = anime.rating;
+            document.getElementById('heroStudio').innerText = anime.studio;
+
+            // Update Dots
+            const dots = document.querySelectorAll('.hero-dot');
+            dots.forEach((dot, i) => {
+                if (i === index) {
+                    dot.className = "hero-dot w-8 h-2 rounded-full bg-pink-500 transition-all";
+                } else {
+                    dot.className = "hero-dot w-2 h-2 rounded-full bg-slate-600 hover:bg-slate-400 transition-all";
+                }
+            });
+        }
+
+        // Render Airing Schedule
+        function switchDay(day) {
+            document.querySelectorAll('.day-tab').forEach(btn => {
+                btn.className = "day-tab px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition-all";
+            });
+            event.target.className = "day-tab px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white font-semibold transition-all shadow";
+            renderSchedule(day);
+        }
+
+        function renderSchedule(day) {
+            const grid = document.getElementById('scheduleGrid');
+            const filtered = animeData.filter(item => item.day === day || day === 'ALL');
+            
+            grid.innerHTML = filtered.map(item => `
+                <div onclick="openAnimeDetails(${item.id})" class="group cursor-pointer glass-panel rounded-2xl overflow-hidden border border-slate-800 hover:border-pink-500/50 transition-all hover:-translate-y-1">
+                    <div class="relative aspect-[3/4] overflow-hidden">
+                        <img src="${item.poster}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                        <span class="absolute top-2 left-2 bg-pink-500/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow">
+                            ${item.latestEp}
+                        </span>
+                    </div>
+                    <div class="p-3 space-y-1">
+                        <h4 class="text-xs font-semibold text-slate-200 line-clamp-1 group-hover:text-pink-400 transition-colors">${item.title}</h4>
+                        <div class="flex items-center justify-between text-[10px] text-slate-400">
+                            <span>${item.studio}</span>
+                            <span class="text-amber-400">★ ${item.rating}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render Top 10 Trending
+        function renderTrending() {
+            const grid = document.getElementById('trendingGrid');
+            grid.innerHTML = animeData.slice(0, 5).map((item, idx) => `
+                <div onclick="openAnimeDetails(${item.id})" class="relative glass-panel rounded-2xl p-3 flex gap-3 items-center cursor-pointer hover:border-pink-500/50 transition-all group">
+                    <span class="text-3xl font-black font-['Kanit'] italic text-slate-700 group-hover:text-pink-500 transition-colors w-8 text-center">
+                        #${idx + 1}
+                    </span>
+                    <img src="${item.poster}" class="w-14 h-20 object-cover rounded-xl shadow-md flex-shrink-0">
+                    <div class="space-y-1 overflow-hidden">
+                        <span class="text-[10px] text-cyan-400 font-medium">${item.genre}</span>
+                        <h4 class="text-xs font-semibold text-white line-clamp-1 group-hover:text-pink-400">${item.title}</h4>
+                        <div class="text-[10px] text-slate-400">คะแนน: <span class="text-amber-400 font-bold">${item.rating}</span></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render Latest Episode Grid
+        function renderEpisodes() {
+            const grid = document.getElementById('episodesGrid');
+            grid.innerHTML = animeData.map(item => `
+                <div onclick="openAnimeDetails(${item.id})" class="group cursor-pointer glass-panel rounded-2xl overflow-hidden border border-slate-800 hover:border-indigo-500/50 transition-all">
+                    <div class="relative aspect-[3/4]">
+                        <img src="${item.poster}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                        <div class="absolute inset-0 bg-gradient-to-t from-brand-card via-transparent to-transparent opacity-80"></div>
+                        <span class="absolute bottom-2 left-2 bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow">
+                            ${item.latestEp}
+                        </span>
+                    </div>
+                    <div class="p-3">
+                        <h4 class="text-xs font-semibold text-slate-200 line-clamp-1 group-hover:text-indigo-400">${item.title}</h4>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render Character Voting List
+        function renderCharacters() {
+            const container = document.getElementById('characterVoteList');
+            container.innerHTML = characters.map((c, i) => `
+                <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-all">
+                    <div class="flex items-center gap-3">
+                        <img src="${c.img}" class="w-12 h-12 rounded-full object-cover border border-pink-500/40">
+                        <div>
+                            <h4 class="text-sm font-semibold text-white">${c.name}</h4>
+                            <p class="text-xs text-slate-400">${c.anime}</p>
+                        </div>
+                    </div>
+                    <button onclick="voteCharacter(${i})" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-pink-500/20 text-pink-400 hover:bg-pink-500 hover:text-white text-xs font-medium transition-all">
+                        <i class="fa-solid fa-heart"></i>
+                        <span id="voteCount-${i}">${c.votes.toLocaleString()}</span>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function voteCharacter(index) {
+            characters[index].votes += 1;
+            document.getElementById(`voteCount-${index}`).innerText = characters[index].votes.toLocaleString();
+        }
+
+        // Live Search Handling
+        function handleSearch(query) {
+            const resultsBox = document.getElementById('searchResults');
+            const list = document.getElementById('searchResultsList');
+            
+            if (!query.trim()) {
+                resultsBox.classList.add('hidden');
+                return;
+            }
+
+            const matched = animeData.filter(a => a.title.toLowerCase().includes(query.toLowerCase()) || a.genre.toLowerCase().includes(query.toLowerCase()));
+
+            if (matched.length === 0) {
+                list.innerHTML = `<p class="text-xs text-slate-400 text-center py-3">ไม่พบผลการค้นหาสำหรับ "${query}"</p>`;
+            } else {
+                list.innerHTML = matched.map(item => `
+                    <div onclick="openAnimeDetails(${item.id})" class="flex items-center gap-3 p-2 hover:bg-slate-800/80 rounded-xl cursor-pointer">
+                        <img src="${item.poster}" class="w-10 h-12 object-cover rounded-md">
+                        <div>
+                            <div class="text-xs font-semibold text-white">${item.title}</div>
+                            <div class="text-[10px] text-slate-400">${item.studio} • ★ ${item.rating}</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            resultsBox.classList.remove('hidden');
+        }
+
+        // Anime Details Modal Logic
+        function openAnimeDetails(id) {
+            const anime = animeData.find(a => a.id === id);
+            if (!anime) return;
+
+            document.getElementById('modalBg').style.backgroundImage = `url('${anime.poster}')`;
+            document.getElementById('modalPoster').src = anime.poster;
+            document.getElementById('modalTitle').innerText = anime.title;
+            document.getElementById('modalGenre').innerText = anime.genre;
+            document.getElementById('modalStudio').innerText = anime.studio;
+            document.getElementById('modalRating').innerText = `★ ${anime.rating}`;
+            document.getElementById('modalDesc').innerText = anime.desc;
+
+            // Generate Episodes Buttons
+            const epList = document.getElementById('modalEpisodesList');
+            let epHTML = '';
+            for (let i = 1; i <= anime.episodesCount; i++) {
+                epHTML += `
+                    <button onclick="playEpisode(${i})" class="px-2 py-2 rounded-xl bg-slate-800/80 hover:bg-pink-500 hover:text-white text-slate-300 text-xs font-semibold border border-slate-700/60 transition-all text-center">
+                        ตอนที่ ${i}
+                    </button>
+                `;
+            }
+            epList.innerHTML = epHTML;
+
+            const modal = document.getElementById('animeModal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function closeAnimeModal() {
+            const modal = document.getElementById('animeModal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function playEpisode(epNum) {
+            alert(`กำลังเล่นอนิเมะตอนที่ ${epNum} (ระบบจำลอง Video Player)`);
+        }
+
+        // Watchlist Drawer logic
+        function toggleBookmarkCurrentHero() {
+            const currentAnime = animeData[currentHeroIndex];
+            if (!watchlist.some(a => a.id === currentAnime.id)) {
+                watchlist.push(currentAnime);
+                updateWatchlistUI();
+                alert(`เพิ่ม "${currentAnime.title}" เข้าในรายการโปรดแล้ว!`);
+            } else {
+                alert(`อนิเมะเรื่องนี้อยู่ในรายการโปรดของคุณแล้ว`);
+            }
+        }
+
+        function toggleWatchlistModal() {
+            const modal = document.getElementById('watchlistModal');
+            modal.classList.toggle('opacity-0');
+            modal.classList.toggle('pointer-events-none');
+        }
+
+        function updateWatchlistUI() {
+            document.getElementById('watchlistBadge').innerText = watchlist.length;
+            const container = document.getElementById('watchlistContent');
+
+            if (watchlist.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-8">ยังไม่มีอนิเมะในรายการโปรด</p>`;
+                return;
+            }
+
+            container.innerHTML = watchlist.map((item, index) => `
+                <div class="flex items-center justify-between p-2 rounded-xl bg-slate-900 border border-slate-800">
+                    <div class="flex items-center gap-3">
+                        <img src="${item.poster}" class="w-10 h-12 object-cover rounded-md">
+                        <div>
+                            <div class="text-xs font-semibold text-white">${item.title}</div>
+                            <div class="text-[10px] text-slate-400">${item.latestEp}</div>
+                        </div>
+                    </div>
+                    <button onclick="removeWatchlist(${index})" class="text-slate-500 hover:text-pink-400 p-2 text-xs">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function removeWatchlist(index) {
+            watchlist.splice(index, 1);
+            updateWatchlistUI();
+        }
+
+        // Audio OST Player Logic
+        function playSong(songTitle) {
+            document.getElementById('nowPlayingText').innerText = songTitle;
+            isAudioPlaying = true;
+            document.getElementById('audioIcon').className = "fa-solid fa-pause text-xs";
+        }
+
+        function toggleAudio() {
+            isAudioPlaying = !isAudioPlaying;
+            document.getElementById('audioIcon').className = isAudioPlaying 
+                ? "fa-solid fa-pause text-xs" 
+                : "fa-solid fa-play text-xs";
+        }
+
+        function toggleMobileMenu() {
+            document.getElementById('mobileMenu').classList.toggle('hidden');
+        }
+
+        function filterGenre(genre) {
+            if (genre === 'ALL') {
+                renderSchedule('SAT');
+            } else {
+                const grid = document.getElementById('scheduleGrid');
+                const filtered = animeData.filter(item => item.genre.includes(genre));
+                grid.innerHTML = filtered.map(item => `
+                    <div onclick="openAnimeDetails(${item.id})" class="group cursor-pointer glass-panel rounded-2xl overflow-hidden border border-slate-800 hover:border-pink-500/50 transition-all">
+                        <div class="relative aspect-[3/4]">
+                            <img src="${item.poster}" class="w-full h-full object-cover">
+                        </div>
+                        <div class="p-3">
+                            <h4 class="text-xs font-semibold text-slate-200 line-clamp-1">${item.title}</h4>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ชำระเงิน | Aura Premium Store</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Prompt & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- JS Confetti for success animation -->
+    <script src="https://cdn.jsdelivr.net/npm/js-confetti@latest/dist/js-confetti.browser.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            indigo: '#4f46e5',
+                            dark: '#0f172a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Card Flip 3D Animation */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .credit-card-inner {
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        .credit-card-inner.flipped {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .card-back {
+            transform: rotateY(180deg);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Toast animation */
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        .toast-enter {
+            animation: slideInRight 0.3s ease forwards;
+        }
+        .toast-exit {
+            animation: fadeOut 0.3s ease forwards;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col font-sans">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <a href="#" class="flex items-center gap-2 group">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-indigo via-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-200 group-hover:scale-105 transition-transform">
+                    <i class="fa-solid font-bold fa-bag-shopping text-lg"></i>
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-bold text-xl tracking-tight text-slate-900 leading-tight">AURA<span class="text-indigo-600">.STORE</span></span>
+                    <span class="text-[10px] text-slate-400 font-medium tracking-widest uppercase">Secure Checkout</span>
+                </div>
+            </a>
+
+            <!-- Progress Steps -->
+            <div class="hidden md:flex items-center gap-3 text-sm font-medium">
+                <div class="flex items-center text-emerald-600 gap-1.5">
+                    <span class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">
+                        <i class="fa-solid fa-check text-[10px]"></i>
+                    </span>
+                    <span>รถเข็น</span>
+                </div>
+                <div class="w-8 h-[2px] bg-emerald-300"></div>
+                <div class="flex items-center text-emerald-600 gap-1.5">
+                    <span class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">
+                        <i class="fa-solid fa-check text-[10px]"></i>
+                    </span>
+                    <span>ที่อยู่จัดส่ง</span>
+                </div>
+                <div class="w-8 h-[2px] bg-indigo-500"></div>
+                <div class="flex items-center text-indigo-600 font-semibold gap-1.5">
+                    <span class="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs shadow-sm shadow-indigo-200">3</span>
+                    <span>ชำระเงิน</span>
+                </div>
+            </div>
+
+            <!-- Security Badge -->
+            <div class="flex items-center gap-2 text-slate-500 text-xs bg-slate-100 px-3 py-1.5 rounded-full">
+                <i class="fa-solid fa-lock text-emerald-600"></i>
+                <span class="hidden sm:inline font-medium">ถอดรหัสความปลอดภัย SSL 256-bit</span>
+                <span class="sm:hidden font-medium">ปลอดภัย 100%</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="fixed top-20 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Main Content Grid -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- LEFT COLUMN: Address & Payment Forms -->
+            <section class="lg:col-span-7 xl:col-span-8 space-y-6">
+                
+                <!-- Address Summary Card -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                <i class="fa-solid fa-location-dot"></i>
+                            </div>
+                            <h2 class="text-lg font-bold text-slate-900">ที่อยู่สำหรับจัดส่ง</h2>
+                        </div>
+                        <button type="button" onclick="showToast('โหมดแก้ไขที่อยู่ปิดใช้งานชั่วคราว', 'info')" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline">
+                            เปลี่ยนที่อยู่
+                        </button>
+                    </div>
+
+                    <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="font-bold text-slate-900">คุณณัฐวุฒิ สุขเจริญ</span>
+                                <span class="bg-indigo-100 text-indigo-700 text-[11px] font-semibold px-2 py-0.5 rounded-md">บ้าน</span>
+                                <span class="text-slate-500 text-xs">081-987-6543</span>
+                            </div>
+                            <p class="text-slate-600 leading-relaxed">
+                                99/88 อาคารออร่าทาวเวอร์ ชั้น 15 ถนนสุขุมวิท แขวงคลองเตยเหนือ เขตวัฒนา กรุงเทพมหานคร 10110
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Methods Section -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                <i class="fa-solid fa-wallet"></i>
+                            </div>
+                            <h2 class="text-lg font-bold text-slate-900">เลือกช่องทางการชำระเงิน</h2>
+                        </div>
+                        <span class="text-xs text-slate-400">ค่าธรรมเนียม ฿0</span>
+                    </div>
+
+                    <!-- Tabs Header -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                        <!-- Card Tab -->
+                        <button type="button" onclick="switchPaymentTab('credit-card')" id="tab-credit-card" class="payment-tab active p-3 rounded-xl border-2 border-indigo-600 bg-indigo-50/50 text-indigo-900 flex flex-col items-center justify-center gap-2 transition-all font-medium text-xs sm:text-sm text-center">
+                            <i class="fa-solid fa-credit-card text-lg text-indigo-600"></i>
+                            <span>บัตรเครดิต/เดบิต</span>
+                        </button>
+
+                        <!-- PromptPay Tab -->
+                        <button type="button" onclick="switchPaymentTab('promptpay')" id="tab-promptpay" class="payment-tab p-3 rounded-xl border border-slate-200 hover:border-slate-300 text-slate-600 flex flex-col items-center justify-center gap-2 transition-all font-medium text-xs sm:text-sm text-center">
+                            <i class="fa-solid fa-qrcode text-lg text-slate-700"></i>
+                            <span>พร้อมเพย์ QR</span>
+                        </button>
+
+                        <!-- Mobile Banking Tab -->
+                        <button type="button" onclick="switchPaymentTab('banking')" id="tab-banking" class="payment-tab p-3 rounded-xl border border-slate-200 hover:border-slate-300 text-slate-600 flex flex-col items-center justify-center gap-2 transition-all font-medium text-xs sm:text-sm text-center">
+                            <i class="fa-solid fa-building-columns text-lg text-slate-700"></i>
+                            <span>โมบายแบงก์กิ้ง</span>
+                        </button>
+
+                        <!-- E-Wallet Tab -->
+                        <button type="button" onclick="switchPaymentTab('ewallet')" id="tab-ewallet" class="payment-tab p-3 rounded-xl border border-slate-200 hover:border-slate-300 text-slate-600 flex flex-col items-center justify-center gap-2 transition-all font-medium text-xs sm:text-sm text-center">
+                            <i class="fa-solid fa-mobile-screen-button text-lg text-slate-700"></i>
+                            <span>E-Wallet</span>
+                        </button>
+                    </div>
+
+                    <!-- TAB CONTENTS -->
+
+                    <!-- 1. CREDIT CARD CONTENT -->
+                    <div id="content-credit-card" class="payment-content space-y-6">
+                        <!-- Card Simulator Preview -->
+                        <div class="w-full max-w-sm mx-auto perspective-1000 h-48 sm:h-52 mb-6">
+                            <div id="credit-card-3d" class="credit-card-inner relative w-full h-full rounded-2xl shadow-xl text-white">
+                                <!-- Front Side -->
+                                <div class="card-front absolute inset-0 w-full h-full rounded-2xl bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-800 p-6 flex flex-col justify-between border border-slate-700/50 shadow-2xl overflow-hidden">
+                                    <!-- Decorative pattern -->
+                                    <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                                    <div class="absolute -left-10 -top-10 w-40 h-40 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+                                    <div class="flex items-center justify-between z-10">
+                                        <!-- Chip -->
+                                        <div class="w-11 h-8 rounded-lg bg-gradient-to-r from-amber-200 to-amber-400 p-1 flex items-center justify-center shadow-inner">
+                                            <div class="w-full h-full border border-amber-600/40 rounded grid grid-cols-2 gap-0.5"></div>
+                                        </div>
+                                        <!-- Brand Logo -->
+                                        <div id="card-brand-logo" class="text-xl font-black italic tracking-wider text-slate-200">
+                                            VISA
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-4 z-10">
+                                        <!-- Card Number -->
+                                        <div id="card-number-display" class="font-mono text-lg sm:text-xl tracking-widest text-slate-100 drop-shadow">
+                                            •••• •••• •••• ••••
+                                        </div>
+
+                                        <div class="flex items-center justify-between text-xs">
+                                            <div>
+                                                <div class="text-[9px] uppercase tracking-wider text-slate-400">Card Holder</div>
+                                                <div id="card-name-display" class="font-medium tracking-wide uppercase truncate max-w-[180px] text-slate-200">
+                                                    YOUR NAME HERE
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div class="text-[9px] uppercase tracking-wider text-slate-400">Expires</div>
+                                                <div id="card-exp-display" class="font-mono font-medium text-slate-200">
+                                                    MM/YY
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Back Side -->
+                                <div class="card-back absolute inset-0 w-full h-full rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-6 flex flex-col justify-between border border-slate-700 shadow-2xl">
+                                    <div class="w-[calc(100%+3rem)] -mx-6 h-10 bg-slate-950 mt-2"></div>
+                                    
+                                    <div class="space-y-1">
+                                        <span class="text-[10px] uppercase text-slate-400 tracking-wider">Security Code (CVV)</span>
+                                        <div class="bg-slate-100 text-slate-900 rounded px-3 py-2 text-right font-mono font-bold tracking-widest text-sm" id="card-cvv-display">
+                                            •••
+                                        </div>
+                                    </div>
+
+                                    <div class="text-[9px] text-slate-400 text-center">
+                                        This card is non-transferable. Issued by Aura Bank.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card Input Form -->
+                        <form id="card-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                            <div>
+                                <label for="card-number" class="block text-xs font-semibold text-slate-700 mb-1">หมายเลขบัตรเครดิต / เดบิต <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <input type="text" id="card-number" maxlength="19" placeholder="4541 1234 5678 9012" autocomplete="cc-number" required
+                                        class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition font-mono text-sm tracking-wide pr-10">
+                                    <div class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                                        <i class="fa-solid fa-lock text-xs"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="card-name" class="block text-xs font-semibold text-slate-700 mb-1">ชื่อที่ปรากฏบนบัตร <span class="text-red-500">*</span></label>
+                                <input type="text" id="card-name" placeholder="NATTAWUT SUKCHAROEN" uppercase autocomplete="cc-name" required
+                                    class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm uppercase">
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="card-exp" class="block text-xs font-semibold text-slate-700 mb-1">วันหมดอายุ (MM/YY) <span class="text-red-500">*</span></label>
+                                    <input type="text" id="card-exp" maxlength="5" placeholder="12/28" autocomplete="cc-exp" required
+                                        class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition font-mono text-sm text-center">
+                                </div>
+                                <div>
+                                    <label for="card-cvv" class="block text-xs font-semibold text-slate-700 mb-1">รหัสความปลอดภัย (CVV) <span class="text-red-500">*</span></label>
+                                    <input type="password" id="card-cvv" maxlength="4" placeholder="123" autocomplete="cc-csc" required
+                                        class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition font-mono text-sm text-center">
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2 pt-2">
+                                <input type="checkbox" id="save-card" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                                <label for="save-card" class="text-xs text-slate-600">บันทึกข้อมูลบัตรไว้สำหรับการสั่งซื้อครั้งถัดไปอย่างปลอดภัย</label>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- 2. PROMPTPAY CONTENT -->
+                    <div id="content-promptpay" class="payment-content hidden space-y-6 text-center py-4">
+                        <div class="bg-blue-50/70 rounded-2xl p-6 border border-blue-100 max-w-sm mx-auto flex flex-col items-center">
+                            <!-- PromptPay Logo -->
+                            <div class="bg-white px-4 py-1.5 rounded-lg shadow-sm border border-slate-200 mb-4 flex items-center gap-2">
+                                <span class="font-bold text-blue-900 text-sm tracking-tight">Prompt<span class="text-sky-500">Pay</span></span>
+                            </div>
+
+                            <!-- Dynamic QR Code Container -->
+                            <div class="bg-white p-4 rounded-xl shadow-md border border-slate-200 relative group">
+                                <img id="qr-image" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=PROMPTPAY-AURA-PAYMENT-MOCK" 
+                                     alt="PromptPay QR Code" class="w-48 h-48 object-contain rounded-lg">
+                                <div class="absolute inset-0 bg-white/90 backdrop-blur-xs rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button type="button" onclick="showToast('ดาวน์โหลด QR Code เรียบร้อยแล้ว', 'success')" class="bg-indigo-600 text-white text-xs px-3 py-2 rounded-lg font-medium shadow-sm flex items-center gap-1.5">
+                                        <i class="fa-solid fa-download"></i> บันทึกรูปภาพ
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 space-y-1">
+                                <div class="text-xs text-slate-500">ยอดเงินที่ต้องชำระ</div>
+                                <div class="text-2xl font-bold text-slate-900 text-indigo-600 dynamic-grand-total">฿4,269.30</div>
+                            </div>
+
+                            <!-- Expiration Timer -->
+                            <div class="mt-4 bg-amber-50 text-amber-800 text-xs px-3 py-1.5 rounded-full border border-amber-200 flex items-center gap-1.5">
+                                <i class="fa-regular fa-clock text-amber-600"></i>
+                                <span>กรุณาชำระภายใน <strong id="qr-timer">14:59</strong> นาที</span>
+                            </div>
+                        </div>
+
+                        <div class="text-xs text-slate-500 space-y-1 max-w-md mx-auto">
+                            <p>1. เปิดแอปพลิเคชันธนาคารของคุณ</p>
+                            <p>2. สแกน QR Code ด้านบนเพื่อชำระเงิน</p>
+                            <p>3. ระบบจะยืนยันการชำระเงินโดยอัตโนมัติภายใน 5-10 วินาทีหลังทำรายการสำเร็จ</p>
+                        </div>
+                    </div>
+
+                    <!-- 3. MOBILE BANKING CONTENT -->
+                    <div id="content-banking" class="payment-content hidden space-y-4">
+                        <p class="text-xs text-slate-500 mb-2">เลือกธนาคารที่ต้องการเพื่อทำรายการชำระผ่านแอปพลิเคชันมือถือ:</p>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <!-- KBank -->
+                            <label class="bank-option flex items-center gap-3 p-3.5 rounded-xl border border-slate-200 cursor-pointer hover:border-indigo-400 hover:bg-slate-50 transition">
+                                <input type="radio" name="bank" value="kbank" class="text-indigo-600 focus:ring-indigo-500" checked>
+                                <div class="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                                    K+
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-sm text-slate-800">K PLUS (กสิกรไทย)</div>
+                                    <div class="text-[11px] text-slate-400">Kasikornbank</div>
+                                </div>
+                            </label>
+
+                            <!-- SCB -->
+                            <label class="bank-option flex items-center gap-3 p-3.5 rounded-xl border border-slate-200 cursor-pointer hover:border-indigo-400 hover:bg-slate-50 transition">
+                                <input type="radio" name="bank" value="scb" class="text-indigo-600 focus:ring-indigo-500">
+                                <div class="w-9 h-9 rounded-lg bg-purple-700 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                                    SCB
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-sm text-slate-800">SCB EASY (ไทยพาณิชย์)</div>
+                                    <div class="text-[11px] text-slate-400">Siam Commercial Bank</div>
+                                </div>
+                            </label>
+
+                            <!-- Bangkok Bank -->
+                            <label class="bank-option flex items-center gap-3 p-3.5 rounded-xl border border-slate-200 cursor-pointer hover:border-indigo-400 hover:bg-slate-50 transition">
+                                <input type="radio" name="bank" value="bbl" class="text-indigo-600 focus:ring-indigo-500">
+                                <div class="w-9 h-9 rounded-lg bg-blue-800 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                                    BBL
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-sm text-slate-800">Bualuang mBanking (กรุงเทพ)</div>
+                                    <div class="text-[11px] text-slate-400">Bangkok Bank</div>
+                                </div>
+                            </label>
+
+                            <!-- Krungthai -->
+                            <label class="bank-option flex items-center gap-3 p-3.5 rounded-xl border border-slate-200 cursor-pointer hover:border-indigo-400 hover:bg-slate-50 transition">
+                                <input type="radio" name="bank" value="ktb" class="text-indigo-600 focus:ring-indigo-500">
+                                <div class="w-9 h-9 rounded-lg bg-sky-500 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                                    KTB
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-sm text-slate-800">Krungthai NEXT (กรุงไทย)</div>
+                                    <div class="text-[11px] text-slate-400">Krungthai Bank</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 4. E-WALLET CONTENT -->
+                    <div id="content-ewallet" class="payment-content hidden space-y-4">
+                        <p class="text-xs text-slate-500 mb-2">เลือกบริการ กระเป๋าเงินอิเล็กทรอนิกส์ (E-Wallet):</p>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <!-- TrueMoney -->
+                            <label class="wallet-option flex flex-col items-center p-4 rounded-xl border border-slate-200 cursor-pointer hover:border-indigo-400 hover:bg-slate-50 transition text-center gap-2">
+                                <input type="radio" name="ewallet" value="truemoney" class="text-indigo-600 focus:ring-indigo-500" checked>
+                                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-500 text-white flex items-center justify-center font-bold text-xs">
+                                    TMN
+                                </div>
+                                <span class="font-semibold text-xs text-slate-800">TrueMoney Wallet</span>
+                            </label>
+
+                            <!-- Rabbit LINE Pay -->
+                            <label class="wallet-option flex flex-col items-center p-4 rounded-xl border border-slate-200 cursor-pointer hover:border-indigo-400 hover:bg-slate-50 transition text-center gap-2">
+                                <input type="radio" name="ewallet" value="linepay" class="text-indigo-600 focus:ring-indigo-500">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold text-xs">
+                                    LINE
+                                </div>
+                                <span class="font-semibold text-xs text-slate-800">Rabbit LINE Pay</span>
+                            </label>
+
+                            <!-- ShopeePay -->
+                            <label class="wallet-option flex flex-col items-center p-4 rounded-xl border border-slate-200 cursor-pointer hover:border-indigo-400 hover:bg-slate-50 transition text-center gap-2">
+                                <input type="radio" name="ewallet" value="shopeepay" class="text-indigo-600 focus:ring-indigo-500">
+                                <div class="w-10 h-10 rounded-xl bg-orange-600 text-white flex items-center justify-center font-bold text-xs">
+                                    Shopee
+                                </div>
+                                <span class="font-semibold text-xs text-slate-800">ShopeePay</span>
+                            </label>
+                        </div>
+
+                        <div class="mt-4 pt-4 border-t border-slate-100">
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">เบอร์โทรศัพท์ที่ผูกกับ E-Wallet</label>
+                            <input type="tel" placeholder="08X-XXX-XXXX" maxlength="10" value="0819876543" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Back to Shop Link -->
+                <div class="flex items-center justify-between text-xs text-slate-500 pt-2">
+                    <a href="../html2/page-01.html" class="flex items-center gap-1.5 text-indigo-600 hover:underline font-medium">
+                        <i class="fa-solid fa-arrow-left text-[10px]"></i> ย้อนกลับไปตะกร้าสินค้า
+                    </a>
+                    <span class="flex items-center gap-1">
+                        <i class="fa-solid fa-shield-halved text-emerald-600"></i> การรับประกันคืนเงินภายใน 30 วัน
+                    </span>
+                </div>
+            </section>
+
+
+            <!-- RIGHT COLUMN: Order Summary -->
+            <section class="lg:col-span-5 xl:col-span-4 sticky top-24">
+                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                        <h2 class="text-lg font-bold text-slate-900">สรุปรายการสั่งซื้อ</h2>
+                        <span class="bg-indigo-100 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-full">3 รายการ</span>
+                    </div>
+
+                    <!-- Items List -->
+                    <div class="space-y-4 max-h-64 overflow-y-auto pr-1">
+                        <!-- Item 1 -->
+                        <div class="flex items-center gap-3">
+                            <div class="w-14 h-14 rounded-xl bg-slate-100 p-1 border border-slate-200 flex-shrink-0 relative">
+                                <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=150&auto=format&fit=crop&q=80" alt="Headphones" class="w-full h-full object-cover rounded-lg">
+                                <span class="absolute -top-1.5 -right-1.5 bg-slate-800 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">1</span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-xs font-semibold text-slate-800 truncate">Aura SoundPro Wireless Headphones</h3>
+                                <p class="text-[11px] text-slate-400">สีดำ Space Gray</p>
+                                <div class="text-xs font-bold text-slate-900 mt-0.5">฿2,990.00</div>
+                            </div>
+                        </div>
+
+                        <!-- Item 2 -->
+                        <div class="flex items-center gap-3">
+                            <div class="w-14 h-14 rounded-xl bg-slate-100 p-1 border border-slate-200 flex-shrink-0 relative">
+                                <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=150&auto=format&fit=crop&q=80" alt="Smart Watch" class="w-full h-full object-cover rounded-lg">
+                                <span class="absolute -top-1.5 -right-1.5 bg-slate-800 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">1</span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-xs font-semibold text-slate-800 truncate">Aura Fit Watch Series 5</h3>
+                                <p class="text-[11px] text-slate-400">สายสปอร์ตสีเงิน</p>
+                                <div class="text-xs font-bold text-slate-900 mt-0.5">฿1,290.00</div>
+                            </div>
+                        </div>
+
+                        <!-- Item 3 -->
+                        <div class="flex items-center gap-3">
+                            <div class="w-14 h-14 rounded-xl bg-slate-100 p-1 border border-slate-200 flex-shrink-0 relative">
+                                <img src="https://images.unsplash.com/photo-1583394838336-acd977736f90?w=150&auto=format&fit=crop&q=80" alt="Cable" class="w-full h-full object-cover rounded-lg">
+                                <span class="absolute -top-1.5 -right-1.5 bg-slate-800 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">2</span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-xs font-semibold text-slate-800 truncate">USB-C Fast Charging Cable (2m)</h3>
+                                <p class="text-[11px] text-slate-400">แบบถักทนทาน</p>
+                                <div class="text-xs font-bold text-slate-900 mt-0.5">฿390.00</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Promo Code Input -->
+                    <div class="pt-2">
+                        <label class="block text-xs font-semibold text-slate-700 mb-1.5">โค้ดส่วนลด / คูปอง</label>
+                        <div class="flex gap-2">
+                            <div class="relative flex-1">
+                                <input type="text" id="coupon-input" placeholder="กรอกรหัส (เช่น AURA100)" uppercase class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs uppercase font-mono">
+                                <button type="button" id="clear-coupon-btn" onclick="removeCoupon()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                            <button type="button" onclick="applyCoupon()" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-4 py-2 rounded-xl transition shadow-sm">
+                                ใช้โค้ด
+                            </button>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-1">ทดลองใช้โค้ด: <span class="font-mono text-indigo-600 font-semibold cursor-pointer" onclick="setCouponCode('AURA100')">AURA100</span> หรือ <span class="font-mono text-indigo-600 font-semibold cursor-pointer" onclick="setCouponCode('FREESHIP')">FREESHIP</span></p>
+                    </div>
+
+                    <!-- Cost Calculation Table -->
+                    <div class="space-y-2.5 text-xs border-t border-slate-100 pt-4">
+                        <div class="flex justify-between text-slate-600">
+                            <span>รวมราคาสินค้า</span>
+                            <span class="font-medium text-slate-900" id="summary-subtotal">฿4,670.00</span>
+                        </div>
+                        <div class="flex justify-between text-slate-600">
+                            <span>ค่าจัดส่ง (ด่วนพิเศษ)</span>
+                            <span class="font-medium text-slate-900" id="summary-shipping">฿50.00</span>
+                        </div>
+                        <div id="discount-row" class="hidden flex justify-between text-emerald-600 font-medium">
+                            <span class="flex items-center gap-1">
+                                <i class="fa-solid fa-tag"></i> ส่วนลด (<span id="discount-code-label"></span>)
+                            </span>
+                            <span id="summary-discount">-฿0.00</span>
+                        </div>
+                        <div class="flex justify-between text-slate-400 text-[11px]">
+                            <span>ภาษีมูลค่าเพิ่ม (VAT 7% รวมแล้ว)</span>
+                            <span id="summary-vat">฿279.30</span>
+                        </div>
+
+                        <div class="border-t border-slate-200 pt-3 mt-2 flex justify-between items-baseline">
+                            <div>
+                                <div class="text-sm font-bold text-slate-900">ยอดชำระสุทธิ</div>
+                                <div class="text-[10px] text-emerald-600 font-medium flex items-center gap-1">
+                                    <i class="fa-solid fa-circle-check"></i> ได้รับคะแนน Aura Points +46
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-2xl font-black text-indigo-600 tracking-tight dynamic-grand-total" id="summary-total">฿4,720.00</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Pay Button -->
+                    <button type="button" id="pay-submit-btn" onclick="submitPayment()" class="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 text-sm group">
+                        <i class="fa-solid fa-lock text-xs opacity-80 group-hover:scale-110 transition-transform"></i>
+                        <span>ชำระเงินทันที <span class="dynamic-grand-total">฿4,720.00</span></span>
+                    </button>
+
+                    <!-- Trust Seals -->
+                    <div class="grid grid-cols-3 gap-2 pt-2 text-center border-t border-slate-100 text-[10px] text-slate-400 font-medium">
+                        <div class="flex flex-col items-center gap-1">
+                            <i class="fa-solid fa-shield-cat text-sm text-slate-500"></i>
+                            <span>ปลอดภัยคุ้มครอง</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-1">
+                            <i class="fa-solid fa-rotate-left text-sm text-slate-500"></i>
+                            <span>คืนเงินใน 30 วัน</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-1">
+                            <i class="fa-solid fa-headset text-sm text-slate-500"></i>
+                            <span>ช่วยเหลือ 24 ชม.</span>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- SUCCESS / RECEIPT MODAL -->
+    <div id="success-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-100 text-center transform scale-95 transition-transform duration-300 relative overflow-hidden" id="success-modal-card">
+            
+            <!-- Confetti Canvas Background -->
+            <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-inner">
+                <i class="fa-solid fa-check"></i>
+            </div>
+
+            <h3 class="text-xl font-bold text-slate-900 mb-1">ชำระเงินสำเร็จแล้ว!</h3>
+            <p class="text-xs text-slate-500 mb-6">ขอบคุณสำหรับการสั่งซื้อ ระบบได้รับรายการชำระของคุณเรียบร้อยแล้ว</p>
+
+            <!-- Order Receipt Box -->
+            <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 text-left space-y-3 mb-6 text-xs">
+                <div class="flex justify-between border-b border-slate-200 pb-2">
+                    <span class="text-slate-500">หมายเลขคำสั่งซื้อ:</span>
+                    <span class="font-mono font-bold text-slate-900" id="receipt-order-id">#AUR-894210</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">วันที่รายการ:</span>
+                    <span class="font-medium text-slate-800" id="receipt-date">25 ส.ค. 2026, 14:30 น.</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">ช่องทางชำระ:</span>
+                    <span class="font-medium text-slate-800" id="receipt-method">บัตรเครดิต/เดบิต</span>
+                </div>
+                <div class="flex justify-between border-t border-slate-200 pt-2 font-bold text-sm">
+                    <span class="text-slate-900">ยอดชำระทั้งสิ้น:</span>
+                    <span class="text-indigo-600" id="receipt-total">฿4,720.00</span>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <button type="button" onclick="window.location.reload()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 rounded-xl text-xs transition">
+                    กลับสู่หน้าหลักร้านค้า
+                </button>
+                <button type="button" onclick="showToast('กำลังดาวน์โหลดใบเสร็จรับเงิน PDF', 'info')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl text-xs transition">
+                    <i class="fa-solid fa-file-arrow-down mr-1"></i> ดาวน์โหลดใบเสร็จรับเงิน (PDF)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State variables
+        let currentTab = 'credit-card';
+        let subtotal = 4670.00;
+        let shippingFee = 50.00;
+        let discountAmount = 0.00;
+        let appliedCoupon = null;
+        let jsConfetti = null;
+
+        // Initialize on DOM Ready
+        document.addEventListener('DOMContentLoaded', () => {
+            // Instantiate Confetti
+            if (typeof JSConfetti !== 'undefined') {
+                jsConfetti = new JSConfetti();
+            }
+
+            // Setup Card Form Live Inputs
+            setupCardInputs();
+
+            // Start PromptPay Timer
+            startPromptPayTimer();
+
+            // Initial Calculate
+            recalculateTotal();
+        });
+
+        // Switch Payment Tabs
+        function switchPaymentTab(tabId) {
+            currentTab = tabId;
+            
+            // Update Tab UI
+            document.querySelectorAll('.payment-tab').forEach(tab => {
+                tab.classList.remove('active', 'border-2', 'border-indigo-600', 'bg-indigo-50/50', 'text-indigo-900');
+                tab.classList.add('border-slate-200', 'text-slate-600');
+            });
+
+            const activeTabBtn = document.getElementById(`tab-${tabId}`);
+            if (activeTabBtn) {
+                activeTabBtn.classList.add('active', 'border-2', 'border-indigo-600', 'bg-indigo-50/50', 'text-indigo-900');
+                activeTabBtn.classList.remove('border-slate-200', 'text-slate-600');
+            }
+
+            // Hide all tab contents
+            document.querySelectorAll('.payment-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+
+            // Show selected content
+            const activeContent = document.getElementById(`content-${tabId}`);
+            if (activeContent) {
+                activeContent.classList.remove('hidden');
+            }
+        }
+
+        // Setup Card Inputs Real-time formatting & card simulation
+        function setupCardInputs() {
+            const numInput = document.getElementById('card-number');
+            const nameInput = document.getElementById('card-name');
+            const expInput = document.getElementById('card-exp');
+            const cvvInput = document.getElementById('card-cvv');
+            const card3D = document.getElementById('credit-card-3d');
+
+            // Card Number format
+            numInput.addEventListener('input', (e) => {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 16) value = value.slice(0, 16);
+                
+                // Add space every 4 digits
+                let formatted = value.replace(/(.{4})/g, '$1 ').trim();
+                e.target.value = formatted;
+
+                // Update Display
+                const display = document.getElementById('card-number-display');
+                display.textContent = formatted || '•••• •••• •••• ••••';
+
+                // Brand detection
+                const brandLogo = document.getElementById('card-brand-logo');
+                if (value.startsWith('4')) {
+                    brandLogo.textContent = 'VISA';
+                } else if (value.startsWith('5') || value.startsWith('2')) {
+                    brandLogo.textContent = 'MASTER';
+                } else if (value.startsWith('35')) {
+                    brandLogo.textContent = 'JCB';
+                } else {
+                    brandLogo.textContent = 'CARD';
+                }
+            });
+
+            // Name format
+            nameInput.addEventListener('input', (e) => {
+                const value = e.target.value.toUpperCase();
+                document.getElementById('card-name-display').textContent = value || 'YOUR NAME HERE';
+            });
+
+            // Expiry format
+            expInput.addEventListener('input', (e) => {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length >= 2) {
+                    value = value.slice(0, 2) + '/' + value.slice(2, 4);
+                }
+                e.target.value = value;
+                document.getElementById('card-exp-display').textContent = value || 'MM/YY';
+            });
+
+            // CVV flip animation
+            cvvInput.addEventListener('focus', () => {
+                card3D.classList.add('flipped');
+            });
+
+            cvvInput.addEventListener('blur', () => {
+                card3D.classList.remove('flipped');
+            });
+
+            cvvInput.addEventListener('input', (e) => {
+                let value = e.target.value.replace(/\D/g, '');
+                e.target.value = value;
+                document.getElementById('card-cvv-display').textContent = value ? '•'.repeat(value.length) : '•••';
+            });
+        }
+
+        // Coupon engine
+        function setCouponCode(code) {
+            document.getElementById('coupon-input').value = code;
+            applyCoupon();
+        }
+
+        function applyCoupon() {
+            const input = document.getElementById('coupon-input');
+            const code = input.value.trim().toUpperCase();
+
+            if (!code) {
+                showToast('กรุณากรอกรหัสส่วนลด', 'warning');
+                return;
+            }
+
+            if (code === 'AURA100') {
+                discountAmount = 100.00;
+                appliedCoupon = 'AURA100';
+                showToast('ใช้คูปองส่วนลด ฿100 สำเร็จ!', 'success');
+            } else if (code === 'FREESHIP') {
+                discountAmount = shippingFee;
+                appliedCoupon = 'FREESHIP';
+                showToast('ใช้คูปองส่งฟรีสำเร็จ!', 'success');
+            } else {
+                showToast('ไม่พบรหัสคูปองนี้ หรือคูปองหมดอายุ', 'error');
+                return;
+            }
+
+            document.getElementById('clear-coupon-btn').classList.remove('hidden');
+            document.getElementById('discount-row').classList.remove('hidden');
+            document.getElementById('discount-code-label').textContent = appliedCoupon;
+            
+            recalculateTotal();
+        }
+
+        function removeCoupon() {
+            discountAmount = 0.00;
+            appliedCoupon = null;
+            document.getElementById('coupon-input').value = '';
+            document.getElementById('clear-coupon-btn').classList.add('hidden');
+            document.getElementById('discount-row').classList.add('hidden');
+            showToast('ยกเลิกการใช้โค้ดส่วนลดแล้ว', 'info');
+            recalculateTotal();
+        }
+
+        // Recalculate Prices
+        function recalculateTotal() {
+            const grandTotal = Math.max(0, subtotal + shippingFee - discountAmount);
+            const vatAmount = grandTotal * 0.07; // 7% VAT included
+
+            // Formatted Strings
+            const formattedTotal = '฿' + grandTotal.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const formattedSubtotal = '฿' + subtotal.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const formattedShipping = shippingFee === 0 || (appliedCoupon === 'FREESHIP') ? 'ฟรี' : '฿' + shippingFee.toFixed(2);
+            const formattedDiscount = '-฿' + discountAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const formattedVat = '฿' + vatAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            // Update UI elements
+            document.getElementById('summary-subtotal').textContent = formattedSubtotal;
+            document.getElementById('summary-shipping').textContent = formattedShipping;
+            document.getElementById('summary-discount').textContent = formattedDiscount;
+            document.getElementById('summary-vat').textContent = formattedVat;
+            
+            document.querySelectorAll('.dynamic-grand-total').forEach(el => {
+                el.textContent = formattedTotal;
+            });
+        }
+
+        // Timer for PromptPay
+        function startPromptPayTimer() {
+            let duration = 14 * 60 + 59; // 14 mins 59 secs
+            const timerEl = document.getElementById('qr-timer');
+            
+            setInterval(() => {
+                if (duration <= 0) return;
+                const minutes = Math.floor(duration / 60);
+                const seconds = duration % 60;
+                timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                duration--;
+            }, 1000);
+        }
+
+        // Payment Submission simulation
+        function submitPayment() {
+            const btn = document.getElementById('pay-submit-btn');
+
+            // Basic Validation if Credit Card
+            if (currentTab === 'credit-card') {
+                const cardNum = document.getElementById('card-number').value.replace(/\s/g, '');
+                const cardName = document.getElementById('card-name').value.trim();
+                const cardExp = document.getElementById('card-exp').value.trim();
+                const cardCvv = document.getElementById('card-cvv').value.trim();
+
+                if (cardNum.length < 16 || !cardName || !cardExp || cardCvv.length < 3) {
+                    showToast('กรุณากรอกข้อมูลบัตรเครดิตให้ครบถ้วนถูกต้อง', 'warning');
+                    return;
+                }
+            }
+
+            // Show Loading State
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-lg"></i> <span>กำลังประมวลผลการชำระเงิน...</span>`;
+
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+
+                // Show Success Modal
+                openSuccessModal();
+            }, 2000);
+        }
+
+        // Open Success Modal
+        function openSuccessModal() {
+            const modal = document.getElementById('success-modal');
+            const modalCard = document.getElementById('success-modal-card');
+
+            // Update Receipt info
+            const grandTotal = Math.max(0, subtotal + shippingFee - discountAmount);
+            document.getElementById('receipt-total').textContent = '฿' + grandTotal.toLocaleString('th-TH', { minimumFractionDigits: 2 });
+
+            let methodTitle = 'บัตรเครดิต/เดบิต';
+            if (currentTab === 'promptpay') methodTitle = 'พร้อมเพย์ QR Code';
+            if (currentTab === 'banking') methodTitle = 'โมบายแบงก์กิ้ง';
+            if (currentTab === 'ewallet') methodTitle = 'E-Wallet';
+            document.getElementById('receipt-method').textContent = methodTitle;
+
+            // Generate random order ID
+            const randomOrderId = '#AUR-' + Math.floor(100000 + Math.random() * 900000);
+            document.getElementById('receipt-order-id').textContent = randomOrderId;
+
+            // Date
+            const now = new Date();
+            document.getElementById('receipt-date').textContent = now.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }) + `, ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')} น.`;
+
+            // Display Modal
+            modal.classList.remove('pointer-events-none', 'opacity-0');
+            modalCard.classList.remove('scale-95');
+            modalCard.classList.add('scale-100');
+
+            // Trigger Confetti
+            if (jsConfetti) {
+                jsConfetti.addConfetti({
+                    emojis: ['🎉', '✨', '⚡️', '🛍️'],
+                    confettiNumber: 60,
+                });
+            }
+        }
+
+        // Toast Notification System
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            let bgClass = 'bg-slate-900 text-white';
+            let icon = 'fa-circle-info text-sky-400';
+
+            if (type === 'success') {
+                bgClass = 'bg-emerald-950 text-emerald-100 border border-emerald-800';
+                icon = 'fa-circle-check text-emerald-400';
+            } else if (type === 'warning') {
+                bgClass = 'bg-amber-950 text-amber-100 border border-amber-800';
+                icon = 'fa-triangle-exclamation text-amber-400';
+            } else if (type === 'error') {
+                bgClass = 'bg-rose-950 text-rose-100 border border-rose-800';
+                icon = 'fa-circle-xmark text-rose-400';
+            }
+
+            toast.className = `toast-enter flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl ${bgClass} text-xs font-medium pointer-events-auto min-w-[260px] max-w-sm`;
+            toast.innerHTML = `
+                <i class="fa-solid ${icon} text-base flex-shrink-0"></i>
+                <span class="flex-1">${message}</span>
+                <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('toast-enter');
+                toast.classList.add('toast-exit');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+    </script>
+</body>
+</html>

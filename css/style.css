@@ -1,0 +1,628 @@
+:root {
+  --ink: #173042;
+  --paper: #f7f4ed;
+  --accent: #e36b3d;
+  --line: #d8d2c5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: Georgia, serif;
+}
+
+a {
+  color: inherit;
+}
+
+.site-header {
+  display: flex;
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 1.25rem 7vw;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  position: absolute;
+  left: 7vw;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+nav {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+nav a {
+  text-decoration: none;
+}
+
+.hero,
+.content {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 12vh 7vw;
+}
+
+.hero {
+  text-align: center;
+}
+   .card-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            padding: 1rem;
+        }
+
+        .card-item {
+            background-color: #ffffff;
+            border-radius: 1rem;
+            padding: 1.75rem 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            text-decoration: none;
+            color: #1e293b;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-item:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-color: #3b82f6;
+        }
+        .VVS {
+          display: flex;
+          justify-content: center;
+          align-items: stretch;
+          flex-wrap: wrap;
+          width: fit-content;
+          max-width: 100%;
+          margin: 1.5rem auto 0;
+          padding: 0;
+          border-radius: 0.5rem;
+          overflow: hidden;
+        }
+
+         .projor {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 1.5rem;
+          width: 100%;
+          margin-top: 2rem;
+         }
+
+         .projor h1 {
+          color: #2563eb;
+          margin: 0;
+         }
+
+
+         .vs-vs {
+          display: flex;
+          flex-direction: column;
+          width: min(100%, 960px);
+          margin-top: 1.5rem;
+          margin-right: auto;
+          margin-left: auto;
+         }
+
+         .vs-vs video {
+          display: block;
+          width: 100%;
+          aspect-ratio: 16 / 9;
+          object-fit: cover;
+          border-radius: 10px;
+         }
+
+         .ppoo {
+          width: 100%;
+          padding: 1rem 0;
+         }
+
+         .ppoo p {
+          margin: 0.35rem 0;
+         }
+
+        .VVS button,
+        .VVS a {
+          min-width: 170px;
+          padding: 0.8rem 1.25rem;
+          border: 0;
+          border-right: 1px solid #2d3748;
+          background: #ffffff;
+          color: #1f2937;
+          font: inherit;
+          font-size: 1rem;
+          font-weight: 600;
+          line-height: 1.2;
+          text-align: center;
+          text-decoration: none;
+          cursor: pointer;
+          transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+
+        .VVS button:last-child,
+        .VVS a:last-child {
+          border-right: 0;
+        }
+
+        .VVS button:hover,
+        .VVS a:hover {
+          background: #f3f4f6;
+          transform: translateY(-1px);
+        }
+
+        .VVS button:focus-visible,
+        .VVS a:focus-visible {
+          outline: 3px solid #f2b705;
+          outline-offset: -2px;
+        }
+
+        .VVS button:active,
+        .VVS a:active {
+          transform: translateY(0);
+        }
+
+
+        .card-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .card-item:hover .card-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin: 0;
+            color: #334155;
+        }
+
+        .card-subtitle {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin-top: 0.25rem;
+        }
+
+        .card-arrow {
+            margin-top: 1.25rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #2563eb;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            opacity: 0.8;
+            transition: gap 0.2s ease, opacity 0.2s ease;
+        }
+
+        .card-item:hover .card-arrow {
+            gap: 0.75rem;
+            opacity: 1;
+        }
+
+        /* Highlight border bar on top */
+        .card-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #3b82f6, #6366f1);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .card-item:hover::before {
+            opacity: 1;
+        }
+/*ตัวอย่างเว็ปไซต์*/
+
+/*---------------------*/
+
+.hon__slider {
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow: 0 16px 36px -24px rgba(0, 0, 0, 0.35);
+}
+
+.hon__stage {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: #111827;
+}
+.hon__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hon__control {
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 0;
+  border-radius: 50%;
+  color: #ffffff;
+  background: rgba(17, 24, 39, 0.72);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.hon__control:hover,
+.hon__control:focus-visible {
+  background: var(--color-primary);
+}
+
+.hon__control--previous { left: 1rem; }
+.hon__control--next { right: 1rem; }
+
+.hon__details {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem 0;
+}
+
+.hon__counter,
+.hon__caption {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.hon__caption {
+  color: var(--color-text-main);
+  font-weight: 600;
+}
+
+.hon__thumbnails {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem 1.25rem;
+  overflow-x: auto;
+}
+
+.hon__thumbnail {
+  flex: 0 0 96px;
+  height: 64px;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.65;
+}
+
+.hon__thumbnail:hover,
+.hon__thumbnail:focus-visible,
+.hon__thumbnail.is-active {
+  border-color: var(--color-primary);
+  opacity: 1;
+}
+
+.hon__thumbnail img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.site-footer {
+  margin-top: 5rem;
+  padding: 3rem 7vw 1.25rem;
+  color: var(--color-text-main);
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+
+.site-footer__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+.site-footer__column h4 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+}
+
+.site-footer__column ul {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-footer__column a {
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.site-footer__column a:hover {
+  color: var(--color-primary);
+}
+
+.site-footer__bottom {
+  max-width: 1300px;
+  margin: 2.5rem auto 0;
+  padding-top: 1.25rem;
+  border-top: 3px solid var(--color-border);
+}
+
+.site-footer__bottom p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+:root {
+      /* Light Theme Colors */
+      --color-bg: #F3F4F6;
+      --color-surface: #FFFFFF;
+      --color-primary: #4F46E5;
+      --color-primary-hover: #4338CA;
+      --color-text-main: #111827;
+      --color-text-muted: #6B7280;
+      --color-border: #E5E7EB;
+      
+      /* Measurements */
+      --card-radius: 24px;
+      --transition-speed: 0.4s;
+    }
+
+    /* Dark Theme Colors */
+    @media (prefers-color-scheme: dark) {}
+      :root {
+        --color-bg: #0F172A;
+        --color-surface: #1E293B;
+        --color-primary: #6366F1;
+        --color-primary-hover: #818CF8;
+        --color-text-main: #F8FAFC;
+        --color-text-muted: #94A3B8;
+        --color-border: #334155;
+      }
+.coco {
+  width: 100% !important;
+  max-width: 1200px !important;
+  margin: 0 auto !important;
+  padding: 40px 15px !important;
+  box-sizing: border-box;
+  display: block !important;
+}
+
+/* ⚠️ คำสั่งสำคัญ: บังคับให้การ์ดเรียงตัวกันเป็นหน้ากระดานตามแนวนอน */
+.services-grid-container {
+  display: grid !important;
+  /* สั่งจัดแถวอัตโนมัติ กล่องมีความกว้างขั้นต่ำ 320px เรียงต่อกันในแนวนอน */
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
+  gap: 24px !important; /* เว้นระยะห่างช่องไฟรอบทิศทางระว่างกล่อง */
+  width: 100% !important;
+}
+
+/* หน้าตาของตัว Box สี่เหลี่ยม (เหมือนภาพล่างของคุณ แต่คุมความสูงให้เป๊ะพรีเมียม) */
+.service-box-item {
+  background-color: #1e2640 !important; /* สีน้ำเงินเข้มตามธีมของคุณ */
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  display: flex !important;
+  flex-direction: column !important; /* จัดของเรียงจาก บน ลง ล่าง */
+  min-height: 440px !important; /* คุมความสูงของทุกกล่องให้สูงเท่ากันเป๊ะ */
+  box-sizing: border-box;
+  transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+.service-box-item:hover {
+  transform: translateY(-6px) !important;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* กรอบรูปภาพด้านบน */
+.service-box__image-wrapper {
+  width: 100% !important;
+  height: 200px !important; /* ล็อกความสูงรูปภาพให้สมดุลสไตล์รูปทรงกล่อง */
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.service-box__image-wrapper .service-box__image {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important; /* ตัดภาพพอดีรูปทรง ไม่บิดเบี้ยว */
+  transition: transform 0.5s ease !important;
+}
+
+.service-box-item:hover .service-box__image {
+  transform: scale(1.05) !important; /* ชี้เมาส์แล้วรูปภาพซูมเบาๆ */
+}
+
+/* บล็อกส่วนเนื้อหาและตัวหนังสือด้านล่างรูป */
+.service-box__body {
+  padding: 24px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex-grow: 1 !important; /* สั่งให้ยืดเต็มกล่อง */
+  gap: 8px !important;
+}
+
+.service-box__body .eyebrow {
+  color: #8fa0dd !important;
+  font-size: 0.85rem !important;
+  margin: 0 !important;
+}
+
+.service-box__body h2 {
+  color: #ffffff !important;
+  font-size: 1.4rem !important;
+  font-weight: 600 !important;
+  margin: 0 0 4px 0 !important;
+}
+
+.service-box__body p {
+  color: #cbd5e1 !important;
+  font-size: 0.95rem !important;
+  line-height: 1.5 !important;
+  margin: 0 0 15px 0 !important;
+  flex-grow: 1 !important; /* 🎯 ผลักปุ่ม "ดูข้อมูล" ให้หล่นไปอยู่ล่างสุดระนาบเดียวกันทุกกล่อง */
+}
+
+/* ปุ่มดูข้อมูลทรงมน */
+.service-box__button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: #4f46e5 !important; /* สีม่วงน้ำเงิน */
+  color: #ffffff !important;
+  padding: 10px 22px !important;
+  border-radius: 30px !important; /* ทรงแคปซูลมนสวย */
+  text-decoration: none !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  align-self: flex-start !important; /* ล็อกความยาวปุ่มตามข้อความ ไม่ยืดเต็มกล่อง */
+  transition: background-color 0.2s !important;
+}
+
+.service-box__button:hover {
+  background-color: #4338ca !important;
+}
+
+
+.process-cards .info-card__image-box1 img {
+  width: 100% !important;
+  height: 200px !important; /* กำหนดความสูงรูปภาพดั้งเดิมตามที่คุณต้องการ */
+  position: static !important; /* ปลดล็อกคำสั่ง absolute ของการ์ดแนวนอน */
+  object-fit: cover !important;
+  transform: none !important;
+  border-radius: 12px;
+}
+
+/* คุมกล่องครอบรูปภาพด้านล่างไม่ให้เพี้ยน */
+.info-card__image-box1 {
+  width: 100% !important;
+  height: auto !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+.process-cards {
+  display: flex !important;
+  flex-direction: row !important; 
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  gap: 20px !important;
+  width: 100% !important;
+  border-radius: 12px;
+}
+.service-box__image-wrapper {
+  position: relative !important;
+}
+
+/* ป้ายแสดงประเภทเว็บลอยมุมบนขวาของรูปภาพ */
+.web-type-badge {
+  position: absolute !important;
+  top: 12px !important;
+  right: 12px !important;
+  background-color: #4f46e5 !important; /* สีม่วงน้ำเงิน */
+  color: #ffffff !important;
+  padding: 5px 12px !important;
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+  border-radius: 30px !important;
+  z-index: 3 !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* บล็อกครอบกลุ่มแท็กด้านล่าง */
+.tech-tags-wrapper {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  margin: 10px 0 16px 0 !important;
+  width: 100% !important;
+}
+
+/* โครงสร้างพื้นฐานของดวงแท็ก */
+.tech-badge {
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+  padding: 4px 10px !important;
+  border-radius: 6px !important;
+  display: inline-block !important;
+}
+
+/* จัดคู่สีให้สวยงามรับกับ UI กล่องน้ำเงินเข้ม */
+.tag-php { background-color: rgba(143, 160, 221, 0.15) !important; color: #8fa0dd !important; border: 1px solid rgba(143, 160, 221, 0.3); }
+.tag-sql { background-color: rgba(56, 189, 248, 0.15) !important; color: #38bdf8 !important; border: 1px solid rgba(56, 189, 248, 0.3); }
+.tag-html { background-color: rgba(34, 211, 238, 0.15) !important; color: #22d3ee !important; border: 1px solid rgba(34, 211, 238, 0.3); }
+.tag-xampp { background-color: rgba(251, 146, 60, 0.15) !important; color: #fb923c !important; border: 1px solid rgba(251, 146, 60, 0.3); }
+.tag-js { background-color: rgba(250, 204, 21, 0.15) !important; color: #facc15 !important; border: 1px solid rgba(250, 204, 21, 0.3); }
+.tag-bootstrap { background-color: rgba(192, 132, 252, 0.15) !important; color: #c084fc !important; border: 1px solid rgba(192, 132, 252, 0.3); }
+.tag-generic { background-color: rgba(255, 255, 255, 0.08) !important; color: #cbd5e1 !important; border: 1px solid rgba(255, 255, 255, 0.15); }
+
+/* ปรับระยะขอบล่างของข้อความรายละเอียด */
+.service-box__body .desc-text {
+  margin-bottom: 4px !important;
+}
+/* ===================================================
+   🛍️ สไตล์ปุ่มสั่งซื้อ/สั่งงาน สำหรับหน้าดีเทล
+   =================================================== */
+.btn-detail-order {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    box-sizing: border-box;
+    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important; /* ไล่เฉดสีม่วงน้ำเงินพรีเมียม */
+    color: #ffffff !important;
+    text-decoration: none !important;
+    padding: 14px 20px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    border-radius: 50px !important; /* ขอบโค้งมนทรงแคปซูล */
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3) !important; /* เงาสะท้อนเรืองแสงเบาๆ */
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    cursor: pointer;
+}
+.btn-detail-order:hover {
+    background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%) !important;
+    transform: translateY(-2px) !important; /* ลอยตัวขึ้นเล็กน้อยเมื่อชี้เมาส์ */
+    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45) !important; /* เร่งแสงเงาใต้ปุ่ม */
+}
+.btn-detail-order:active {
+    transform: translateY(0) !important;
+}

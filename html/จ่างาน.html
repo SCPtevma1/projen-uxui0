@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>บริการเขียนเว็บไซต์ | ยกระดับธุรกิจของคุณ</title>
+    
+    <!-- Google Fonts: Prompt & Inter for Clean Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/job.css">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+</head>
+<body>
+    <header class="site-header">
+        <a class="brand" href="../index.html">
+            <i class="fa-solid fa-code"></i>
+            <span>เว็บไซต์ของฉัน</span>
+        </a>
+        <nav aria-label="เมนูหลัก">
+            <a href="../index.html">หน้าแรก</a>
+            <a href="../html2/page-01.html">วิธีการสั่งซื้อ</a>
+            <a href="../hok/pro.html" class="active">โปรโมชั่น / แพ็คเกจ</a>
+            <a href="#">บริการเสริม</a>
+        </nav>
+    </header>
+
+    <main class="page">
+        <header class="intro">
+            <div class="badge-pill">
+                <i class="fa-solid fa-sparkles"></i> บริการเขียนเว็บไซต์คุณภาพสูง
+            </div>
+            <h1>เลือกแพ็กเกจที่เหมาะกับธุรกิจของคุณ</h1>
+            <p>ยกระดับภาพลักษณ์แบรนด์ เพิ่มยอดขาย ด้วยเว็บไซต์ที่ออกแบบมาเพื่อธุรกิจของคุณโดยเฉพาะ</p>
+        </header>
+
+        <section class="pricing" aria-labelledby="pricing-title">
+            <h2 id="pricing-title" class="visually-hidden">แพ็กเกจบริการ</h2>
+            
+            <!-- Basic Plan -->
+            <article class="plan">
+                <h2>Basic</h2>
+                <p class="plan-subtitle">เว็บไซต์หน้าเดียว (Landing Page)</p>
+                <div class="price">1,990 <small>บาท</small></div>
+                <ul class="features">
+                    <li>Landing Page 1 หน้า</li>
+                    <li>ออกแบบ Responsive แสดงผลสมบูรณ์ทุกอุปกรณ์</li>
+                    <li>ฟอร์มติดต่อสอบถาม</li>
+                    <li>แก้ไขงานฟรี 1 ครั้ง</li>
+                    <li>ดูแลหลังส่งมอบ 2 ปี</li>
+                </ul>
+                <button type="button" onclick="openOrderModal('Basic', '1,990')">สั่งซื้อแพ็กเกจนี้</button>
+            </article>
+
+            <!-- Standard Plan (Featured) -->
+            <article class="plan featured">
+                <span class="badge">คุ้มค่าที่สุด</span>
+                <h2>Standard</h2>
+                <p class="plan-subtitle">เว็บไซต์หลายหน้าสำหรับองค์กร</p>
+                <div class="price">5,300 <small>บาท</small></div>
+                <ul class="features">
+                    <li>โครงสร้างสูงสุด 5 หน้า</li>
+                    <li>ออกแบบ Responsive รองรับทุกหน้าจอ</li>
+                    <li>เชื่อมต่อ Social Media & Line API</li>
+                    <li>ปรับแต่ง SEO พื้นฐาน ติดหน้าแรกง่ายขึ้น</li>
+                    <li>แก้ไขงานฟรี 3 ครั้ง</li>
+                    <li>ดูแลหลังส่งมอบ 4 ปี</li>
+                </ul>
+                <button type="button" onclick="openOrderModal('Standard', '5,300')">สั่งซื้อแพ็กเกจนี้</button>
+            </article>
+
+            <!-- Premium Plan -->
+            <article class="plan">
+                <h2>Premium</h2>
+                <p class="plan-subtitle">เว็บไซต์ครบวงจร พร้อมระบบจัดการ</p>
+                <div class="price">7,500 <small>บาท</small></div>
+                <ul class="features">
+                    <li>โครงสร้างสูงสุด 10 หน้า</li>
+                    <li>ออกแบบ Responsive พรีเมียม</li>
+                    <li>ระบบ CMS จัดการและแก้ไขเนื้อหาเองได้</li>
+                    <li>ทำ SEO ขั้นสูงวิเคราะห์คีย์เวิร์ด</li>
+                    <li>เชื่อมต่อ Google Analytics & Tracking</li>
+                    <li>แก้ไขฟรีไม่จำกัดภายใน 30 วัน</li>
+                    <li>ดูแลหลังส่งมอบยาวนาน 9 ปี</li>
+                </ul>
+                <button type="button" onclick="openOrderModal('Premium', '7,500')">สั่งซื้อแพ็กเกจนี้</button>
+            </article>
+        </section>
+
+        <section class="checks" aria-labelledby="checks-title">
+            <div class="checks-heading">
+                <div>
+                    <h2 id="checks-title">การตรวจเช็กและประกันคุณภาพ</h2>
+                    <p class="summary">ตรวจสอบด้วยมาตรฐานระดับสากล รวมค่าใช้จ่ายชัดเจน ไร้ค่าบริการแอบแฝง</p>
+                </div>
+                <div class="promo-banner">
+                    <i class="fa-solid fa-fire-flame-curved"></i>
+                    <div>
+                        <strong>สิทธิ์พิเศษ 30 คนแรก 299 บาท</strong>
+                        <div style="font-size: 0.8rem; opacity: 0.9;">ดูแลระบบเว็บไซต์ต่อเนื่อง 6 เดือนเต็ม</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="check-grid">
+                <article class="check-item">
+                    <div class="check-item-icon">
+                        <i class="fa-solid fa-microchip"></i>
+                    </div>
+                    <h3>เช็กงานด้วยระบบ AI</h3>
+                    <p>ตรวจสอบลายน้ำดิจิทัล ประสิทธิภาพของโค้ด และโครงสร้าง UI/UX ให้ได้มาตรฐานความเร็วและความปลอดภัยสูงสุด</p>
+                </article>
+                
+                <article class="check-item">
+                    <div class="check-item-icon">
+                        <i class="fa-solid fa-code-compare"></i>
+                    </div>
+                    <h3>โค้ดที่สร้างด้วย AI</h3>
+                    <p>ปรับแต่งโค้ดให้สะอาด (Clean Code) ตรวจสอบโครงสร้างพื้นฐานเพื่อรองรับการขยายเว็บไซต์ในอนาคต</p>
+                </article>
+                
+                <article class="check-item">
+                    <div class="check-item-icon">
+                        <i class="fa-solid fa-user-gear"></i>
+                    </div>
+                    <h3>คำแนะนำและการดูแล</h3>
+                    <p>อ่านโค้ดและชี้แจงขั้นตอนอย่างละเอียดยิบ พร้อมแนะนำจุดที่ควรปรับปรุงเพื่อเพิ่มอัตราการแปลงเป้าหมาย (Conversion)</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="contact-row" aria-label="ข้อมูลติดต่อและรายละเอียดเพิ่มเติม">
+            <div class="contact-box contact-info">
+                <div>
+                    <span class="label"><i class="fa-solid fa-headset"></i> ติดต่อเรา</span>
+                    <strong>ปรึกษาและสั่งซื้อฟรี</strong>
+                </div>
+                
+                <div class="contact-detail">
+                    <i class="fa-solid fa-phone"></i>
+                    <span>เบอร์โทร: <strong>065-327-6864</strong></span>
+                </div>
+                
+                <div class="contact-detail">
+                    <i class="fa-solid fa-envelope"></i>
+                    <span>อีเมล: <strong>v890x0@gmail.com</strong></span>
+                </div>
+            </div>
+
+            <div class="contact-box details">
+                <span class="label"><i class="fa-solid fa-shield-halved"></i> การดูแลหลังส่งมอบงาน</span>
+                <ul>
+                    <li><i class="fa-solid fa-check-circle"></i> แก้ไขบั๊ก & อัปเดตความปลอดภัย</li>
+                    <li><i class="fa-solid fa-check-circle"></i> ปรับแต่งเว็บไซต์ตามคำแนะนำ</li>
+                    <li><i class="fa-solid fa-check-circle"></i> สำรองข้อมูล (Backup) สม่ำเสมอ</li>
+                    <li><i class="fa-solid fa-check-circle"></i> ตรวจสอบความปลอดภัยจากภัยคุกคาม</li>
+                </ul>
+                
+                <div class="price-pills">
+                    <span class="price-pill">เว็บขนาดเล็ก เริ่มต้น <strong>1,400 บาท</strong></span>
+                    <span class="price-pill">เว็บไซต์มาตรฐาน <strong>4,900 บาท</strong></span>
+                    <span class="price-pill">เว็บไซต์ครบวงจร <strong>6,900 บาท</strong></span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="modal-overlay" id="orderModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>สั่งซื้อบริการ</h3>
+                <button class="close-btn" onclick="closeOrderModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <p>คุณกำลังเลือกสั่งซื้อแพ็กเกจ:</p>
+                <div class="order-summary-box">
+                    <strong id="modalPlanTitle" style="font-size: 1.1rem; color: var(--primary);">Standard Package</strong>
+                    <div id="modalPlanPrice" style="font-size: 1.5rem; font-weight: 700; margin-top: 0.25rem;">5,300 บาท</div>
+                </div>
+                <p style="font-size: 0.875rem; color: var(--text-muted);">
+                    กรุณาติดต่อทีมงานเพื่อยืนยันข้อกำหนดและเริ่มดำเนินงาน
+                </p>
+            </div>
+            <a class="modal-action-btn" href="https://www.facebook.com/f.xrd.f.xrd.479355/" target="_blank" rel="noopener noreferrer">
+                <i class="fa-brands fa-facebook" aria-hidden="true"></i>
+                <span>Facebook / ติดต่อเรา</span>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        function openOrderModal(planName, price) {
+            document.getElementById('modalPlanTitle').innerText = 'แพ็กเกจ ' + planName;
+            document.getElementById('modalPlanPrice').innerText = price + ' บาท';
+            document.getElementById('orderModal').classList.add('active');
+        }
+
+        function closeOrderModal() {
+            document.getElementById('orderModal').classList.remove('active');
+        }
+
+        function confirmOrder() {
+            window.location.href = "tel:0653276864";
+        }
+
+        // Close modal when clicking background overlay
+        document.getElementById('orderModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeOrderModal();
+            }
+        });
+    </script>
+</body>
+</html>
