@@ -12,7 +12,11 @@ body {
   align-items: center;
   gap: 0;
 }
-
+.pro02-1{
+  background-color: #1d67d7; /* สีเทาอ่อนสะอาดตา */
+  padding: 20px;            /* เพิ่มช่องว่างรอบข้อความไม่ให้ติดขอบ */
+  border-radius: 8px; 
+}
 .navbar li {
   position: relative;
 }
