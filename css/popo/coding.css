@@ -14,8 +14,8 @@ button {
  font-size: 15px;
 }
 .pro02-1{
-  background-color: #1d67d7; /* สีเทาอ่อนสะอาดตา */
-  padding: 20px;            /* เพิ่มช่องว่างรอบข้อความไม่ให้ติดขอบ */
+  background-color: #1d67d7;
+  padding: 20px;          
   border-radius: 8px; 
 }
 button.learn-more {
