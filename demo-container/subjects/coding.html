@@ -4,107 +4,104 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>เขียนโค้ด | รายวิชาสำหรับนักเรียน</title>
-  <!-- นำเข้าฟอนต์น่ารักอ่านง่าย เช่น Prompt หรือ Kanit -->
+  <!-- นำเข้าฟอนต์ Prompt เพื่อความสวยงามสดใส -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../css/popo/coding.css">
 </head>
 <body>
-  <div class="top-nav-container">
-    <a class="subject-page__back" href="../student.html">
-      <span class="back-icon">←</span> กลับไปหน้ารวมรายวิชา
-    </a>
-  </div>
-  <main class="main-wrapper">
-    <!-- ส่วนหัวข้อแนะนำรายวิชา -->
-    <section class="pro02-1">
-      <span class="badge-duo">⚡ เรียนรู้ผ่านการปฏิบัติ</span>
-      <h2>ฝึกคิดเป็นระบบ & เขียนโปรแกรม</h2>
-      <p class="subtitle">ทำความเข้าใจแนวคิดการเขียนโปรแกรมตั้งแต่พื้นฐานที่จำเป็น 0-100</p>
-      <p class="description">รวม 10 บทเรียนตั้งแต่มือใหม่จนสร้างโปรเจกต์ได้ด้วยตนเอง!</p>
-      
-      <div class="pro02-2">
-        <button class="btn-start-main">
-          <a href="#dsvc-sdd">เริ่มตะลุยบทเรียนเลย! 🚀</a>
-        </button>
-      </div>
-    </section>
 
-    <section id="dsvc-sdd" class="dsvc-sdd">
-      <h3 class="section-title">เลือกภาษาที่ต้องการเรียนรู้</h3>
-      
-      <div class="lessons-grid">
-        <!-- HTML -->
-        <div class="lesson-card-wrapper" data-tooltip="HTML: โครงสร้างหลักของเว็บไซต์และเว็บแอป">
-          <button class="button-learn-more btn-html">
+  <!-- ปุ่มย้อนกลับ -->
+  <div class="top-nav">
+    <a class="subject-page__back" href="../student.html">← กลับไปหน้ารวมรายวิชา</a>
+  </div>
+
+  <main class="content-container">
+    <!-- ส่วนหัวข้อบทเรียน -->
+    <div class="pro02-1">
+      <h2>ฝึกคิดเป็นระบบ</h2>
+      <p class="sub-title">ทำความเข้าใจแนวคิดการเขียนโปรแกรม ตั้งแต่พื้นฐานที่จำเป็น จาก 0-100</p>
+      <p class="highlight-text">รวม 10 บทเรียนตั้งแต่พื้นฐานจนไปสร้างโปรเจกต์เองได้เลย 🚀</p>
+    </div>
+
+  
+    <div class="dsvc-sdd">
+      <div class="button-grid">
+
+
+        <div class="tooltip-wrapper" data-tooltip="HTML: โครงสร้างหลักในการสร้างหน้าเว็บ">
+          <button class="learn-more btn-html">
             <a href="/demo-container/subjects/Enter the lesson/HTML.HTML">HTML</a>
           </button>
         </div>
 
-        <!-- CSS -->
-        <div class="lesson-card-wrapper" data-tooltip="CSS: ตกแต่งหน้าตา สีสัน และจัดเลย์เอาต์ให้สวยงาม">
-          <button class="button-learn-more btn-css">
-            <a href="#">CSS</a>
+  
+        <div class="tooltip-wrapper" data-tooltip="CSS: ตกแต่งสีสัน เลย์เอาต์ และดีไซน์หน้าเว็บ">
+          <button class="learn-more btn-css">
+            <a href="/demo-container/subjects/Enter the lesson/CSS.HTML">CSS</a>
           </button>
         </div>
 
-        <!-- JavaScript -->
-        <div class="lesson-card-wrapper" data-tooltip="JavaScript: เพิ่มลูกเล่น การตอบสนอง และเอฟเฟกต์">
-          <button class="button-learn-more btn-js">
-            <a href="#">JavaScript</a>
+  
+        <div class="tooltip-wrapper" data-tooltip="JavaScript: เพิ่มลูกเล่น การตอบสนอง และฟังก์ชัน">
+          <button class="learn-more btn-js">
+            <a href="/demo-container/subjects/Enter the lesson/JavaScript.HTML">JS</a>
           </button>
         </div>
 
-        <!-- Python -->
-        <div class="lesson-card-wrapper" data-tooltip="Python: เขียนง่าย เหมาะสำหรับ Data, AI และ Automation">
-          <button class="button-learn-more btn-python">
-            <a href="#">Python</a>
+
+        <div class="tooltip-wrapper" data-tooltip="Python: ไวยากรณ์ง่าย เหมาะสำหรับ AI และ Data">
+          <button class="learn-more btn-python">
+            <a href="/demo-container/subjects/Enter the lesson/Pyton.HTML">Python</a>
           </button>
         </div>
 
-        <!-- C -->
-        <div class="lesson-card-wrapper" data-tooltip="ภาษา C: พื้นฐานความเข้าใจโครงสร้างคอมพิวเตอร์และหน่วยความจำ">
-          <button class="button-learn-more btn-c">
-            <a href="#">C</a>
+  
+        <div class="tooltip-wrapper" data-tooltip="ภาษา C: พื้นฐานโครงสร้างโปรแกรมและการจัดการหน่วยความจำ">
+          <button class="learn-more btn-c">
+            <a href="/demo-container/subjects/Enter the lesson/C.HTML">C</a>
           </button>
         </div>
 
-        <!-- C++ -->
-        <div class="lesson-card-wrapper" data-tooltip="C++: ภาษาความเร็วสูงสำหรับพัฒนาเกมและระบบประสิทธิภาพสูง">
-          <button class="button-learn-more btn-cpp">
-            <a href="#">C++</a>
+
+        <div class="tooltip-wrapper" data-tooltip="C++: ภาษาประสิทธิภาพสูง สำหรับเกมและระบบใหญ่">
+          <button class="learn-more btn-cpp">
+            <a href="/demo-container/subjects/Enter the lesson/C++.HTML">C++</a>
           </button>
         </div>
 
-        <!-- R -->
-        <div class="lesson-card-wrapper" data-tooltip="ภาษา R: เน้นการวิเคราะห์ข้อมูลทางสถิติและวิทยากรรรมข้อมูล">
-          <button class="button-learn-more btn-r">
-            <a href="#">R</a>
+     
+        <div class="tooltip-wrapper" data-tooltip="ภาษา R: เหมาะสำหรับงานวิเคราะห์สถิติและข้อมูล">
+          <button class="learn-more btn-r">
+            <a href="/demo-container/subjects/Enter the lesson/R.HTML">R</a>
           </button>
         </div>
 
-        <!-- SQL -->
-        <div class="lesson-card-wrapper" data-tooltip="SQL: ภาษาสำหรับจัดการและค้นหาข้อมูลในฐานข้อมูล">
-          <button class="button-learn-more btn-sql">
-            <a href="#">SQL</a>
+     
+        <div class="tooltip-wrapper" data-tooltip="SQL: ภาษาสำหรับจัดการและดึงข้อมูลในฐานข้อมูล">
+          <button class="learn-more btn-sql">
+            <a href="/demo-container/subjects/Enter the lesson/SQL.HTML">SQL</a>
           </button>
         </div>
 
-        <!-- PHP -->
-        <div class="lesson-card-wrapper" data-tooltip="PHP: พัฒนาระบบหลังบ้าน (Backend) และประมวลผลเซิร์ฟเวอร์">
-          <button class="button-learn-more btn-php">
-            <a href="#">PHP</a>
+ 
+        <div class="tooltip-wrapper" data-tooltip="PHP: พัฒนาระบบหลังบ้าน (Backend) ของเว็บไซต์">
+          <button class="learn-more btn-php">
+            <a href="/demo-container/subjects/Enter the lesson/PHP.HTML">PHP</a>
           </button>
         </div>
+
       </div>
-    </section>
+    </div>
   </main>
 
-  <!-- Footer สไตล์ Duolingo -->
+  <!-- Footer ปรับแต่งใหม่ -->
   <footer class="subject-page__footer">
     <div class="footer-content">
       <div class="footer-brand">
-        <span class="footer-logo">💚 ITDevTeam Coding</span>
-        <p>สร้างสรรค์การเรียนรู้การเขียนโค้ดให้สนุกและง่ายเหมือนเล่นเกม</p>
+        <p class="footer-title">💚 ITDevTeam Coding Academy</p>
+        <p class="footer-desc">สร้างสรรค์การเรียนรู้การเขียนโค้ดให้สนุกและง่ายเหมือนเล่นเกม</p>
       </div>
       <p class="copyright">© 2024 ITDevTeam. สงวนลิขสิทธิ์</p>
     </div>
