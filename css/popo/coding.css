@@ -1,8 +1,7 @@
 /* ===================================================
-   DUOLINGO THEME & FULLSCREEN LAYOUT
+   DUOLINGO ROADMAP LAYOUT & STYLING
    =================================================== */
 
-/* Reset ค่ามาตรฐาน */
 * {
   margin: 0;
   padding: 0;
@@ -22,7 +21,7 @@ html, body {
 
 /* Navbar ปุ่มย้อนกลับ */
 .top-nav {
-  padding: 20px;
+  padding: 20px 5%;
   max-width: 1200px;
   width: 100%;
   margin: 0 auto;
@@ -52,73 +51,135 @@ html, body {
   border-bottom-width: 2px;
 }
 
-/* ส่วนเนื้อหาหลัก */
+/* Container หลัก */
 .content-container {
-  max-width: 1100px;
-  width: 90%;
-  margin: 0 auto 40px;
+  max-width: 1200px;
+  width: 92%;
+  margin: 0 auto 50px;
 }
 
-/* กล่องหัวข้อ pro02-1 */
-.pro02-1 {
-  background-color: #ffffff;
-  border: 2px solid #e5e5e5;
-  border-bottom: 6px solid #e5e5e5;
-  border-radius: 24px;
-  padding: 35px 25px;
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.pro02-1 h2 {
-  font-size: 30px;
-  font-weight: 800;
-  color: #3c3c3c;
-  margin-bottom: 10px;
-}
-
-.pro02-1 .sub-title {
-  font-size: 17px;
-  color: #666;
-  margin-bottom: 8px;
-}
-
-.pro02-1 .highlight-text {
-  font-size: 16px;
-  font-weight: 700;
-  color: #58cc02;
-}
-
-/* จัดเลย์เอาต์ปุ่มแบบ Grid */
-.button-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 20px;
-  justify-items: center;
+/* เลย์เอาต์ Flex แยกซ้าย-ขวา (<section> เลย์เอาต์) */
+.learning-section {
+  display: flex;
+  gap: 35px;
+  align-items: flex-start;
 }
 
 /* ---------------------------------------------------
-   POP-UP TOOLTIP (คำอธิบายเมื่อเอาเมาส์ชี้)
+   ฝั่งซ้าย: ROADMAP CONTAINER
+   --------------------------------------------------- */
+.roadmap-container {
+  flex: 1; /* กินพื้นที่ฝั่งซ้ายเต็มที่ */
+  background: #ffffff;
+  border: 2px solid #e5e5e5;
+  border-bottom: 6px solid #e5e5e5;
+  border-radius: 28px;
+  padding: 35px 25px;
+}
+
+.pro02-1 {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.badge-duo {
+  display: inline-block;
+  background-color: #ddf4ff;
+  color: #1cb0f6;
+  font-weight: 800;
+  font-size: 13px;
+  padding: 4px 14px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+}
+
+.pro02-1 h2 {
+  font-size: 28px;
+  font-weight: 800;
+  color: #3c3c3c;
+}
+
+.pro02-1 .sub-title {
+  font-size: 15px;
+  color: #777;
+}
+
+/* เส้นทาง Roadmap */
+.roadmap-path {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 35px;
+  padding: 20px 0;
+}
+
+/* เส้นแนวตั้งเชื่อมต่อแต่ละ Node แบบ Duolingo */
+.roadmap-path::before {
+  content: '';
+  position: absolute;
+  top: 40px;
+  bottom: 40px;
+  width: 8px;
+  background-color: #e5e5e5;
+  border-radius: 4px;
+  z-index: 1;
+}
+
+/* กล่องปุ่มแต่ละระดับ */
+.roadmap-node {
+  position: relative;
+  z-index: 2;
+  width: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* การจัดตำแหน่งสลับซ้าย-กลาง-ขวา (Zigzag Path) */
+.step-left { transform: translateX(-60px); }
+.step-center { transform: translateX(0); }
+.step-right { transform: translateX(60px); }
+
+/* ตัวเลขกำกับด่าน */
+.node-badge {
+  position: absolute;
+  top: -12px;
+  right: 15px;
+  background-color: #ffc800;
+  color: #4b3c00;
+  font-weight: 800;
+  font-size: 12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 0 #e5b400;
+  z-index: 5;
+}
+
+/* ---------------------------------------------------
+   POP-UP TOOLTIP (เด้งขึ้นเมื่อ Hover)
    --------------------------------------------------- */
 .tooltip-wrapper {
   position: relative;
   width: 100%;
 }
 
-/* กล่อง Pop-up ข้อความ */
 .tooltip-wrapper::before {
   content: attr(data-tooltip);
   position: absolute;
-  bottom: 115%;
+  bottom: 120%;
   left: 50%;
   transform: translateX(-50%) translateY(8px);
   background-color: #2b2b2b;
   color: #ffffff;
   padding: 8px 12px;
   border-radius: 12px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  white-space: normal;
   width: 180px;
   text-align: center;
   box-shadow: 0 4px 15px rgba(0,0,0,0.15);
@@ -126,14 +187,13 @@ html, body {
   visibility: hidden;
   pointer-events: none;
   transition: all 0.2s ease;
-  z-index: 10;
+  z-index: 100;
 }
 
-/* ลูกศรสามเหลี่ยมใต้ Pop-up */
 .tooltip-wrapper::after {
   content: '';
   position: absolute;
-  bottom: 100%;
+  bottom: 105%;
   left: 50%;
   transform: translateX(-50%) translateY(8px);
   border-width: 6px;
@@ -143,10 +203,9 @@ html, body {
   visibility: hidden;
   pointer-events: none;
   transition: all 0.2s ease;
-  z-index: 10;
+  z-index: 100;
 }
 
-/* แสดงผลเมื่อ Hover */
 .tooltip-wrapper:hover::before,
 .tooltip-wrapper:hover::after {
   opacity: 1;
@@ -155,48 +214,149 @@ html, body {
 }
 
 /* ---------------------------------------------------
-   ปุ่ม LEARN-MORE & การแยกสีแต่ละภาษา
+   ปุ่ม LEARN-MORE & สีสัน 3D Duolingo
    --------------------------------------------------- */
 button.learn-more {
   width: 100%;
   border: none;
   background: transparent;
-  padding: 0;
   cursor: pointer;
 }
 
 button.learn-more a {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  padding: 14px 10px;
-  border-radius: 16px;
+  height: 60px;
+  border-radius: 20px;
   font-size: 18px;
   font-weight: 800;
-  text-align: center;
   text-decoration: none;
   color: #ffffff;
   transition: all 0.1s ease;
 }
 
-/* ปุ่มยุบลงเมื่อกด (Active Click) */
 button.learn-more a:active {
   transform: translateY(4px) !important;
   box-shadow: none !important;
 }
 
-/* สีแยกเฉพาะภาษา (Duolingo Style Palette) */
-.btn-html a { background-color: #ff9600; box-shadow: 0 5px 0 #e58700; }
-.btn-css a { background-color: #1cb0f6; box-shadow: 0 5px 0 #1899d6; }
-.btn-js a { background-color: #ffc800; box-shadow: 0 5px 0 #e5b400; color: #4b3c00; }
-.btn-python a { background-color: #58cc02; box-shadow: 0 5px 0 #46a302; }
-.btn-c a { background-color: #ce82ff; box-shadow: 0 5px 0 #b86ee6; }
-.btn-cpp a { background-color: #ff4b4b; box-shadow: 0 5px 0 #ea2b2b; }
-.btn-r a { background-color: #2b70c9; box-shadow: 0 5px 0 #1e569f; }
-.btn-sql a { background-color: #00b4d8; box-shadow: 0 5px 0 #0077b6; }
-.btn-php a { background-color: #8965e0; box-shadow: 0 5px 0 #6c4ab8; }
+/* สีแยกรายวิชา */
+.btn-html a { background-color: #ff9600; box-shadow: 0 6px 0 #e58700; }
+.btn-css a { background-color: #1cb0f6; box-shadow: 0 6px 0 #1899d6; }
+.btn-js a { background-color: #ffc800; box-shadow: 0 6px 0 #e5b400; color: #4b3c00; }
+.btn-python a { background-color: #58cc02; box-shadow: 0 6px 0 #46a302; }
+.btn-c a { background-color: #ce82ff; box-shadow: 0 6px 0 #b86ee6; }
+.btn-cpp a { background-color: #ff4b4b; box-shadow: 0 6px 0 #ea2b2b; }
+.btn-r a { background-color: #2b70c9; box-shadow: 0 6px 0 #1e569f; }
+.btn-sql a { background-color: #00b4d8; box-shadow: 0 6px 0 #0077b6; }
+.btn-php a { background-color: #8965e0; box-shadow: 0 6px 0 #6c4ab8; }
 
 /* ---------------------------------------------------
-   ปรับแต่ง FOOTER
+   ฝั่งขวา: <aside> SIDEBAR MENU
+   --------------------------------------------------- */
+.sidebar-menu {
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: sticky;
+  top: 20px;
+}
+
+.aside-card {
+  background: #ffffff;
+  border: 2px solid #e5e5e5;
+  border-bottom: 5px solid #e5e5e5;
+  border-radius: 20px;
+  padding: 20px;
+}
+
+.aside-title {
+  font-size: 16px;
+  font-weight: 800;
+  margin-bottom: 12px;
+  color: #3c3c3c;
+}
+
+/* แถบ Progress Bar */
+.progress-bar-bg {
+  width: 100%;
+  height: 14px;
+  background-color: #e5e5e5;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: #58cc02;
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 13px;
+  color: #777;
+  font-weight: 600;
+}
+
+/* รายการเมนูลัด */
+.aside-nav {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aside-nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: #555;
+  font-weight: 700;
+  font-size: 14px;
+  transition: background-color 0.15s ease;
+}
+
+.aside-nav a:hover,
+.aside-nav a.active {
+  background-color: #ddf4ff;
+  color: #1cb0f6;
+}
+
+/* แถบ Streak การ์ด */
+.streak-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background-color: #fff9e6;
+  border-color: #ffe599;
+  border-bottom-color: #f7d070;
+}
+
+.streak-icon {
+  font-size: 32px;
+}
+
+.streak-days {
+  font-weight: 800;
+  font-size: 15px;
+  color: #d97706;
+}
+
+.streak-sub {
+  font-size: 12px;
+  color: #b45309;
+}
+
+/* ---------------------------------------------------
+   FOOTER
    --------------------------------------------------- */
 .subject-page__footer {
   background-color: #ffffff;
@@ -211,7 +371,7 @@ button.learn-more a:active {
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
 }
 
@@ -224,11 +384,24 @@ button.learn-more a:active {
 .footer-desc {
   font-size: 14px;
   color: #777;
-  margin-top: 4px;
 }
 
 .copyright {
   font-size: 13px;
   color: #aaa;
   font-weight: 600;
+}
+
+/* Responsive สำหรับหน้าจอมือถือ */
+@media (max-width: 850px) {
+  .learning-section {
+    flex-direction: column;
+  }
+  .sidebar-menu {
+    width: 100%;
+    position: static;
+  }
+  .step-left, .step-right {
+    transform: translateX(0); /* บนจอมือถือจัดให้อยู่ตรงกลางแถวเดียว */
+  }
 }

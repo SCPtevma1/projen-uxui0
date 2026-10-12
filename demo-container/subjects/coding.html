@@ -4,7 +4,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>เขียนโค้ด | รายวิชาสำหรับนักเรียน</title>
-  <!-- นำเข้าฟอนต์ Prompt เพื่อความสวยงามสดใส -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -18,85 +17,151 @@
   </div>
 
   <main class="content-container">
-    <!-- ส่วนหัวข้อบทเรียน -->
-    <div class="pro02-1">
-      <h2>ฝึกคิดเป็นระบบ</h2>
-      <p class="sub-title">ทำความเข้าใจแนวคิดการเขียนโปรแกรม ตั้งแต่พื้นฐานที่จำเป็น จาก 0-100</p>
-      <p class="highlight-text">รวม 10 บทเรียนตั้งแต่พื้นฐานจนไปสร้างโปรเจกต์เองได้เลย 🚀</p>
-    </div>
-
-  
-    <div class="dsvc-sdd">
-      <div class="button-grid">
-
-
-        <div class="tooltip-wrapper" data-tooltip="HTML: โครงสร้างหลักในการสร้างหน้าเว็บ">
-          <button class="learn-more btn-html">
-            <a href="/demo-container/subjects/Enter the lesson/HTML.HTML">HTML</a>
-          </button>
+    <!-- โครงสร้างหลัก <section> ประกอบด้วย <div> และ <aside> -->
+    <section class="learning-section">
+      
+      <!-- ฝั่งซ้าย: Roadmap เส้นทางการเรียนรู้ -->
+      <div class="roadmap-container">
+        
+        <div class="pro02-1">
+          <span class="badge-duo">📍 Path & Roadmap</span>
+          <h2>เส้นทางการเขียนโปรแกรม</h2>
+          <p class="sub-title">เรียนรู้ตามลำดับขั้นตอน จากพื้นฐานสู่โปรเจกต์จริง</p>
         </div>
 
-  
-        <div class="tooltip-wrapper" data-tooltip="CSS: ตกแต่งสีสัน เลย์เอาต์ และดีไซน์หน้าเว็บ">
-          <button class="learn-more btn-css">
-            <a href="/demo-container/subjects/Enter the lesson/CSS.HTML">CSS</a>
-          </button>
+        <!-- เส้นทาง Roadmap (สไตล์ Duolingo Zigzag) -->
+        <div class="roadmap-path">
+          
+          <!-- Node 1: HTML (ซ้าย) -->
+          <div class="roadmap-node step-left">
+            <div class="node-badge">1</div>
+            <div class="tooltip-wrapper" data-tooltip="HTML: โครงสร้างหลักในการสร้างหน้าเว็บ">
+              <button class="learn-more btn-html">
+                <a href="/demo-container/subjects/Enter the lesson/HTML.HTML">HTML</a>
+              </button>
+            </div>
+          </div>
+
+          <!-- Node 2: CSS (กลาง) -->
+          <div class="roadmap-node step-center">
+            <div class="node-badge">2</div>
+            <div class="tooltip-wrapper" data-tooltip="CSS: ตกแต่งสีสัน เลย์เอาต์ และดีไซน์หน้าเว็บ">
+              <button class="learn-more btn-css">
+                <a href="/demo-container/subjects/Enter the lesson/CSS.HTML">CSS</a>
+              </button>
+            </div>
+          </div>
+
+          <!-- Node 3: JS (ขวา) -->
+          <div class="roadmap-node step-right">
+            <div class="node-badge">3</div>
+            <div class="tooltip-wrapper" data-tooltip="JavaScript: เพิ่มลูกเล่น การตอบสนอง และฟังก์ชัน">
+              <button class="learn-more btn-js">
+                <a href="/demo-container/subjects/Enter the lesson/JavaScript.HTML">JS</a>
+              </button>
+            </div>
+          </div>
+
+          <!-- Node 4: Python (กลาง) -->
+          <div class="roadmap-node step-center">
+            <div class="node-badge">4</div>
+            <div class="tooltip-wrapper" data-tooltip="Python: ไวยากรณ์ง่าย เหมาะสำหรับ AI และ Data">
+              <button class="learn-more btn-python">
+                <a href="/demo-container/subjects/Enter the lesson/Pyton.HTML">Python</a>
+              </button>
+            </div>
+          </div>
+
+          <!-- Node 5: C (ซ้าย) -->
+          <div class="roadmap-node step-left">
+            <div class="node-badge">5</div>
+            <div class="tooltip-wrapper" data-tooltip="ภาษา C: พื้นฐานโครงสร้างโปรแกรมและการจัดการหน่วยความจำ">
+              <button class="learn-more btn-c">
+                <a href="/demo-container/subjects/Enter the lesson/C.HTML">C</a>
+              </button>
+            </div>
+          </div>
+
+          <!-- Node 6: C++ (กลาง) -->
+          <div class="roadmap-node step-center">
+            <div class="node-badge">6</div>
+            <div class="tooltip-wrapper" data-tooltip="C++: ภาษาประสิทธิภาพสูง สำหรับเกมและระบบใหญ่">
+              <button class="learn-more btn-cpp">
+                <a href="/demo-container/subjects/Enter the lesson/C++.HTML">C++</a>
+              </button>
+            </div>
+          </div>
+
+          <!-- Node 7: R (ขวา) -->
+          <div class="roadmap-node step-right">
+            <div class="node-badge">7</div>
+            <div class="tooltip-wrapper" data-tooltip="ภาษา R: เหมาะสำหรับงานวิเคราะห์สถิติและข้อมูล">
+              <button class="learn-more btn-r">
+                <a href="/demo-container/subjects/Enter the lesson/R.HTML">R</a>
+              </button>
+            </div>
+          </div>
+
+          <!-- Node 8: SQL (กลาง) -->
+          <div class="roadmap-node step-center">
+            <div class="node-badge">8</div>
+            <div class="tooltip-wrapper" data-tooltip="SQL: ภาษาสำหรับจัดการและดึงข้อมูลในฐานข้อมูล">
+              <button class="learn-more btn-sql">
+                <a href="/demo-container/subjects/Enter the lesson/SQL.HTML">SQL</a>
+              </button>
+            </div>
+          </div>
+
+          <!-- Node 9: PHP (ซ้าย) -->
+          <div class="roadmap-node step-left">
+            <div class="node-badge">9</div>
+            <div class="tooltip-wrapper" data-tooltip="PHP: พัฒนาระบบหลังบ้าน (Backend) ของเว็บไซต์">
+              <button class="learn-more btn-php">
+                <a href="/demo-container/subjects/Enter the lesson/PHP.HTML">PHP</a>
+              </button>
+            </div>
+          </div>
+
+        </div> 
+      </div> 
+
+
+      <aside class="sidebar-menu">
+        
+   
+        <div class="aside-card">
+          <h3 class="aside-title">📊 ความคืบหน้าการเรียน</h3>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" style="width: 35%;"></div>
+          </div>
+          <p class="progress-text">เรียนสำเร็จแล้ว 3 จาก 9 วิชา (35%)</p>
         </div>
 
-  
-        <div class="tooltip-wrapper" data-tooltip="JavaScript: เพิ่มลูกเล่น การตอบสนอง และฟังก์ชัน">
-          <button class="learn-more btn-js">
-            <a href="/demo-container/subjects/Enter the lesson/JavaScript.HTML">JS</a>
-          </button>
+    
+        <div class="aside-card">
+          <h3 class="aside-title">🎯 หมวดหมู่รายวิชา</h3>
+          <ul class="aside-nav">
+            <li><a href="#" class="active"><span class="icon">🌐</span> Web Development</a></li>
+            <li><a href="#"><span class="icon">🤖</span> Data & AI Core</a></li>
+            <li><a href="#"><span class="icon">⚡</span> System & Backend</a></li>
+          </ul>
         </div>
 
-
-        <div class="tooltip-wrapper" data-tooltip="Python: ไวยากรณ์ง่าย เหมาะสำหรับ AI และ Data">
-          <button class="learn-more btn-python">
-            <a href="/demo-container/subjects/Enter the lesson/Pyton.HTML">Python</a>
-          </button>
+        <!-- การ์ด Streak ความต่อเนื่อง -->
+        <div class="aside-card streak-card">
+          <div class="streak-icon">🔥</div>
+          <div class="streak-info">
+            <div class="streak-days">เรียนต่อเนื่อง 3 วัน!</div>
+            <div class="streak-sub">ฝึกวันละนิด เพื่อความเชี่ยวชาญ</div>
+          </div>
         </div>
 
-  
-        <div class="tooltip-wrapper" data-tooltip="ภาษา C: พื้นฐานโครงสร้างโปรแกรมและการจัดการหน่วยความจำ">
-          <button class="learn-more btn-c">
-            <a href="/demo-container/subjects/Enter the lesson/C.HTML">C</a>
-          </button>
-        </div>
+      </aside> <!-- /aside -->
 
-
-        <div class="tooltip-wrapper" data-tooltip="C++: ภาษาประสิทธิภาพสูง สำหรับเกมและระบบใหญ่">
-          <button class="learn-more btn-cpp">
-            <a href="/demo-container/subjects/Enter the lesson/C++.HTML">C++</a>
-          </button>
-        </div>
-
-     
-        <div class="tooltip-wrapper" data-tooltip="ภาษา R: เหมาะสำหรับงานวิเคราะห์สถิติและข้อมูล">
-          <button class="learn-more btn-r">
-            <a href="/demo-container/subjects/Enter the lesson/R.HTML">R</a>
-          </button>
-        </div>
-
-     
-        <div class="tooltip-wrapper" data-tooltip="SQL: ภาษาสำหรับจัดการและดึงข้อมูลในฐานข้อมูล">
-          <button class="learn-more btn-sql">
-            <a href="/demo-container/subjects/Enter the lesson/SQL.HTML">SQL</a>
-          </button>
-        </div>
-
- 
-        <div class="tooltip-wrapper" data-tooltip="PHP: พัฒนาระบบหลังบ้าน (Backend) ของเว็บไซต์">
-          <button class="learn-more btn-php">
-            <a href="/demo-container/subjects/Enter the lesson/PHP.HTML">PHP</a>
-          </button>
-        </div>
-
-      </div>
-    </div>
+    </section>
   </main>
 
-  <!-- Footer ปรับแต่งใหม่ -->
+  <!-- Footer -->
   <footer class="subject-page__footer">
     <div class="footer-content">
       <div class="footer-brand">
