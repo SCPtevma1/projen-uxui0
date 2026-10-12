@@ -1,57 +1,114 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>เขียนโค้ด | รายวิชาสำหรับนักเรียน</title>
-  <link rel="stylesheet" href="../../css/student-demo.css">
+  <!-- นำเข้าฟอนต์น่ารักอ่านง่าย เช่น Prompt หรือ Kanit -->
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../css/popo/coding.css">
 </head>
 <body>
-  <main class="subject-page">
-    <a class="subject-page__back" href="../student.html">← กลับไปหน้ารวมรายวิชา</a>
-    <article class="subject-page__content">
-      <p class="course-eyebrow">รายวิชา</p>
-      <h1>เขียนโค้ด</h1>
-      <p>เรียนรู้แนวคิดการเขียนโปรแกรม ตั้งแต่การวางลำดับคำสั่ง การใช้ตัวแปร และการสร้างผลงานด้วยโค้ด</p>
-    </article>
+  <div class="top-nav-container">
+    <a class="subject-page__back" href="../student.html">
+      <span class="back-icon">←</span> กลับไปหน้ารวมรายวิชา
+    </a>
+  </div>
+  <main class="main-wrapper">
+    <!-- ส่วนหัวข้อแนะนำรายวิชา -->
+    <section class="pro02-1">
+      <span class="badge-duo">⚡ เรียนรู้ผ่านการปฏิบัติ</span>
+      <h2>ฝึกคิดเป็นระบบ & เขียนโปรแกรม</h2>
+      <p class="subtitle">ทำความเข้าใจแนวคิดการเขียนโปรแกรมตั้งแต่พื้นฐานที่จำเป็น 0-100</p>
+      <p class="description">รวม 10 บทเรียนตั้งแต่มือใหม่จนสร้างโปรเจกต์ได้ด้วยตนเอง!</p>
+      
+      <div class="pro02-2">
+        <button class="btn-start-main">
+          <a href="#dsvc-sdd">เริ่มตะลุยบทเรียนเลย! 🚀</a>
+        </button>
+      </div>
+    </section>
+
+    <section id="dsvc-sdd" class="dsvc-sdd">
+      <h3 class="section-title">เลือกภาษาที่ต้องการเรียนรู้</h3>
+      
+      <div class="lessons-grid">
+        <!-- HTML -->
+        <div class="lesson-card-wrapper" data-tooltip="HTML: โครงสร้างหลักของเว็บไซต์และเว็บแอป">
+          <button class="button-learn-more btn-html">
+            <a href="/demo-container/subjects/Enter the lesson/HTML.HTML">HTML</a>
+          </button>
+        </div>
+
+        <!-- CSS -->
+        <div class="lesson-card-wrapper" data-tooltip="CSS: ตกแต่งหน้าตา สีสัน และจัดเลย์เอาต์ให้สวยงาม">
+          <button class="button-learn-more btn-css">
+            <a href="#">CSS</a>
+          </button>
+        </div>
+
+        <!-- JavaScript -->
+        <div class="lesson-card-wrapper" data-tooltip="JavaScript: เพิ่มลูกเล่น การตอบสนอง และเอฟเฟกต์">
+          <button class="button-learn-more btn-js">
+            <a href="#">JavaScript</a>
+          </button>
+        </div>
+
+        <!-- Python -->
+        <div class="lesson-card-wrapper" data-tooltip="Python: เขียนง่าย เหมาะสำหรับ Data, AI และ Automation">
+          <button class="button-learn-more btn-python">
+            <a href="#">Python</a>
+          </button>
+        </div>
+
+        <!-- C -->
+        <div class="lesson-card-wrapper" data-tooltip="ภาษา C: พื้นฐานความเข้าใจโครงสร้างคอมพิวเตอร์และหน่วยความจำ">
+          <button class="button-learn-more btn-c">
+            <a href="#">C</a>
+          </button>
+        </div>
+
+        <!-- C++ -->
+        <div class="lesson-card-wrapper" data-tooltip="C++: ภาษาความเร็วสูงสำหรับพัฒนาเกมและระบบประสิทธิภาพสูง">
+          <button class="button-learn-more btn-cpp">
+            <a href="#">C++</a>
+          </button>
+        </div>
+
+        <!-- R -->
+        <div class="lesson-card-wrapper" data-tooltip="ภาษา R: เน้นการวิเคราะห์ข้อมูลทางสถิติและวิทยากรรรมข้อมูล">
+          <button class="button-learn-more btn-r">
+            <a href="#">R</a>
+          </button>
+        </div>
+
+        <!-- SQL -->
+        <div class="lesson-card-wrapper" data-tooltip="SQL: ภาษาสำหรับจัดการและค้นหาข้อมูลในฐานข้อมูล">
+          <button class="button-learn-more btn-sql">
+            <a href="#">SQL</a>
+          </button>
+        </div>
+
+        <!-- PHP -->
+        <div class="lesson-card-wrapper" data-tooltip="PHP: พัฒนาระบบหลังบ้าน (Backend) และประมวลผลเซิร์ฟเวอร์">
+          <button class="button-learn-more btn-php">
+            <a href="#">PHP</a>
+          </button>
+        </div>
+      </div>
+    </section>
   </main>
-<div class="pro02-1">
-  <h2>ฝึกคิดเป็นระบบ</h2>
-  <p>ทำความเข้าใจแนวคิดการเขียนโปรแกรม ตั้งแต่พื้นฐานที่จำเป็น จาก 0-100</p>
-  <p>รวม 10 บทเรียนตั้งแต่พื้นฐานจนไปสร้างโปรเจ็กเองได้เลย</p>
-</div>
-<div class="dsvc-sdd">
-  <button class="learn-more">
-    <a href="/demo-container/subjects/Enter the lesson/HTML.HTML">HTML</a >
-  </button>
-  <button class="learn-more">
-    <a href="">CSS</a>
-  </button>
-  <button class="learn-more">
-    <a href="">JS</a>
-  </button>
-  <button class="learn-more">
-    <a href="">Pyton</a>
-  </button>
-  <button class="learn-more">
-    <a href="">C</a>
-  </button>
-  <button class="learn-more">
-    <a href="">C++</a>
-  </button>
-  <button class="learn-more">
-    <a href="">R</a>
-  </button>
-  <button class="learn-more">
-    <a href="">SQL</a>
-  </button>
-  <button class="learn-more">
-    <a href="">PHP</a>
-  </button>
-</div>
-<footer class="subject-page__footer">
-  <p>© 2024 ITDevTeam. สงวนลิขสิทธิ์</p>
-</footer>
+
+  <!-- Footer สไตล์ Duolingo -->
+  <footer class="subject-page__footer">
+    <div class="footer-content">
+      <div class="footer-brand">
+        <span class="footer-logo">💚 ITDevTeam Coding</span>
+        <p>สร้างสรรค์การเรียนรู้การเขียนโค้ดให้สนุกและง่ายเหมือนเล่นเกม</p>
+      </div>
+      <p class="copyright">© 2024 ITDevTeam. สงวนลิขสิทธิ์</p>
+    </div>
+  </footer>
+
 </body>
 </html>
