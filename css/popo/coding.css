@@ -7,7 +7,9 @@
   padding: 0;
   box-sizing: border-box;
 }
-
+.img-1{
+  width: -123px;
+}
 html, body {
   width: 100%;
   min-height: 100vh;
@@ -18,15 +20,12 @@ html, body {
   flex-direction: column;
   justify-content: space-between;
 }
-
-/* Navbar ปุ่มย้อนกลับ */
 .top-nav {
-  padding: 20px 5%;
+  padding: -20px 5%;
   max-width: 1200px;
   width: 100%;
   margin: 0 auto;
 }
-
 .subject-page__back {
   display: inline-block;
   padding: 10px 20px;
