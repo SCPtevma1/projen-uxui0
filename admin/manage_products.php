@@ -22,6 +22,7 @@
             <a href="manage_users.php"><i class="bi bi-people me-2"></i> จัดการผู้ใช้งาน</a>
             <a href="manage_products.php" class="active"><i class="bi bi-box-seam me-2"></i> รายการสินค้า</a>
             <a href="manage_services.php"><i class="bi bi-box-seam me-2"></i> จัดการเว็บไซต์</a>
+            <a href="manage_services.php"><i class="bi bi-box-seam me-2"></i> footer</a>
             <a href="Settings.php"><i class="bi bi-gear me-2"></i> ตั้งค่าระบบ</a>
         </aside>
         <main class="col-md-9 col-lg-10 p-4">
