@@ -63,6 +63,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="password" name="password" required>
             </div>
             <button type="submit">เข้าสู่ระบบ</button>
+            <div class="">
+                <a href="../index.php" class="">กลับไปหน้าหลัก</a>
+            </div>
         </form>
     </div>
 </body>

@@ -4,11 +4,9 @@
   --accent: #e36b3d;
   --line: #d8d2c5;
 }
-
 * {
   box-sizing: border-box;
 }
-
 body {
   margin: 0;
   color: var(--ink);
@@ -699,8 +697,6 @@ nav a {
 .tag-js { background-color: rgba(250, 204, 21, 0.15) !important; color: #facc15 !important; border: 1px solid rgba(250, 204, 21, 0.3); }
 .tag-bootstrap { background-color: rgba(192, 132, 252, 0.15) !important; color: #c084fc !important; border: 1px solid rgba(192, 132, 252, 0.3); }
 .tag-generic { background-color: rgba(255, 255, 255, 0.08) !important; color: #cbd5e1 !important; border: 1px solid rgba(255, 255, 255, 0.15); }
-
-/* ปรับระยะขอบล่างของข้อความรายละเอียด */
 .service-box__body .desc-text {
   margin-bottom: 4px !important;
 }

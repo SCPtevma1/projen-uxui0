@@ -273,8 +273,6 @@
       <li><span class="check-icon">✓</span> ให้คำปรึกษาตลอดระยะดูแล</li>
     </ul>
   </div>
-
-  <!-- การ์ดฝั่งขวา: แพ็กเกจราคาดูแลต่อ -->
   <div class="ppoo ppoo-pricing">
     <div class="ppoo-badge badge-orange">🚀 สิทธิพิเศษ</div>
     <h3 class="ppoo-title">ซื้อแพ็กเก็ตดูแลต่อได้</h3>
