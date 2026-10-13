@@ -113,25 +113,141 @@ nav a {
           color: #2563eb;
           margin: 0;
          }
+.vs-vs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 25px;
+  width: min(100%, 960px);
+  margin: 2rem auto;
+  padding: 0 15px;
+  box-sizing: border-box;
+}
 
+.vs-vs video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 20px;
+  border: 2px solid #e5e5e5;
+  box-shadow: 0 6px 0 #e5e5e5;
+  grid-column: 1 / -1; /* ให้วิดีโอกว้างเต็มการ์ดคู่ */
+}
+.ppoo {
+  background-color: #ffffff;
+  border: 2px solid #e5e5e5;
+  border-bottom: 6px solid #e5e5e5;
+  border-radius: 24px;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.ppoo:hover {
+  transform: translateY(-4px);
+  border-bottom-color: #cecece;
+}
+.ppoo-badge {
+  display: inline-block;
+  align-self: flex-start;
+  background-color: #e5f6ff;
+  color: #1cb0f6;
+  font-weight: 800;
+  font-size: 13px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
 
-         .vs-vs {
-          display: flex;
-          flex-direction: column;
-          width: min(100%, 960px);
-          margin-top: 1.5rem;
-          margin-right: auto;
-          margin-left: auto;
-         }
+.ppoo-badge.badge-orange {
+  background-color: #fff3e0;
+  color: #ff9600;
+}
+.ppoo-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #3c3c3c;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px dashed #f0f0f0;
+}
+.benefit-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.benefit-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #4b4b4b;
+}
 
-         .vs-vs video {
-          display: block;
-          width: 100%;
-          aspect-ratio: 16 / 9;
-          object-fit: cover;
-          border-radius: 10px;
-         }
+.check-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background-color: #58cc02;
+  color: #ffffff;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: 0 3px 0 #46a302;
+  flex-shrink: 0;
+}
+.price-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
+.price-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: #f7f9fa;
+  border: 2px solid #e5e5e5;
+  border-radius: 16px;
+  transition: all 0.15s ease;
+}
+.price-item:hover {
+  background-color: #ffffff;
+  border-color: #ff9600;
+  transform: scale(1.02);
+}
+.price-item.highlight {
+  background-color: #fff9f0;
+  border-color: #ff9600;
+  border-bottom-width: 4px;
+}
+.service-name {
+  font-weight: 700;
+  font-size: 15px;
+  color: #3c3c3c;
+}
+.service-price {
+  font-weight: 800;
+  font-size: 18px;
+  color: #ff9600;
+}
+.service-price span {
+  font-size: 13px;
+  color: #888;
+  font-weight: 600;
+}
+@media (max-width: 650px) {
+  .vs-vs {
+    grid-template-columns: 1fr;
+  }
+}
          .ppoo {
           width: 100%;
           padding: 1rem 0;
@@ -525,14 +641,12 @@ nav a {
 
 .process-cards .info-card__image-box1 img {
   width: 100% !important;
-  height: 200px !important; /* กำหนดความสูงรูปภาพดั้งเดิมตามที่คุณต้องการ */
-  position: static !important; /* ปลดล็อกคำสั่ง absolute ของการ์ดแนวนอน */
+  height: 200px !important; 
+  position: static !important;
   object-fit: cover !important;
   transform: none !important;
   border-radius: 12px;
 }
-
-/* คุมกล่องครอบรูปภาพด้านล่างไม่ให้เพี้ยน */
 .info-card__image-box1 {
   width: 100% !important;
   height: auto !important;
@@ -551,8 +665,6 @@ nav a {
 .service-box__image-wrapper {
   position: relative !important;
 }
-
-/* ป้ายแสดงประเภทเว็บลอยมุมบนขวาของรูปภาพ */
 .web-type-badge {
   position: absolute !important;
   top: 12px !important;
@@ -566,8 +678,6 @@ nav a {
   z-index: 3 !important;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
-
-/* บล็อกครอบกลุ่มแท็กด้านล่าง */
 .tech-tags-wrapper {
   display: flex !important;
   flex-wrap: wrap !important;
@@ -575,8 +685,6 @@ nav a {
   margin: 10px 0 16px 0 !important;
   width: 100% !important;
 }
-
-/* โครงสร้างพื้นฐานของดวงแท็ก */
 .tech-badge {
   font-size: 0.72rem !important;
   font-weight: 600 !important;
@@ -584,8 +692,6 @@ nav a {
   border-radius: 6px !important;
   display: inline-block !important;
 }
-
-/* จัดคู่สีให้สวยงามรับกับ UI กล่องน้ำเงินเข้ม */
 .tag-php { background-color: rgba(143, 160, 221, 0.15) !important; color: #8fa0dd !important; border: 1px solid rgba(143, 160, 221, 0.3); }
 .tag-sql { background-color: rgba(56, 189, 248, 0.15) !important; color: #38bdf8 !important; border: 1px solid rgba(56, 189, 248, 0.3); }
 .tag-html { background-color: rgba(34, 211, 238, 0.15) !important; color: #22d3ee !important; border: 1px solid rgba(34, 211, 238, 0.3); }

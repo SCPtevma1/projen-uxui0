@@ -260,23 +260,43 @@
     <h3>รับทำ SEO</h3>
   </div>
 </div>
-<!------>
-
 <div class="projor"><h1>ดูแลหลังการขาย</h1></div>
 <div class="vs-vs">
-  <div class="ppoo">
-    <p>✓ แก้บัค/ข้อผิดพลาดฟรี</p>
-    <p>✓ อัปเดตเนื้อหาตามที่ตกลง</p>
-    <p>✓ สำรองข้อมูลเว็บไซต์</p>
-    <p>✓ ตรวจสอบความปลอดภัย</p>
-    <p>✓ ให้คำปรึกษาตลอดระยะดูแล</p>
+<div class="ppoo ppoo-benefits">
+    <div class="ppoo-badge">✨ บริการดูแลฟรี</div>
+    <h3 class="ppoo-title">การรับประกัน & การดูแล</h3>
+    <ul class="benefit-list">
+      <li><span class="check-icon">✓</span> แก้บัค/ข้อผิดพลาดฟรี</li>
+      <li><span class="check-icon">✓</span> อัปเดตเนื้อหาตามที่ตกลง</li>
+      <li><span class="check-icon">✓</span> สำรองข้อมูลเว็บไซต์</li>
+      <li><span class="check-icon">✓</span> ตรวจสอบความปลอดภัย</li>
+      <li><span class="check-icon">✓</span> ให้คำปรึกษาตลอดระยะดูแล</li>
+    </ul>
   </div>
-</div>
 
+  <!-- การ์ดฝั่งขวา: แพ็กเกจราคาดูแลต่อ -->
+  <div class="ppoo ppoo-pricing">
+    <div class="ppoo-badge badge-orange">🚀 สิทธิพิเศษ</div>
+    <h3 class="ppoo-title">ซื้อแพ็กเก็ตดูแลต่อได้</h3>
+    <div class="price-list">
+      <div class="price-item">
+        <span class="service-name">เว็บไซต์หน้าเดียว</span>
+        <span class="service-price">1,400 <span>บาท</span></span>
+      </div>
+      <div class="price-item">
+        <span class="service-name">เว็บไซต์หลายหน้า</span>
+        <span class="service-price">4,900 <span>บาท</span></span>
+      </div>
+      <div class="price-item highlight">
+        <span class="service-name">เว็บไซต์ครบวงจร</span>
+        <span class="service-price">6,900 <span>บาท</span></span>
+      </div>
+    </div>
+  </div>
+  </div>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="js/app.js?v=2"></script>
   <script src="js/appwrite.js"></script>
-  
   <footer class="site-footer">
     <div class="">
       <img src="./img/ahmetyuksek-mountain-range-9842371_1920.jpg" alt="" width="133px" style="border-radius: 16px;">
