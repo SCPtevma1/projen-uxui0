@@ -90,6 +90,7 @@ $serviceCount = (int) $servicesResult->fetch_assoc()['total'];
             <a href="dashboard.php" class="active"><i class="bi bi-speedometer2 me-2"></i> ภาพรวมระบบ</a>
             <a href="manage_users.php"><i class="bi bi-people me-2"></i> จัดการผู้ใช้งาน</a>
             <a href="manage_products.php"><i class="bi bi-box-seam me-2"></i> รายการสินค้า</a>
+            <a href="manage_footer.php">footer</a>
             <a href="manage_services.php"><i class="bi bi-window-stack me-2"></i> จัดการเว็บไซต์</a>
             <a href="Settings.php"><i class="bi bi-gear me-2"></i> ตั้งค่าระบบ</a>
         </aside>
