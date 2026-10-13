@@ -15,8 +15,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->close();
         }
     }
-
-    // 2. เพิ่มเมนูย่อย
     if (isset($_POST['action']) && $_POST['action'] === 'add_link') {
         $section_id = intval($_POST['section_id']);
         $link_title = trim($_POST['link_title']);
@@ -28,8 +26,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->close();
         }
     }
-
-    // 3. ลบหัวข้อหลัก
     if (isset($_POST['action']) && $_POST['action'] === 'delete_section') {
         $sec_id = intval($_POST['sec_id']);
         $stmt = $conn->prepare("DELETE FROM footer_sections WHERE id = ?");
@@ -37,8 +33,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute();
         $stmt->close();
     }
-
-    // 4. ลบเมนูย่อย
     if (isset($_POST['action']) && $_POST['action'] === 'delete_link') {
         $link_id = intval($_POST['link_id']);
         $stmt = $conn->prepare("DELETE FROM footer_links WHERE id = ?");
@@ -172,8 +166,6 @@ $sections = $sections_result ? $sections_result->fetch_all(MYSQLI_ASSOC) : [];
         <?php endforeach; ?>
       </div>
     </div>
-
   </div>
-
 </body>
 </html>
