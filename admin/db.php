@@ -52,4 +52,28 @@ $serviceImagesTable = "CREATE TABLE IF NOT EXISTS service_carousel_images (
 if (!$conn->query($serviceImagesTable)) {
     die("Unable to initialize service_carousel_images: " . $conn->error);
 }
+$footerSectionsTable = "CREATE TABLE IF NOT EXISTS footer_sections (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    sort_order INT DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+
+if (!$conn->query($footerSectionsTable)) {
+    die("Unable to initialize footer_sections: " . $conn->error);
+}
+$footerLinksTable = "CREATE TABLE IF NOT EXISTS footer_links (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    section_id INT UNSIGNED NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    url VARCHAR(255) NOT NULL DEFAULT '#',
+    sort_order INT DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_footer_links_section
+        FOREIGN KEY (section_id) REFERENCES footer_sections (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+
+if (!$conn->query($footerLinksTable)) {
+    die("Unable to initialize footer_links: " . $conn->error);
+}
 ?>
