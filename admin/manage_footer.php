@@ -55,6 +55,8 @@ $sections = $sections_result ? $sections_result->fetch_all(MYSQLI_ASSOC) : [];
 <head>
   <meta charset="UTF-8">
   <title>จัดการ Footer | Admin Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; font-family: 'Prompt', sans-serif; margin: 0; padding: 0; }
@@ -79,6 +81,17 @@ $sections = $sections_result ? $sections_result->fetch_all(MYSQLI_ASSOC) : [];
 <body>
 
   <div class="admin-container">
+    <div class="row">
+        <aside class="col-md-3 col-lg-2 sidebar p-3">
+           
+            <a href="dashboard.php"><i class="bi bi-speedometer2 me-2"></i> ภาพรวมระบบ</a>
+            <a href="manage_users.php" class="active"><i class="bi bi-people me-2"></i> จัดการผู้ใช้งาน</a>
+            <a href="manage_products.php"><i class="bi bi-box-seam me-2"></i> รายการสินค้า</a>
+            <a href="manage_services.php"><i class="bi bi-box-seam me-2"></i> จัดการเว็บไซต์</a>
+            <a href="manage_footer.php"><i class="bi bi-file-earmark-text me-2"></i> จัดการ Footer</a>
+            <a href="Settings.php"><i class="bi bi-gear me-2"></i> ตั้งค่าระบบ</a>
+        </aside>
+    </div>
     <h2>⚙️ จัดการส่วนท้ายเว็บไซต์ (Footer Manager)</h2>
     <p class="sub">เพิ่ม แก้ไข หรือลบหัวข้อหลักและลิงก์เมนูย่อยของ Footer</p>
 

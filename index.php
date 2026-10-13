@@ -278,6 +278,9 @@
   <script src="js/appwrite.js"></script>
   
   <footer class="site-footer">
+    <div class="">
+      <img src="./img/ahmetyuksek-mountain-range-9842371_1920.jpg" alt="" width="133px" style="border-radius: 16px;">
+    </div>
     <div class="site-footer__grid">
       <div class="site-footer__column">
         <h4>บริการของเรา</h4>

@@ -429,6 +429,7 @@ $galleryImages = (int) $service['id'] > 0 ? $loadServiceImages((int) $service['i
             <a href="manage_users.php"><i class="bi bi-people me-2"></i> จัดการผู้ใช้งาน</a>
             <a href="manage_products.php"><i class="bi bi-box-seam me-2"></i> รายการสินค้า</a>
             <a href="manage_services.php" class="active"><i class="bi bi-window-stack me-2"></i> จัดการเว็บไซต์</a>
+            <a href="manage_footer.php"><i class="bi bi-file-earmark-text me-2"></i> จัดการ Footer</a>
             <a href="Settings.php"><i class="bi bi-gear me-2"></i> ตั้งค่าระบบ</a>
         </aside>
         <main class="col-md-9 col-lg-10 p-3 p-lg-4">

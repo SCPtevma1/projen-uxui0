@@ -259,67 +259,73 @@ body {
     min-width: 100%;
     border-top: 1px solid #d8d0c1;
   }
+}.subject-page__footer {
+  background-color: #1e293b;
+  border-top: 1px solid #334155;
+  color: #94a3b8;
+  padding: 50px 0 24px;
 }
-.subject-page__footer {
-  background-color: #070707;
-  border-top: 2px solid #e5e5e5;
-  padding: 40px 20px 20px;
-  width: 100%;
-  margin-top: auto;
-}
-.footer-container {
-  max-width: 1100px;
+
+/* Grid Layout 4 Columns */
+.footer-content {
+  max-width: 1200px;
   margin: 0 auto;
+  padding: 0 24px;
   display: grid;
-  grid-template-columns: 1.2fr 0.9fr 0.9fr 1fr;
-  gap: 30px;
+  grid-template-columns: 2fr repeat(3, 1fr);
+  gap: 32px;
 }
+
+/* Column General Styling */
 .footer-col {
   display: flex;
   flex-direction: column;
+  gap: 12px;
 }
 
-/* ตกแต่งรูปภาพ (img) ให้สวยงาม */
+/* Brand Column & Logo */
 .footer-img-box {
-  width: 100%;
-  max-width: 180px;
-  height: 90px;
-  border-radius: 16px;
-  overflow: hidden;
-  border: 2px solid #e5e5e5;
-  box-shadow: 0 4px 0 #e5e5e5;
-  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.footer-img {
-  width: 100%;
-  height: 100%;
+.footer-img-box img {
+  width: 48px;
+  height: 48px;
   object-fit: cover;
-  display: block;
+  border-radius: 10px;
+  border: 2px solid #6366f1;
 }
 
+.footer-brand-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+/* Section Titles */
 .footer-title {
-  font-weight: 800;
-  font-size: 18px;
-  color: #58cc02;
-  margin-bottom: 6px;
+  color: #f8fafc;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  position: relative;
+  padding-bottom: 8px;
 }
 
-.footer-desc {
-  font-size: 13px;
-  color: #777;
-  line-height: 1.5;
+.footer-title::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 28px;
+  height: 3px;
+  background-color: #6366f1;
+  border-radius: 2px;
 }
 
-/* หัวข้อเมนู */
-.footer-heading {
-  font-size: 16px;
-  font-weight: 800;
-  color: #3c3c3c;
-  margin-bottom: 14px;
-}
-
-/* ลิงก์รายการเมนู */
+/* Links & Hover Effects */
 .footer-links {
   list-style: none;
   padding: 0;
@@ -329,100 +335,40 @@ body {
   gap: 10px;
 }
 
-.footer-links a {
-  color: #666;
-  font-size: 14px;
-  font-weight: 600;
+.footer-links li a {
+  color: #94a3b8;
   text-decoration: none;
-  transition: color 0.15s ease;
+  font-size: 0.925rem;
+  transition: all 0.2s ease;
 }
 
-.footer-links a:hover {
-  color: #1cb0f6;
-  text-decoration: underline;
+.footer-links li a:hover {
+  color: #818cf8;
+  transform: translateX(4px);
 }
 
-/* ---------------------------------------------------
-   ปุ่มโซเชียลมีเดีย (Social Media Buttons)
-   --------------------------------------------------- */
-.social-sub {
-  font-size: 13px;
-  color: #777;
-  margin-bottom: 12px;
-}
-
-.social-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.social-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 14px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: none;
-  color: #ffffff;
-  transition: all 0.1s ease;
-}
-
-.social-btn:active {
-  transform: translateY(3px) !important;
-  box-shadow: none !important;
-}
-
-/* สีเฉพาะแต่ละโซเชียล สไตล์ 3D */
-.btn-fb { background-color: #1877f2; box-shadow: 0 4px 0 #115cbe; }
-.btn-yt { background-color: #ff0000; box-shadow: 0 4px 0 #cc0000; }
-.btn-gh { background-color: #24292e; box-shadow: 0 4px 0 #000000; }
-.btn-dc { background-color: #5865f2; box-shadow: 0 4px 0 #3b42be; }
-
-.social-btn:hover {
-  filter: brightness(1.08);
-}
-
-/* ---------------------------------------------------
-   ส่วนลิขสิทธิ์ด้านล่างสุด (Copyright Bottom)
-   --------------------------------------------------- */
+/* Bottom Bar */
 .footer-bottom {
-  max-width: 1100px;
-  margin: 30px auto 0;
-  padding-top: 20px;
-  border-top: 1px solid #e5e5e5;
+  max-width: 1200px;
+  margin: 40px auto 0;
+  padding: 20px 24px 0;
+  border-top: 1px solid #334155;
   text-align: center;
+  font-size: 0.85rem;
+  color: #64748b;
 }
 
-.copyright {
-  font-size: 13px;
-  color: #aaa;
-  font-weight: 600;
-}
-
-/* ---------------------------------------------------
-   RESPONSIVE (รองรับจอมือถือและแท็บเล็ต)
-   --------------------------------------------------- */
-@media (max-width: 850px) {
-  .footer-container {
-    grid-template-columns: repeat(2, 1fr); /* แสดงเป็น 2 คอลัมน์บนแท็บเล็ต */
-    gap: 25px;
+/* Responsive design for Mobile */
+@media (max-width: 992px) {
+  .footer-content {
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
   }
 }
 
-@media (max-width: 550px) {
-  .footer-container {
-    grid-template-columns: 1fr; /* แสดงเป็น 1 คอลัมน์เรียงลงมาบนมือถือ */
-    text-align: center;
-  }
-
-  .footer-img-box {
-    margin: 0 auto 12px;
-  }
-
-  .social-group {
-    justify-content: center;
+@media (max-width: 576px) {
+  .footer-content {
+    grid-template-columns: 1fr;
+    gap: 24px;
   }
 }
