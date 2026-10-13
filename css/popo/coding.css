@@ -358,8 +358,6 @@ button.learn-more a:active {
   width: 100%;
   margin-top: auto;
 }
-
-/* จัดเลย์เอาต์ คอลัมน์ ด้วย Grid */
 .footer-container {
   max-width: 1100px;
   margin: 0 auto;
@@ -367,7 +365,6 @@ button.learn-more a:active {
   grid-template-columns: 1.2fr 0.9fr 0.9fr 1fr;
   gap: 30px;
 }
-
 .footer-col {
   display: flex;
   flex-direction: column;
