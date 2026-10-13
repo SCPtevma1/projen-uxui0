@@ -45,6 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
         button:hover { background: #0056b3; }
         .error { color: red; margin-bottom: 15px; text-align: center; font-size: 14px; }
+        .bullon-a a {text-align: center;margin-top: 1rem; color: #333;  text-decoration: none;}
     </style>
 </head>
 <body>
@@ -63,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="password" name="password" required>
             </div>
             <button type="submit">เข้าสู่ระบบ</button>
-            <div class="">
+            <div class="bullon-a">
                 <a href="../index.php" class="">กลับไปหน้าหลัก</a>
             </div>
         </form>
