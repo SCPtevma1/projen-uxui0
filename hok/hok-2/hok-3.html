@@ -103,11 +103,7 @@
                 ยินดีต้อนรับสู่หน้าโปรไฟล์ของฉัน ติดต่องานได้ที่ลิงก์ด้านล่างเลยครับ!
             </p>
         </header>
-
-        <!-- Links Section -->
         <section class="w-full flex flex-col gap-4 animate-slide-up" style="animation-delay: 0.2s;">
-            
-            <!-- Facebook Link -->
             <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" class="glass-btn flex items-center justify-between p-4 rounded-2xl transition-all duration-300 transform hover:-translate-y-1 group">
                 <div class="flex items-center gap-4">
                     <div class="bg-blue-600 text-white p-2 rounded-xl group-hover:scale-110 transition-transform">
@@ -117,20 +113,15 @@
                 </div>
                 <i class="ph ph-caret-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
             </a>
-
-            <!-- Line Link -->
             <a href="https://line.me" target="_blank" rel="noopener noreferrer" class="glass-btn flex items-center justify-between p-4 rounded-2xl transition-all duration-300 transform hover:-translate-y-1 group">
                 <div class="flex items-center gap-4">
                     <div class="bg-green-500 text-white p-2 rounded-xl group-hover:scale-110 transition-transform">
-                        <!-- ไม่มีไอคอน Line ใน Phosphor โดยตรง ใช้ Chat แทน -->
                         <i class="ph-fill ph-chat-circle-dots text-xl"></i> 
                     </div>
                     <span class="font-medium text-gray-800">พูดคุยผ่าน LINE</span>
                 </div>
                 <i class="ph ph-caret-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
             </a>
-
-            <!-- Instagram Link -->
             <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="glass-btn flex items-center justify-between p-4 rounded-2xl transition-all duration-300 transform hover:-translate-y-1 group">
                 <div class="flex items-center gap-4">
                     <div class="bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white p-2 rounded-xl group-hover:scale-110 transition-transform">
@@ -140,8 +131,6 @@
                 </div>
                 <i class="ph ph-caret-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
             </a>
-
-            <!-- X (Twitter) Link -->
             <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" class="glass-btn flex items-center justify-between p-4 rounded-2xl transition-all duration-300 transform hover:-translate-y-1 group">
                 <div class="flex items-center gap-4">
                     <div class="bg-black text-white p-2 rounded-xl group-hover:scale-110 transition-transform">
@@ -151,8 +140,6 @@
                 </div>
                 <i class="ph ph-caret-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
             </a>
-
-            <!-- Email Link -->
             <a href="mailto:hello@example.com" class="glass-btn flex items-center justify-between p-4 rounded-2xl transition-all duration-300 transform hover:-translate-y-1 group">
                 <div class="flex items-center gap-4">
                     <div class="bg-red-500 text-white p-2 rounded-xl group-hover:scale-110 transition-transform">
@@ -162,98 +149,18 @@
                 </div>
                 <i class="ph ph-caret-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
             </a>
-
         </section>
-
-        <!-- Divider -->
         <hr class="w-full border-t border-gray-300/50 my-8">
-
-        <!-- Share Button (Web Share API) -->
         <button id="shareBtn" class="w-full bg-gray-900 hover:bg-gray-800 text-white font-medium py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 transform hover:-translate-y-1">
             <i class="ph-bold ph-export text-lg"></i>
             แชร์โปรไฟล์นี้
         </button>
-
         <footer class="mt-8 text-center text-xs text-gray-400">
             &copy; 2026 Your Name. All rights reserved.
         </footer>
-
     </main>
-
-    <!-- Toast Notification Container -->
     <div id="toast-container" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none">
-        <!-- Toasts will be injected here -->
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const shareBtn = document.getElementById('shareBtn');
-            const toastContainer = document.getElementById('toast-container');
-
-            // Function to show custom toast (replaces alert)
-            function showToast(message, type = 'success') {
-                const toast = document.createElement('div');
-                
-                // Styling based on type
-                let bgClass = type === 'success' ? 'bg-green-600' : 'bg-gray-800';
-                let icon = type === 'success' ? '<i class="ph-fill ph-check-circle text-lg"></i>' : '<i class="ph-fill ph-info text-lg"></i>';
-
-                toast.className = `animate-toast-enter flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl text-white text-sm font-medium ${bgClass} pointer-events-auto`;
-                toast.innerHTML = `${icon} <span>${message}</span>`;
-                
-                toastContainer.appendChild(toast);
-
-                // Remove toast after 3 seconds
-                setTimeout(() => {
-                    toast.classList.remove('animate-toast-enter');
-                    toast.classList.add('animate-toast-leave');
-                    
-                    // Remove from DOM after animation completes
-                    setTimeout(() => {
-                        toast.remove();
-                    }, 300); // Matches animation duration
-                }, 3000);
-            }
-
-            // Web Share API implementation
-            shareBtn.addEventListener('click', async () => {
-                const shareData = {
-                    title: 'โปรไฟล์ของฉัน - ช่องทางการติดต่อ',
-                    text: 'ดูช่องทางการติดต่อทั้งหมดและผลงานของฉันได้ที่นี่!',
-                    url: window.location.href
-                };
-
-                // ตรวจสอบว่าเบราว์เซอร์รองรับ Web Share API หรือไม่ (มักจะรองรับในมือถือ)
-                if (navigator.share) {
-                    try {
-                        await navigator.share(shareData);
-                        // ไม่ต้องแสดง toast ถ้าแชร์สำเร็จ เพราะระบบมือถือจัดการเอง
-                    } catch (err) {
-                        // User cancelled or error
-                        if (err.name !== 'AbortError') {
-                            console.error('Error sharing:', err);
-                            showToast('เกิดข้อผิดพลาดในการแชร์', 'error');
-                        }
-                    }
-                } else {
-                    // Fallback: หากไม่รองรับ ให้คัดลอกลิงก์แทน
-                    try {
-                        // Fallback method for iframe / old browsers
-                        const tempInput = document.createElement('input');
-                        tempInput.value = window.location.href;
-                        document.body.appendChild(tempInput);
-                        tempInput.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(tempInput);
-                        
-                        showToast('คัดลอกลิงก์โปรไฟล์แล้ว!', 'success');
-                    } catch (err) {
-                        console.error('Failed to copy: ', err);
-                        showToast('ไม่สามารถคัดลอกลิงก์ได้', 'error');
-                    }
-                }
-            });
-        });
-    </script>
+    <script src="/js/cs.js"></script>
 </body>
 </html>
