@@ -130,7 +130,7 @@
                 </a>
             </div>
 <div class="VVS">
-  <button type="button" onclick="window.location.href='html/จ่างาน.html'">จ้างงาน</button>
+  <button type="button" onclick="window.location.href='hok/hok-2/hok-3.html'">จ้างงาน</button>
   <button type="button" onclick="window.location.href='html/จ่างาน.html'">อนิเมะ</button>
   <button type="button" onclick="window.location.href='html/จ่างาน.html'">ภาคเสียงภาษาต่างๆ</button>
   <button type="button" onclick="window.location.href='html/จ่างาน.html'">รับทำระบบPOS</button>

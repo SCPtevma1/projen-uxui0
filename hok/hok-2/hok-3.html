@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ช่องทางการติดต่อ | Link in Bio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out forwards',
+                        'slide-up': 'slideUp 0.5s ease-out forwards',
+                        'toast-enter': 'toastEnter 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                        'toast-leave': 'toastLeave 0.3s ease-in forwards',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        toastEnter: {
+                            '0%': { opacity: '0', transform: 'translateY(100%)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        toastLeave: {
+                            '0%': { opacity: '1', transform: 'translateY(0)' },
+                            '100%': { opacity: '0', transform: 'translateY(100%)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            /* Soft CSS Gradient Background */
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            background-attachment: fixed;
+            /* เพิ่มสีสันพาสเทลอ่อนๆ ให้ดูมีมิติ */
+            background-image: radial-gradient(at 0% 0%, hsla(253,16%,7%,0) 0, transparent 50%), 
+                              radial-gradient(at 50% 0%, hsla(225,39%,30%,0.05) 0, transparent 50%), 
+                              radial-gradient(at 100% 0%, hsla(339,49%,30%,0.05) 0, transparent 50%);
+        }
+        
+        /* ซ่อน Scrollbar สำหรับความสวยงาม */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+        
+        /* สไตล์ Glassmorphism สำหรับปุ่มและ Card */
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+        }
+        
+        .glass-btn:hover {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 1);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen text-gray-800 flex justify-center py-10 px-4 sm:px-6 relative overflow-x-hidden">
+
+    <!-- ก้อนเมฆ/วงกลมเบลอเป็น Background เพิ่มเติม (Decorative) -->
+    <div class="fixed top-[-10%] left-[-10%] w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" style="animation-duration: 8s;"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" style="animation-duration: 10s;"></div>
+
+    <!-- Main Container -->
+    <main class="w-full max-w-md z-10 flex flex-col items-center">
+        
+        <!-- Profile Section -->
+        <header class="flex flex-col items-center mb-8 animate-fade-in w-full">
+            <!-- Profile Image -->
+            <div class="relative w-28 h-28 mb-4">
+                <img src="https://placehold.co/200x200/e2e8f0/64748b?text=Photo" alt="Profile Picture" class="w-full h-full object-cover rounded-full border-4 border-white shadow-lg">
+                <!-- Verified Badge หรือสถานะ (Optional) -->
+                <div class="absolute bottom-1 right-1 bg-green-500 w-5 h-5 rounded-full border-2 border-white" title="Online"></div>
+            </div>
+            
+            <!-- Name & Bio -->
+            <h1 class="text-2xl font-semibold mb-2 text-gray-900 tracking-wide text-center">ชื่อของคุณ (Your Name)</h1>
+            <p class="text-sm text-gray-600 text-center max-w-xs leading-relaxed">
+                นักออกแบบกราฟิก และ นักพัฒนาเว็บไซต์ 🎨💻 <br>
+                ยินดีต้อนรับสู่หน้าโปรไฟล์ของฉัน ติดต่องานได้ที่ลิงก์ด้านล่างเลยครับ!
+            </p>
+        </header>
+
+        <!-- Links Section -->
+        <section class="w-full flex flex-col gap-4 animate-slide-up" style="animation-delay: 0.2s;">
+            
+            <!-- Facebook Link -->
+            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" class="glass-btn flex items-center justify-between p-4 rounded-2xl transition-all duration-300 transform hover:-translate-y-1 group">
+                <div class="flex items-center gap-4">
+                    <div class="bg-blue-600 text-white p-2 rounded-xl group-hover:scale-110 transition-transform">
+                        <i class="ph-fill ph-facebook-logo text-xl"></i>
+                    </div>
+                    <span class="font-medium text-gray-800">ติดตามบน Facebook</span>
+                </div>
+                <i class="ph ph-caret-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
+            </a>
+
+            <!-- Line Link -->
+            <a href="https://line.me" target="_blank" rel="noopener noreferrer" class="glass-btn flex items-center justify-between p-4 rounded-2xl transition-all duration-300 transform hover:-translate-y-1 group">
+                <div class="flex items-center gap-4">
+                    <div class="bg-green-500 text-white p-2 rounded-xl group-hover:scale-110 transition-transform">
+                        <!-- ไม่มีไอคอน Line ใน Phosphor โดยตรง ใช้ Chat แทน -->
+                        <i class="ph-fill ph-chat-circle-dots text-xl"></i> 
+                    </div>
+                    <span class="font-medium text-gray-800">พูดคุยผ่าน LINE</span>
+                </div>
+                <i class="ph ph-caret-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
+            </a>
+
+            <!-- Instagram Link -->
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="glass-btn flex items-center justify-between p-4 rounded-2xl transition-all duration-300 transform hover:-translate-y-1 group">
+                <div class="flex items-center gap-4">
+                    <div class="bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white p-2 rounded-xl group-hover:scale-110 transition-transform">
+                        <i class="ph-fill ph-instagram-logo text-xl"></i>
+                    </div>
+                    <span class="font-medium text-gray-800">ดูผลงานใน Instagram</span>
+                </div>
+                <i class="ph ph-caret-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
+            </a>
+
+            <!-- X (Twitter) Link -->
+            <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" class="glass-btn flex items-center justify-between p-4 rounded-2xl transition-all duration-300 transform hover:-translate-y-1 group">
+                <div class="flex items-center gap-4">
+                    <div class="bg-black text-white p-2 rounded-xl group-hover:scale-110 transition-transform">
+                        <i class="ph-fill ph-x-logo text-xl"></i>
+                    </div>
+                    <span class="font-medium text-gray-800">ติดตามข่าวสารทาง X</span>
+                </div>
+                <i class="ph ph-caret-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
+            </a>
+
+            <!-- Email Link -->
+            <a href="mailto:hello@example.com" class="glass-btn flex items-center justify-between p-4 rounded-2xl transition-all duration-300 transform hover:-translate-y-1 group">
+                <div class="flex items-center gap-4">
+                    <div class="bg-red-500 text-white p-2 rounded-xl group-hover:scale-110 transition-transform">
+                        <i class="ph-fill ph-envelope-simple text-xl"></i>
+                    </div>
+                    <span class="font-medium text-gray-800">ส่งอีเมลหาฉัน</span>
+                </div>
+                <i class="ph ph-caret-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
+            </a>
+
+        </section>
+
+        <!-- Divider -->
+        <hr class="w-full border-t border-gray-300/50 my-8">
+
+        <!-- Share Button (Web Share API) -->
+        <button id="shareBtn" class="w-full bg-gray-900 hover:bg-gray-800 text-white font-medium py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 transform hover:-translate-y-1">
+            <i class="ph-bold ph-export text-lg"></i>
+            แชร์โปรไฟล์นี้
+        </button>
+
+        <footer class="mt-8 text-center text-xs text-gray-400">
+            &copy; 2026 Your Name. All rights reserved.
+        </footer>
+
+    </main>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none">
+        <!-- Toasts will be injected here -->
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const shareBtn = document.getElementById('shareBtn');
+            const toastContainer = document.getElementById('toast-container');
+
+            // Function to show custom toast (replaces alert)
+            function showToast(message, type = 'success') {
+                const toast = document.createElement('div');
+                
+                // Styling based on type
+                let bgClass = type === 'success' ? 'bg-green-600' : 'bg-gray-800';
+                let icon = type === 'success' ? '<i class="ph-fill ph-check-circle text-lg"></i>' : '<i class="ph-fill ph-info text-lg"></i>';
+
+                toast.className = `animate-toast-enter flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl text-white text-sm font-medium ${bgClass} pointer-events-auto`;
+                toast.innerHTML = `${icon} <span>${message}</span>`;
+                
+                toastContainer.appendChild(toast);
+
+                // Remove toast after 3 seconds
+                setTimeout(() => {
+                    toast.classList.remove('animate-toast-enter');
+                    toast.classList.add('animate-toast-leave');
+                    
+                    // Remove from DOM after animation completes
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 300); // Matches animation duration
+                }, 3000);
+            }
+
+            // Web Share API implementation
+            shareBtn.addEventListener('click', async () => {
+                const shareData = {
+                    title: 'โปรไฟล์ของฉัน - ช่องทางการติดต่อ',
+                    text: 'ดูช่องทางการติดต่อทั้งหมดและผลงานของฉันได้ที่นี่!',
+                    url: window.location.href
+                };
+
+                // ตรวจสอบว่าเบราว์เซอร์รองรับ Web Share API หรือไม่ (มักจะรองรับในมือถือ)
+                if (navigator.share) {
+                    try {
+                        await navigator.share(shareData);
+                        // ไม่ต้องแสดง toast ถ้าแชร์สำเร็จ เพราะระบบมือถือจัดการเอง
+                    } catch (err) {
+                        // User cancelled or error
+                        if (err.name !== 'AbortError') {
+                            console.error('Error sharing:', err);
+                            showToast('เกิดข้อผิดพลาดในการแชร์', 'error');
+                        }
+                    }
+                } else {
+                    // Fallback: หากไม่รองรับ ให้คัดลอกลิงก์แทน
+                    try {
+                        // Fallback method for iframe / old browsers
+                        const tempInput = document.createElement('input');
+                        tempInput.value = window.location.href;
+                        document.body.appendChild(tempInput);
+                        tempInput.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(tempInput);
+                        
+                        showToast('คัดลอกลิงก์โปรไฟล์แล้ว!', 'success');
+                    } catch (err) {
+                        console.error('Failed to copy: ', err);
+                        showToast('ไม่สามารถคัดลอกลิงก์ได้', 'error');
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
