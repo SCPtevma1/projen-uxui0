@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -44,24 +45,24 @@
             }
         }
     </script>
-    
+
     <style>
         body {
             /* Soft CSS Gradient Background */
             background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
             background-attachment: fixed;
             /* เพิ่มสีสันพาสเทลอ่อนๆ ให้ดูมีมิติ */
-            background-image: radial-gradient(at 0% 0%, hsla(253,16%,7%,0) 0, transparent 50%), 
-                              radial-gradient(at 50% 0%, hsla(225,39%,30%,0.05) 0, transparent 50%), 
-                              radial-gradient(at 100% 0%, hsla(339,49%,30%,0.05) 0, transparent 50%);
+            background-image: radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 0) 0, transparent 50%),
+                radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 0.05) 0, transparent 50%),
+                radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 0.05) 0, transparent 50%);
         }
-        
+
         /* ซ่อน Scrollbar สำหรับความสวยงาม */
         ::-webkit-scrollbar {
             width: 0px;
             background: transparent;
         }
-        
+
         /* สไตล์ Glassmorphism สำหรับปุ่มและ Card */
         .glass-btn {
             background: rgba(255, 255, 255, 0.4);
@@ -70,7 +71,7 @@
             border: 1px solid rgba(255, 255, 255, 0.8);
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
         }
-        
+
         .glass-btn:hover {
             background: rgba(255, 255, 255, 0.7);
             border: 1px solid rgba(255, 255, 255, 1);
@@ -78,24 +79,27 @@
         }
     </style>
 </head>
-<body class="min-h-screen text-gray-800 flex justify-center py-10 px-4 sm:px-6 relative overflow-x-hidden">
 
-    <!-- ก้อนเมฆ/วงกลมเบลอเป็น Background เพิ่มเติม (Decorative) -->
-    <div class="fixed top-[-10%] left-[-10%] w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" style="animation-duration: 8s;"></div>
-    <div class="fixed bottom-[-10%] right-[-10%] w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" style="animation-duration: 10s;"></div>
+<body class="min-h-screen text-gray-800 flex justify-center py-10 px-4 sm:px-6 relative overflow-x-hidden">
+    <div class="fixed top-[-10%] left-[-10%] w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"
+        style="animation-duration: 8s;"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"
+        style="animation-duration: 10s;"></div>
 
     <!-- Main Container -->
     <main class="w-full max-w-md z-10 flex flex-col items-center">
-        
+
         <!-- Profile Section -->
         <header class="flex flex-col items-center mb-8 animate-fade-in w-full">
             <!-- Profile Image -->
             <div class="relative w-28 h-28 mb-4">
-                <img src="https://placehold.co/200x200/e2e8f0/64748b?text=Photo" alt="Profile Picture" class="w-full h-full object-cover rounded-full border-4 border-white shadow-lg">
+                <img src="https://placehold.co/200x200/e2e8f0/64748b?text=Photo" alt="Profile Picture"
+                    class="w-full h-full object-cover rounded-full border-4 border-white shadow-lg">
                 <!-- Verified Badge หรือสถานะ (Optional) -->
-                <div class="absolute bottom-1 right-1 bg-green-500 w-5 h-5 rounded-full border-2 border-white" title="Online"></div>
+                <div class="absolute bottom-1 right-1 bg-green-500 w-5 h-5 rounded-full border-2 border-white"
+                    title="Online"></div>
             </div>
-            
+
             <!-- Name & Bio -->
             <h1 class="text-2xl font-semibold mb-2 text-gray-900 tracking-wide text-center">ชื่อของคุณ (Your Name)</h1>
             <p class="text-sm text-gray-600 text-center max-w-xs leading-relaxed">
@@ -104,7 +108,8 @@
             </p>
         </header>
         <section class="w-full flex flex-col gap-4 animate-slide-up" style="animation-delay: 0.2s;">
-            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" class="glass-btn flex items-center justify-between p-4 rounded-2xl transition-all duration-300 transform hover:-translate-y-1 group">
+            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer"
+                class="glass-btn flex items-center justify-between p-4 rounded-2xl transition-all duration-300 transform hover:-translate-y-1 group">
                 <div class="flex items-center gap-4">
                     <div class="bg-blue-600 text-white p-2 rounded-xl group-hover:scale-110 transition-transform">
                         <i class="ph-fill ph-facebook-logo text-xl"></i>
@@ -113,25 +118,29 @@
                 </div>
                 <i class="ph ph-caret-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
             </a>
-            <a href="https://line.me" target="_blank" rel="noopener noreferrer" class="glass-btn flex items-center justify-between p-4 rounded-2xl transition-all duration-300 transform hover:-translate-y-1 group">
+            <a href="https://line.me" target="_blank" rel="noopener noreferrer"
+                class="glass-btn flex items-center justify-between p-4 rounded-2xl transition-all duration-300 transform hover:-translate-y-1 group">
                 <div class="flex items-center gap-4">
                     <div class="bg-green-500 text-white p-2 rounded-xl group-hover:scale-110 transition-transform">
-                        <i class="ph-fill ph-chat-circle-dots text-xl"></i> 
+                        <i class="ph-fill ph-chat-circle-dots text-xl"></i>
                     </div>
                     <span class="font-medium text-gray-800">พูดคุยผ่าน LINE</span>
                 </div>
                 <i class="ph ph-caret-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
             </a>
-            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="glass-btn flex items-center justify-between p-4 rounded-2xl transition-all duration-300 transform hover:-translate-y-1 group">
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer"
+                class="glass-btn flex items-center justify-between p-4 rounded-2xl transition-all duration-300 transform hover:-translate-y-1 group">
                 <div class="flex items-center gap-4">
-                    <div class="bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white p-2 rounded-xl group-hover:scale-110 transition-transform">
+                    <div
+                        class="bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white p-2 rounded-xl group-hover:scale-110 transition-transform">
                         <i class="ph-fill ph-instagram-logo text-xl"></i>
                     </div>
                     <span class="font-medium text-gray-800">ดูผลงานใน Instagram</span>
                 </div>
                 <i class="ph ph-caret-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
             </a>
-            <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" class="glass-btn flex items-center justify-between p-4 rounded-2xl transition-all duration-300 transform hover:-translate-y-1 group">
+            <a href="https://twitter.com" target="_blank" rel="noopener noreferrer"
+                class="glass-btn flex items-center justify-between p-4 rounded-2xl transition-all duration-300 transform hover:-translate-y-1 group">
                 <div class="flex items-center gap-4">
                     <div class="bg-black text-white p-2 rounded-xl group-hover:scale-110 transition-transform">
                         <i class="ph-fill ph-x-logo text-xl"></i>
@@ -140,7 +149,8 @@
                 </div>
                 <i class="ph ph-caret-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
             </a>
-            <a href="mailto:hello@example.com" class="glass-btn flex items-center justify-between p-4 rounded-2xl transition-all duration-300 transform hover:-translate-y-1 group">
+            <a href="mailto:hello@example.com"
+                class="glass-btn flex items-center justify-between p-4 rounded-2xl transition-all duration-300 transform hover:-translate-y-1 group">
                 <div class="flex items-center gap-4">
                     <div class="bg-red-500 text-white p-2 rounded-xl group-hover:scale-110 transition-transform">
                         <i class="ph-fill ph-envelope-simple text-xl"></i>
@@ -151,16 +161,21 @@
             </a>
         </section>
         <hr class="w-full border-t border-gray-300/50 my-8">
-        <button id="shareBtn" class="w-full bg-gray-900 hover:bg-gray-800 text-white font-medium py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 transform hover:-translate-y-1">
+
+        <button id="shareBtn"
+            class="w-full bg-gray-900 hover:bg-gray-800 text-white font-medium py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 transform hover:-translate-y-1">
             <i class="ph-bold ph-export text-lg"></i>
             แชร์โปรไฟล์นี้
         </button>
+        <button><a href="./index.php">กับหน้าแรก</a></button>
         <footer class="mt-8 text-center text-xs text-gray-400">
             &copy; 2026 Your Name. All rights reserved.
         </footer>
     </main>
-    <div id="toast-container" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none">
+    <div id="toast-container"
+        class="fixed bottom-5 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none">
     </div>
-    <script src="/js/cs.js"></script>
+    <script src="./js/cs.js"></script>
 </body>
+
 </html>

@@ -1,184 +1,288 @@
 <?php
 session_start();
-require_once 'db.php'; // เรียกใช้ $conn จาก db.php
+require_once 'db.php';
 
-// จัดการการส่งฟอร์ม (POST)
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    
-    // 1. เพิ่มหัวข้อหลัก
-    if (isset($_POST['action']) && $_POST['action'] === 'add_section') {
-        $title = trim($_POST['section_title']);
-        if (!empty($title)) {
-            $stmt = $conn->prepare("INSERT INTO footer_sections (title) VALUES (?)");
-            $stmt->bind_param("s", $title);
-            $stmt->execute();
-            $stmt->close();
-        }
-    }
-    if (isset($_POST['action']) && $_POST['action'] === 'add_link') {
-        $section_id = intval($_POST['section_id']);
-        $link_title = trim($_POST['link_title']);
-        $link_url   = trim($_POST['link_url']);
-        if ($section_id > 0 && !empty($link_title)) {
-            $stmt = $conn->prepare("INSERT INTO footer_links (section_id, title, url) VALUES (?, ?, ?)");
-            $stmt->bind_param("iss", $section_id, $link_title, $link_url);
-            $stmt->execute();
-            $stmt->close();
-        }
-    }
-    if (isset($_POST['action']) && $_POST['action'] === 'delete_section') {
-        $sec_id = intval($_POST['sec_id']);
-        $stmt = $conn->prepare("DELETE FROM footer_sections WHERE id = ?");
-        $stmt->bind_param("i", $sec_id);
-        $stmt->execute();
-        $stmt->close();
-    }
-    if (isset($_POST['action']) && $_POST['action'] === 'delete_link') {
-        $link_id = intval($_POST['link_id']);
-        $stmt = $conn->prepare("DELETE FROM footer_links WHERE id = ?");
-        $stmt->bind_param("i", $link_id);
-        $stmt->execute();
-        $stmt->close();
-    }
-
-    header("Location: manage_footer.php");
+if (empty($_SESSION['admin_user'])) {
+    header('Location: login.php');
     exit;
 }
 
-// ดึงข้อมูลหัวข้อหลักทั้งหมด
-$sections_result = $conn->query("SELECT * FROM footer_sections ORDER BY sort_order ASC, id ASC");
-$sections = $sections_result ? $sections_result->fetch_all(MYSQLI_ASSOC) : [];
-?>
+$notice = '';
+$error = '';
 
-<!DOCTYPE html>
+// จัดการการส่งฟอร์ม (POST)
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+
+    // 1. เพิ่มหัวข้อหลัก
+    if ($action === 'add_section') {
+        $title = trim($_POST['section_title'] ?? '');
+        $sortOrder = (int)($_POST['sort_order'] ?? 0);
+        if ($title !== '') {
+            $stmt = $conn->prepare("INSERT INTO footer_sections (title, sort_order) VALUES (?, ?)");
+            if ($stmt) {
+                $stmt->bind_param("si", $title, $sortOrder);
+                if ($stmt->execute()) {
+                    $notice = "เพิ่มหัวข้อ '$title' เรียบร้อยแล้ว";
+                } else {
+                    $error = "เพิ่มหัวข้อไม่สำเร็จ: " . $stmt->error;
+                }
+                $stmt->close();
+            }
+        } else {
+            $error = "กรุณากรอกชื่อหัวข้อ";
+        }
+    }
+
+    // 2. เพิ่มเมนูย่อย
+    if ($action === 'add_link') {
+        $sectionId = (int)($_POST['section_id'] ?? 0);
+        $linkTitle = trim($_POST['link_title'] ?? '');
+        $linkUrl   = trim($_POST['link_url'] ?? '#');
+        $sortOrder = (int)($_POST['sort_order'] ?? 0);
+
+        if ($sectionId > 0 && $linkTitle !== '') {
+            $stmt = $conn->prepare("INSERT INTO footer_links (section_id, title, url, sort_order) VALUES (?, ?, ?, ?)");
+            if ($stmt) {
+                $stmt->bind_param("issi", $sectionId, $linkTitle, $linkUrl, $sortOrder);
+                if ($stmt->execute()) {
+                    $notice = "เพิ่มเมนูย่อย '$linkTitle' เรียบร้อยแล้ว";
+                } else {
+                    $error = "เพิ่มเมนูย่อยไม่สำเร็จ: " . $stmt->error;
+                }
+                $stmt->close();
+            }
+        } else {
+            $error = "กรุณาเลือกหัวข้อหลักและกรอกชื่อเมนูย่อย";
+        }
+    }
+
+    // 3. ลบหัวข้อหลัก
+    if ($action === 'delete_section') {
+        $secId = (int)($_POST['sec_id'] ?? 0);
+        if ($secId > 0) {
+            $stmt = $conn->prepare("DELETE FROM footer_sections WHERE id = ?");
+            if ($stmt) {
+                $stmt->bind_param("i", $secId);
+                if ($stmt->execute()) {
+                    $notice = "ลบหัวข้อเรียบร้อยแล้ว";
+                } else {
+                    $error = "ลบหัวข้อไม่สำเร็จ: " . $stmt->error;
+                }
+                $stmt->close();
+            }
+        }
+    }
+
+    // 4. ลบเมนูย่อย
+    if ($action === 'delete_link') {
+        $linkId = (int)($_POST['link_id'] ?? 0);
+        if ($linkId > 0) {
+            $stmt = $conn->prepare("DELETE FROM footer_links WHERE id = ?");
+            if ($stmt) {
+                $stmt->bind_param("i", $linkId);
+                if ($stmt->execute()) {
+                    $notice = "ลบเมนูย่อยเรียบร้อยแล้ว";
+                } else {
+                    $error = "ลบเมนูย่อยไม่สำเร็จ: " . $stmt->error;
+                }
+                $stmt->close();
+            }
+        }
+    }
+}
+
+// ดึงข้อมูลหัวข้อหลักและเมนูย่อยทั้งหมดแบบรวม Query เดียวเพื่อความรวดเร็ว
+$sectionsResult = $conn->query("SELECT * FROM footer_sections ORDER BY sort_order ASC, id ASC");
+$sections = $sectionsResult ? $sectionsResult->fetch_all(MYSQLI_ASSOC) : [];
+
+$linksBySection = [];
+if (!empty($sections)) {
+    $linksResult = $conn->query("SELECT * FROM footer_links ORDER BY sort_order ASC, id ASC");
+    if ($linksResult) {
+        while ($l = $linksResult->fetch_assoc()) {
+            $linksBySection[(int)$l['section_id']][] = $l;
+        }
+    }
+}
+?>
+<!doctype html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <title>จัดการ Footer | Admin Dashboard</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <style>
-    * { box-sizing: border-box; font-family: 'Prompt', sans-serif; margin: 0; padding: 0; }
-    body { background-color: #f4f6f9; color: #333; padding: 30px; }
-    .admin-container { max-width: 1100px; margin: 0 auto; }
-    .card { background: #fff; border-radius: 12px; padding: 25px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    h2 { margin-bottom: 8px; color: #1e293b; }
-    p.sub { color: #64748b; font-size: 14px; margin-bottom: 20px; }
-    label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; color: #475569; }
-    input[type="text"], select { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; }
-    .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; }
-    .btn-primary { background: #58cc02; color: #fff; }
-    .btn-danger { background: #ef4444; color: #fff; padding: 4px 10px; font-size: 12px; border-radius: 6px; }
-    .footer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 15px; }
-    .section-box { border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; background: #fafafa; }
-    .section-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 12px; }
-    .link-list { list-style: none; }
-    .link-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #e2e8f0; font-size: 14px; }
-    .link-url { font-size: 12px; color: #94a3b8; }
-  </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>จัดการ Footer | Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { background: #f1f5f9; color: #172033; font-family: 'Prompt', sans-serif; }
+        .sidebar { min-height: 100vh; background: #1e293b; }
+        .sidebar a { color: #cbd5e1; display: block; padding: 12px 16px; text-decoration: none; border-radius: 8px; margin-bottom: 4px; }
+        .sidebar a:hover, .sidebar a.active { background: #334155; color: #fff; }
+        .panel { border: 0; border-radius: 16px; box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06); }
+        .section-card { border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+        .section-card-header { padding: 14px 18px; border-bottom: 1px solid #e2e8f0; background: #fafafa; border-radius: 12px 12px 0 0; }
+        .link-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px dashed #e2e8f0; font-size: 0.9rem; }
+        .link-item:last-child { border-bottom: none; }
+        .link-url { font-size: 0.78rem; color: #64748b; font-family: monospace; }
+        @media (max-width: 767px) { .sidebar { min-height: auto; } }
+    </style>
 </head>
 <body>
-
-  <div class="admin-container">
+<div class="container-fluid">
     <div class="row">
+        <!-- Sidebar Navigation -->
         <aside class="col-md-3 col-lg-2 sidebar p-3">
-           
+            <div class="px-2 py-3 mb-2 text-white fw-bold fs-5 border-bottom border-secondary">
+                <i class="bi bi-shield-lock-fill text-primary me-2"></i>Admin Panel
+            </div>
             <a href="dashboard.php"><i class="bi bi-speedometer2 me-2"></i> ภาพรวมระบบ</a>
-            <a href="manage_users.php" class="active"><i class="bi bi-people me-2"></i> จัดการผู้ใช้งาน</a>
+            <a href="manage_users.php"><i class="bi bi-people me-2"></i> จัดการผู้ใช้งาน</a>
             <a href="manage_products.php"><i class="bi bi-box-seam me-2"></i> รายการสินค้า</a>
-            <a href="manage_services.php"><i class="bi bi-box-seam me-2"></i> จัดการเว็บไซต์</a>
-            <a href="manage_footer.php"><i class="bi bi-file-earmark-text me-2"></i> จัดการ Footer</a>
+            <a href="manage_services.php"><i class="bi bi-window-stack me-2"></i> จัดการเว็บไซต์</a>
+            <a href="manage_comments.php"><i class="bi bi-chat-left-text me-2"></i> จัดการความคิดเห็น</a>
+            <a href="manage_footer.php" class="active"><i class="bi bi-file-earmark-text me-2"></i> จัดการ Footer</a>
             <a href="Settings.php"><i class="bi bi-gear me-2"></i> ตั้งค่าระบบ</a>
         </aside>
-    </div>
-    <h2>⚙️ จัดการส่วนท้ายเว็บไซต์ (Footer Manager)</h2>
-    <p class="sub">เพิ่ม แก้ไข หรือลบหัวข้อหลักและลิงก์เมนูย่อยของ Footer</p>
 
-    <!-- ฟอร์ม 1: เพิ่มหัวข้อหลัก -->
-    <div class="card">
-      <h3>1. เพิ่มหัวข้อหลัก (Header Column)</h3>
-      <form action="" method="POST" style="display: flex; gap: 10px; margin-top: 15px;">
-        <input type="hidden" name="action" value="add_section">
-        <input type="text" name="section_title" placeholder="เช่น บริการของเรา, วิชาเรียนยอดนิยม" required>
-        <button type="submit" class="btn btn-primary">+ เพิ่มหัวข้อ</button>
-      </form>
-    </div>
+        <!-- Main Content -->
+        <main class="col-md-9 col-lg-10 p-3 p-lg-4">
+            <header class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-3 mb-4 gap-3">
+                <div>
+                    <h1 class="h3 mb-1">⚙️ จัดการส่วนท้ายเว็บไซต์ (Footer Manager)</h1>
+                    <p class="text-secondary mb-0">เพิ่ม แก้ไข หรือลบหมวดหมู่และลิงก์ของ Footer ที่แสดงผลหน้าเว็บ</p>
+                </div>
+                <div>
+                    ยินดีต้อนรับ, <strong><?= htmlspecialchars($_SESSION['admin_user']) ?></strong>
+                    <a class="btn btn-outline-danger btn-sm ms-2" href="logout.php"><i class="bi bi-box-arrow-right"></i> ออกจากระบบ</a>
+                </div>
+            </header>
 
-    <!-- ฟอร์ม 2: เพิ่มเมนูย่อย -->
-    <div class="card">
-      <h3>2. เพิ่มเมนูย่อย (Sub-menu Link)</h3>
-      <form action="" method="POST" style="margin-top: 15px;">
-        <input type="hidden" name="action" value="add_link">
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end;">
-          <div>
-            <label>เลือกหัวข้อหลัก</label>
-            <select name="section_id" required>
-              <option value="">-- เลือกหัวข้อ --</option>
-              <?php foreach ($sections as $sec): ?>
-                <option value="<?= $sec['id'] ?>"><?= htmlspecialchars($sec['title']) ?></option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-          <div>
-            <label>ชื่อเมนูย่อย</label>
-            <input type="text" name="link_title" placeholder="เช่น ระบบเรียนออนไลน์" required>
-          </div>
-          <div>
-            <label>ลิงก์ URL</label>
-            <input type="text" name="link_url" placeholder="เช่น /courses หรือ #">
-          </div>
-          <div>
-            <button type="submit" class="btn btn-primary">+ เพิ่มเมนูย่อย</button>
-          </div>
-        </div>
-      </form>
-    </div>
+            <?php if ($notice): ?>
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle me-2"></i><?= htmlspecialchars($notice) ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
+            <?php if ($error): ?>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i><?= htmlspecialchars($error) ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
 
-    <!-- รายการในระบบ -->
-    <div class="card">
-      <h3>📋 รายการ Footer ปัจจุบัน</h3>
-      <div class="footer-grid">
-        <?php foreach ($sections as $sec): ?>
-          <div class="section-box">
-            <div class="section-header">
-              <strong><?= htmlspecialchars($sec['title']) ?></strong>
-              <form action="" method="POST" onsubmit="return confirm('ยืนยันลบหัวข้อนี้?');">
-                <input type="hidden" name="action" value="delete_section">
-                <input type="hidden" name="sec_id" value="<?= $sec['id'] ?>">
-                <button type="submit" class="btn btn-danger">ลบ</button>
-              </form>
+            <div class="row g-4 mb-4">
+                <!-- ฟอร์ม 1: เพิ่มหัวข้อหลัก -->
+                <div class="col-lg-5">
+                    <div class="card panel p-4 h-100">
+                        <h5 class="card-title mb-3"><i class="bi bi-folder-plus text-primary me-2"></i>1. เพิ่มหัวข้อหลัก (Column Section)</h5>
+                        <form method="POST">
+                            <input type="hidden" name="action" value="add_section">
+                            <div class="mb-3">
+                                <label class="form-label">ชื่อหัวข้อหลัก</label>
+                                <input type="text" name="section_title" class="form-control" placeholder="เช่น บริการของเรา, วิชาเรียนยอดนิยม" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">ลำดับการแสดงผล (Sort Order)</label>
+                                <input type="number" name="sort_order" class="form-control" value="<?= count($sections) + 1 ?>" min="0">
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-plus-circle me-1"></i> เพิ่มหัวข้อใหม่</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- ฟอร์ม 2: เพิ่มเมนูย่อย -->
+                <div class="col-lg-7">
+                    <div class="card panel p-4 h-100">
+                        <h5 class="card-title mb-3"><i class="bi bi-link-45deg text-success me-2"></i>2. เพิ่มลิงก์เมนูย่อย (Footer Link)</h5>
+                        <form method="POST">
+                            <input type="hidden" name="action" value="add_link">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">เลือกหัวข้อหลัก</label>
+                                    <select name="section_id" class="form-select" required>
+                                        <option value="">-- เลือกหัวข้อ --</option>
+                                        <?php foreach ($sections as $sec): ?>
+                                            <option value="<?= $sec['id'] ?>"><?= htmlspecialchars($sec['title']) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">ชื่อเมนูย่อย</label>
+                                    <input type="text" name="link_title" class="form-control" placeholder="เช่น คอร์สเขียนโค้ด" required>
+                                </div>
+                                <div class="col-md-8">
+                                    <label class="form-label">ลิงก์ URL</label>
+                                    <input type="text" name="link_url" class="form-control" placeholder="เช่น /index.php หรือ #">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">ลำดับ</label>
+                                    <input type="number" name="sort_order" class="form-control" value="1" min="0">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-success mt-3"><i class="bi bi-plus-lg me-1"></i> เพิ่มเมนูย่อย</button>
+                        </form>
+                    </div>
+                </div>
             </div>
 
-            <ul class="link-list">
-              <?php
-                $stmt = $conn->prepare("SELECT * FROM footer_links WHERE section_id = ? ORDER BY sort_order ASC, id ASC");
-                $stmt->bind_param("i", $sec['id']);
-                $stmt->execute();
-                $links_res = $stmt->get_result();
-                if ($links_res->num_rows === 0):
-              ?>
-                <li style="font-size: 12px; color: #a1a1aa; padding: 5px 0;">ยังไม่มีเมนูย่อย</li>
-              <?php else: ?>
-                <?php while ($link = $links_res->fetch_assoc()): ?>
-                  <li class="link-item">
-                    <div>
-                      <div><?= htmlspecialchars($link['title']) ?></div>
-                      <div class="link-url"><?= htmlspecialchars($link['url']) ?></div>
+            <!-- ส่วนแสดงผลรายการ Footer ทั้งหมด -->
+            <div class="card panel p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0"><i class="bi bi-grid-3x3-gap me-2"></i>โครงสร้าง Footer ในระบบปัจจุบัน</h5>
+                    <span class="badge bg-secondary"><?= count($sections) ?> หมวดหมู่</span>
+                </div>
+
+                <?php if (empty($sections)): ?>
+                    <div class="alert alert-info mb-0">ยังไม่มีข้อมูลหัวข้อ Footer ในระบบ</div>
+                <?php else: ?>
+                    <div class="row g-3">
+                        <?php foreach ($sections as $sec): 
+                            $secId = (int)$sec['id'];
+                            $links = $linksBySection[$secId] ?? [];
+                        ?>
+                            <div class="col-md-6 col-xl-4">
+                                <div class="section-card h-100">
+                                    <div class="section-card-header d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <span class="badge bg-primary-subtle text-primary me-1">ลำดับ <?= (int)$sec['sort_order'] ?></span>
+                                            <strong><?= htmlspecialchars($sec['title']) ?></strong>
+                                        </div>
+                                        <form method="POST" onsubmit="return confirm('ยืนยันลบหัวข้อ <?= htmlspecialchars($sec['title']) ?> และลิงก์ย่อยทั้งหมดหรือไม่?');" class="m-0">
+                                            <input type="hidden" name="action" value="delete_section">
+                                            <input type="hidden" name="sec_id" value="<?= $sec['id'] ?>">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2" title="ลบหัวข้อ"><i class="bi bi-trash"></i></button>
+                                        </form>
+                                    </div>
+                                    <div class="p-2">
+                                        <?php if (empty($links)): ?>
+                                            <div class="text-secondary small text-center py-3">ยังไม่มีเมนูย่อยในหัวข้อนี้</div>
+                                        <?php else: ?>
+                                            <?php foreach ($links as $link): ?>
+                                                <div class="link-item">
+                                                    <div>
+                                                        <div class="fw-medium"><?= htmlspecialchars($link['title']) ?></div>
+                                                        <div class="link-url"><?= htmlspecialchars($link['url']) ?></div>
+                                                    </div>
+                                                    <form method="POST" onsubmit="return confirm('ยืนยันลบลิงก์นี้?');" class="m-0">
+                                                        <input type="hidden" name="action" value="delete_link">
+                                                        <input type="hidden" name="link_id" value="<?= $link['id'] ?>">
+                                                        <button type="submit" class="btn btn-outline-secondary btn-sm py-0 px-1 text-danger border-0" title="ลบลิงก์"><i class="bi bi-x-circle"></i></button>
+                                                    </form>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
                     </div>
-                    <form action="" method="POST">
-                      <input type="hidden" name="action" value="delete_link">
-                      <input type="hidden" name="link_id" value="<?= $link['id'] ?>">
-                      <button type="submit" class="btn btn-danger">✕</button>
-                    </form>
-                  </li>
-                <?php endwhile; ?>
-              <?php endif; $stmt->close(); ?>
-            </ul>
-          </div>
-        <?php endforeach; ?>
-      </div>
+                <?php endif; ?>
+            </div>
+        </main>
     </div>
-  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

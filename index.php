@@ -295,6 +295,101 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="js/app.js?v=2"></script>
   <script src="js/appwrite.js"></script>
+  <!-- ส่วนส่งข้อความถึงเรา (Contact Section) -->
+  <section class="container my-5" id="contact-us">
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
+      <div class="row g-0 align-items-center">
+        <div class="col-lg-5 p-4 p-md-5 text-white">
+          <span class="badge bg-primary px-3 py-1 mb-2">Contact Us</span>
+          <h2 class="fw-bold mb-3">ส่งข้อความถึงเรา</h2>
+          <p class="text-secondary small mb-4">มีไอเดียเว็บไซต์ ปรึกษาออกแบบ UX/UI หรือต้องการโซลูชันสำหรับธุรกิจ ส่งข้อความหาเราได้ทันที</p>
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; display: grid; place-items: center;"><i class="fa-solid fa-envelope"></i></div>
+            <div>
+              <div class="small text-secondary">อีเมล</div>
+              <div class="fw-bold">v890x0@gmail.com</div>
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-3">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; display: grid; place-items: center;"><i class="fa-solid fa-phone"></i></div>
+            <div>
+              <div class="small text-secondary">โทรศัพท์</div>
+              <div class="fw-bold">065-327-6864</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-7 p-4 p-md-5 bg-white">
+          <form action="send_message.php" method="POST" id="homeContactForm">
+            <div id="homeMsgAlert" style="display:none;" class="alert py-2 mb-3"></div>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label small fw-bold">ชื่อของคุณ / องค์กร <span class="text-danger">*</span></label>
+                <input type="text" name="sender_name" class="form-control" placeholder="ชื่อ-นามสกุล" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-bold">ข้อมูลติดต่อ (เบอร์โทร/อีเมล) <span class="text-danger">*</span></label>
+                <input type="text" name="sender_contact" class="form-control" placeholder="08x-xxx-xxxx หรือ email" required>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-bold">หัวข้อเรื่อง <span class="text-danger">*</span></label>
+                <input type="text" name="subject" class="form-control" placeholder="เช่น ขอใบเสนอราคา, ออกแบบระบบใหม่" required>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-bold">ข้อความที่ต้องการส่ง <span class="text-danger">*</span></label>
+                <textarea name="message" class="form-control" rows="3" placeholder="ระบุรายละเอียดความต้องการของคุณ..." required></textarea>
+              </div>
+              <div class="col-12 text-end">
+                <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold" id="homeMsgBtn">
+                  <i class="fa-solid fa-paper-plane me-1"></i> ส่งข้อความทันที
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // ส่งข้อความผ่าน AJAX ไปยัง send_message.php
+    document.getElementById('homeContactForm')?.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const form = this;
+      const btn = document.getElementById('homeMsgBtn');
+      const alertBox = document.getElementById('homeMsgAlert');
+      
+      const formData = new FormData(form);
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> กำลังส่ง...';
+      alertBox.style.display = 'none';
+
+      try {
+        const res = await fetch('send_message.php', {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          body: formData
+        });
+        const result = await res.json();
+        if (result.success) {
+          alertBox.className = 'alert alert-success py-2 mb-3';
+          alertBox.textContent = '✓ ' + result.message;
+          alertBox.style.display = 'block';
+          form.reset();
+        } else {
+          alertBox.className = 'alert alert-danger py-2 mb-3';
+          alertBox.textContent = '✕ ' + (result.error || 'เกิดข้อผิดพลาดในการส่งข้อความ');
+          alertBox.style.display = 'block';
+        }
+      } catch (err) {
+        // Fallback ส่งแบบ standard POST หากเกิดปัญหาเครือข่าย
+        form.submit();
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> ส่งข้อความทันที';
+      }
+    });
+  </script>
+
   <footer class="site-footer">
     <div class="">
       <img src="./img/ahmetyuksek-mountain-range-9842371_1920.jpg" alt="" width="133px" style="border-radius: 16px;">
@@ -329,9 +424,9 @@
       <div class="site-footer__column">
         <h4>ช่องทางการติดต่อ</h4>
         <ul>
-          <li><a href="mailto:hello@thespace.example">v890x0@gmail.com</a></li>
+          <li><a href="mailto:v890x0@gmail.com">v890x0@gmail.com</a></li>
           <li>โทร. 0653276864</li>
-          <li><a href="html2/page-07.html">ส่งข้อความถึงเรา</a></li>
+          <li><a href="send_message.php">ส่งข้อความถึงเรา</a></li>
           <li>จันทร์ - ศุกร์ 09:00 - 18:00 น.</li>
           <li>กรุงเทพฯ และปริมณฑล</li>
         </ul>
