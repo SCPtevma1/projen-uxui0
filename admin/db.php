@@ -10,22 +10,16 @@ mysqli_report(MYSQLI_REPORT_OFF);
 
 $conn = @new mysqli($host, $user, $pass, $dbname);
 
+
 if ($conn->connect_error) {
-    // แสดงข้อความแจ้งเตือนที่เข้าใจง่ายหากฐานข้อมูลยังไม่ได้เปิดหรือเชื่อมต่อไม่สำเร็จ
     http_response_code(500);
-    die("<div style='font-family: sans-serif; padding: 24px; max-width: 600px; margin: 40px auto; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 12px; color: #9f1239;'>"
-        . "<h3 style='margin-top:0;'>⚠️ การเชื่อมต่อฐานข้อมูลล้มเหลว (Database Connection Failed)</h3>"
+    die("<div style='font-family: sans-serif; padding: 24px; max-width: 600px; margin: 40px auto; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px;'>"
+        . "<h3 style='margin-top:0; color: #991b1b;'>⚠️ การเชื่อมต่อฐานข้อมูลล้มเหลว (Database Connection Failed)</h3>"
         . "<p>ไม่สามารถเชื่อมต่อกับ MySQL ได้: " . htmlspecialchars($conn->connect_error) . "</p>"
-        . "<p style='font-size: 13px; color: #475569;'>กรุณาตรวจสอบว่า Apache และ MySQL ใน XAMPP Control Panel กำลังทำงานอยู่ และมีฐานข้อมูลชื่อ <code>$dbname</code> เรียบร้อยแล้ว</p>"
+        . "<p style='font-size: 13px; color: #475569;'>กรุณาตรวจสอบว่า Apache และ MySQL ใน XAMPP Control Panel กำลังทำงานอยู่ และมีฐานข้อมูลชื่อ <b>{$dbname}</b> แล้วหรือยัง</p>"
         . "</div>");
 }
-
 $conn->set_charset("utf8mb4");
-
-/**
- * ฟังก์ชันตรวจสอบและสร้างโครงสร้างตารางที่จำเป็น (Migrations / Initial Setup)
- * ทำงานเฉพาะเมื่อระบบยังไม่มีตาราง หรือเรียกใช้งานแบบ Force เพื่อความลื่นไหลของหน้าเว็บ
- */
 function ensureDatabaseSchema(mysqli $conn, bool $force = false): void
 {
     static $alreadyRun = false;
@@ -33,14 +27,10 @@ function ensureDatabaseSchema(mysqli $conn, bool $force = false): void
         return;
     }
     $alreadyRun = true;
-
-    // 1. ตรวจสอบคอลัมน์ price ใน services
     $priceCheck = $conn->query("SHOW COLUMNS FROM services LIKE 'price'");
     if ($priceCheck && $priceCheck->num_rows === 0) {
         $conn->query("ALTER TABLE services ADD COLUMN price DECIMAL(10,2) NOT NULL DEFAULT 0.00");
     }
-
-    // 2. ตาราง service_orders
     $conn->query("CREATE TABLE IF NOT EXISTS service_orders (
         id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
         service_id INT NOT NULL,
@@ -119,7 +109,7 @@ function ensureDatabaseSchema(mysqli $conn, bool $force = false): void
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
-    // 9. ตรวจสอบและ Seed ข้อมูลเริ่มต้น
+
     seedDefaultFooterIfEmpty($conn);
     seedDefaultCommentsIfEmpty($conn);
     seedDefaultContactMessagesIfEmpty($conn);
