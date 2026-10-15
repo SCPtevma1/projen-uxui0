@@ -20,8 +20,6 @@ function getUserIP() {
     }
     return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 }
-
-// ฟังก์ชันบันทึกประวัติการล็อกอินล้มเหลวลงฐานข้อมูล
 function record_failed_attempt($conn, $ip, $username, $current_failed, $max_attempts, &$error) {
     $stmt_log = $conn->prepare("INSERT INTO login_logs (ip_address, username, attempted_at) VALUES (?, ?, NOW())");
     if ($stmt_log) {
@@ -69,13 +67,10 @@ if ($stmt_check) {
         $error = "IP ของคุณ ({$user_ip}) ถูกระงับชั่วคราวเนื่องจากล็อกอินผิดเกินกำหนด กรุณาลองใหม่ในอีก {$remaining_minutes} นาที";
     }
 }
-
-// 2. การประมวลผลเมื่อส่งฟอร์ม (POST)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$is_locked_out) {
         $username = trim($_POST['username'] ?? '');
         $password = trim($_POST['password'] ?? '');
-
         if (!empty($username) && !empty($password)) {
             $stmt = $conn->prepare("SELECT id, password FROM users WHERE username = ?");
             if (!$stmt) {

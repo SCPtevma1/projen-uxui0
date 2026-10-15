@@ -277,8 +277,10 @@
     <h3 class="ppoo-title">ซื้อแพ็กเก็ตดูแลต่อได้</h3>
     <div class="price-list">
       <div class="price-item">
-        <span class="service-name">เว็บไซต์หน้าเดียว</span>
+<a href="">
+          <span class="service-name">เว็บไซต์หน้าเดียว</span>
         <span class="service-price">1,400 <span>บาท</span></span>
+</a>
       </div>
       <div class="price-item">
         <span class="service-name">เว็บไซต์หลายหน้า</span>
