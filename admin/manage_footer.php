@@ -90,6 +90,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
+
+    // 5. แก้ไขหัวข้อหลัก
+    if ($action === 'edit_section') {
+        $secId    = (int)($_POST['sec_id'] ?? 0);
+        $newTitle = trim($_POST['section_title'] ?? '');
+        $newOrder = (int)($_POST['sort_order'] ?? 0);
+        if ($secId > 0 && $newTitle !== '') {
+            $stmt = $conn->prepare("UPDATE footer_sections SET title = ?, sort_order = ? WHERE id = ?");
+            if ($stmt) {
+                $stmt->bind_param("sii", $newTitle, $newOrder, $secId);
+                $stmt->execute() ? $notice = "แก้ไขหัวข้อเรียบร้อยแล้ว" : $error = "แก้ไขไม่สำเร็จ: " . $stmt->error;
+                $stmt->close();
+            }
+        } else {
+            $error = "กรุณากรอกชื่อหัวข้อ";
+        }
+    }
+
+    // 6. แก้ไขเมนูย่อย
+    if ($action === 'edit_link') {
+        $linkId    = (int)($_POST['link_id'] ?? 0);
+        $newTitle  = trim($_POST['link_title'] ?? '');
+        $newUrl    = trim($_POST['link_url'] ?? '#');
+        $newOrder  = (int)($_POST['sort_order'] ?? 0);
+        $newSecId  = (int)($_POST['section_id'] ?? 0);
+        if ($linkId > 0 && $newTitle !== '') {
+            $stmt = $conn->prepare("UPDATE footer_links SET title = ?, url = ?, sort_order = ?, section_id = ? WHERE id = ?");
+            if ($stmt) {
+                $stmt->bind_param("ssiii", $newTitle, $newUrl, $newOrder, $newSecId, $linkId);
+                $stmt->execute() ? $notice = "แก้ไขเมนูย่อยเรียบร้อยแล้ว" : $error = "แก้ไขไม่สำเร็จ: " . $stmt->error;
+                $stmt->close();
+            }
+        } else {
+            $error = "กรุณากรอกชื่อเมนูย่อย";
+        }
+    }
 }
 
 // ดึงข้อมูลหัวข้อหลักและเมนูย่อยทั้งหมดแบบรวม Query เดียวเพื่อความรวดเร็ว
@@ -141,9 +177,10 @@ if (!empty($sections)) {
             <a href="manage_users.php"><i class="bi bi-people me-2"></i> จัดการผู้ใช้งาน</a>
             <a href="manage_products.php"><i class="bi bi-box-seam me-2"></i> รายการสินค้า</a>
             <a href="manage_services.php"><i class="bi bi-window-stack me-2"></i> จัดการเว็บไซต์</a>
+            <a href="manage_orders.php"><i class="bi bi-cart-check me-2"></i> จัดการคำสั่งซื้อ</a>
             <a href="manage_comments.php"><i class="bi bi-chat-left-text me-2"></i> จัดการความคิดเห็น</a>
             <a href="manage_footer.php" class="active"><i class="bi bi-file-earmark-text me-2"></i> จัดการ Footer</a>
-            <a href="Settings.php"><i class="bi bi-gear me-2"></i> ตั้งค่าระบบ</a>
+            <a href="settings.php"><i class="bi bi-gear me-2"></i> ตั้งค่าระบบ</a>
         </aside>
 
         <!-- Main Content -->
@@ -196,12 +233,12 @@ if (!empty($sections)) {
                 <div class="col-lg-7">
                     <div class="card panel p-4 h-100">
                         <h5 class="card-title mb-3"><i class="bi bi-link-45deg text-success me-2"></i>2. เพิ่มลิงก์เมนูย่อย (Footer Link)</h5>
-                        <form method="POST">
+                        <form method="POST" id="addLinkForm">
                             <input type="hidden" name="action" value="add_link">
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label class="form-label">เลือกหัวข้อหลัก</label>
-                                    <select name="section_id" class="form-select" required>
+                                    <label class="form-label">เลือกหัวข้อหลัก <span class="text-danger">*</span></label>
+                                    <select name="section_id" class="form-select" id="addLinkSection" required>
                                         <option value="">-- เลือกหัวข้อ --</option>
                                         <?php foreach ($sections as $sec): ?>
                                             <option value="<?= $sec['id'] ?>"><?= htmlspecialchars($sec['title']) ?></option>
@@ -209,7 +246,7 @@ if (!empty($sections)) {
                                     </select>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">ชื่อเมนูย่อย</label>
+                                    <label class="form-label">ชื่อเมนูย่อย <span class="text-danger">*</span></label>
                                     <input type="text" name="link_title" class="form-control" placeholder="เช่น คอร์สเขียนโค้ด" required>
                                 </div>
                                 <div class="col-md-8">
@@ -221,7 +258,12 @@ if (!empty($sections)) {
                                     <input type="number" name="sort_order" class="form-control" value="1" min="0">
                                 </div>
                             </div>
-                            <button type="submit" class="btn btn-success mt-3"><i class="bi bi-plus-lg me-1"></i> เพิ่มเมนูย่อย</button>
+                            <button type="submit" class="btn btn-success mt-3" id="addLinkBtn" disabled>
+                                <i class="bi bi-plus-lg me-1"></i> เพิ่มเมนูย่อย
+                            </button>
+                            <div class="mt-2 small text-secondary" id="addLinkHint">
+                                <i class="bi bi-info-circle me-1"></i>กรุณาเลือกหัวข้อหลักก่อนเพิ่มเมนูย่อย
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -249,11 +291,22 @@ if (!empty($sections)) {
                                             <span class="badge bg-primary-subtle text-primary me-1">ลำดับ <?= (int)$sec['sort_order'] ?></span>
                                             <strong><?= htmlspecialchars($sec['title']) ?></strong>
                                         </div>
-                                        <form method="POST" onsubmit="return confirm('ยืนยันลบหัวข้อ <?= htmlspecialchars($sec['title']) ?> และลิงก์ย่อยทั้งหมดหรือไม่?');" class="m-0">
-                                            <input type="hidden" name="action" value="delete_section">
-                                            <input type="hidden" name="sec_id" value="<?= $sec['id'] ?>">
-                                            <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2" title="ลบหัวข้อ"><i class="bi bi-trash"></i></button>
-                                        </form>
+                                        <div class="d-flex gap-1">
+                                            <!-- ปุ่ม Edit Section -->
+                                            <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2" title="แก้ไขหัวข้อ"
+                                                data-bs-toggle="modal" data-bs-target="#editSectionModal"
+                                                data-sec-id="<?= $sec['id'] ?>"
+                                                data-sec-title="<?= htmlspecialchars($sec['title'], ENT_QUOTES) ?>"
+                                                data-sec-order="<?= (int)$sec['sort_order'] ?>">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <!-- ปุ่ม Delete Section -->
+                                            <form method="POST" onsubmit="return confirm('ยืนยันลบหัวข้อ &quot;<?= htmlspecialchars($sec['title'], ENT_QUOTES) ?>&quot; และลิงก์ย่อยทั้งหมดหรือไม่?');" class="m-0">
+                                                <input type="hidden" name="action" value="delete_section">
+                                                <input type="hidden" name="sec_id" value="<?= $sec['id'] ?>">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2" title="ลบหัวข้อ"><i class="bi bi-trash"></i></button>
+                                            </form>
+                                        </div>
                                     </div>
                                     <div class="p-2">
                                         <?php if (empty($links)): ?>
@@ -261,15 +314,28 @@ if (!empty($sections)) {
                                         <?php else: ?>
                                             <?php foreach ($links as $link): ?>
                                                 <div class="link-item">
-                                                    <div>
+                                                    <div style="min-width:0;flex:1;">
                                                         <div class="fw-medium"><?= htmlspecialchars($link['title']) ?></div>
                                                         <div class="link-url"><?= htmlspecialchars($link['url']) ?></div>
                                                     </div>
-                                                    <form method="POST" onsubmit="return confirm('ยืนยันลบลิงก์นี้?');" class="m-0">
-                                                        <input type="hidden" name="action" value="delete_link">
-                                                        <input type="hidden" name="link_id" value="<?= $link['id'] ?>">
-                                                        <button type="submit" class="btn btn-outline-secondary btn-sm py-0 px-1 text-danger border-0" title="ลบลิงก์"><i class="bi bi-x-circle"></i></button>
-                                                    </form>
+                                                    <div class="d-flex gap-1 ms-2">
+                                                        <!-- ปุ่ม Edit Link -->
+                                                        <button type="button" class="btn btn-outline-primary btn-sm py-0 px-1" title="แก้ไขลิงก์"
+                                                            data-bs-toggle="modal" data-bs-target="#editLinkModal"
+                                                            data-link-id="<?= $link['id'] ?>"
+                                                            data-link-title="<?= htmlspecialchars($link['title'], ENT_QUOTES) ?>"
+                                                            data-link-url="<?= htmlspecialchars($link['url'], ENT_QUOTES) ?>"
+                                                            data-link-order="<?= (int)$link['sort_order'] ?>"
+                                                            data-link-section="<?= (int)$link['section_id'] ?>">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </button>
+                                                        <!-- ปุ่ม Delete Link -->
+                                                        <form method="POST" onsubmit="return confirm('ยืนยันลบลิงก์นี้?');" class="m-0">
+                                                            <input type="hidden" name="action" value="delete_link">
+                                                            <input type="hidden" name="link_id" value="<?= $link['id'] ?>">
+                                                            <button type="submit" class="btn btn-outline-secondary btn-sm py-0 px-1 text-danger border-0" title="ลบลิงก์"><i class="bi bi-x-circle"></i></button>
+                                                        </form>
+                                                    </div>
                                                 </div>
                                             <?php endforeach; ?>
                                         <?php endif; ?>
@@ -283,6 +349,112 @@ if (!empty($sections)) {
         </main>
     </div>
 </div>
+
+<!-- Modal: แก้ไขหัวข้อหลัก -->
+<div class="modal fade" id="editSectionModal" tabindex="-1" aria-labelledby="editSectionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST">
+                <input type="hidden" name="action" value="edit_section">
+                <input type="hidden" name="sec_id" id="editSecId">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editSectionModalLabel"><i class="bi bi-pencil-square me-2"></i>แก้ไขหัวข้อหลัก</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">ชื่อหัวข้อหลัก</label>
+                        <input type="text" name="section_title" id="editSecTitle" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ลำดับการแสดงผล</label>
+                        <input type="number" name="sort_order" id="editSecOrder" class="form-control" min="0">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-floppy me-1"></i>บันทึก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: แก้ไขเมนูย่อย -->
+<div class="modal fade" id="editLinkModal" tabindex="-1" aria-labelledby="editLinkModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST">
+                <input type="hidden" name="action" value="edit_link">
+                <input type="hidden" name="link_id" id="editLinkId">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editLinkModalLabel"><i class="bi bi-pencil-square me-2"></i>แก้ไขเมนูย่อย</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">หัวข้อหลัก</label>
+                        <select name="section_id" id="editLinkSection" class="form-select" required>
+                            <?php foreach ($sections as $sec): ?>
+                                <option value="<?= $sec['id'] ?>"><?= htmlspecialchars($sec['title']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ชื่อเมนูย่อย</label>
+                        <input type="text" name="link_title" id="editLinkTitle" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ลิงก์ URL</label>
+                        <input type="text" name="link_url" id="editLinkUrl" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ลำดับ</label>
+                        <input type="number" name="sort_order" id="editLinkOrder" class="form-control" min="0">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-floppy me-1"></i>บันทึก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ===== Modal: แก้ไขหัวข้อหลัก =====
+document.getElementById('editSectionModal').addEventListener('show.bs.modal', function (e) {
+    const btn = e.relatedTarget;
+    document.getElementById('editSecId').value    = btn.dataset.secId;
+    document.getElementById('editSecTitle').value = btn.dataset.secTitle;
+    document.getElementById('editSecOrder').value = btn.dataset.secOrder;
+});
+
+// ===== Modal: แก้ไขเมนูย่อย =====
+document.getElementById('editLinkModal').addEventListener('show.bs.modal', function (e) {
+    const btn = e.relatedTarget;
+    document.getElementById('editLinkId').value          = btn.dataset.linkId;
+    document.getElementById('editLinkTitle').value       = btn.dataset.linkTitle;
+    document.getElementById('editLinkUrl').value         = btn.dataset.linkUrl;
+    document.getElementById('editLinkOrder').value       = btn.dataset.linkOrder;
+    document.getElementById('editLinkSection').value     = btn.dataset.linkSection;
+});
+
+// ===== Validation: ต้องเลือก Section ก่อนกดเพิ่มเมนูย่อย =====
+const addLinkSection = document.getElementById('addLinkSection');
+const addLinkBtn     = document.getElementById('addLinkBtn');
+const addLinkHint    = document.getElementById('addLinkHint');
+
+function updateAddLinkState() {
+    const hasSection = addLinkSection.value !== '';
+    addLinkBtn.disabled = !hasSection;
+    addLinkHint.style.display = hasSection ? 'none' : '';
+}
+
+addLinkSection?.addEventListener('change', updateAddLinkState);
+updateAddLinkState();
+</script>
 </body>
 </html>

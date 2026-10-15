@@ -111,10 +111,19 @@ function ensureDatabaseSchema(mysqli $conn, bool $force = false): void
         INDEX idx_contact_status (status)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
-    // 8. ตรวจสอบและ Seed ข้อมูลเริ่มต้นใน footer, comments และ contact messages
+    // 8. ตาราง site_settings สำหรับการตั้งค่าเว็บไซต์
+    $conn->query("CREATE TABLE IF NOT EXISTS site_settings (
+        id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        setting_key VARCHAR(100) NOT NULL UNIQUE,
+        setting_value TEXT NULL,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    // 9. ตรวจสอบและ Seed ข้อมูลเริ่มต้น
     seedDefaultFooterIfEmpty($conn);
     seedDefaultCommentsIfEmpty($conn);
     seedDefaultContactMessagesIfEmpty($conn);
+    seedDefaultSettingsIfEmpty($conn);
 }
 
 /**
@@ -220,6 +229,36 @@ function seedDefaultFooterIfEmpty(mysqli $conn): void
             }
             $stmtSec->close();
             $stmtLink->close();
+        }
+    }
+}
+
+/**
+ * Seed ค่าตั้งค่าเว็บไซต์เริ่มต้น
+ */
+function seedDefaultSettingsIfEmpty(mysqli $conn): void
+{
+    $check = $conn->query("SELECT COUNT(*) AS total FROM site_settings");
+    if ($check && ($row = $check->fetch_assoc()) && (int)$row['total'] === 0) {
+        $defaults = [
+            'site_title'       => 'Projen Studio',
+            'site_tagline'     => 'ออกแบบและพัฒนาเว็บไซต์คุณภาพสูง',
+            'site_description' => 'ระบบจัดการบริการและสินค้า ออกแบบ UX/UI โดยทีมงานมืออาชีพ',
+            'site_keywords'    => 'ออกแบบเว็บไซต์, UX/UI, PHP, WordPress, เว็บไซต์องค์กร',
+            'contact_email'    => 'v890x0@gmail.com',
+            'contact_phone'    => '',
+            'facebook_url'     => '',
+            'line_id'          => '',
+            'logo_path'        => '',
+            'maintenance_mode' => '0',
+        ];
+        $stmt = $conn->prepare("INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+        if ($stmt) {
+            foreach ($defaults as $key => $val) {
+                $stmt->bind_param("ss", $key, $val);
+                $stmt->execute();
+            }
+            $stmt->close();
         }
     }
 }

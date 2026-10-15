@@ -132,9 +132,10 @@ $serviceCount = (int) $servicesResult->fetch_assoc()['total'];
             <a href="manage_users.php"><i class="bi bi-people me-2"></i> จัดการผู้ใช้งาน</a>
             <a href="manage_products.php"><i class="bi bi-box-seam me-2"></i> รายการสินค้า</a>
             <a href="manage_services.php"><i class="bi bi-window-stack me-2"></i> จัดการเว็บไซต์</a>
+            <a href="manage_orders.php"><i class="bi bi-cart-check me-2"></i> จัดการคำสั่งซื้อ</a>
             <a href="manage_comments.php"><i class="bi bi-chat-left-text me-2"></i> จัดการความคิดเห็น</a>
             <a href="manage_footer.php"><i class="bi bi-file-earmark-text me-2"></i> จัดการ Footer</a>
-            <a href="Settings.php"><i class="bi bi-gear me-2"></i> ตั้งค่าระบบ</a>
+            <a href="settings.php"><i class="bi bi-gear me-2"></i> ตั้งค่าระบบ</a>
         </aside>
 
         <!-- Main Content -->
@@ -153,9 +154,10 @@ $serviceCount = (int) $servicesResult->fetch_assoc()['total'];
             <?php if ($notice): ?><div class="alert alert-success alert-dismissible fade show"><?= htmlspecialchars($notice) ?><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div><?php endif; ?>
             <?php if ($error): ?><div class="alert alert-danger alert-dismissible fade show"><?= htmlspecialchars($error) ?><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div><?php endif; ?>
 
-            <!-- แถบสถิติหลัก -->
+            <!-- แถบสถิติหลัก (clickable) -->
             <section class="row g-3 mb-4">
                 <div class="col-sm-6 col-xl-3">
+                    <a href="manage_orders.php" class="text-decoration-none">
                     <div class="card stat-card p-3">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
@@ -165,8 +167,10 @@ $serviceCount = (int) $servicesResult->fetch_assoc()['total'];
                             <span class="stat-icon bg-primary-subtle text-primary"><i class="bi bi-receipt"></i></span>
                         </div>
                     </div>
+                    </a>
                 </div>
                 <div class="col-sm-6 col-xl-3">
+                    <a href="manage_orders.php?status=pending" class="text-decoration-none">
                     <div class="card stat-card p-3">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
@@ -176,8 +180,10 @@ $serviceCount = (int) $servicesResult->fetch_assoc()['total'];
                             <span class="stat-icon bg-warning-subtle text-warning-emphasis"><i class="bi bi-hourglass-split"></i></span>
                         </div>
                     </div>
+                    </a>
                 </div>
                 <div class="col-sm-6 col-xl-3">
+                    <a href="manage_orders.php?status=completed" class="text-decoration-none">
                     <div class="card stat-card p-3">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
@@ -187,8 +193,10 @@ $serviceCount = (int) $servicesResult->fetch_assoc()['total'];
                             <span class="stat-icon bg-success-subtle text-success"><i class="bi bi-currency-baht"></i></span>
                         </div>
                     </div>
+                    </a>
                 </div>
                 <div class="col-sm-6 col-xl-3">
+                    <a href="manage_comments.php" class="text-decoration-none">
                     <div class="card stat-card p-3">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
@@ -198,6 +206,7 @@ $serviceCount = (int) $servicesResult->fetch_assoc()['total'];
                             <span class="stat-icon bg-info-subtle text-info"><i class="bi bi-chat-left-dots"></i></span>
                         </div>
                     </div>
+                    </a>
                 </div>
             </section>
 
