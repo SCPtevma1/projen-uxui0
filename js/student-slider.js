@@ -1,24 +1,22 @@
-const swiper = new Swiper('.wrapper', {
-  // direction: 'horizontal', // ค่าเริ่มต้นคือแนวนอน
+new Swiper(".wrapper", {
+  loop: true,
   spaceBetween: 30,
-  
+  // Autoplay
   autoplay: {
     delay: 5000,
     disableOnInteraction: false,
     pauseOnMouseEnter: true,
   },
-
+  // Pagination bullets
   pagination: {
-    el: '.swiper-pagination',
+    el: ".swiper-pagination",
     clickable: true,
     dynamicBullets: true,
   },
-
   navigation: {
-    nextEl: '.swiper-button-next',
-    prevEl: '.swiper-button-prev',
+    nextEl: ".swiper-button-next",
+    prevEl: ".swiper-button-prev",
   },
-
   breakpoints: {
     0: {
       slidesPerView: 1,
