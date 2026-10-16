@@ -1,11 +1,151 @@
-/* ===================================================
-   DUOLINGO ROADMAP LAYOUT & STYLING
-   =================================================== */
-
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+body {
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+/* ครอบพื้นที่ Carousel ให้จัดอยู่กลางหน้าอย่างปลอดภัย */
+.wrapper {
+  max-width: 1100px;
+  width: 100%;
+  position: relative;
+  margin: 50px auto;
+  padding: 0 20px;
+}
+
+/* ปุ่มกดซ้าย-ขวา */
+.wrapper i {
+  height: 50px;
+  width: 50px;
+  background: #f1f1f1;
+  text-align: center;
+  line-height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+  position: absolute;
+  top: 50%;
+  font-size: 1.25rem;
+  transform: translateY(-50%);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.wrapper i:hover {
+  background: #e2e8f0;
+}
+
+/* แก้ไขจุดที่ 1: เปลี่ยนจาก left: -22px เป็น right: -22px */
+.wrapper i:first-child {
+  left: -22px;
+}
+
+.wrapper i:last-child {
+  right: -22px;
+}
+
+/* โครงสร้าง Carousel */
+.wrapper .carousel {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% / 3) - 12px);
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth; /* แก้ไขจุดที่ 3: เอา scroll-behavior: 0 ออก */
+  border-radius: 8px;
+}
+
+.carousel::-webkit-scrollbar {
+  display: none;
+}
+
+/* ปิด Smooth Scroll ขณะที่กำลังใช้นิ้ว/เมาส์ลาก */
+.carousel.no-transition {
+  scroll-behavior: auto;
+}
+
+.carousel.dragging {
+  scroll-snap-type: none;
+  scroll-behavior: auto;
+}
+
+.carousel.dragging .card {
+  cursor: grab;
+  user-select: none;
+}
+
+/* สไตล์การ์ด */
+.carousel .card {
+  scroll-snap-align: start;
+  height: 340px; /* แก้ไขจุดที่ 2: ลบ height ซ้ำซ้อนออก */
+  list-style: none;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding-bottom: 16px;
+}
+
+.card .img {
+  background: #1877f2;
+  width: 148px;
+  height: 148px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card .img img {
+  width: 140px;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 4px solid #ffffff;
+}
+
+.card h2 {
+  font-weight: 600;
+  font-size: 1.4rem;
+  margin: 20px 0 5px;
+  color: #1e293b;
+}
+
+.card span {
+  color: #6c4ab8;
+  font-size: 1rem;
+}
+
+/* Responsive Breakpoints */
+/* แก้ไขจุดที่ 4: สำหรับแท็บเล็ต แสดง 2 การ์ด */
+@media screen and (max-width: 900px) {
+  .wrapper .carousel {
+    grid-auto-columns: calc((100% / 2) - 9px);
+  }
+}
+
+/* สำหรับมือถือ แสดง 1 การ์ด */
+@media screen and (max-width: 600px) {
+  .wrapper .carousel {
+    grid-auto-columns: 100%;
+  }
+  .wrapper i:first-child {
+    left: 0;
+  }
+  .wrapper i:last-child {
+    right: 0;
+  }
 }
 html, body {
   width: 100%;
@@ -53,17 +193,11 @@ html, body {
   width: 92%;
   margin: 0 auto 50px;
 }
-
-/* เลย์เอาต์ Flex แยกซ้าย-ขวา (<section> เลย์เอาต์) */
 .learning-section {
   display: flex;
   gap: 35px;
   align-items: flex-start;
 }
-
-/* ---------------------------------------------------
-   ฝั่งซ้าย: ROADMAP CONTAINER
-   --------------------------------------------------- */
 .roadmap-container {
   flex: 1; /* กินพื้นที่ฝั่งซ้ายเต็มที่ */
   background: #ffffff;
