@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แบบจำลองฟิสิกส์ 3 มิติ: คลื่นแม่เหล็กไฟฟ้า (3D EM Wave Simulation)</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Sarabun:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js & Controls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <style>
+        :root {
+            --bg-dark: #07090e;
+            --panel-bg: rgba(13, 18, 30, 0.75);
+            --panel-border: rgba(0, 240, 255, 0.25);
+            --text-main: #f0f6fc;
+            --text-muted: #8b949e;
+            --e-field: #00f0ff; /* Electric field - Cyan */
+            --b-field: #ff3366; /* Magnetic field - Red/Pink */
+            --s-vector: #39ff14; /* Poynting vector - Bright Green */
+            --accent-yellow: #ffcc00;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Sarabun', sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #webgl-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* HUD Overlay */
+        .hud-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: grid;
+            grid-template-columns: 320px 1fr 380px;
+            grid-template-rows: auto 1fr auto;
+            padding: 1rem;
+            gap: 1rem;
+        }
+
+        .interactive {
+            pointer-events: auto;
+        }
+
+        /* Glassmorphism Panel Base */
+        .glass-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 1rem 1.2rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            overflow-y: auto;
+        }
+
+        /* Header UI */
+        .header-panel {
+            grid-column: 1 / span 2;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(13, 18, 30, 0.85);
+        }
+
+        .header-title h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4rem;
+            letter-spacing: 1px;
+            color: var(--e-field);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .header-title p {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+
+        /* Controls Side Panel (Left) */
+        .controls-panel {
+            grid-column: 1;
+            grid-row: 2 / span 2;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-height: calc(100vh - 5rem);
+        }
+
+        .panel-section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            color: var(--accent-yellow);
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Mode Selection Buttons */
+        .mode-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .btn-mode {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: var(--text-main);
+            padding: 0.65rem 0.8rem;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 0.88rem;
+            font-family: 'Sarabun', sans-serif;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .btn-mode:hover {
+            background: rgba(0, 240, 255, 0.12);
+            border-color: var(--e-field);
+        }
+
+        .btn-mode.active {
+            background: rgba(0, 240, 255, 0.2);
+            border-color: var(--e-field);
+            color: var(--e-field);
+            font-weight: 600;
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+        }
+
+        /* Sliders */
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .slider-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.82rem;
+            color: var(--text-main);
+        }
+
+        .slider-label span.value {
+            font-family: 'Fira Code', monospace;
+            color: var(--e-field);
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--e-field);
+            cursor: pointer;
+            box-shadow: 0 0 8px var(--e-field);
+            transition: transform 0.1s;
+        }
+
+        /* Toggles */
+        .toggle-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        .toggle-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.2s;
+        }
+
+        .toggle-btn.active {
+            color: var(--text-main);
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .toggle-btn.e-toggle.active { border-color: var(--e-field); color: var(--e-field); }
+        .toggle-btn.b-toggle.active { border-color: var(--b-field); color: var(--b-field); }
+        .toggle-btn.s-toggle.active { border-color: var(--s-vector); color: var(--s-vector); }
+
+        /* Theory Info Panel (Right) */
+        .theory-panel {
+            grid-column: 3;
+            grid-row: 1 / span 3;
+            max-height: calc(100vh - 2rem);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .theory-content {
+            font-size: 0.85rem;
+            line-height: 1.55;
+            color: #d0d7de;
+        }
+
+        .theory-content h3 {
+            font-size: 0.95rem;
+            color: var(--e-field);
+            margin: 0.8rem 0 0.4rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .formula-box {
+            background: rgba(0, 0, 0, 0.4);
+            border-left: 3px solid var(--e-field);
+            padding: 0.5rem 0.8rem;
+            margin: 0.5rem 0;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.82rem;
+            color: #ffffff;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .formula-box.b-color { border-left-color: var(--b-field); }
+        .formula-box.s-color { border-left-color: var(--s-vector); }
+
+        .spectrum-bar {
+            height: 12px;
+            width: 100%;
+            border-radius: 6px;
+            background: linear-gradient(to right, 
+                #ff0000 0%, #ff7f00 16%, #ffff00 33%, 
+                #00ff00 50%, #00ffff 66%, #0000ff 83%, #8b00ff 100%);
+            margin: 0.5rem 0;
+            position: relative;
+        }
+
+        .spectrum-indicator {
+            position: absolute;
+            top: -3px;
+            left: 50%;
+            width: 4px;
+            height: 18px;
+            background: #ffffff;
+            border: 1px solid #000;
+            border-radius: 2px;
+            transform: translateX(-50%);
+            box-shadow: 0 0 6px #fff;
+        }
+
+        /* Playback Controls (Bottom Center) */
+        .playback-panel {
+            grid-column: 2;
+            grid-row: 3;
+            justify-self: center;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.6rem 1.2rem;
+            background: rgba(13, 18, 30, 0.9);
+        }
+
+        .btn-play {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--e-field);
+            border: none;
+            color: #000;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .btn-play:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 12px var(--e-field);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--e-field);
+        }
+
+        @media (max-width: 1024px) {
+            .hud-overlay {
+                grid-template-columns: 280px 1fr;
+                grid-template-rows: auto 1fr auto;
+            }
+            .theory-panel {
+                display: none; /* Hide theory panel on smaller screens for layout comfort */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 3D Canvas -->
+    <div id="webgl-container"></div>
+
+    <!-- UI Overlay HUD -->
+    <div class="hud-overlay">
+        
+        <!-- Header -->
+        <div class="glass-panel header-panel interactive">
+            <div class="header-title">
+                <a href="/demo-container/student.html"><h1><i class="fa-solid fa-wave-square"></i> คลื่นแม่เหล็กไฟฟ้า 3D</h1></a>
+                <p>แบบจำลองฟิสิกส์ปฏิสัมพันธ์ (Electromagnetic Wave Physics Simulation)</p>
+            </div>
+        </div>
+
+        <!-- Left Controls Panel -->
+        <div class="glass-panel controls-panel interactive">
+            
+            <!-- Mode Selection -->
+            <div>
+                <div class="panel-section-title"><i class="fa-solid fa-sliders"></i> โหมดคลื่น (Wave Modes)</div>
+                <div class="mode-buttons">
+                    <button class="btn-mode active" onclick="setWaveMode('plane', this)">
+                        <span><i class="fa-solid fa-grip-lines"></i> 1. คลื่นระนาบ (Plane Wave)</span>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                    <button class="btn-mode" onclick="setWaveMode('circular', this)">
+                        <span><i class="fa-solid fa-circle-notch"></i> 2. โพลาไรซ์วงกลม (Circular)</span>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                    <button class="btn-mode" onclick="setWaveMode('dipole', this)">
+                        <span><i class="fa-solid fa-atom"></i> 3. การแผ่ไดโพล (Dipole)</span>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                    <button class="btn-mode" onclick="setWaveMode('spectrum', this)">
+                        <span><i class="fa-solid fa-rainbow"></i> 4. สเปกตรัม (Spectrum Explorer)</span>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Parameters Sliders -->
+            <div>
+                <div class="panel-section-title"><i class="fa-solid fa-gauge-high"></i> พารามิเตอร์ทางฟิสิกส์</div>
+                <div class="slider-group">
+                    
+                    <div class="slider-item">
+                        <div class="slider-label">
+                            <span>ความถี่ (Frequency $f$):</span>
+                            <span id="freq-val" class="value">1.0 Hz</span>
+                        </div>
+                        <input type="range" id="freqSlider" min="0.2" max="3.0" step="0.1" value="1.0">
+                    </div>
+
+                    <div class="slider-item">
+                        <div class="slider-label">
+                            <span>ความยาวคลื่น (Wavelength $\lambda$):</span>
+                            <span id="wave-val" class="value">4.0 m</span>
+                        </div>
+                        <input type="range" id="waveSlider" min="2.0" max="8.0" step="0.2" value="4.0">
+                    </div>
+
+                    <div class="slider-item">
+                        <div class="slider-label">
+                            <span>แอมพลิจูด (Amplitude $E_0$):</span>
+                            <span id="amp-val" class="value">2.5 N/C</span>
+                        </div>
+                        <input type="range" id="ampSlider" min="0.5" max="4.0" step="0.1" value="2.5">
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Display Toggles -->
+            <div>
+                <div class="panel-section-title"><i class="fa-solid fa-eye"></i> แสดงผลองค์ประกอบ</div>
+                <div class="toggle-grid">
+                    <button class="toggle-btn e-toggle active" onclick="toggleComponent('eField', this)">
+                        <i class="fa-solid fa-check"></i> สนามไฟฟ้า ($\vec{E}$)
+                    </button>
+                    <button class="toggle-btn b-toggle active" onclick="toggleComponent('bField', this)">
+                        <i class="fa-solid fa-check"></i> สนามแม่เหล็ก ($\vec{B}$)
+                    </button>
+                    <button class="toggle-btn s-toggle active" onclick="toggleComponent('poynting', this)">
+                        <i class="fa-solid fa-check"></i> Poynting ($\vec{S}$)
+                    </button>
+                    <button class="toggle-btn active" onclick="toggleComponent('ribbon', this)">
+                        <i class="fa-solid fa-check"></i> เส้นคลื่น (Ribbon)
+                    </button>
+                    <button class="toggle-btn active" onclick="toggleComponent('vectors', this)">
+                        <i class="fa-solid fa-check"></i> เวกเตอร์เข็ม
+                    </button>
+                    <button class="toggle-btn active" onclick="toggleComponent('grid', this)">
+                        <i class="fa-solid fa-check"></i> แกนพิกัด (Grid)
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Theory Explanation Panel -->
+        <div class="glass-panel theory-panel interactive">
+            <div class="panel-section-title"><i class="fa-solid fa-book-bookmark"></i> ทฤษฎีคลื่นแม่เหล็กไฟฟ้า</div>
+            
+            <div class="theory-content" id="theory-text">
+                <!-- Content will be updated dynamically based on selected mode -->
+            </div>
+        </div>
+
+        <!-- Bottom Playback Controls -->
+        <div class="glass-panel playback-panel interactive">
+            <button class="btn-play" id="playBtn" onclick="togglePlayPause()">
+                <i class="fa-solid fa-pause"></i>
+            </button>
+            <div class="slider-item" style="width: 140px;">
+                <div class="slider-label" style="font-size: 0.75rem;">
+                    <span>ความเร็วเวลา:</span>
+                    <span id="speed-val" class="value">1.0x</span>
+                </div>
+                <input type="range" id="speedSlider" min="0" max="2.5" step="0.1" value="1.0">
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JavaScript Physics Logic & Three.js Animation -->
+    <script>
+        // --- Global Constants & State ---
+        const C_SPEED = 3.0; // Simulated Speed of Light
+        let scene, camera, renderer, controls;
+        let isPlaying = true;
+        let simTime = 0;
+        let timeSpeed = 1.0;
+
+        // Wave Parameters
+        let waveConfig = {
+            mode: 'plane', // plane, circular, dipole, spectrum
+            frequency: 1.0,
+            wavelength: 4.0,
+            amplitude: 2.5,
+            showE: true,
+            showB: true,
+            showS: true,
+            showRibbon: true,
+            showVectors: true,
+            showGrid: true,
+            spectrumIndex: 3 // Default visible light
+        };
+
+        // 3D Objects Container
+        let waveGroup, gridHelper, axesHelper;
+        let eVectorArrows = [], bVectorArrows = [];
+        let eRibbonMesh, bRibbonMesh;
+        let poyntingArrow;
+        let dipoleChargeMesh, dipoleRaysGroup;
+
+        // EM Spectrum Data (Real Physics Values)
+        const spectrumData = [
+            { name: "คลื่นวิทยุ (Radio Wave)", freqText: "< 3 GHz", waveText: "> 10 cm", energyText: "< 12.4 µeV", color: 0xff3300, desc: "ความถี่ต่ำที่สุด ความยาวคลื่นยาวมาก ใช้ในการสื่อสารไร้สาย วิทยุ และโทรทัศน์" },
+            { name: "ไมโครเวฟ (Microwave)", freqText: "3 GHz - 300 GHz", waveText: "1 mm - 10 cm", energyText: "12.4 µeV - 1.24 meV", color: 0xff6600, desc: "ใช้ในการสื่อสารดาวเทียม เรดาร์ และอุ่นอาหารโดยทำให้โมเลกุลน้ำสั่นสะเทือน" },
+            { name: "อินฟราเรด (Infrared - IR)", freqText: "300 GHz - 400 THz", waveText: "750 nm - 1 mm", energyText: "1.24 meV - 1.7 eV", color: 0xff0033, desc: "แผ่ออกมาจากวัตถุที่มีความร้อน รู้สึกได้ในรูปของรังสีความร้อน" },
+            { name: "แสงที่มองเห็นได้ (Visible Light)", freqText: "400 THz - 790 THz", waveText: "380 nm - 750 nm", energyText: "1.7 eV - 3.3 eV", color: 0x00ffff, desc: "สเปกตรัมที่ดวงตามนุษย์รับรู้ได้ สัมพันธ์กับพลังงานของระดับชั้นอิเล็กตรอนในอะตอม" },
+            { name: "อัลตราไวโอเลต (Ultraviolet - UV)", freqText: "790 THz - 30 PHz", waveText: "10 nm - 380 nm", energyText: "3.3 eV - 124 eV", color: 0x9900ff, desc: "แผ่มาจากดวงอาทิตย์ สามารถทำให้เกิดการอิออนไนซ์ของโมเลกุล และกระตุ้นการสร้างวิตามินดี" },
+            { name: "รังสีเอ็กซ์ (X-Rays)", freqText: "30 PHz - 30 EHz", waveText: "0.01 nm - 10 nm", energyText: "124 eV - 124 keV", color: 0x0099ff, desc: "พลังงานสูง สามารถทะลุทะลวงเนื้อเยื่ออ่อนได้ ใช้ในทางการแพทย์และการตรวจสอบโครงสร้างผลึก" },
+            { name: "รังสีแกมมา (Gamma Rays)", freqText: "> 30 EHz", waveText: "< 0.01 nm", energyText: "> 124 keV", color: 0x00ffcc, desc: "พลังงานสูงที่สุด กำเนิดจากปฏิกิริยานิวเคลียร์และการสลายตัวของนิวเคลียส มีอำนาจทะลุทะลวงสูงมาก" }
+        ];
+
+        // --- Init Three.js Scene ---
+        function initScene() {
+            const container = document.getElementById('webgl-container');
+
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x07090e, 0.012);
+
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(-12, 8, 16);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxDistance = 60;
+            controls.minDistance = 4;
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(10, 20, 10);
+            scene.add(dirLight);
+
+            // Group for Wave elements
+            waveGroup = new THREE.Group();
+            scene.add(waveGroup);
+
+            // Grid & Axes
+            gridHelper = new THREE.GridHelper(40, 40, 0x00f0ff, 0x1c2d42);
+            gridHelper.position.y = -4;
+            scene.add(gridHelper);
+
+            axesHelper = new THREE.AxesHelper(3);
+            axesHelper.position.set(-15, -3.9, -15);
+            scene.add(axesHelper);
+
+            // Poynting Vector Arrow (Green)
+            const dir = new THREE.Vector3(1, 0, 0);
+            poyntingArrow = new THREE.ArrowHelper(dir, new THREE.Vector3(0, 0, 0), 4, 0x39ff14, 0.8, 0.5);
+            waveGroup.add(poyntingArrow);
+
+            // Dipole Elements
+            createDipoleMesh();
+
+            // Build Wave Objects
+            rebuildWaveStructures();
+
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize);
+            setupUIEventListeners();
+
+            // Update Theory Panel
+            updateTheoryExplanation();
+
+            // Start Animation
+            animate();
+        }
+
+        // --- Create Dipole Mesh ---
+        function createDipoleMesh() {
+            const group = new THREE.Group();
+
+            // Oscillating Point Charge (Sphere)
+            const sphereGeo = new THREE.SphereGeometry(0.6, 32, 32);
+            const sphereMat = new THREE.MeshStandardMaterial({
+                color: 0xffcc00,
+                emissive: 0xff9900,
+                emissiveIntensity: 0.8,
+                roughness: 0.2
+            });
+            dipoleChargeMesh = new THREE.Mesh(sphereGeo, sphereMat);
+            group.add(dipoleChargeMesh);
+
+            // Dipole Antenna Rods
+            const rodGeo = new THREE.CylinderGeometry(0.08, 0.08, 6, 16);
+            const rodMat = new THREE.MeshStandardMaterial({ color: 0x8b949e, metalness: 0.8 });
+            const topRod = new THREE.Mesh(rodGeo, rodMat);
+            topRod.position.y = 4;
+            const bottomRod = new THREE.Mesh(rodGeo, rodMat);
+            bottomRod.position.y = -4;
+
+            group.add(topRod);
+            group.add(bottomRod);
+
+            dipoleRaysGroup = group;
+            dipoleRaysGroup.visible = false;
+            scene.add(dipoleRaysGroup);
+        }
+
+        // --- Rebuild Vector Field & Ribbon Meshes ---
+        function rebuildWaveStructures() {
+            // Clear existing vector arrows
+            eVectorArrows.forEach(a => waveGroup.remove(a));
+            bVectorArrows.forEach(a => waveGroup.remove(a));
+            if (eRibbonMesh) waveGroup.remove(eRibbonMesh);
+            if (bRibbonMesh) waveGroup.remove(bRibbonMesh);
+
+            eVectorArrows = [];
+            bVectorArrows = [];
+
+            const numPoints = 60;
+            const lengthX = 24;
+            const stepX = lengthX / numPoints;
+
+            // Create Arrows for E and B fields
+            for (let i = 0; i < numPoints; i++) {
+                const posX = -12 + i * stepX;
+
+                // E-field Arrow (Cyan) - Vertical Y
+                const eArrow = new THREE.ArrowHelper(
+                    new THREE.Vector3(0, 1, 0),
+                    new THREE.Vector3(posX, 0, 0),
+                    1, 0x00f0ff, 0.3, 0.2
+                );
+                eVectorArrows.push(eArrow);
+                waveGroup.add(eArrow);
+
+                // B-field Arrow (Red) - Horizontal Z
+                const bArrow = new THREE.ArrowHelper(
+                    new THREE.Vector3(0, 0, 1),
+                    new THREE.Vector3(posX, 0, 0),
+                    1, 0xff3366, 0.3, 0.2
+                );
+                bVectorArrows.push(bArrow);
+                waveGroup.add(bArrow);
+            }
+
+            // Create Ribbon Mesh for continuous wave visualization
+            const ribbonGeoE = new THREE.BufferGeometry();
+            const ribbonGeoB = new THREE.BufferGeometry();
+
+            const positionsE = new Float32Array(numPoints * 2 * 3);
+            const positionsB = new Float32Array(numPoints * 2 * 3);
+
+            ribbonGeoE.setAttribute('position', new THREE.BufferAttribute(positionsE, 3));
+            ribbonGeoB.setAttribute('position', new THREE.BufferAttribute(positionsB, 3));
+
+            const matE = new THREE.MeshBasicMaterial({ color: 0x00f0ff, side: THREE.DoubleSide, transparent: true, opacity: 0.35 });
+            const matB = new THREE.MeshBasicMaterial({ color: 0xff3366, side: THREE.DoubleSide, transparent: true, opacity: 0.35 });
+
+            eRibbonMesh = new THREE.Mesh(ribbonGeoE, matE);
+            bRibbonMesh = new THREE.Mesh(ribbonGeoB, matB);
+
+            waveGroup.add(eRibbonMesh);
+            waveGroup.add(bRibbonMesh);
+        }
+
+        // --- Physics Calculation & Frame Update ---
+        function updatePhysics() {
+            if (!isPlaying) return;
+            simTime += 0.02 * timeSpeed * waveConfig.frequency;
+
+            const k = (2 * Math.PI) / waveConfig.wavelength; // Wave number
+            const omega = 2 * Math.PI * waveConfig.frequency; // Angular frequency
+            const amp = waveConfig.amplitude;
+
+            const numPoints = eVectorArrows.length;
+            const lengthX = 24;
+            const stepX = lengthX / numPoints;
+
+            // Handle Mode Specific Displays
+            if (waveConfig.mode === 'dipole') {
+                waveGroup.visible = false;
+                dipoleRaysGroup.visible = true;
+
+                // Animate charge oscillation along Y axis
+                const chargeY = Math.sin(simTime * 5) * 1.5;
+                dipoleChargeMesh.position.y = chargeY;
+
+                return;
+            } else {
+                waveGroup.visible = true;
+                dipoleRaysGroup.visible = false;
+            }
+
+            const ePositions = eRibbonMesh.geometry.attributes.position.array;
+            const bPositions = bRibbonMesh.geometry.attributes.position.array;
+
+            for (let i = 0; i < numPoints; i++) {
+                const x = -12 + i * stepX;
+                const phase = k * x - simTime * 5;
+
+                let Ey = 0, Ez = 0;
+                let By = 0, Bz = 0;
+
+                if (waveConfig.mode === 'plane' || waveConfig.mode === 'spectrum') {
+                    // Linearly Polarized Wave: E in Y, B in Z (In Phase)
+                    Ey = amp * Math.sin(phase);
+                    Bz = (amp / C_SPEED) * Math.sin(phase) * 2.5; // Scaled for visual clarity
+                } else if (waveConfig.mode === 'circular') {
+                    // Circularly Polarized Wave: E and B rotate 90 deg out of phase
+                    Ey = amp * Math.sin(phase);
+                    Ez = amp * Math.cos(phase);
+
+                    By = -(amp / C_SPEED) * Math.cos(phase) * 2.5;
+                    Bz = (amp / C_SPEED) * Math.sin(phase) * 2.5;
+                }
+
+                // Update E Arrow
+                const eArrow = eVectorArrows[i];
+                eArrow.position.set(x, 0, 0);
+                const eMag = Math.sqrt(Ey * Ey + Ez * Ez);
+                if (eMag > 0.001) {
+                    eArrow.setDirection(new THREE.Vector3(0, Ey, Ez).normalize());
+                    eArrow.setLength(eMag, Math.min(eMag * 0.3, 0.4), 0.2);
+                    eArrow.visible = waveConfig.showE && waveConfig.showVectors;
+                } else {
+                    eArrow.visible = false;
+                }
+
+                // Update B Arrow
+                const bArrow = bVectorArrows[i];
+                bArrow.position.set(x, 0, 0);
+                const bMag = Math.sqrt(By * By + Bz * Bz);
+                if (bMag > 0.001) {
+                    bArrow.setDirection(new THREE.Vector3(0, By, Bz).normalize());
+                    bArrow.setLength(bMag * 1.5, Math.min(bMag * 0.4, 0.4), 0.2);
+                    bArrow.visible = waveConfig.showB && waveConfig.showVectors;
+                } else {
+                    bArrow.visible = false;
+                }
+
+                // Update Ribbon Geometry
+                const idx = i * 6;
+                // E Ribbon (X-Y Plane)
+                ePositions[idx] = x;     ePositions[idx+1] = 0;   ePositions[idx+2] = 0;
+                ePositions[idx+3] = x;   ePositions[idx+4] = Ey;  ePositions[idx+5] = Ez;
+
+                // B Ribbon (X-Z Plane)
+                bPositions[idx] = x;     bPositions[idx+1] = 0;   bPositions[idx+2] = 0;
+                bPositions[idx+3] = x;   bPositions[idx+4] = By;  bPositions[idx+5] = Bz;
+            }
+
+            eRibbonMesh.geometry.attributes.position.needsUpdate = true;
+            bRibbonMesh.geometry.attributes.position.needsUpdate = true;
+
+            eRibbonMesh.visible = waveConfig.showE && waveConfig.showRibbon;
+            bRibbonMesh.visible = waveConfig.showB && waveConfig.showRibbon;
+
+            // Poynting Vector Position at wave front
+            poyntingArrow.position.set(12, 0, 0);
+            poyntingArrow.visible = waveConfig.showS;
+        }
+
+        // --- Render Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            updatePhysics();
+            controls.update();
+
+            renderer.render(scene, camera);
+        }
+
+        // --- UI Setup & Theory Explanations ---
+        function setupUIEventListeners() {
+            // Sliders
+            document.getElementById('freqSlider').addEventListener('input', (e) => {
+                waveConfig.frequency = parseFloat(e.target.value);
+                document.getElementById('freq-val').innerText = waveConfig.frequency.toFixed(1) + ' Hz';
+            });
+
+            document.getElementById('waveSlider').addEventListener('input', (e) => {
+                waveConfig.wavelength = parseFloat(e.target.value);
+                document.getElementById('wave-val').innerText = waveConfig.wavelength.toFixed(1) + ' m';
+                rebuildWaveStructures();
+            });
+
+            document.getElementById('ampSlider').addEventListener('input', (e) => {
+                waveConfig.amplitude = parseFloat(e.target.value);
+                document.getElementById('amp-val').innerText = waveConfig.amplitude.toFixed(1) + ' N/C';
+            });
+
+            document.getElementById('speedSlider').addEventListener('input', (e) => {
+                timeSpeed = parseFloat(e.target.value);
+                document.getElementById('speed-val').innerText = timeSpeed.toFixed(1) + 'x';
+            });
+        }
+
+        function setWaveMode(mode, btn) {
+            waveConfig.mode = mode;
+
+            document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            if (mode === 'spectrum') {
+                // Change color based on spectrum
+                const data = spectrumData[waveConfig.spectrumIndex];
+                if (eRibbonMesh) eRibbonMesh.material.color.setHex(data.color);
+            } else {
+                if (eRibbonMesh) eRibbonMesh.material.color.setHex(0x00f0ff);
+            }
+
+            updateTheoryExplanation();
+        }
+
+        function toggleComponent(comp, btn) {
+            btn.classList.toggle('active');
+            const isActive = btn.classList.contains('active');
+
+            if (comp === 'eField') waveConfig.showE = isActive;
+            if (comp === 'bField') waveConfig.showB = isActive;
+            if (comp === 'poynting') waveConfig.showS = isActive;
+            if (comp === 'ribbon') waveConfig.showRibbon = isActive;
+            if (comp === 'vectors') waveConfig.showVectors = isActive;
+            if (comp === 'grid') {
+                gridHelper.visible = isActive;
+                axesHelper.visible = isActive;
+            }
+        }
+
+        function togglePlayPause() {
+            isPlaying = !isPlaying;
+            const icon = document.getElementById('playBtn').querySelector('i');
+            icon.className = isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play';
+        }
+
+        function updateTheoryExplanation() {
+            const container = document.getElementById('theory-text');
+
+            if (waveConfig.mode === 'plane') {
+                container.innerHTML = `
+                    <h3><i class="fa-solid fa-graduation-cap"></i> คลื่นแม่เหล็กไฟฟ้าแนวระนาบ</h3>
+                    <p>คลื่นแม่เหล็กไฟฟ้าเป็น<b>คลื่นตามขวาง (Transverse Wave)</b> เกิดจากการสั่นร่วมกันของสนามไฟฟ้า ($\vec{E}$) และสนามแม่เหล็ก ($\vec{B}$) ที่ตั้งฉากซึ่งกันและกัน และตั้งฉากกับทิศทางการเคลื่อนที่ของคลื่น ($\vec{v}$)</p>
+
+                    <div class="formula-box">
+                        E(x, t) = E_0 \\sin(kx - \\omega t)<br>
+                        B(x, t) = B_0 \\sin(kx - \\omega t)
+                    </div>
+
+                    <h3><i class="fa-solid fa-bolt"></i> สมการของแมกซ์เวลล์ (Maxwell)</h3>
+                    <p>การเปลี่ยนแปลงของสนามไฟฟ้าสร้างสนามแม่เหล็ก (Faraday's Law) และการเปลี่ยนแปลงของสนามแม่เหล็กก็สร้างสนามไฟฟ้า (Ampère-Maxwell Law) เหนี่ยวนำต่อเนื่องกันไปในอวกาศโดยไม่ต้องอาศัยตัวกลาง</p>
+
+                    <div class="formula-box b-color">
+                        c = \\frac{1}{\\sqrt{\\mu_0 \\varepsilon_0}} \\approx 3 \\times 10^8 \\text{ m/s}
+                    </div>
+
+                    <h3><i class="fa-solid fa-arrow-trend-up"></i> Poynting Vector (เวกเตอร์พอยน์ติง)</h3>
+                    <p>เวกเตอร์ $\\vec{S}$ ระบุทิศทางและอัตราการส่งผ่านพลังงานของคลื่นแม่เหล็กไฟฟ้าต่อหนึ่งหน่วยพื้นที่:</p>
+                    <div class="formula-box s-color">
+                        \\vec{S} = \\frac{1}{\\mu_0} (\\vec{E} \\times \\vec{B})
+                    </div>
+                `;
+            } else if (waveConfig.mode === 'circular') {
+                container.innerHTML = `
+                    <h3><i class="fa-solid fa-arrows-spin"></i> โพลาไรเซชันแบบวงกลม</h3>
+                    <p>เกิดขึ้นเมื่อมีคลื่นระนาบสองคลื่นที่มีแอมพลิจูดเท่ากัน มีแนวการสั่นตั้งฉากกัน และมี<b>เฟสต่างกัน $\\frac{\\pi}{2}$ (90 องศา)</b> รวมกัน</p>
+
+                    <div class="formula-box">
+                        E_y = E_0 \\sin(kx - \\omega t)<br>
+                        E_z = E_0 \\cos(kx - \\omega t)
+                    </div>
+
+                    <p>เวกเตอร์ลัพธ์ของสนามไฟฟ้าจะหมุนวนเป็นรูปวงกลมล้อมรอบแกนการเคลื่อนที่ เหมาะสำหรับเทคโนโลยีการสื่อสารดาวเทียมและเรดาร์เพราะลดการสูญเสียสัญญาณจากการเอียงของสายอากาศ</p>
+                `;
+            } else if (waveConfig.mode === 'dipole') {
+                container.innerHTML = `
+                    <h3><i class="fa-solid fa-atom"></i> การแผ่คลื่นจากไดโพล (Dipole Radiation)</h3>
+                    <p>ประจุไฟฟ้าที่เคลื่อนที่ด้วย<b>ความเร่ง (Accelerated Charge)</b> จะแผ่พลังงานออกมาในรูปคลื่นแม่เหล็กไฟฟ้า</p>
+
+                    <p>เสาอากาศแบบสายคู่ (Dipole Antenna) ทำงานโดยการทำให้ประจุไฟฟ้าสั่นขึ้น-ลงด้วยความถี่สูง ทำให้เกิดการแผ่สนามแม่เหล็กไฟฟ้าออกไปในอวกาศรอบทิศทางในลักษณะทรงรูปโดนัท (Toroidal Pattern) โดยพลังงานสูงสุดจะแผ่ออกในแนวตั้งฉากกับสายอากาศ</p>
+
+                    <div class="formula-box b-color">
+                        P = \\frac{q^2 a^2}{6 \\pi \\varepsilon_0 c^3} \\quad \\text{(Larmor Formula)}
+                    </div>
+                `;
+            } else if (waveConfig.mode === 'spectrum') {
+                const data = spectrumData[waveConfig.spectrumIndex];
+                container.innerHTML = `
+                    <h3><i class="fa-solid fa-rainbow"></i> สเปกตรัมแม่เหล็กไฟฟ้า</h3>
+                    <div class="spectrum-bar">
+                        <div class="spectrum-indicator" style="left: ${(waveConfig.spectrumIndex / 6) * 100}%"></div>
+                    </div>
+
+                    <p style="margin-bottom: 0.5rem;"><b>${data.name}</b></p>
+                    <p>${data.desc}</p>
+
+                    <div class="formula-box">
+                        ความถี่ (f): ${data.freqText}<br>
+                        ความยาวคลื่น (\\lambda): ${data.waveText}<br>
+                        พลังงานโฟตอน (E): ${data.energyText}
+                    </div>
+
+                    <h3><i class="fa-solid fa-lightbulb"></i> พลังงานของควอนตัมแสง</h3>
+                    <p>ตามทฤษฎีควอนตัม พลังงานของคลื่นแม่เหล็กไฟฟ้าขึ้นอยู่กับความถี่โดยตรง ตามสมการของพลังก์ (Planck's Relation):</p>
+                    <div class="formula-box s-color">
+                        E = hf = \\frac{hc}{\\lambda}
+                    </div>
+                `;
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Initialize on window load
+        window.onload = initScene;
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แบบจำลองฟิสิกส์ 3D: อะตอมของไฮโดรเจน (Hydrogen Atom 3D)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Sarabun:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- KaTeX for Math Equations -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #030712;
+            --panel-bg: rgba(15, 23, 42, 0.8);
+            --panel-border: rgba(56, 189, 248, 0.25);
+            --cyan-accent: #38bdf8;
+            --violet-accent: #a855f7;
+            --pink-accent: #ec4899;
+            --yellow-accent: #facc15;
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: var(--bg-dark);
+            color: #f1f5f9;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        .font-code { font-family: 'Fira Code', monospace; }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); }
+        ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--cyan-accent); }
+
+        /* Glassmorphism Panel */
+        .glass-card {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+        }
+
+        /* Glowing text effects */
+        .glow-cyan { text-shadow: 0 0 10px rgba(56, 189, 248, 0.6); }
+        .glow-violet { text-shadow: 0 0 10px rgba(168, 85, 247, 0.6); }
+
+        #webgl-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Interactive HUD Overlay Layout */
+        .hud-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: grid;
+            grid-template-columns: 360px 1fr 400px;
+            grid-template-rows: auto 1fr auto;
+            padding: 1rem;
+            gap: 1rem;
+        }
+
+        .pointer-auto { pointer-events: auto; }
+
+        /* Spectral Lines Canvas */
+        #spectrumCanvas {
+            width: 100%;
+            height: 36px;
+            background: #000;
+            border-radius: 6px;
+            border: 1px solid var(--panel-border);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 3D WebGL Canvas Container -->
+    <div id="webgl-container"></div>
+
+    <!-- UI Overlay HUD -->
+    <div class="hud-overlay">
+
+        <!-- Top Header Panel -->
+        <header class="glass-card rounded-xl p-4 pointer-auto col-span-2 flex items-center justify-between">
+            <div>
+                <h1 class="font-orbitron font-bold text-xl text-sky-400 glow-cyan flex items-center gap-2">
+                    <i class="fa-solid fa-atom text-purple-400"></i> แบบจำลอง 3D อะตอมของไฮโดรเจน ($H$)
+                </h1>
+                <p class="text-xs text-slate-400 mt-1">
+                    Hydrogen Atom Simulation ($Z=1, 1e^-$) | ทฤษฎีควอนตัม, แบบจำลองของบอร์ & สมการชเรอดิงเงอร์
+                </p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-sky-950/80 text-sky-300 border border-sky-500/30">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse mr-2"></span>
+                    $Z = 1$ (1 Proton + 1 Electron)
+                </span>
+            </div>
+        </header>
+
+        <!-- Left Controls Sidebar -->
+        <aside class="glass-card rounded-xl p-4 pointer-auto col-start-1 row-start-2 row-span-2 flex flex-col gap-4 overflow-y-auto max-h-[calc(100vh-6rem)]">
+            
+            <!-- Model View Mode Switcher -->
+            <div>
+                <h2 class="font-orbitron text-xs font-semibold text-yellow-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-layer-group"></i> แบบจำลองความคิด (Atomic Models)
+                </h2>
+                <div class="grid grid-cols-1 gap-2">
+                    <button id="btn-mode-bohr" onclick="setAtomMode('bohr')" class="w-full text-left px-3 py-2 rounded-lg text-sm bg-sky-500/20 border border-sky-400 text-sky-300 font-semibold transition hover:bg-sky-500/30 flex items-center justify-between">
+                        <span><i class="fa-solid fa-[#00ffff] fa-circle-notch mr-2"></i>1. แบบจำลองของบอร์ (Bohr Model)</span>
+                        <i class="fa-solid fa-chevron-right text-xs"></i>
+                    </button>
+                    <button id="btn-mode-quantum" onclick="setAtomMode('quantum')" class="w-full text-left px-3 py-2 rounded-lg text-sm bg-slate-800/60 border border-slate-700 text-slate-300 transition hover:bg-slate-700/50 flex items-center justify-between">
+                        <span><i class="fa-solid fa-cloud mr-2"></i>2. กลุ่มหมอกควอนตัม (Quantum Orbitals)</span>
+                        <i class="fa-solid fa-chevron-right text-xs"></i>
+                    </button>
+                    <button id="btn-mode-planetary" onclick="setAtomMode('planetary')" class="w-full text-left px-3 py-2 rounded-lg text-sm bg-slate-800/60 border border-slate-700 text-slate-300 transition hover:bg-slate-700/50 flex items-center justify-between">
+                        <span><i class="fa-solid fa-globe mr-2"></i>3. แบบจำลองดาวเคราะห์ (Planetary)</span>
+                        <i class="fa-solid fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quantum Numbers Controls -->
+            <div id="quantum-numbers-panel" class="border-t border-slate-800 pt-3">
+                <h2 class="font-orbitron text-xs font-semibold text-sky-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-sliders"></i> ระดับพลังงาน & เลขควอนตัม
+                </h2>
+
+                <!-- Principal Quantum Number (n) -->
+                <div class="mb-3">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">ระดับพลังงานหลัก ($n$):</span>
+                        <span id="val-n" class="font-code text-sky-300 font-bold">n = 1 (Ground State)</span>
+                    </div>
+                    <input type="range" id="slider-n" min="1" max="6" step="1" value="1" class="w-full accent-sky-400 cursor-pointer">
+                </div>
+
+                <!-- Angular Quantum Number (l) -->
+                <div id="panel-orbital-l" class="mb-3 hidden">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">รูปทรงออร์บิทัล ($l$):</span>
+                        <span id="val-l" class="font-code text-purple-300 font-bold">l = 0 (s orbital)</span>
+                    </div>
+                    <div class="grid grid-cols-4 gap-1">
+                        <button onclick="setOrbitalL(0)" class="btn-l text-xs py-1 rounded bg-purple-600 text-white font-semibold">s (l=0)</button>
+                        <button onclick="setOrbitalL(1)" class="btn-l text-xs py-1 rounded bg-slate-800 text-slate-400">p (l=1)</button>
+                        <button onclick="setOrbitalL(2)" class="btn-l text-xs py-1 rounded bg-slate-800 text-slate-400">d (l=2)</button>
+                        <button onclick="setOrbitalL(3)" class="btn-l text-xs py-1 rounded bg-slate-800 text-slate-400">f (l=3)</button>
+                    </div>
+                </div>
+
+                <!-- Energy Calculation Card -->
+                <div class="bg-black/40 border border-slate-800 rounded-lg p-3 font-code text-xs space-y-1">
+                    <div class="flex justify-between text-slate-400">
+                        <span>พลังงานรวม ($E_n$):</span>
+                        <span id="energy-val" class="text-emerald-400 font-bold">-13.60 eV</span>
+                    </div>
+                    <div class="flex justify-between text-slate-400">
+                        <span>รัศมีวงโคจรบอร์ ($r_n$):</span>
+                        <span id="radius-val" class="text-sky-300">0.529 Å (1 $a_0$)</span>
+                    </div>
+                    <div class="flex justify-between text-slate-400">
+                        <span>ความเร็วอิเล็กตรอน ($v_n$):</span>
+                        <span id="velocity-val" class="text-purple-300">2.187 × 10⁶ m/s</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quantum Transition & Spectrum Trigger -->
+            <div class="border-t border-slate-800 pt-3">
+                <h2 class="font-orbitron text-xs font-semibold text-purple-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-bolt"></i> การกระโดดควอนตัม (Quantum Leaps)
+                </h2>
+                <p class="text-xs text-slate-400 mb-2">เลือกการเปลี่ยนระดับพลังงานเพื่อปล่อยโฟตอนแสง:</p>
+                
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                    <button onclick="triggerQuantumJump(2, 1)" class="px-2 py-1.5 bg-purple-900/50 hover:bg-purple-800/60 border border-purple-500/40 rounded text-xs text-purple-200 transition text-center">
+                        $n: 2 \to 1$ (Lyman-$\alpha$)
+                    </button>
+                    <button onclick="triggerQuantumJump(3, 2)" class="px-2 py-1.5 bg-red-950/50 hover:bg-red-800/60 border border-red-500/40 rounded text-xs text-red-200 transition text-center">
+                        $n: 3 \to 2$ (Balmer $\text{H}\alpha$)
+                    </button>
+                    <button onclick="triggerQuantumJump(4, 2)" class="px-2 py-1.5 bg-teal-950/50 hover:bg-teal-800/60 border border-teal-500/40 rounded text-xs text-teal-200 transition text-center">
+                        $n: 4 \to 2$ (Balmer $\text{H}\beta$)
+                    </button>
+                    <button onclick="triggerQuantumJump(5, 2)" class="px-2 py-1.5 bg-blue-950/50 hover:bg-blue-800/60 border border-blue-500/40 rounded text-xs text-blue-200 transition text-center">
+                        $n: 5 \to 2$ (Balmer $\text{H}\gamma$)
+                    </button>
+                </div>
+
+                <!-- Live Spectrum Viewer -->
+                <div class="mt-2">
+                    <span class="text-[11px] text-slate-400 block mb-1">เส้นสเปกตรัมไฮโดรเจน (Hydrogen Emission Spectrum):</span>
+                    <canvas id="spectrumCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- Display Toggles -->
+            <div class="border-t border-slate-800 pt-3">
+                <h2 class="font-orbitron text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                    <i class="fa-solid fa-eye"></i> การแสดงผล
+                </h2>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <label class="flex items-center gap-2 cursor-pointer bg-slate-900/60 p-2 rounded border border-slate-800 hover:border-slate-700">
+                        <input type="checkbox" id="toggle-nucleus-glow" checked onchange="toggleVis('nucleusGlow', this.checked)" class="accent-sky-400">
+                        <span>แสงนิวเคลียส</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer bg-slate-900/60 p-2 rounded border border-slate-800 hover:border-slate-700">
+                        <input type="checkbox" id="toggle-orbits" checked onchange="toggleVis('orbits', this.checked)" class="accent-sky-400">
+                        <span>วงโคจรบอร์</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer bg-slate-900/60 p-2 rounded border border-slate-800 hover:border-slate-700">
+                        <input type="checkbox" id="toggle-probability-cloud" checked onchange="toggleVis('cloud', this.checked)" class="accent-sky-400">
+                        <span>กลุ่มหมอกความน่าจะเป็น</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer bg-slate-900/60 p-2 rounded border border-slate-800 hover:border-slate-700">
+                        <input type="checkbox" id="toggle-photon-trail" checked onchange="toggleVis('photons', this.checked)" class="accent-sky-400">
+                        <span>ลำอนุภาคโฟตอน</span>
+                    </label>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- Right Explanation & AI Tutor Sidebar -->
+        <aside class="glass-card rounded-xl p-4 pointer-auto col-start-3 row-start-1 row-span-3 flex flex-col gap-3 max-h-[calc(100vh-2rem)]">
+            
+            <!-- Tab Navigation -->
+            <div class="flex border-b border-slate-700 pb-2 gap-2">
+                <button id="tab-btn-theory" onclick="switchRightTab('theory')" class="flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-sky-500/20 text-sky-300 border border-sky-400/50 flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-book-open"></i> ทฤษฎี
+                </button>
+                <button id="tab-btn-chat" onclick="switchRightTab('chat')" class="flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700 flex items-center justify-center gap-1.5 hover:text-slate-200">
+                    <i class="fa-solid fa-robot"></i> AI Tutor
+                </button>
+                <button id="tab-btn-image" onclick="switchRightTab('image')" class="flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700 flex items-center justify-center gap-1.5 hover:text-slate-200">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> ภาพ AI
+                </button>
+            </div>
+
+            <!-- Tab 1: Physics Theory Content -->
+            <div id="tab-content-theory" class="overflow-y-auto text-xs text-slate-300 space-y-3 leading-relaxed pr-1">
+                <!-- Content inserted dynamically by JavaScript -->
+            </div>
+
+            <!-- Tab 2: Gemini AI Physics Chatbot -->
+            <div id="tab-content-chat" class="hidden flex-col h-full gap-2">
+                <div class="text-xs text-slate-400 mb-1 flex items-center gap-1">
+                    <i class="fa-solid fa-sparkles text-sky-400"></i> ถามคำถามฟิสิกส์เกี่ยวกับอะตอมไฮโดรเจนกับ AI
+                </div>
+                <!-- Quick Prompt Buttons -->
+                <div class="flex flex-wrap gap-1.5 mb-2">
+                    <button onclick="sendQuickChat('ทำไมอิเล็กตรอนในอะตอมไฮโดรเจนถึงไม่ตกลงไปในนิวเคลียส?')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-sky-300 px-2 py-1 rounded border border-slate-700">
+                        ทำไมอิเล็กตรอนไม่ตกเข้าหานิวเคลียส?
+                    </button>
+                    <button onclick="sendQuickChat('อธิบายอนุกรมสเปกตรัม Balmer และ Lyman แบบเข้าใจง่าย')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-purple-300 px-2 py-1 rounded border border-slate-700">
+                        อนุกรมสเปกตรัม Balmer คืออะไร?
+                    </button>
+                </div>
+                <!-- Chat Log -->
+                <div id="chatLog" class="flex-1 overflow-y-auto bg-black/40 border border-slate-800 rounded-lg p-2.5 space-y-2 text-xs">
+                    <div class="bg-slate-800/70 border border-slate-700 rounded-lg p-2 text-slate-200">
+                        สวัสดีครับ! ผมคือ AI ช่วยสอนฟิสิกส์ สอบถามเกี่ยวกับอะตอมไฮโดรเจน ทฤษฎีควอนตัม ออร์บิทัล หรืออนุกรมสเปกตรัมได้เลยครับ!
+                    </div>
+                </div>
+                <!-- Chat Input Row -->
+                <div class="flex gap-2 mt-1">
+                    <input type="text" id="chatInput" placeholder="พิมพ์คำถามฟิสิกส์..." onkeypress="if(event.key==='Enter') sendChatMessage()" class="flex-1 bg-black/60 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-sky-400">
+                    <button onclick="sendChatMessage()" class="bg-sky-500 hover:bg-sky-400 text-black font-semibold px-3 py-1.5 rounded-lg text-xs transition">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab 3: Gemini AI Image Generator -->
+            <div id="tab-content-image" class="hidden flex-col gap-3">
+                <p class="text-xs text-slate-400">
+                    สร้างภาพจำลองปรากฏการณ์ฟิสิกส์ควอนตัมด้วย Gemini 3.1 Flash Lite Image Model
+                </p>
+                <input type="text" id="imgPromptInput" value="Quantum mechanical hydrogen atom orbital density cloud glowing blue and purple in cosmic dark space, sci-fi physics wallpaper" class="w-full bg-black/60 border border-slate-700 rounded-lg p-2 text-xs text-white outline-none focus:border-purple-400">
+                <button onclick="generateAIPhysicsImage()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-semibold py-2 rounded-lg text-xs transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> สร้างภาพจำลองด้วย AI
+                </button>
+
+                <div id="imgOutputContainer" class="w-full h-48 border border-dashed border-slate-700 rounded-lg flex items-center justify-center bg-black/30 relative overflow-hidden">
+                    <div id="imgLoadingSpinner" class="hidden flex-col items-center gap-2 text-purple-400 text-xs">
+                        <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+                        <span>กำลังประมวลผลสร้างภาพ...</span>
+                    </div>
+                    <span id="imgPlaceholderText" class="text-xs text-slate-500">ภาพจำลองจะปรากฏที่นี่</span>
+                    <img id="aiGeneratedImg" class="hidden w-full h-full object-cover rounded-lg" alt="AI Physics Concept">
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- Bottom Timeline / Animation Playback Controls -->
+        <footer class="glass-card rounded-xl px-4 py-2 pointer-auto col-start-2 row-start-3 justify-self-center flex items-center gap-4">
+            <button id="btn-play-pause" onclick="togglePlayPause()" class="w-9 h-9 rounded-full bg-sky-400 hover:bg-sky-300 text-slate-950 font-bold flex items-center justify-center transition shadow-lg shadow-sky-400/20">
+                <i class="fa-solid fa-pause"></i>
+            </button>
+            <div class="flex items-center gap-2 text-xs">
+                <span class="text-slate-400">ความเร็วเวลา:</span>
+                <input type="range" id="slider-speed" min="0" max="3" step="0.1" value="1" class="w-24 accent-sky-400 cursor-pointer">
+                <span id="val-speed" class="font-code text-sky-300">1.0x</span>
+            </div>
+            <div class="h-4 w-px bg-slate-700"></div>
+            <button onclick="resetCameraView()" class="text-xs text-slate-400 hover:text-sky-300 flex items-center gap-1">
+                <i class="fa-solid fa-rotate"></i> รีเซ็ตมุมมอง
+            </button>
+        </footer>
+
+    </div>
+
+    <script>
+        // --- Global Constants & Physical Constants ---
+        const RYDBERG_CONST = 1.097373e7; // m^-1
+        const BOHR_RADIUS_A0 = 0.529177; // Angstroms (10^-10 m)
+        const GROUND_STATE_ENERGY = -13.6056; // eV
+
+        // Application State
+        let scene, camera, renderer, controls;
+        let isPlaying = true;
+        let simTime = 0;
+        let simSpeed = 1.0;
+
+        let atomState = {
+            mode: 'bohr', // 'bohr', 'quantum', 'planetary'
+            n: 1, // Principal quantum number (1 to 6)
+            l: 0, // Angular momentum quantum number (0 to n-1)
+            m: 0, // Magnetic quantum number
+            showNucleusGlow: true,
+            showOrbits: true,
+            showCloud: true,
+            showPhotons: true
+        };
+
+        // 3D Object Groups
+        let nucleusMesh, nucleusGlowSprite;
+        let electronMesh, electronTrailLine;
+        let bohrOrbitRingsGroup = new THREE.Group();
+        let quantumCloudGroup = new THREE.Group();
+        let activePhotonsGroup = new THREE.Group();
+
+        // Electron animation trail buffer
+        const TRAIL_POINTS_COUNT = 80;
+        let trailPositions = new Float32Array(TRAIL_POINTS_COUNT * 3);
+
+        // --- Init Three.js Scene ---
+        function initScene() {
+            const container = document.getElementById('webgl-container');
+
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x030712, 0.015);
+
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 12, 28);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxDistance = 120;
+            controls.minDistance = 3;
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const pointLight = new THREE.PointLight(0x38bdf8, 3, 50);
+            pointLight.position.set(0, 0, 0);
+            scene.add(pointLight);
+
+            // Add Groups to Scene
+            scene.add(bohrOrbitRingsGroup);
+            scene.add(quantumCloudGroup);
+            scene.add(activePhotonsGroup);
+
+            // Build Starfield Background
+            createCosmicStarfield();
+
+            // Build Proton Nucleus
+            createNucleus();
+
+            // Build Electron Mesh & Motion Trail
+            createElectron();
+
+            // Build Initial Bohr Rings & Orbital Cloud
+            rebuildBohrOrbits();
+            rebuildQuantumOrbitalCloud();
+
+            // UI Listeners & Math Render
+            setupUIEventListeners();
+            updateCalculatedPhysicsValues();
+            updateTheoryTextContent();
+            renderHydrogenSpectrumCanvas();
+
+            // Window Resize Listener
+            window.addEventListener('resize', onWindowResize);
+
+            // Start Animation Loop
+            animate();
+        }
+
+        // --- Starfield Background ---
+        function createCosmicStarfield() {
+            const geometry = new THREE.BufferGeometry();
+            const count = 1200;
+            const positions = new Float32Array(count * 3);
+            const colors = new Float32Array(count * 3);
+
+            for (let i = 0; i < count * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 300;
+                positions[i + 1] = (Math.random() - 0.5) * 300;
+                positions[i + 2] = (Math.random() - 0.5) * 300;
+
+                colors[i] = 0.5 + Math.random() * 0.5;
+                colors[i + 1] = 0.7 + Math.random() * 0.3;
+                colors[i + 2] = 1.0;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: 0.6,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8
+            });
+
+            const starfield = new THREE.Points(geometry, material);
+            scene.add(starfield);
+        }
+
+        // --- Create Proton Nucleus ($Z=1$) ---
+        function createNucleus() {
+            const nucleusGroup = new THREE.Group();
+
+            // Red/Orange Proton Core
+            const geo = new THREE.SphereGeometry(0.7, 32, 32);
+            const mat = new THREE.MeshStandardMaterial({
+                color: 0xef4444,
+                emissive: 0xd97706,
+                emissiveIntensity: 0.8,
+                roughness: 0.2
+            });
+            nucleusMesh = new THREE.Mesh(geo, mat);
+            nucleusGroup.add(nucleusMesh);
+
+            // Glow Sprite
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            grad.addColorStop(0, 'rgba(239, 68, 68, 1)');
+            grad.addColorStop(0.3, 'rgba(217, 119, 6, 0.6)');
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 128, 128);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMat = new THREE.SpriteMaterial({
+                map: texture,
+                blending: THREE.AdditiveBlending,
+                transparent: true,
+                opacity: 0.85
+            });
+            nucleusGlowSprite = new THREE.Sprite(spriteMat);
+            nucleusGlowSprite.scale.set(4.5, 4.5, 1);
+            nucleusGroup.add(nucleusGlowSprite);
+
+            scene.add(nucleusGroup);
+        }
+
+        // --- Create Single Electron ---
+        function createElectron() {
+            // Cyan glowing electron sphere
+            const geo = new THREE.SphereGeometry(0.3, 24, 24);
+            const mat = new THREE.MeshStandardMaterial({
+                color: 0x38bdf8,
+                emissive: 0x0284c7,
+                emissiveIntensity: 1.0,
+                roughness: 0.1
+            });
+            electronMesh = new THREE.Mesh(geo, mat);
+            scene.add(electronMesh);
+
+            // Motion Trail Geometry
+            const trailGeo = new THREE.BufferGeometry();
+            trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+            const trailMat = new THREE.LineBasicMaterial({
+                color: 0x38bdf8,
+                transparent: true,
+                opacity: 0.6
+            });
+            electronTrailLine = new THREE.Line(trailGeo, trailMat);
+            scene.add(electronTrailLine);
+        }
+
+        // --- Rebuild Bohr Orbits (Concentric Rings) ---
+        function rebuildBohrOrbits() {
+            while (bohrOrbitRingsGroup.children.length > 0) {
+                bohrOrbitRingsGroup.remove(bohrOrbitRingsGroup.children[0]);
+            }
+
+            for (let n = 1; n <= 6; n++) {
+                const radius = n * n * 1.8; // Scale factor for 3D visual contrast
+                const ringGeo = new THREE.RingGeometry(radius - 0.04, radius + 0.04, 96);
+                const isCurrent = (n === atomState.n);
+
+                const ringMat = new THREE.MeshBasicMaterial({
+                    color: isCurrent ? 0x38bdf8 : 0x334155,
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    opacity: isCurrent ? 0.8 : 0.35,
+                    blending: THREE.AdditiveBlending
+                });
+
+                const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+                ringMesh.rotation.x = Math.PI / 2; // Flat on X-Z plane
+                bohrOrbitRingsGroup.add(ringMesh);
+            }
+
+            bohrOrbitRingsGroup.visible = atomState.showOrbits && (atomState.mode === 'bohr' || atomState.mode === 'planetary');
+        }
+
+        // --- Rebuild Quantum Orbital Probability Cloud ($|\psi_{n,l,m}|^2$) ---
+        function rebuildQuantumOrbitalCloud() {
+            while (quantumCloudGroup.children.length > 0) {
+                quantumCloudGroup.remove(quantumCloudGroup.children[0]);
+            }
+
+            const n = atomState.n;
+            const l = Math.min(atomState.l, n - 1);
+            const particleCount = 4000;
+
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+
+            // Scale factor based on n level
+            const scaleR = n * n * 1.5;
+
+            for (let i = 0; i < particleCount; i++) {
+                let r, theta, phi;
+
+                // Probability distribution approximations for spherical (s), dumbell (p), clover (d)
+                if (l === 0) { // s orbital (spherical symmetry)
+                    r = Math.abs(gaussianRandom() * 0.8 + 0.2) * scaleR;
+                    theta = Math.acos(2 * Math.random() - 1);
+                    phi = Math.random() * 2 * Math.PI;
+                } else if (l === 1) { // p orbital (dumbbell along Z/Y)
+                    r = (Math.random() * 0.8 + 0.2) * scaleR;
+                    theta = Math.random() * Math.PI;
+                    // Density peaked around poles (cos^2 theta)
+                    if (Math.random() > Math.abs(Math.cos(theta))) {
+                        theta = Math.PI / 2 + (Math.random() - 0.5) * 0.5;
+                    }
+                    phi = Math.random() * 2 * Math.PI;
+                } else { // d and f orbitals
+                    r = (Math.random() * 0.9 + 0.1) * scaleR;
+                    theta = Math.acos(2 * Math.random() - 1);
+                    phi = Math.random() * 2 * Math.PI;
+                }
+
+                const x = r * Math.sin(theta) * Math.cos(phi);
+                const y = r * Math.sin(theta) * Math.sin(phi);
+                const z = r * Math.cos(theta);
+
+                positions[i * 3] = x;
+                positions[i * 3 + 1] = y;
+                positions[i * 3 + 2] = z;
+
+                // Color gradient based on distance from nucleus
+                const normR = r / scaleR;
+                colors[i * 3] = 0.2 + normR * 0.5;      // Red
+                colors[i * 3 + 1] = 0.6 + (1 - normR) * 0.4; // Green/Cyan
+                colors[i * 3 + 2] = 1.0;                 // Blue
+            }
+
+            const cloudGeo = new THREE.BufferGeometry();
+            cloudGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            cloudGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const cloudMat = new THREE.PointsMaterial({
+                size: 0.25,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.6,
+                blending: THREE.AdditiveBlending
+            });
+
+            const cloudPoints = new THREE.Points(cloudGeo, cloudMat);
+            quantumCloudGroup.add(cloudPoints);
+
+            quantumCloudGroup.visible = atomState.showCloud && (atomState.mode === 'quantum');
+        }
+
+        // Box-Muller transform for Gaussian Random
+        function gaussianRandom() {
+            let u = 0, v = 0;
+            while(u === 0) u = Math.random();
+            while(v === 0) v = Math.random();
+            return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+        }
+
+        // --- Quantum Transition Photon Emission Trigger ---
+        function triggerQuantumJump(nFrom, nTo) {
+            atomState.n = nTo;
+            document.getElementById('slider-n').value = nTo;
+            document.getElementById('val-n').innerText = `n = ${nTo} ${nTo === 1 ? '(Ground State)' : '(Excited)'}`;
+
+            // Calculate emitted photon wavelength
+            const invLambda = RYDBERG_CONST * (1 / (nTo * nTo) - 1 / (nFrom * nFrom));
+            const lambdaNm = (1 / invLambda) * 1e9; // in nanometers
+
+            // Create Animated Emitted Photon Sphere
+            const photonGeo = new THREE.SphereGeometry(0.4, 16, 16);
+            let photonColor = 0xffffff;
+
+            if (lambdaNm < 400) photonColor = 0xa855f7; // UV - Purple
+            else if (lambdaNm >= 400 && lambdaNm <= 450) photonColor = 0x3b82f6; // Blue
+            else if (lambdaNm > 450 && lambdaNm <= 550) photonColor = 0x10b981; // Green
+            else if (lambdaNm > 550 && lambdaNm <= 700) photonColor = 0xef4444; // Red
+            else photonColor = 0xf59e0b; // IR - Orange/Yellow
+
+            const photonMat = new THREE.MeshBasicMaterial({ color: photonColor });
+            const photonMesh = new THREE.Mesh(photonGeo, photonMat);
+
+            // Initial position at electron radius
+            const initialR = nFrom * nFrom * 1.8;
+            photonMesh.position.set(initialR, 0, 0);
+
+            photonMesh.userData = {
+                dir: new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize(),
+                speed: 0.6,
+                life: 0
+            };
+
+            activePhotonsGroup.add(photonMesh);
+
+            // Rebuild 3D structures
+            rebuildBohrOrbits();
+            rebuildQuantumOrbitalCloud();
+            updateCalculatedPhysicsValues();
+            updateTheoryTextContent();
+        }
+
+        // --- Physics Calculations & Frame Update ---
+        function updatePhysics() {
+            if (!isPlaying) return;
+
+            simTime += 0.02 * simSpeed;
+
+            // Nucleus rotation
+            if (nucleusMesh) nucleusMesh.rotation.y += 0.01;
+
+            // Animate Electron Motion
+            const currentR = atomState.n * atomState.n * 1.8;
+            const angularVelocity = (2.5 / (atomState.n * 1.2)) * simSpeed;
+
+            let eX = 0, eY = 0, eZ = 0;
+
+            if (atomState.mode === 'planetary') {
+                // Tilted 3D planetary inclination
+                const angle = simTime * angularVelocity;
+                const tilt = Math.PI / 4;
+                eX = currentR * Math.cos(angle);
+                eY = currentR * Math.sin(angle) * Math.sin(tilt);
+                eZ = currentR * Math.sin(angle) * Math.cos(tilt);
+            } else {
+                // Standard Bohr circular X-Z motion
+                const angle = simTime * angularVelocity;
+                eX = currentR * Math.cos(angle);
+                eY = 0;
+                eZ = currentR * Math.sin(angle);
+            }
+
+            electronMesh.position.set(eX, eY, eZ);
+
+            // Update Motion Trail Buffer
+            for (let i = TRAIL_POINTS_COUNT - 1; i > 0; i--) {
+                trailPositions[i * 3] = trailPositions[(i - 1) * 3];
+                trailPositions[i * 3 + 1] = trailPositions[(i - 1) * 3 + 1];
+                trailPositions[i * 3 + 2] = trailPositions[(i - 1) * 3 + 2];
+            }
+            trailPositions[0] = eX;
+            trailPositions[1] = eY;
+            trailPositions[2] = eZ;
+
+            electronTrailLine.geometry.attributes.position.needsUpdate = true;
+
+            // Animate Active Emitted Photons
+            activePhotonsGroup.children.forEach((photon, index) => {
+                photon.position.addScaledVector(photon.userData.dir, photon.userData.speed);
+                photon.userData.life += 1;
+                if (photon.userData.life > 100) {
+                    activePhotonsGroup.remove(photon);
+                }
+            });
+
+            // Gentle rotation for Quantum Probability Cloud
+            if (quantumCloudGroup.visible) {
+                quantumCloudGroup.rotation.y += 0.003 * simSpeed;
+            }
+        }
+
+        // --- Render Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            updatePhysics();
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // --- UI Events & Calculated Physics Values ---
+        function setupUIEventListeners() {
+            // Slider Principal Quantum Number n
+            const sliderN = document.getElementById('slider-n');
+            sliderN.addEventListener('input', (e) => {
+                atomState.n = parseInt(e.target.value);
+                // Ensure l < n
+                if (atomState.l >= atomState.n) {
+                    setOrbitalL(atomState.n - 1);
+                }
+                document.getElementById('val-n').innerText = `n = ${atomState.n} ${atomState.n === 1 ? '(Ground State)' : '(Excited)'}`;
+
+                rebuildBohrOrbits();
+                rebuildQuantumOrbitalCloud();
+                updateCalculatedPhysicsValues();
+                updateTheoryTextContent();
+            });
+
+            // Speed Slider
+            const sliderSpeed = document.getElementById('slider-speed');
+            sliderSpeed.addEventListener('input', (e) => {
+                simSpeed = parseFloat(e.target.value);
+                document.getElementById('val-speed').innerText = simSpeed.toFixed(1) + 'x';
+            });
+        }
+
+        function setAtomMode(mode) {
+            atomState.mode = mode;
+
+            document.getElementById('btn-mode-bohr').className = mode === 'bohr' ?
+                "w-full text-left px-3 py-2 rounded-lg text-sm bg-sky-500/20 border border-sky-400 text-sky-300 font-semibold transition flex items-center justify-between" :
+                "w-full text-left px-3 py-2 rounded-lg text-sm bg-slate-800/60 border border-slate-700 text-slate-300 transition hover:bg-slate-700/50 flex items-center justify-between";
+
+            document.getElementById('btn-mode-quantum').className = mode === 'quantum' ?
+                "w-full text-left px-3 py-2 rounded-lg text-sm bg-purple-500/20 border border-purple-400 text-purple-300 font-semibold transition flex items-center justify-between" :
+                "w-full text-left px-3 py-2 rounded-lg text-sm bg-slate-800/60 border border-slate-700 text-slate-300 transition hover:bg-slate-700/50 flex items-center justify-between";
+
+            document.getElementById('btn-mode-planetary').className = mode === 'planetary' ?
+                "w-full text-left px-3 py-2 rounded-lg text-sm bg-amber-500/20 border border-amber-400 text-amber-300 font-semibold transition flex items-center justify-between" :
+                "w-full text-left px-3 py-2 rounded-lg text-sm bg-slate-800/60 border border-slate-700 text-slate-300 transition hover:bg-slate-700/50 flex items-center justify-between";
+
+            document.getElementById('panel-orbital-l').style.display = mode === 'quantum' ? 'block' : 'none';
+
+            rebuildBohrOrbits();
+            rebuildQuantumOrbitalCloud();
+            updateTheoryTextContent();
+        }
+
+        function setOrbitalL(lVal) {
+            if (lVal >= atomState.n) return;
+            atomState.l = lVal;
+
+            const orbitalNames = ['s (l=0)', 'p (l=1)', 'd (l=2)', 'f (l=3)'];
+            document.getElementById('val-l').innerText = `l = ${lVal} (${orbitalNames[lVal]})`;
+
+            const btnLs = document.querySelectorAll('.btn-l');
+            btnLs.forEach((btn, idx) => {
+                if (idx === lVal) {
+                    btn.className = "btn-l text-xs py-1 rounded bg-purple-600 text-white font-semibold";
+                } else {
+                    btn.className = "btn-l text-xs py-1 rounded bg-slate-800 text-slate-400";
+                }
+            });
+
+            rebuildQuantumOrbitalCloud();
+        }
+
+        function toggleVis(key, isChecked) {
+            if (key === 'nucleusGlow') nucleusGlowSprite.visible = isChecked;
+            if (key === 'orbits') {
+                atomState.showOrbits = isChecked;
+                bohrOrbitRingsGroup.visible = isChecked && (atomState.mode === 'bohr' || atomState.mode === 'planetary');
+            }
+            if (key === 'cloud') {
+                atomState.showCloud = isChecked;
+                quantumCloudGroup.visible = isChecked && (atomState.mode === 'quantum');
+            }
+            if (key === 'photons') activePhotonsGroup.visible = isChecked;
+        }
+
+        function togglePlayPause() {
+            isPlaying = !isPlaying;
+            const icon = document.getElementById('btn-play-pause').querySelector('i');
+            icon.className = isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play';
+        }
+
+        function resetCameraView() {
+            camera.position.set(0, 12, 28);
+            controls.target.set(0, 0, 0);
+        }
+
+        // --- Physics Calculation Logic ---
+        function updateCalculatedPhysicsValues() {
+            const n = atomState.n;
+            const energy = GROUND_STATE_ENERGY / (n * n); // E_n = -13.6 / n^2 eV
+            const radius = BOHR_RADIUS_A0 * n * n; // r_n = 0.529 * n^2 Angstroms
+            const velocity = (2.187e6) / n; // v_n = 2.187*10^6 / n m/s
+
+            document.getElementById('energy-val').innerText = `${energy.toFixed(2)} eV`;
+            document.getElementById('radius-val').innerText = `${radius.toFixed(3)} Å (${(n * n).toFixed(0)} a₀)`;
+            document.getElementById('velocity-val').innerText = `${(velocity / 1e6).toFixed(3)} × 10⁶ m/s`;
+        }
+
+        // Render 2D Hydrogen Spectrum Line Canvas
+        function renderHydrogenSpectrumCanvas() {
+            const canvas = document.getElementById('spectrumCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width = canvas.clientWidth;
+            const h = canvas.height = canvas.clientHeight;
+
+            ctx.fillStyle = '#05070e';
+            ctx.fillRect(0, 0, w, h);
+
+            // Balmer Visible Spectrum Lines (H-alpha, H-beta, H-gamma, H-delta)
+            const balmerLines = [
+                { name: 'H-alpha', wavelength: 656.3, color: '#ef4444' }, // Red
+                { name: 'H-beta', wavelength: 486.1, color: '#06b6d4' },  // Cyan
+                { name: 'H-gamma', wavelength: 434.0, color: '#3b82f6' }, // Blue
+                { name: 'H-delta', wavelength: 410.2, color: '#a855f7' }  // Violet
+            ];
+
+            // Render spectrum lines mapping 380nm - 750nm
+            balmerLines.forEach(line => {
+                const x = ((line.wavelength - 380) / (750 - 380)) * w;
+                ctx.strokeStyle = line.color;
+                ctx.lineWidth = 2.5;
+                ctx.shadowColor = line.color;
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, h);
+                ctx.stroke();
+            });
+        }
+
+        // --- Theory Explanation Text Renderer ---
+        function updateTheoryTextContent() {
+            const container = document.getElementById('tab-content-theory');
+            if (!container) return;
+
+            const n = atomState.n;
+            const energy = (GROUND_STATE_ENERGY / (n * n)).toFixed(2);
+
+            if (atomState.mode === 'bohr') {
+                container.innerHTML = `
+                    <h3 class="text-sky-400 font-bold text-sm flex items-center gap-1.5">
+                        <i class="fa-solid fa-graduation-cap"></i> แบบจำลองอะตอมไฮโดรเจนของบอร์ (1913)
+                    </h3>
+                    <p>นีลส์ บอร์ (Niels Bohr) เสนอว่า อิเล็กตรอน ($e^-$) เคลื่อนที่รอบนิวเคลียสประจุบวก ($1p^+$) ในวงโคจรวงกลมเฉพาะตัวที่มี<b>โมเมนตัมเชิงมุมเป็นควอนตัม (Quantized Angular Momentum)</b>:</p>
+                    <div class="bg-black/50 p-2 rounded border-l-2 border-sky-400 font-code text-[11px]">
+                        L = m_e v r = n \\hbar = n \\frac{h}{2\\pi}
+                    </div>
+                    <p class="mt-2"><b>พลังงานระดับ $n = ${n}$:</b></p>
+                    <div class="bg-black/50 p-2 rounded border-l-2 border-emerald-400 font-code text-[11px]">
+                        E_${n} = -\\frac{13.6 \\text{ eV}}{${n}^2} = ${energy} \\text{ eV}
+                    </div>
+                    <p class="mt-2">เมื่ออิเล็กตรอนเปลี่ยนระดับพลังงานจาก $n_2 \\to n_1$ จะปล่อยพลังงานออกมาในรูปควอนตัมแสง (โฟตอน): $\\Delta E = h\\nu = E_2 - E_1$</p>
+                `;
+            } else if (atomState.mode === 'quantum') {
+                container.innerHTML = `
+                    <h3 class="text-purple-400 font-bold text-sm flex items-center gap-1.5">
+                        <i class="fa-solid fa-atom"></i> แบบจำลองกลุ่มหมอกควอนตัม (Schrödinger Equation)
+                    </h3>
+                    <p>ตามทฤษฎีควอนตัม อิเล็กตรอนมีสมบัติเป็นทั้งอนุภาคและคลื่น (De Broglie Wavelength) ตำแหน่งอิเล็กตรอนไม่สามารถระบุได้แน่นอน แต่แสดงเป็น<b>ความน่าจะเป็นในการพบอิเล็กตรอน ($|\\psi|^2$)</b></p>
+                    <div class="bg-black/50 p-2 rounded border-l-2 border-purple-400 font-code text-[11px]">
+                        \\hat{H} \\psi = E \\psi \\quad \\text{(สมการชเรอดิงเงอร์)}
+                    </div>
+                    <p class="mt-2"><b>เลขควอนตัมปัจจุบัน:</b></p>
+                    <ul class="list-disc pl-4 space-y-1 text-[11px] text-slate-300">
+                        <li>$n = ${n}$ (Principal Number - ระดับพลังงาน)</li>
+                        <li>$l = ${atomState.l}$ (Angular Momentum - รูปทรงออร์บิทัล)</li>
+                        <li>ความหนาแน่นกลุ่มหมอกจุดสีฟ้าสะท้อนโอกาสพบอิเล็กตรอนสูงที่สุด</li>
+                    </ul>
+                `;
+            } else {
+                container.innerHTML = `
+                    <h3 class="text-amber-400 font-bold text-sm flex items-center gap-1.5">
+                        <i class="fa-solid fa-globe"></i> แบบจำลองดาวเคราะห์ (Planetary View)
+                    </h3>
+                    <p>จำลองอิเล็กตรอนโคจรรอบโปรตอนคล้ายดาวเคราะห์บริวารโคจรรอบดวงอาทิตย์ ด้วยแรงดึงดูดทางไฟฟ้าคูลอมบ์ (Coulomb Force):</p>
+                    <div class="bg-black/50 p-2 rounded border-l-2 border-amber-400 font-code text-[11px]">
+                        F_c = \\frac{1}{4\\pi\\varepsilon_0} \\frac{e^2}{r^2} = \\frac{m_e v^2}{r}
+                    </div>
+                `;
+            }
+
+            // Render LaTeX equations via KaTeX if loaded
+            if (window.katex) {
+                try {
+                    renderMathInElement(container, {
+                        delimiters: [
+                            {left: '$$', right: '$$', display: true},
+                            {left: '$', right: '$', display: false}
+                        ]
+                    });
+                } catch(e) {}
+            }
+        }
+
+        function switchRightTab(tabName) {
+            document.getElementById('tab-content-theory').style.display = tabName === 'theory' ? 'block' : 'none';
+            document.getElementById('tab-content-chat').style.display = tabName === 'chat' ? 'flex' : 'none';
+            document.getElementById('tab-content-image').style.display = tabName === 'image' ? 'flex' : 'none';
+
+            document.getElementById('tab-btn-theory').className = tabName === 'theory' ?
+                "flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-sky-500/20 text-sky-300 border border-sky-400/50 flex items-center justify-center gap-1.5" :
+                "flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700 flex items-center justify-center gap-1.5 hover:text-slate-200";
+
+            document.getElementById('tab-btn-chat').className = tabName === 'chat' ?
+                "flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-sky-500/20 text-sky-300 border border-sky-400/50 flex items-center justify-center gap-1.5" :
+                "flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700 flex items-center justify-center gap-1.5 hover:text-slate-200";
+
+            document.getElementById('tab-btn-image').className = tabName === 'image' ?
+                "flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-400/50 flex items-center justify-center gap-1.5" :
+                "flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700 flex items-center justify-center gap-1.5 hover:text-slate-200";
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderHydrogenSpectrumCanvas();
+        }
+
+        // Initialize App on Window Load
+        window.onload = initScene;
+
+        // --- GEMINI API INTEGRATIONS ---
+
+        // 1. Text Chatbot (gemini-3-flash-preview)
+        async function sendChatMessage() {
+            const inputEl = document.getElementById('chatInput');
+            const userMsg = inputEl.value.trim();
+            if (!userMsg) return;
+
+            const chatLog = document.getElementById('chatLog');
+
+            // Append User Msg
+            const userBubble = document.createElement('div');
+            userBubble.className = "bg-sky-950/80 border border-sky-600/40 rounded-lg p-2 text-sky-100 text-right font-sans";
+            userBubble.textContent = userMsg;
+            chatLog.appendChild(userBubble);
+
+            inputEl.value = '';
+            chatLog.scrollTop = chatLog.scrollHeight;
+
+            // Append Thinking Bubble
+            const aiBubble = document.createElement('div');
+            aiBubble.className = "bg-slate-800/80 border border-slate-700 rounded-lg p-2 text-slate-300 font-sans";
+            aiBubble.textContent = "กำลังวิเคราะห์ทฤษฎีทางฟิสิกส์...";
+            chatLog.appendChild(aiBubble);
+            chatLog.scrollTop = chatLog.scrollHeight;
+
+            const systemPrompt = "คุณคืออาจารย์ฟิสิกส์ควอนตัมผู้เชี่ยวชาญด้านอะตอมไฮโดรเจน สมการของบอร์ สมการชเรอดิงเงอร์ และสเปกตรัม อธิบายให้เข้าใจง่าย ได้สาระถูกต้อง กระชับ";
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userMsg }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] }
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                const aiReply = result.candidates?.[0]?.content?.parts?.[0]?.text || "ขออภัย ไม่สามารถประมวลผลคำตอบได้";
+                aiBubble.innerHTML = aiReply.replace(/\n/g, '<br>');
+            } catch (err) {
+                aiBubble.textContent = "เกิดข้อผิดพลาดในการเชื่อมต่อกับ Gemini API โปรดลองอีกครั้ง";
+            }
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        function sendQuickChat(promptText) {
+            switchRightTab('chat');
+            document.getElementById('chatInput').value = promptText;
+            sendChatMessage();
+        }
+
+        // 2. Image Generator (gemini-3.1-flash-lite-image)
+        async function generateAIPhysicsImage() {
+            const promptInput = document.getElementById('imgPromptInput');
+            const promptText = promptInput.value.trim();
+            if (!promptText) return;
+
+            const spinner = document.getElementById('imgLoadingSpinner');
+            const placeholder = document.getElementById('imgPlaceholderText');
+            const imgEl = document.getElementById('aiGeneratedImg');
+
+            spinner.classList.remove('hidden');
+            spinner.classList.add('flex');
+            placeholder.classList.add('hidden');
+            imgEl.classList.add('hidden');
+
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-image:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: promptText }] }],
+                generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+
+                if (base64Data) {
+                    imgEl.src = `data:image/png;base64,${base64Data}`;
+                    imgEl.classList.remove('hidden');
+                } else {
+                    placeholder.textContent = "ไม่พบข้อมูลภาพ ลองเปลี่ยนคำอธิบายโปรมป์";
+                    placeholder.classList.remove('hidden');
+                }
+            } catch (err) {
+                placeholder.textContent = "เกิดข้อผิดพลาดในการสร้างภาพ";
+                placeholder.classList.remove('hidden');
+            } finally {
+                spinner.classList.add('hidden');
+                spinner.classList.remove('flex');
+            }
+        }
+    </script>
+</body>
+</html>

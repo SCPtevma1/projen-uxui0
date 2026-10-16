@@ -1,20 +1,292 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>อาหาร | รายวิชาสำหรับนักเรียน</title>
-  <link rel="stylesheet" href="../../css/student-demo.css">
-  <link rel="stylesheet" href="../../css/popo/food.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>รายการอาหาร | เมนูอร่อยพร้อมเสิร์ฟ</title>
+    <!-- Font & FontAwesome Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/demo-container/อาหาร/ccss/food.css">
 </head>
 <body>
-  <main class="subject-page">
-    <a class="subject-page__back" href="../student.html">← กลับไปหน้ารวมรายวิชา</a>
-    <article class="subject-page__content">
-      <p class="course-eyebrow">รายวิชา</p>
-      <h1>อาหาร</h1>
-      <p>ทำความรู้จักอาหารและโภชนาการ วัตถุดิบ และหลักการเตรียมอาหารอย่างเหมาะสมและปลอดภัย</p>
-    </article>
-  </main>
+
+    <nav class="main-nav">
+        <ul class="navbar">
+            <li><a href="../student.html"><i class="fa-solid fa-house"></i> หน้าแรก</a></li>
+            
+            <li class="dropdown">
+                <a href="#" class="dropbtn"><i class="fa-solid fa-utensils"></i> เมนูอาหาร <i class="fa-solid fa-chevron-down text-xs"></i></a>
+                <ul class="dropdown-content">
+                    <li><a href="#" onclick="filterFromNav('all')">ทั้งหมด</a></li>
+                    <li><a href="#" onclick="filterFromNav('main')">อาหารจานหลัก</a></li>
+                    <li><a href="#" onclick="filterFromNav('dessert')">ของหวาน</a></li>
+                    <li><a href="#" onclick="filterFromNav('drink')">เครื่องดื่ม</a></li>
+                    <li><a href="#" onclick="filterFromNav('appetizer')">ทานเล่น / ทอด</a></li>
+                </ul>
+            </li>
+
+            <li class="dropdown">
+                <a href="#" class="dropbtn"><i class="fa-solid fa-info-circle"></i> เกี่ยวกับเรา <i class="fa-solid fa-chevron-down text-xs"></i></a>
+                <ul class="dropdown-content">
+                    <li><a href="#">ทีมงานผู้พัฒนา</a></li>
+                    <li><a href="#">วิสัยทัศน์ & พันธกิจ</a></li>
+                    <li><a href="#">ผลงานของเรา</a></li>
+                </ul>
+            </li>
+
+            <li><a href="#"><i class="fa-solid fa-envelope"></i> ติดต่อเรา</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <!-- Section Header -->
+        <div class="header-section">
+            <h2><i class="fa-solid fa-fire"></i> เมนูอาหารยอดนิยม</h2>
+            <p>เลือกหมวดหมู่อาหารที่คุณชื่นชอบ หรือกดดูรายละเอียดเมนูเพิ่มเติม</p>
+        </div>
+
+        <!-- Filter Buttons Section (Improved UX/UI) -->
+        <div class="filter-wrapper">
+            <div id="filter-buttons" class="filter-buttons">
+                <button class="btn-filter active" data-filter="all">
+                    <i class="fa-solid fa-layer-group"></i> ทั้งหมด
+                </button>
+                <button class="btn-filter" data-filter="main">
+                    <i class="fa-solid fa-bowl-rice"></i> อาหารจานหลัก
+                </button>
+                <button class="btn-filter" data-filter="dessert">
+                    <i class="fa-solid fa-ice-cream"></i> ของหวาน
+                </button>
+                <button class="btn-filter" data-filter="drink">
+                    <i class="fa-solid fa-glass-water"></i> เครื่องดื่ม
+                </button>
+                <button class="btn-filter" data-filter="appetizer">
+                    <i class="fa-solid fa-cookie-bite"></i> ของทานเล่น
+                </button>
+            </div>
+        </div>
+
+        <div id="filterable-cards" class="cards-grid">
+            
+            <!-- Item 1: Main -->
+            <div class="card" data-name="main" 
+                 data-title="ผัดไทยกุ้งสด" 
+                 data-price="฿89" 
+                 data-desc="ผัดไทยสูตรดั้งเดิม รสชาติเข้มข้น หอมกลิ่นกระทะ เสิร์ฟพร้อมกุ้งสดตัวโต ถั่วลันเตา ถั่วพูล และมะนาวสด"
+                 data-cal="480 Kcal"
+                 data-img="https://images.unsplash.com/photo-1559847844-5315695dadae?auto=format&fit=crop&w=600&q=80">
+                <div class="card-img-wrapper">
+                    <span class="badge badge-main">จานหลัก</span>
+                    <img src="https://images.unsplash.com/photo-1559847844-5315695dadae?auto=format&fit=crop&w=600&q=80" alt="ผัดไทยกุ้งสด" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=Food+Image'">
+                </div>
+                <div class="card-body">
+                    <div class="card-header-row">
+                        <h3 class="card-title">ผัดไทยกุ้งสด</h3>
+                        <span class="card-price">฿89</span>
+                    </div>
+                    <p class="card-text">ผัดไทยสูตรดั้งเดิม รสชาติเข้มข้น เสิร์ฟพร้อมกุ้งตัวโต...</p>
+                    <button class="btn-detail" onclick="openDetailModal(this)">
+                        <i class="fa-solid fa-circle-info"></i> ดูรายละเอียด
+                    </button>
+                </div>
+            </div>
+
+            <!-- Item 2: Main -->
+            <div class="card" data-name="main"
+                 data-title="ข้าวผัดกระเพราไข่ดาว" 
+                 data-price="฿65" 
+                 data-desc="ผัดกระเพรารสจัดจ้าน กลมกล่อมด้วยใบกระเพราแท้ หอมเตะจมูก เสิร์ฟคู่กับไข่ดาวกรอบขอบกรอบยางมะตอย"
+                 data-cal="520 Kcal"
+                 data-img="https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=600&q=80">
+                <div class="card-img-wrapper">
+                    <span class="badge badge-main">จานหลัก</span>
+                    <img src="https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=600&q=80" alt="กระเพรา" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=Food+Image'">
+                </div>
+                <div class="card-body">
+                    <div class="card-header-row">
+                        <h3 class="card-title">กระเพราหมูกรอบ</h3>
+                        <span class="card-price">฿65</span>
+                    </div>
+                    <p class="card-text">ผัดกระเพรารสจัดจ้าน หอมใบกระเพราแท้ เสิร์ฟพร้อมไข่ดาว...</p>
+                    <button class="btn-detail" onclick="openDetailModal(this)">
+                        <i class="fa-solid fa-circle-info"></i> ดูรายละเอียด
+                    </button>
+                </div>
+            </div>
+
+            <!-- Item 3: Appetizer -->
+            <div class="card" data-name="appetizer"
+                 data-title="เกี๊ยวซ่าซอสเกาหลี" 
+                 data-price="฿79" 
+                 data-desc="เกี๊ยวซ่าไส้แน่น ทอดจนกรอบนอกนุ่มใน ราดด้วยซอสสไตล์เกาหลีเผ็ดหวาน โรยด้วยงาขาวและต้นหอม"
+                 data-cal="350 Kcal"
+                 data-img="https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=600&q=80">
+                <div class="card-img-wrapper">
+                    <span class="badge badge-appetizer">ของทานเล่น</span>
+                    <img src="https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=600&q=80" alt="เกี๊ยวซ่า" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=Food+Image'">
+                </div>
+                <div class="card-body">
+                    <div class="card-header-row">
+                        <h3 class="card-title">เกี๊ยวซ่าซอสเกาหลี</h3>
+                        <span class="card-price">฿79</span>
+                    </div>
+                    <p class="card-text">เกี๊ยวซ่ากรอบนอกนุ่มใน ราดซอสเกาหลีสูตรพิเศษ...</p>
+                    <button class="btn-detail" onclick="openDetailModal(this)">
+                        <i class="fa-solid fa-circle-info"></i> ดูรายละเอียด
+                    </button>
+                </div>
+            </div>
+
+            <!-- Item 4: Dessert -->
+            <div class="card" data-name="dessert"
+                 data-title="บิงซูสตรอว์เบอร์รี" 
+                 data-price="฿129" 
+                 data-desc="เกล็ดหิมะรสนมเนื้อเนียนนุ่ม ท็อปปิ้งด้วยสตรอว์เบอร์รีสดชิ้นโตและซอสสตรอว์เบอร์รีเข้มข้น หวานฉ่ำสดชื่น"
+                 data-cal="310 Kcal"
+                 data-img="https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=600&q=80">
+                <div class="card-img-wrapper">
+                    <span class="badge badge-dessert">ของหวาน</span>
+                    <img src="https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=600&q=80" alt="บิงซู" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=Food+Image'">
+                </div>
+                <div class="card-body">
+                    <div class="card-header-row">
+                        <h3 class="card-title">บิงซูสตรอว์เบอร์รี</h3>
+                        <span class="card-price">฿129</span>
+                    </div>
+                    <p class="card-text">น้ำแข็งไสสไตล์เกาหลี รสนมหอมหวาน พร้อมเนื้อสตรอว์เบอร์รีสด...</p>
+                    <button class="btn-detail" onclick="openDetailModal(this)">
+                        <i class="fa-solid fa-circle-info"></i> ดูรายละเอียด
+                    </button>
+                </div>
+            </div>
+
+            <!-- Item 5: Drink -->
+            <div class="card" data-name="drink"
+                 data-title="ชาไทยเย็นนมสด" 
+                 data-price="฿55" 
+                 data-desc="ชาไทยสูตรเข้มข้น หอมกลิ่นชาไทยสกัดสด ผสมผสานนมสดแท้รสชาติกลมกล่อม หวานกำลังดี"
+                 data-cal="190 Kcal"
+                 data-img="https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=600&q=80">
+                <div class="card-img-wrapper">
+                    <span class="badge badge-drink">เครื่องดื่ม</span>
+                    <img src="https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=600&q=80" alt="ชาไทย" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=Food+Image'">
+                </div>
+                <div class="card-body">
+                    <div class="card-header-row">
+                        <h3 class="card-title">ชาไทยเย็นนมสด</h3>
+                        <span class="card-price">฿55</span>
+                    </div>
+                    <p class="card-text">ชาไทยสกัดสด หอมเข้มกลมกล่อม ผสมนมสดแท้ 100%...</p>
+                    <button class="btn-detail" onclick="openDetailModal(this)">
+                        <i class="fa-solid fa-circle-info"></i> ดูรายละเอียด
+                    </button>
+                </div>
+            </div>
+
+            <!-- Item 6: Drink -->
+            <div class="card" data-name="drink"
+                 data-title="น้ำส้มคั้นสด 100%" 
+                 data-price="฿45" 
+                 data-desc="น้ำส้มคั้นสดไม่ผสมน้ำตาล อุดมด้วยวิตามินซี ให้ความสดชื่นคลายร้อนอย่างเป็นธรรมชาติ"
+                 data-cal="110 Kcal"
+                 data-img="https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=600&q=80">
+                <div class="card-img-wrapper">
+                    <span class="badge badge-drink">เครื่องดื่ม</span>
+                    <img src="https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=600&q=80" alt="น้ำส้มคั้น" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=Food+Image'">
+                </div>
+                <div class="card-body">
+                    <div class="card-header-row">
+                        <h3 class="card-title">น้ำส้มคั้นสด 100%</h3>
+                        <span class="card-price">฿45</span>
+                    </div>
+                    <p class="card-text">น้ำส้มธรรมชาติ คั้นสดใหม่ทุกวัน เพิ่มความสดชื่นทันทีที่ดื่ม...</p>
+                    <button class="btn-detail" onclick="openDetailModal(this)">
+                        <i class="fa-solid fa-circle-info"></i> ดูรายละเอียด
+                    </button>
+                </div>
+            </div>
+
+            <!-- Item 7: Dessert -->
+            <div class="card" data-name="dessert"
+                 data-title="เค้กช็อกโกแลตหน้าร้าน" 
+                 data-price="฿95" 
+                 data-desc="เค้กช็อกโกแลตเนื้อนุ่ม สอดไส้และราดหน้าด้วยช็อกโกแลตฟัดจ์เข้มข้น ไม่หวานจัด"
+                 data-cal="380 Kcal"
+                 data-img="https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=600&q=80">
+                <div class="card-img-wrapper">
+                    <span class="badge badge-dessert">ของหวาน</span>
+                    <img src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=600&q=80" alt="เค้กช็อกโกแลต" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=Food+Image'">
+                </div>
+                <div class="card-body">
+                    <div class="card-header-row">
+                        <h3 class="card-title">เค้กช็อกโกแลตหน้านุ่ม</h3>
+                        <span class="card-price">฿95</span>
+                    </div>
+                    <p class="card-text">เค้กช็อกโกแลตเนื้อนุ่ม ราดซอสช็อกโกแลตเข้มข้นเต็มคำ...</p>
+                    <button class="btn-detail" onclick="openDetailModal(this)">
+                        <i class="fa-solid fa-circle-info"></i> ดูรายละเอียด
+                    </button>
+                </div>
+            </div>
+
+            <!-- Item 8: Appetizer -->
+            <div class="card" data-name="appetizer"
+                 data-title="เฟรนช์ฟรายส์ชีสราด" 
+                 data-price="฿69" 
+                 data-desc="เฟรนช์ฟรายส์ทอดกรอบสีเหลืองทอง ราดด้วยชีสซอสเข้มข้น รสชาตินัวเค็มหวานกำลังดี"
+                 data-cal="410 Kcal"
+                 data-img="https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=600&q=80">
+                <div class="card-img-wrapper">
+                    <span class="badge badge-appetizer">ของทานเล่น</span>
+                    <img src="https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=600&q=80" alt="เฟรนช์ฟรายส์" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=Food+Image'">
+                </div>
+                <div class="card-body">
+                    <div class="card-header-row">
+                        <h3 class="card-title">เฟรนช์ฟรายส์ราดชีส</h3>
+                        <span class="card-price">฿69</span>
+                    </div>
+                    <p class="card-text">เฟรนช์ฟรายส์ทอดกรอบ ร้อนๆ ราดซอสชีสเต็มๆ จาน...</p>
+                    <button class="btn-detail" onclick="openDetailModal(this)">
+                        <i class="fa-solid fa-circle-info"></i> ดูรายละเอียด
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="detailModal" class="modal-backdrop">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeDetailModal()">&times;</button>
+            <div class="modal-grid">
+                <div class="modal-img-container">
+                    <img id="modalImage" src="" alt="Food detail">
+                </div>
+                <div class="modal-info">
+                    <div class="modal-header">
+                        <h2 id="modalTitle">ชื่อเมนูอาหาร</h2>
+                        <span id="modalPrice" class="modal-price">฿0</span>
+                    </div>
+                    <p id="modalCal" class="modal-cal"><i class="fa-solid fa-fire"></i> พลังงาน: 0 Kcal</p>
+                    <hr class="modal-divider">
+                    <h3>รายละเอียดเมนู</h3>
+                    <p id="modalDesc" class="modal-desc">คำอธิบายรายละเอียดอาหาร...</p>
+                    
+                    <div class="modal-actions">
+                        <button class="btn-order" onclick="alert('เพิ่มเมนูนี้เรียบร้อย!')">
+                            <i class="fa-solid fa-cart-plus"></i> สั่งเมนูนี้
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Custom JS -->
+    <script src="/demo-container/อาหาร/jsdw/cs.js"></script>
 </body>
 </html>

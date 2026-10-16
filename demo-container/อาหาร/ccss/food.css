@@ -1,0 +1,481 @@
+/* STREAMING_CHUNK:Defining global root variables and resets */
+:root {
+    --primary-color: #3b82f6;
+    --primary-hover: #2563eb;
+    --accent-orange: #f97316;
+    --bg-dark: #0f172a;
+    --nav-bg: #1e293b;
+    --card-bg: #1e293b;
+    --dropdown-bg: #1e293b;
+    --text-color: #f8fafc;
+    --text-muted: #94a3b8;
+    --border-color: #334155;
+    --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Sarabun', sans-serif;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-color);
+    min-height: 100vh;
+    padding-bottom: 3rem;
+}
+
+/* STREAMING_CHUNK:Styling navigation bar and responsive dropdown */
+.main-nav {
+    background-color: var(--nav-bg);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.navbar {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.navbar > li {
+    position: relative;
+}
+
+.navbar a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1.2rem 1.25rem;
+    color: var(--text-color);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.navbar > li > a:hover {
+    color: #60a5fa;
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.dropdown-content {
+    list-style: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 200px;
+    background-color: var(--dropdown-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 0 0 0.5rem 0.5rem;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: var(--transition);
+    padding: 0.5rem 0;
+    z-index: 1001;
+}
+
+.dropdown:hover .dropdown-content {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dropdown-content li a {
+    padding: 0.7rem 1.2rem;
+    width: 100%;
+    color: #cbd5e1;
+    border-left: 3px solid transparent;
+}
+
+.dropdown-content li a:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    border-left-color: var(--accent-orange);
+    padding-left: 1.5rem;
+}
+
+.text-xs { font-size: 0.75rem; }
+
+/* STREAMING_CHUNK:Styling main layout container and header */
+.container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+}
+
+.header-section {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.header-section h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+}
+
+.header-section h2 i {
+    color: var(--accent-orange);
+}
+
+.header-section p {
+    color: var(--text-muted);
+    margin-top: 0.4rem;
+}
+
+/* STREAMING_CHUNK:Styling category filter buttons (UX/UI redesign) */
+.filter-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2.5rem;
+}
+
+.filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+    background-color: rgba(30, 41, 59, 0.6);
+    padding: 0.6rem;
+    border-radius: 9999px;
+    border: 1px solid var(--border-color);
+}
+
+.btn-filter {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-muted);
+    padding: 0.6rem 1.4rem;
+    border-radius: 9999px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-filter:hover {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.btn-filter.active {
+    background-color: var(--accent-orange);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.35);
+}
+
+/* STREAMING_CHUNK:Styling food cards grid and animation effects */
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.5rem;
+}
+
+.card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+    overflow: hidden;
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+}
+
+.card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow);
+    border-color: #475569;
+}
+
+.card.hide {
+    display: none;
+}
+
+.card.show {
+    animation: fadeIn 0.4s ease forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.card-img-wrapper {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    overflow: hidden;
+}
+
+.card-img-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.card:hover .card-img-wrapper img {
+    transform: scale(1.08);
+}
+
+.badge {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.badge-main { background-color: #3b82f6; }
+.badge-dessert { background-color: #ec4899; }
+.badge-drink { background-color: #06b6d4; }
+.badge-appetizer { background-color: #10b981; }
+
+.card-body {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.card-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.card-price {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--accent-orange);
+}
+
+.card-text {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 1.25rem;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.btn-detail {
+    margin-top: auto;
+    width: 100%;
+    padding: 0.6rem;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    color: #60a5fa;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.btn-detail:hover {
+    background-color: var(--primary-color);
+    color: #ffffff;
+    border-color: var(--primary-color);
+}
+
+/* STREAMING_CHUNK:Styling popup detail modal */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: var(--transition);
+    padding: 1rem;
+}
+
+.modal-backdrop.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 1.25rem;
+    width: 100%;
+    max-width: 700px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    transform: translateY(20px);
+    transition: var(--transition);
+}
+
+.modal-backdrop.active .modal-content {
+    transform: translateY(0);
+}
+
+.modal-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 1rem;
+    background: rgba(0,0,0,0.5);
+    border: none;
+    color: #fff;
+    font-size: 1.5rem;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10;
+    transition: var(--transition);
+}
+
+.modal-close:hover {
+    background: #ef4444;
+}
+
+.modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+.modal-img-container img {
+    width: 100%;
+    height: 100%;
+    max-height: 350px;
+    object-fit: cover;
+}
+
+.modal-info {
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.modal-header h2 {
+    font-size: 1.4rem;
+    color: #fff;
+}
+
+.modal-price {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--accent-orange);
+}
+
+.modal-cal {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 0.3rem;
+}
+
+.modal-divider {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 1rem 0;
+}
+
+.modal-info h3 {
+    font-size: 0.95rem;
+    color: #94a3b8;
+    margin-bottom: 0.4rem;
+}
+
+.modal-desc {
+    font-size: 0.9rem;
+    color: #e2e8f0;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.modal-actions {
+    margin-top: auto;
+}
+
+.btn-order {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: var(--accent-orange);
+    color: #fff;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-order:hover {
+    background-color: #ea580c;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .modal-grid {
+        grid-template-columns: 1fr;
+    }
+    .modal-img-container img {
+        height: 200px;
+    }
+    .filter-buttons {
+        border-radius: 0.75rem;
+    }
+}
