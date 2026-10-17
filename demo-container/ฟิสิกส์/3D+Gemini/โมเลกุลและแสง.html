@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โมเลกุลและแสง (Molecules and Light Simulation)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        panelBg: 'rgba(30, 41, 59, 0.85)',
+                        microwave: '#94a3b8',
+                        infrared: '#ef4444',
+                        visible: '#fcd34d',
+                        uv: '#a855f7'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Sarabun', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        .math-display { font-size: 0.85rem; color: #e2e8f0; }
+        
+        /* Laser Beam Glow */
+        .glow-pulse {
+            animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col">
+
+    <header class="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 z-20 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-atom text-white text-sm"></i>
+            </div>
+           <a href="../physics.html">
+             <h1 class="text-base font-semibold tracking-wide flex items-center gap-2">
+                โมเลกุลและแสง
+                <span class="text-xs font-normal text-slate-400 bg-slate-800 px-2 py-0.5 rounded">Molecules and Light</span>
+            </h1>
+           </a>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="btn-reset-cam" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-video text-indigo-400"></i> มุมมองเริ่มต้น
+            </button>
+            <button id="btn-info" class="bg-indigo-600 hover:bg-indigo-500 text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-book-open text-white"></i> ทฤษฎี & ความรู้
+            </button>
+        </div>
+    </header>
+
+    <div class="flex-1 relative overflow-hidden flex">
+        
+        <!-- ThreeJS Canvas -->
+        <div id="canvas-container" class="absolute inset-0 w-full h-full z-0 cursor-move">
+            <canvas id="three-canvas"></canvas>
+        </div>
+
+        <!-- Left HUD: Controls -->
+        <aside class="absolute top-4 left-4 w-80 glass-panel rounded-xl flex flex-col z-10 max-h-[calc(100vh-6rem)] overflow-y-auto">
+            <div class="p-4 border-b border-slate-700/50">
+                <h2 class="text-sm font-semibold text-indigo-400 flex items-center gap-2 uppercase tracking-wide">
+                    <i class="fa-solid fa-sliders"></i> ตั้งค่าระบบ
+                </h2>
+            </div>
+            
+            <div class="p-4 space-y-5">
+                
+                <!-- Molecule Selector -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-2">เลือกโมเลกุลในชั้นบรรยากาศ</label>
+                    <select id="select-molecule" class="w-full bg-slate-800 border border-slate-600 rounded-md p-2 text-sm text-slate-200 focus:border-indigo-500 focus:outline-none">
+                        <option value="h2o">น้ำ (H₂O) - ก๊าซเรือนกระจก</option>
+                        <option value="co2">คาร์บอนไดออกไซด์ (CO₂) - ก๊าซเรือนกระจก</option>
+                        <option value="n2">ไนโตรเจน (N₂) - ก๊าซในบรรยากาศ</option>
+                        <option value="o3">โอโซน (O₃) - ชั้นป้องกันรังสี</option>
+                    </select>
+                </div>
+
+                <!-- Light Source Selector -->
+                <div class="pt-2 border-t border-slate-700/50">
+                    <label class="block text-xs font-semibold text-slate-300 mb-2">ประเภทของคลื่นแม่เหล็กไฟฟ้า (แสง)</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="light-btn active bg-slate-700 hover:bg-slate-600 border border-slate-500 text-white text-xs py-2 rounded shadow-inner transition-colors" data-light="microwave">
+                            <i class="fa-solid fa-wifi text-microwave mb-1 block text-sm"></i> ไมโครเวฟ (Microwave)
+                        </button>
+                        <button class="light-btn bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs py-2 rounded transition-colors" data-light="ir">
+                            <i class="fa-solid fa-fire text-infrared mb-1 block text-sm"></i> อินฟราเรด (IR)
+                        </button>
+                        <button class="light-btn bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs py-2 rounded transition-colors" data-light="visible">
+                            <i class="fa-solid fa-lightbulb text-visible mb-1 block text-sm"></i> แสงขาว (Visible)
+                        </button>
+                        <button class="light-btn bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs py-2 rounded transition-colors" data-light="uv">
+                            <i class="fa-solid fa-sun text-uv mb-1 block text-sm"></i> อัลตราไวโอเลต (UV)
+                        </button>
+                    </div>
+                    
+                    <!-- Energy Scale indicator -->
+                    <div class="mt-4">
+                        <div class="flex justify-between text-[9px] text-slate-400 mb-1 px-1">
+                            <span>พลังงานต่ำ (ความถี่น้อย)</span>
+                            <span>พลังงานสูง (ความถี่มาก)</span>
+                        </div>
+                        <div class="h-2 w-full rounded-full bg-gradient-to-r from-slate-500 via-red-500 via-yellow-400 to-purple-600"></div>
+                        <div class="text-[10px] text-slate-300 text-center mt-2" id="light-desc">คลื่นไมโครเวฟมีพลังงานต่ำ ส่งผลให้เกิดการหมุนของโมเลกุลที่มีขั้ว</div>
+                    </div>
+                </div>
+
+                <!-- Fire Button -->
+                <div class="pt-4">
+                    <button id="btn-fire" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-sm py-3 rounded-lg font-bold transition-all shadow-lg shadow-indigo-900/50 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-bolt"></i> ปล่อยโฟตอน (Emit Photon)
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <aside class="absolute top-4 right-4 w-72 glass-panel rounded-xl flex flex-col z-10 pointer-events-none">
+            <div class="p-4 border-b border-slate-700/50">
+                <h2 class="text-sm font-semibold text-emerald-400 flex items-center gap-2 uppercase tracking-wide">
+                    <i class="fa-solid fa-microscope"></i> ผลการสังเกตการณ์
+                </h2>
+            </div>
+            
+            <div class="p-4 space-y-4">
+                
+                <!-- Interaction Status -->
+                <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                    <div class="text-xs text-slate-400 mb-1">ปฏิกิริยาระหว่างแสงกับโมเลกุล</div>
+                    <div id="readout-status" class="font-bold text-sm text-slate-300">
+                        รอการดูดซับโฟตอน...
+                    </div>
+                </div>
+
+                <!-- Analysis Box -->
+                <div class="bg-slate-900/80 rounded-lg p-3 border border-slate-600">
+                    <h3 class="text-[11px] font-semibold text-slate-300 border-b border-slate-700 pb-1 mb-2">การวิเคราะห์พฤติกรรม</h3>
+                    <p id="analysis-text" class="text-[11px] text-slate-400 leading-relaxed min-h-[60px]">
+                        เลือกโมเลกุลและชนิดของคลื่นแสง จากนั้นกดยิงโฟตอนเพื่อดูผลลัพธ์ว่าแสงถูกดูดซับหรือทะลุผ่าน
+                    </p>
+                </div>
+
+                <!-- Physics Equation -->
+                <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 text-center">
+                    <div class="text-[10px] text-slate-400 mb-1">พลังงานของโฟตอน ($E$)</div>
+                    <div class="math-display">$$E = h\nu = \frac{hc}{\lambda}$$</div>
+                    <div class="text-[9px] text-slate-500 mt-2 text-left">
+                        * พลังงานแสงแปรผันตรงกับความถี่ ($\nu$) แต่แปรผกผันกับความยาวคลื่น ($\lambda$)
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <div id="theory-modal" class="hidden absolute inset-0 bg-slate-900/90 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+            <div class="bg-slate-800 border border-slate-600 rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl pointer-events-auto">
+                <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50 rounded-t-xl shrink-0">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-book-open text-indigo-400"></i> ทฤษฎี: โมเลกุลและแสง (Molecules and Light)</h2>
+                    <button id="btn-close-modal" class="text-slate-400 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                
+                <div class="p-6 overflow-y-auto space-y-6 text-sm text-slate-300 leading-relaxed">
+                    
+                    <section>
+                        <h3 class="text-amber-400 font-semibold mb-2 text-base">การเกิดปฏิสัมพันธ์ระหว่างแสงกับโมเลกุล</h3>
+                        <p class="mb-2">แสงคือคลื่นแม่เหล็กไฟฟ้า หรือกลุ่มของอนุภาคที่เรียกว่า "โฟตอน (Photons)" เมื่อโฟตอนวิ่งไปชนกับโมเลกุลของก๊าซในชั้นบรรยากาศ อาจเกิดการดูดกลืน (Absorption) หรือทะลุผ่าน (Transmission) ขึ้นอยู่กับ <strong>ระดับพลังงานของแสง</strong> และ <strong>โครงสร้างของโมเลกุล</strong></p>
+                    </section>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <section class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                            <h3 class="text-microwave font-semibold mb-2 flex items-center gap-2"><i class="fa-solid fa-wifi"></i> คลื่นไมโครเวฟ (พลังงานต่ำ)</h3>
+                            <p class="text-[11px] mb-2">ทำให้โมเลกุลเกิดการ <strong>หมุน (Rotation)</strong> มักเกิดกับโมเลกุลที่มี "ขั้ว" (Polar molecules) เช่น น้ำ ($H_2O$) หลักการนี้นำไปใช้ในเตาไมโครเวฟที่ทำให้น้ำในอาหารหมุนและเกิดความร้อน</p>
+                        </section>
+                        
+                        <section class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                            <h3 class="text-infrared font-semibold mb-2 flex items-center gap-2"><i class="fa-solid fa-fire"></i> รังสีอินฟราเรด (พลังงานปานกลาง)</h3>
+                            <p class="text-[11px] mb-2">ทำให้โมเลกุลเกิดการ <strong>สั่น (Vibration)</strong> เช่น การยืด-หดของพันธะ หรือการงอของมุม โมเลกุลที่เป็นก๊าซเรือนกระจก (เช่น $CO_2, H_2O$) จะดูดกลืนรังสีอินฟราเรดได้ดี ทำให้โลกอบอุ่นขึ้น</p>
+                        </section>
+                        
+                        <section class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                            <h3 class="text-visible font-semibold mb-2 flex items-center gap-2"><i class="fa-solid fa-lightbulb"></i> แสงที่ตามองเห็น (พลังงานค่อนข้างสูง)</h3>
+                            <p class="text-[11px] mb-2">ก๊าซส่วนใหญ่ในบรรยากาศ (เช่น $N_2, O_2, CO_2$) ไม่ดูดกลืนแสงในช่วงนี้ ทำให้แสงอาทิตย์สามารถทะลุผ่านลงมายังพื้นผิวโลกได้ (เว้นแต่ก๊าซมลพิษบางชนิดเช่น $NO_2$ ที่ดูดกลืนแสงสีฟ้าและมองเห็นเป็นสีน้ำตาล)</p>
+                        </section>
+                        
+                        <section class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                            <h3 class="text-uv font-semibold mb-2 flex items-center gap-2"><i class="fa-solid fa-sun"></i> รังสีอัลตราไวโอเลต (พลังงานสูงมาก)</h3>
+                            <p class="text-[11px] mb-2">พลังงานสูงพอที่จะทำให้ อิเล็กตรอนกระโดดข้ามระดับพลังงาน (Excitation) หรือทำให้เกิดการ <strong>แตกตัวของพันธะเคมี (Photodissociation)</strong> เช่น รังสี UV ทำให้ก๊าซโอโซน ($O_3$) แตกตัวและดูดกลืนพลังงานไว้ ป้องกันไม่ให้รังสีอันตรายตกลงมาถึงพื้นโลก</p>
+                        </section>
+                    </div>
+
+                    <section class="mt-4 border-t border-slate-700 pt-4">
+                        <h3 class="text-white font-semibold mb-2 text-sm">การใช้ Simulation แทนแบบจำลองกายภาพ</h3>
+                        <p class="text-[11px] text-slate-400">
+                            โมเลกุลมีขนาดเล็กระดับนาโนเมตรและเคลื่อนที่ด้วยความเร็วสูง การใช้โมเดลกายภาพ (เช่น ลูกปิงปองเสียบไม้) ไม่สามารถแสดงการสั่น การหมุน หรือการแตกตัวเมื่อได้รับพลังงานแสงแบบเรียลไทม์ได้ การใช้ Computer Simulation ช่วยให้เห็นภาพจินตนาการทางควอนตัม (Photons & Molecular Excitation) ได้อย่างชัดเจนและถูกต้องตามหลักกลศาสตร์ระดับโมเลกุล
+                        </p>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 1. State Variables ---
+        let currentMolType = 'h2o';
+        let currentLightType = 'microwave';
+        
+        let isAnimatingMolecule = false;
+        let animState = 'none'; // 'rotate', 'vibrate', 'dissociate'
+        let animTimer = 0;
+        
+        // --- 2. Three.js Setup ---
+        let scene, camera, renderer, controls;
+        const clock = new THREE.Clock();
+        
+        // Groups
+        let mainGroup; // Holds the entire molecule
+        let photonGroup; // Holds flying photons
+        
+        // Molecule Data Structure
+        let molParts = []; 
+        let basePositions = [];
+
+        // Colors
+        const COLORS = {
+            O: 0xef4444, // Red
+            H: 0xffffff, // White
+            C: 0x475569, // Grey/Black
+            N: 0x3b82f6, // Blue
+            bond: 0x94a3b8 // Slate for bonds
+        };
+
+        // UI Refs
+        const ui = {
+            selMol: document.getElementById('select-molecule'),
+            lightBtns: document.querySelectorAll('.light-btn'),
+            txtLightDesc: document.getElementById('light-desc'),
+            btnFire: document.getElementById('btn-fire'),
+            readStatus: document.getElementById('readout-status'),
+            txtAnalysis: document.getElementById('analysis-text'),
+            
+            btnInfo: document.getElementById('btn-info'),
+            btnResetCam: document.getElementById('btn-reset-cam'),
+            btnCloseModal: document.getElementById('btn-close-modal'),
+            modal: document.getElementById('theory-modal')
+        };
+
+        init();
+        animate();
+
+        function init() {
+            const container = document.getElementById('canvas-container');
+            
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color('#0f172a');
+            scene.fog = new THREE.FogExp2('#0f172a', 0.02);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 2, 10);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three-canvas'), antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.enablePan = false;
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 10, 5);
+            scene.add(dirLight);
+            
+            const backLight = new THREE.DirectionalLight(0xffffff, 0.3);
+            backLight.position.set(-5, -5, -5);
+            scene.add(backLight);
+
+            // Initialize Groups
+            mainGroup = new THREE.Group();
+            scene.add(mainGroup);
+            
+            photonGroup = new THREE.Group();
+            scene.add(photonGroup);
+
+            // Decorative Background Grid (for spatial awareness)
+            const grid = new THREE.GridHelper(20, 20, 0x334155, 0x1e293b);
+            grid.position.y = -3;
+            scene.add(grid);
+
+            // Build Initial Molecule
+            buildMolecule('h2o');
+            
+            // Setup Events
+            setupEvents();
+            
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function buildMolecule(type) {
+            // Clear existing
+            while(mainGroup.children.length > 0){ 
+                mainGroup.remove(mainGroup.children[0]); 
+            }
+            molParts = [];
+            basePositions = [];
+            
+            mainGroup.rotation.set(0,0,0); // reset rotation
+
+            const sphereGeo = new THREE.SphereGeometry(1, 32, 32);
+            const bondGeo = new THREE.CylinderGeometry(0.15, 0.15, 1, 16);
+            
+            // Helper to create atom
+            const createAtom = (color, scale, px, py, pz) => {
+                const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.2, metalness: 0.1 });
+                const mesh = new THREE.Mesh(sphereGeo, mat);
+                mesh.scale.set(scale, scale, scale);
+                mesh.position.set(px, py, pz);
+                
+                mainGroup.add(mesh);
+                molParts.push(mesh);
+                basePositions.push(new THREE.Vector3(px, py, pz));
+                return mesh;
+            };
+
+            // Helper to create bond (visual only, attached to mainGroup)
+            const createBond = (atom1, atom2) => {
+                const mat = new THREE.MeshStandardMaterial({ color: COLORS.bond });
+                const bond = new THREE.Mesh(bondGeo, mat);
+                
+                const p1 = atom1.position;
+                const p2 = atom2.position;
+                const distance = p1.distanceTo(p2);
+                
+                bond.position.copy(p1).lerp(p2, 0.5);
+                bond.scale.y = distance;
+                bond.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), p2.clone().sub(p1).normalize());
+                
+                mainGroup.add(bond);
+                return bond;
+            };
+
+            if (type === 'h2o') {
+                // H2O: Bent shape ~104.5 deg
+                const o = createAtom(COLORS.O, 1.0, 0, 0.3, 0);
+                const h1 = createAtom(COLORS.H, 0.6, -1.2, -0.6, 0);
+                const h2 = createAtom(COLORS.H, 0.6, 1.2, -0.6, 0);
+                // Bonds are dynamic in vibration, so for H2O we might skip physical cylinder bonds 
+                // or update them in the loop. For simplicity in simulation, overlapping spheres or no cylinders looks fine.
+                createBond(o, h1);
+                createBond(o, h2);
+                
+            } else if (type === 'co2') {
+                // CO2: Linear
+                const c = createAtom(COLORS.C, 1.0, 0, 0, 0);
+                const o1 = createAtom(COLORS.O, 1.0, -2, 0, 0);
+                const o2 = createAtom(COLORS.O, 1.0, 2, 0, 0);
+                createBond(c, o1);
+                createBond(c, o2);
+
+            } else if (type === 'n2') {
+                // N2: Linear diatomic
+                const n1 = createAtom(COLORS.N, 1.0, -0.8, 0, 0);
+                const n2 = createAtom(COLORS.N, 1.0, 0.8, 0, 0);
+                createBond(n1, n2);
+
+            } else if (type === 'o3') {
+                // O3: Bent shape ~116.8 deg
+                const o_center = createAtom(COLORS.O, 1.0, 0, 0.5, 0);
+                const o1 = createAtom(COLORS.O, 1.0, -1.5, -0.5, 0);
+                const o2 = createAtom(COLORS.O, 1.0, 1.5, -0.5, 0);
+                createBond(o_center, o1);
+                createBond(o_center, o2);
+            }
+        }
+
+        function getInteractionResult(mol, light) {
+            // Returns: 'none', 'rotate', 'vibrate', 'dissociate'
+            // Rules based on general atmospheric physics
+            
+            if (mol === 'h2o') {
+                if (light === 'microwave') return 'rotate';
+                if (light === 'ir') return 'vibrate';
+                return 'none';
+            } 
+            if (mol === 'co2') {
+                if (light === 'microwave') return 'none'; // CO2 has no permanent dipole, won't rotate well with MW
+                if (light === 'ir') return 'vibrate'; // Strong GHG
+                return 'none';
+            }
+            if (mol === 'n2') {
+                // N2 is symmetric, transparent to MW, IR, Vis. 
+                // UV can break it but requires extreme UV. We'll set 'none' for typical UV here.
+                return 'none';
+            }
+            if (mol === 'o3') {
+                if (light === 'microwave') return 'rotate';
+                if (light === 'ir') return 'vibrate';
+                if (light === 'uv') return 'dissociate'; // Ozone layer protection!
+                return 'none';
+            }
+            return 'none';
+        }
+
+        function triggerInteraction(result) {
+            isAnimatingMolecule = true;
+            animState = result;
+            
+            if (result === 'rotate') {
+                animTimer = 5.0; // Rotate for 5 seconds
+                ui.readStatus.textContent = "ดูดกลืนพลังงาน -> เกิดการหมุน (Rotation)";
+                ui.readStatus.className = "font-bold text-sm text-blue-400";
+                ui.txtAnalysis.textContent = "โมเลกุลมีขั้ว (Polar) ดูดกลืนคลื่นไมโครเวฟ ทำให้โมเลกุลหมุนควงและเกิดความร้อนจากการเสียดสีกัน";
+            } 
+            else if (result === 'vibrate') {
+                animTimer = 4.0; 
+                ui.readStatus.textContent = "ดูดกลืนพลังงาน -> เกิดการสั่น (Vibration)";
+                ui.readStatus.className = "font-bold text-sm text-red-400";
+                ui.txtAnalysis.textContent = "พันธะเคมีดูดกลืนรังสีอินฟราเรด (IR) ทำให้เกิดการสั่น ยืด-หด หรือบิดงอ เป็นหลักการของก๊าซเรือนกระจกที่กักเก็บความร้อน";
+            }
+            else if (result === 'dissociate') {
+                animTimer = 3.0;
+                ui.readStatus.textContent = "ดูดกลืนพลังงาน -> พันธะแตกตัว (Photodissociation)";
+                ui.readStatus.className = "font-bold text-sm text-purple-400";
+                ui.txtAnalysis.textContent = "รังสี UV มีพลังงานสูงมากจนสามารถทำลายพันธะเคมีได้ (เช่น โอโซนดูดซับ UV แล้วแตกตัวเป็น O2 + O)";
+            }
+            else {
+                // none
+                isAnimatingMolecule = false;
+                ui.readStatus.textContent = "พลังงานไม่ตรงกัน -> ทะลุผ่าน (Transmission)";
+                ui.readStatus.className = "font-bold text-sm text-slate-400";
+                ui.txtAnalysis.textContent = "แสงไม่ถูกดูดกลืนโดยโมเลกุลชนิดนี้ จึงเดินทางทะลุผ่านไปได้โดยไม่เกิดผลกระทบใดๆ (เหมือนแสงแดดทะลุผ่านอากาศ)";
+            }
+        }
+
+        function setupEvents() {
+            // Molecule Select
+            ui.selMol.addEventListener('change', (e) => {
+                currentMolType = e.target.value;
+                buildMolecule(currentMolType);
+                
+                // Reset State
+                isAnimatingMolecule = false;
+                animState = 'none';
+                ui.readStatus.textContent = "รอการดูดซับโฟตอน...";
+                ui.readStatus.className = "font-bold text-sm text-slate-300";
+                ui.txtAnalysis.textContent = "เลือกโมเลกุลและชนิดของคลื่นแสง จากนั้นกดยิงโฟตอนเพื่อดูผลลัพธ์";
+            });
+
+            // Light Buttons
+            ui.lightBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    // Update Active State
+                    ui.lightBtns.forEach(b => {
+                        b.classList.remove('active', 'border-slate-500', 'shadow-inner');
+                        b.classList.add('border-slate-700');
+                    });
+                    
+                    const targetBtn = e.currentTarget;
+                    targetBtn.classList.add('active', 'border-slate-500', 'shadow-inner');
+                    targetBtn.classList.remove('border-slate-700');
+                    
+                    currentLightType = targetBtn.dataset.light;
+                    
+                    // Update Desc
+                    if (currentLightType === 'microwave') ui.txtLightDesc.textContent = "คลื่นไมโครเวฟมีพลังงานต่ำ ส่งผลให้เกิดการหมุนของโมเลกุลที่มีขั้ว";
+                    else if (currentLightType === 'ir') ui.txtLightDesc.textContent = "รังสีอินฟราเรดมีพลังงานพอเหมาะที่จะทำให้โมเลกุลเกิดการสั่น (Vibration)";
+                    else if (currentLightType === 'visible') ui.txtLightDesc.textContent = "แสงที่มองเห็นส่วนใหญ่ทะลุผ่านโมเลกุลในอากาศ (เว้นแต่ก๊าซมลพิษบางชนิด)";
+                    else if (currentLightType === 'uv') ui.txtLightDesc.textContent = "รังสี UV มีพลังงานสูงมาก สามารถทำให้พันธะเคมีแตกตัวได้ (Photodissociation)";
+                });
+            });
+
+            // Fire Button
+            ui.btnFire.addEventListener('click', () => {
+                firePhoton();
+            });
+
+            // Camera Reset
+            ui.btnResetCam.addEventListener('click', () => {
+                camera.position.set(0, 2, 10);
+                controls.target.set(0,0,0);
+            });
+
+            // Modals
+            ui.btnInfo.addEventListener('click', () => ui.modal.classList.remove('hidden'));
+            ui.btnCloseModal.addEventListener('click', () => ui.modal.classList.add('hidden'));
+        }
+
+        function firePhoton() {
+            // Colors mapping
+            const pColors = {
+                'microwave': 0x94a3b8,
+                'ir': 0xef4444,
+                'visible': 0xfcd34d,
+                'uv': 0xa855f7
+            };
+
+            const pGeo = new THREE.SphereGeometry(0.2, 16, 16);
+            const pMat = new THREE.MeshBasicMaterial({ 
+                color: pColors[currentLightType]
+            });
+            const photon = new THREE.Mesh(pGeo, pMat);
+            
+            // Start from right side moving left
+            photon.position.set(10, 0, 0);
+            
+            // Wavy path setup
+            photon.userData = {
+                type: currentLightType,
+                startX: 10,
+                targetX: 0,
+                speed: 15.0, // units per second
+                freq: currentLightType === 'microwave' ? 2 : (currentLightType === 'ir' ? 5 : (currentLightType === 'visible' ? 10 : 20)),
+                amp: 0.5,
+                alive: true
+            };
+
+            photonGroup.add(photon);
+        }
+
+        function updatePhotons(delta) {
+            const time = clock.getElapsedTime();
+            
+            for (let i = photonGroup.children.length - 1; i >= 0; i--) {
+                const photon = photonGroup.children[i];
+                if (!photon.userData.alive) continue;
+
+                // Move left
+                photon.position.x -= photon.userData.speed * delta;
+                
+                // Sine wave up/down based on frequency
+                photon.position.y = Math.sin(photon.position.x * photon.userData.freq) * photon.userData.amp;
+
+                // Collision Check (near origin)
+                if (photon.position.x <= 0 && photon.position.x > -1.0) {
+                    // It hit the molecule region
+                    photon.userData.alive = false;
+                    photonGroup.remove(photon);
+                    
+                    // Evaluate Interaction
+                    const result = getInteractionResult(currentMolType, photon.userData.type);
+                    triggerInteraction(result);
+                    
+                    // If 'none', let it pass through by creating a new photon on the other side?
+                    // Actually, for simplicity, just let it vanish, but the text says "Transmitted"
+                    // Better: If 'none', let the photon continue its path!
+                    if (result === 'none') {
+                        photonGroup.add(photon); // re-add
+                        photon.userData.alive = true; // keep going
+                        photon.userData.isPassing = true; // flag to ignore further collisions
+                    }
+                }
+                
+                // Clean up if it went too far left
+                if (photon.position.x < -15) {
+                    photonGroup.remove(photon);
+                }
+            }
+        }
+
+        function updateMoleculeAnimation(delta) {
+            if (!isAnimatingMolecule) return;
+            
+            const time = clock.getElapsedTime();
+            animTimer -= delta;
+
+            if (animTimer <= 0) {
+                // Reset state
+                isAnimatingMolecule = false;
+                animState = 'none';
+                
+                // Reset positions
+                mainGroup.rotation.set(0,0,0);
+                molParts.forEach((part, idx) => {
+                    part.position.copy(basePositions[idx]);
+                    part.material.transparent = false;
+                    part.material.opacity = 1;
+                });
+                
+                // Rebuild bonds if they were broken/distorted
+                buildMolecule(currentMolType);
+                
+                ui.readStatus.textContent = "รอการดูดซับโฟตอน...";
+                ui.readStatus.className = "font-bold text-sm text-slate-300";
+                return;
+            }
+
+            // Apply Animations
+            if (animState === 'rotate') {
+                mainGroup.rotation.z += 5.0 * delta; // Spin!
+                mainGroup.rotation.x += 2.0 * delta;
+            } 
+            else if (animState === 'vibrate') {
+                // Stretching and bending simulation
+                // We move the atoms slightly back and forth relative to base position
+                molParts.forEach((part, idx) => {
+                    if (idx === 0) return; // Keep center atom mostly still
+                    
+                    const basePos = basePositions[idx];
+                    const dir = basePos.clone().normalize(); // Outward from center
+                    
+                    // Fast oscillation
+                    const stretch = Math.sin(time * 30 + idx) * 0.15;
+                    
+                    part.position.copy(basePos).add(dir.multiplyScalar(stretch));
+                });
+                
+                // Note: Re-drawing bonds every frame is expensive in three.js, 
+                // so we just let the spheres clip through the static bonds for a visual "shake" effect,
+                // or we can shake the whole group slightly
+                mainGroup.position.x = Math.sin(time * 40) * 0.05;
+                mainGroup.position.y = Math.cos(time * 50) * 0.05;
+            }
+            else if (animState === 'dissociate') {
+                // Atoms fly apart and fade
+                molParts.forEach((part, idx) => {
+                    if (idx === 0) return; // Keep one piece (e.g. O2 part of O3) relatively still
+                    
+                    const basePos = basePositions[idx];
+                    const dir = basePos.clone().normalize();
+                    
+                    // Drift outwards
+                    part.position.add(dir.multiplyScalar(2.0 * delta));
+                    
+                    // Fade out
+                    part.material.transparent = true;
+                    part.material.opacity = Math.max(0, animTimer / 3.0); // 3.0 is initial timer
+                });
+                
+                // Hide bonds
+                mainGroup.children.forEach(c => {
+                    if (c.geometry.type === 'CylinderGeometry') {
+                        c.visible = false;
+                    }
+                });
+            }
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = Math.min(clock.getDelta(), 0.1);
+            
+            controls.update();
+            
+            updatePhotons(delta);
+            updateMoleculeAnimation(delta);
+
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>

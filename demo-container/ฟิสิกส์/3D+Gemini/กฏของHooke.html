@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>จำลองกฎของฮุค (Hooke's Law & Springs)</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        panelBg: 'rgba(30, 41, 59, 0.85)',
+                        accent: '#38bdf8',
+                        forceUp: '#3b82f6', // Blue for spring force
+                        forceDown: '#ef4444', // Red for gravity
+                        energy: '#10b981' // Green for potential energy
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Sarabun', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Three.js & Controls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- MathJax -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        input[type=range] { accent-color: #38bdf8; }
+        input[type=checkbox] { accent-color: #38bdf8; }
+        
+        .math-display { font-size: 0.9rem; color: #bae6fd; }
+
+        /* Graph Canvas */
+        #graph-container {
+            width: 100%;
+            height: 150px;
+            position: relative;
+            border-radius: 0.5rem;
+            background: #1e293b;
+            border: 1px solid #334155;
+            overflow: hidden;
+        }
+        #graph-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Energy Bar */
+        .energy-bar-container {
+            width: 100%;
+            height: 12px;
+            background-color: #1e293b;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #334155;
+        }
+        .energy-bar-fill {
+            height: 100%;
+            transition: width 0.1s linear;
+        }
+
+        .toggle-checkbox:checked { right: 0; border-color: #38bdf8; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #38bdf8; }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col">
+
+    <header class="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 z-20 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center shadow-lg shadow-sky-500/30">
+                <i class="fa-solid fa-compress-alt text-white text-sm"></i>
+            </div>
+<a href="../physics.html">
+                <h1 class="text-base font-semibold tracking-wide flex items-center gap-2">
+                กฎของฮุค & สปริง 
+                <span class="text-xs font-normal text-slate-400 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">Hooke's Law</span>
+            </h1>
+</a>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="btn-toggle-cam" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-video text-sky-400"></i> <span id="cam-mode-text">มุมมอง 2D</span>
+            </button>
+            <button id="btn-info" class="bg-indigo-600 hover:bg-indigo-500 text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-book-open text-white"></i> ทฤษฎี & การวิเคราะห์
+            </button>
+        </div>
+    </header>
+
+    <div class="flex-1 relative overflow-hidden flex">
+        
+        <!-- ThreeJS Canvas -->
+        <div id="canvas-container" class="absolute inset-0 w-full h-full z-0 cursor-move">
+            <canvas id="three-canvas"></canvas>
+        </div>
+
+        <!-- Left HUD: Controls -->
+        <aside class="absolute top-4 left-4 w-80 glass-panel rounded-xl flex flex-col z-10 max-h-[calc(100vh-6rem)] overflow-y-auto">
+            <div class="p-4 border-b border-slate-700/50">
+                <h2 class="text-sm font-semibold text-sky-400 flex items-center gap-2 uppercase tracking-wide">
+                    <i class="fa-solid fa-sliders"></i> ตั้งค่าการทดลอง
+                </h2>
+            </div>
+            
+            <div class="p-4 space-y-5">
+                
+                <!-- System Config -->
+                <div>
+                    <label class="block text-xs text-slate-300 mb-2">รูปแบบการต่อสปริง (Configuration)</label>
+                    <div class="flex rounded-lg overflow-hidden border border-slate-600">
+                        <button id="btn-mode-single" class="flex-1 py-1.5 text-xs bg-sky-600 text-white font-medium shadow-inner transition-colors">สปริงเดี่ยว</button>
+                        <button id="btn-mode-series" class="flex-1 py-1.5 text-xs bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors">อนุกรม (Series)</button>
+                        <button id="btn-mode-parallel" class="flex-1 py-1.5 text-xs bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors">ขนาน (Parallel)</button>
+                    </div>
+                </div>
+
+                <!-- Spring Constant 1 -->
+                <div class="bg-slate-900/50 p-3 rounded-lg border border-slate-700">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">ค่าคงตัวสปริงที่ 1 ($k_1$)</span>
+                        <span id="val-k1" class="font-mono text-sky-300">200 N/m</span>
+                    </div>
+                    <input type="range" id="sl-k1" min="50" max="500" step="10" value="200" class="w-full h-1.5 bg-slate-700 rounded-lg cursor-pointer">
+                </div>
+
+                <!-- Spring Constant 2 (Hidden initially) -->
+                <div id="panel-k2" class="bg-slate-900/50 p-3 rounded-lg border border-slate-700 hidden">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">ค่าคงตัวสปริงที่ 2 ($k_2$)</span>
+                        <span id="val-k2" class="font-mono text-fuchsia-300">200 N/m</span>
+                    </div>
+                    <input type="range" id="sl-k2" min="50" max="500" step="10" value="200" class="w-full h-1.5 bg-slate-700 rounded-lg cursor-pointer">
+                </div>
+
+                <!-- Mass -->
+                <div class="pt-2 border-t border-slate-700/50">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">มวลตุ้มน้ำหนัก ($m$)</span>
+                        <span id="val-m" class="font-mono text-white">1.0 kg</span>
+                    </div>
+                    <input type="range" id="sl-m" min="0" max="10" step="0.5" value="1.0" class="w-full h-1.5 bg-slate-700 rounded-lg cursor-pointer">
+                    <div class="text-[10px] text-slate-500 mt-1 text-center">* F = mg (ทดลองบนโลก g = 9.8 m/s²)</div>
+                </div>
+
+                <!-- Viscous Damping -->
+                <div class="flex items-center justify-between">
+                    <span class="text-xs text-slate-300">แรงต้าน/แรงหน่วง (Damping)</span>
+                    <div class="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" id="toggle-damping" checked class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 transition-all duration-300 left-0 checked:left-5"/>
+                        <label for="toggle-damping" class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-600 cursor-pointer transition-colors duration-300"></label>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <span class="text-xs text-slate-300">แสดงเวกเตอร์แรง (Vectors)</span>
+                    <div class="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" id="toggle-vectors" checked class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 transition-all duration-300 left-0 checked:left-5"/>
+                        <label for="toggle-vectors" class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-600 cursor-pointer transition-colors duration-300"></label>
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button id="btn-stop" class="w-full bg-slate-700 hover:bg-slate-600 text-white text-xs py-2 rounded-lg transition-colors shadow">
+                        หยุดการสั่น (Stop Oscillation)
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <aside class="absolute top-4 right-4 w-[22rem] glass-panel rounded-xl flex flex-col z-10 pointer-events-none">
+            <div class="p-4 border-b border-slate-700/50">
+                <h2 class="text-sm font-semibold text-emerald-400 flex items-center gap-2 uppercase tracking-wide">
+                    <i class="fa-solid fa-chart-line"></i> ข้อมูล & กราฟ (Real-time)
+                </h2>
+            </div>
+            
+            <div class="p-4 space-y-4">
+                
+                <!-- Status & Equiv K -->
+                <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                    <div class="flex justify-between items-center mb-2">
+                        <div class="text-xs text-slate-400">ค่าคงตัวสปริงรวม ($k_{eq}$)</div>
+                        <div id="readout-keq" class="font-mono text-base text-amber-300 font-bold">200 N/m</div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-2 border-t border-slate-700 pt-2 text-center">
+                        <div>
+                            <div class="text-[10px] text-slate-400">แรงดึง ($F = mg$)</div>
+                            <div class="font-mono text-sm font-bold text-forceDown" id="readout-f">9.8 N</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-slate-400">ระยะยืด ($x$)</div>
+                            <div class="font-mono text-sm font-bold text-white" id="readout-x">0.049 m</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Equation -->
+                <div class="text-center">
+                    <div class="math-display">$$F = -kx$$</div>
+                </div>
+
+                <!-- Graph Canvas -->
+                <div>
+                    <div class="text-[10px] text-slate-300 mb-1 flex justify-between">
+                        <span>กราฟความสัมพันธ์ F กับ x</span>
+                        <span class="text-amber-300">Slope = $k_{eq}$</span>
+                    </div>
+                    <div id="graph-container">
+                        <canvas id="graph-canvas"></canvas>
+                        
+                        <!-- Overlay Labels -->
+                        <div class="absolute top-1 left-2 text-[9px] text-slate-400">แรง F (N)</div>
+                        <div class="absolute bottom-1 right-2 text-[9px] text-slate-400">ระยะ x (m)</div>
+                    </div>
+                </div>
+
+                <!-- Potential Energy -->
+                <div class="bg-slate-900/80 rounded-lg p-3 border border-slate-600">
+                    <div class="flex justify-between text-[10px] mb-1">
+                        <span class="text-energy font-semibold">พลังงานศักย์ยืดหยุ่น ($PE = \frac{1}{2}kx^2$)</span>
+                        <span id="readout-pe" class="font-mono text-slate-300">0.24 J</span>
+                    </div>
+                    <div class="energy-bar-container">
+                        <div id="bar-pe" class="energy-bar-fill bg-energy" style="width: 0%"></div>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <div id="theory-modal" class="hidden absolute inset-0 bg-slate-900/90 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+            <div class="bg-slate-800 border border-slate-600 rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl pointer-events-auto">
+                <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50 rounded-t-xl shrink-0">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-book-open text-sky-400"></i> ทฤษฎีกฎของฮุค (Hooke's Law)</h2>
+                    <button id="btn-close-modal" class="text-slate-400 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                
+                <div class="p-6 overflow-y-auto space-y-6 text-sm text-slate-300 leading-relaxed">
+                    
+                    <section>
+                        <h3 class="text-sky-400 font-semibold mb-2 text-base">1. กฎของฮุค (Hooke's Law)</h3>
+                        <p class="mb-2">Robert Hooke ค้นพบว่า แรงที่ใช้ดึงสปริงจะแปรผันตรงกับระยะที่สปริงยืดออก (ในขีดจำกัดความยืดหยุ่น)</p>
+                        <div class="math-display text-center mb-2">$$F_s = -kx$$</div>
+                        <ul class="list-disc pl-5 space-y-1">
+                            <li><strong class="text-white">$F_s$ (Spring Force):</strong> แรงดึงกลับของสปริง มีทิศตรงข้ามกับการกระจัดเสมอ (เครื่องหมายลบ)</li>
+                            <li><strong class="text-white">$k$ (Spring Constant):</strong> ค่าคงตัวสปริง (N/m) ยิ่ง $k$ มาก สปริงยิ่งแข็ง</li>
+                            <li><strong class="text-white">$x$ (Displacement):</strong> ระยะยืดหรือหดจากจุดสมดุลเดิม</li>
+                        </ul>
+                    </section>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <section class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                            <h3 class="text-amber-400 font-semibold mb-2">การต่อสปริงแบบอนุกรม (Series)</h3>
+                            <p class="text-[11px] mb-2">ต่อเรียงกันเป็นเส้นยาว แรงดึง $F$ จะส่งผ่านสปริงทุกตัวเท่ากัน แต่ระยะยืดรวมจะมากขึ้น ทำให้สปริงรวม **"นิ่มลง"**</p>
+                            <div class="math-display">$$\frac{1}{k_{eq}} = \frac{1}{k_1} + \frac{1}{k_2}$$</div>
+                            <div class="math-display">$$x_{total} = x_1 + x_2$$</div>
+                        </section>
+                        
+                        <section class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                            <h3 class="text-emerald-400 font-semibold mb-2">การต่อสปริงแบบขนาน (Parallel)</h3>
+                            <p class="text-[11px] mb-2">ต่อตีคู่กันรับน้ำหนักร่วมกัน ระยะยืด $x$ จะเท่ากัน แต่ต้องใช้แรงดึงรวมมากขึ้น ทำให้สปริงรวม **"แข็งขึ้น"**</p>
+                            <div class="math-display">$$k_{eq} = k_1 + k_2$$</div>
+                            <div class="math-display">$$F_{total} = F_1 + F_2$$</div>
+                        </section>
+                    </div>
+
+                    <section>
+                        <h3 class="text-fuchsia-400 font-semibold mb-2 text-base">พลังงานศักย์ยืดหยุ่น (Elastic Potential Energy)</h3>
+                        <p class="mb-2">งานที่ทำในการดึงสปริงจะถูกเก็บไว้ในรูปของพลังงานศักย์ยืดหยุ่น ยิ่งสปริงถูกยืดมาก (หรือบีบอัดมาก) พลังงานจะยิ่งเพิ่มขึ้นแบบทวีคูณ (กำลังสอง)</p>
+                        <div class="math-display text-center">$$PE = \frac{1}{2} k x^2$$</div>
+                        <p class="text-[11px] mt-2 text-slate-400">
+                            * ข้อสังเกต: หากคุณเพิ่มมวล $m$ เป็น 2 เท่า, ระยะยืด $x$ จะเพิ่ม 2 เท่า ส่งผลให้พลังงานศักย์ (PE) เพิ่มขึ้นถึง 4 เท่า!
+                        </p>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 1. State & Physics Variables ---
+        const GRAVITY = 9.81; // m/s^2
+        let currentMode = 'single'; // 'single', 'series', 'parallel'
+        
+        let k1 = 200; // N/m
+        let k2 = 200; // N/m
+        let mass = 1.0; // kg
+        
+        let k_eq = 200; // Equivalent k
+        let isDamped = true;
+        let showVectors = true;
+
+        // Dynamics
+        // Natural rest position is y=0 (relative to top attachment point)
+        // We will simulate motion downwards (negative Y)
+        let pos_y = 0; 
+        let vel_y = 0;
+        let restLength = 1.0; // Unstretched length of the system (visual scale)
+
+        // Graph data
+        const maxForceGraph = 150; // N
+        const maxDispGraph = 1.0;  // m
+
+        // --- 2. Three.js Setup ---
+        let scene, camera, renderer, controls;
+        const clock = new THREE.Clock();
+        
+        // 3D Objects
+        let standGroup, massMesh;
+        let spring1, spring2;
+        let middleJoint; // For series
+        let arrowGravity, arrowSpring;
+        let rulerGroup;
+
+        // UI Map
+        const ui = {
+            btnSingle: document.getElementById('btn-mode-single'),
+            btnSeries: document.getElementById('btn-mode-series'),
+            btnParallel: document.getElementById('btn-mode-parallel'),
+            
+            pnlK2: document.getElementById('panel-k2'),
+            slK1: document.getElementById('sl-k1'),
+            slK2: document.getElementById('sl-k2'),
+            slM: document.getElementById('sl-m'),
+            
+            valK1: document.getElementById('val-k1'),
+            valK2: document.getElementById('val-k2'),
+            valM: document.getElementById('val-m'),
+            
+            chkDamp: document.getElementById('toggle-damping'),
+            chkVectors: document.getElementById('toggle-vectors'),
+            btnStop: document.getElementById('btn-stop'),
+            
+            readKeq: document.getElementById('readout-keq'),
+            readF: document.getElementById('readout-f'),
+            readX: document.getElementById('readout-x'),
+            readPe: document.getElementById('readout-pe'),
+            barPe: document.getElementById('bar-pe'),
+            
+            canvas: document.getElementById('graph-canvas'),
+            ctx: document.getElementById('graph-canvas').getContext('2d'),
+            
+            btnCam: document.getElementById('btn-toggle-cam'),
+            camText: document.getElementById('cam-mode-text'),
+            
+            modal: document.getElementById('theory-modal'),
+            btnInfo: document.getElementById('btn-info'),
+            btnClose: document.getElementById('btn-close-modal')
+        };
+
+        init();
+        animate();
+
+        function init() {
+            const container = document.getElementById('canvas-container');
+            
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color('#0f172a');
+            scene.fog = new THREE.FogExp2('#0f172a', 0.02);
+
+            // Camera (Initially 3D View)
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(-4, 2, 6);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three-canvas'), antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.target.set(0, 0, 0);
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 10, 5);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            scene.add(dirLight);
+
+            buildEnvironment();
+            buildInteractiveObjects();
+            
+            setupEvents();
+            
+            // Initial calculations
+            updateEquivalentK();
+            resizeGraphCanvas();
+            
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function buildEnvironment() {
+            // Lab Table
+            const tableGeo = new THREE.BoxGeometry(10, 0.5, 10);
+            const tableMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+            const table = new THREE.Mesh(tableGeo, tableMat);
+            table.position.y = -3.5;
+            table.receiveShadow = true;
+            scene.add(table);
+
+            // Stand Base & Rod
+            standGroup = new THREE.Group();
+            scene.add(standGroup);
+
+            const metalMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.6, roughness: 0.4 });
+            
+            const base = new THREE.Mesh(new THREE.BoxGeometry(1, 0.1, 1.5), metalMat);
+            base.position.set(-1, -3.2, 0);
+            base.castShadow = true;
+            standGroup.add(base);
+
+            const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 6.5), metalMat);
+            rod.position.set(-1, 0, 0);
+            rod.castShadow = true;
+            standGroup.add(rod);
+
+            const clamp = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.1, 0.2), metalMat);
+            clamp.position.set(-0.25, 3.0, 0); // Attachment point is at Y=3.0
+            clamp.castShadow = true;
+            standGroup.add(clamp);
+
+            // Ruler
+            rulerGroup = new THREE.Group();
+            rulerGroup.position.set(-0.5, 1.5, 0.1);
+            scene.add(rulerGroup);
+            
+            const rulerBoard = new THREE.Mesh(
+                new THREE.BoxGeometry(0.2, 4, 0.02),
+                new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.8 })
+            );
+            rulerGroup.add(rulerBoard);
+            
+            // Ticks on ruler
+            const tickMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            for(let i=0; i<=10; i++) {
+                const tick = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.03), tickMat);
+                tick.position.set(0.05, 2 - (i * 0.4), 0.01);
+                rulerGroup.add(tick);
+            }
+        }
+
+        function buildInteractiveObjects() {
+            // Mass (Weight)
+            const massGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.5, 32);
+            const massMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.7, roughness: 0.3 });
+            massMesh = new THREE.Mesh(massGeo, massMat);
+            massMesh.castShadow = true;
+            scene.add(massMesh);
+
+            // Springs (represented by Lines)
+            const springMat1 = new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 });
+            const springMat2 = new THREE.LineBasicMaterial({ color: 0xd946ef, linewidth: 2 });
+            
+            spring1 = new THREE.Line(new THREE.BufferGeometry(), springMat1);
+            spring2 = new THREE.Line(new THREE.BufferGeometry(), springMat2);
+            
+            scene.add(spring1);
+            scene.add(spring2);
+            
+            // Middle Joint for Series
+            const jointGeo = new THREE.SphereGeometry(0.08, 16, 16);
+            const jointMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            middleJoint = new THREE.Mesh(jointGeo, jointMat);
+            scene.add(middleJoint);
+
+            // Vectors
+            arrowGravity = new THREE.ArrowHelper(new THREE.Vector3(0, -1, 0), new THREE.Vector3(0,0,0), 1, 0xef4444, 0.2, 0.1);
+            arrowSpring = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0,0,0), 1, 0x3b82f6, 0.2, 0.1);
+            scene.add(arrowGravity);
+            scene.add(arrowSpring);
+        }
+
+        // Generates vertices for a helical spring based on start and end Y
+        function generateSpringGeometry(startY, endY, radius, coils, kValue) {
+            const points = [];
+            const segments = coils * 30; // resolution
+            
+            // Thickness visual hint: higher k = tighter coils or visually distinct. 
+            // We just use kValue to slightly adjust radius for visual feedback
+            const r = radius * (0.8 + (kValue / 500) * 0.4); 
+            
+            const totalHeight = startY - endY;
+
+            for (let i = 0; i <= segments; i++) {
+                const t = i / segments;
+                const angle = t * coils * Math.PI * 2;
+                
+                const x = Math.cos(angle) * r;
+                const z = Math.sin(angle) * r;
+                const y = startY - (t * totalHeight);
+                
+                points.push(new THREE.Vector3(x, y, z));
+            }
+            return new THREE.BufferGeometry().setFromPoints(points);
+        }
+
+        function setupEvents() {
+            // Mode switching
+            const setMode = (mode) => {
+                currentMode = mode;
+                
+                // UI styles
+                [ui.btnSingle, ui.btnSeries, ui.btnParallel].forEach(btn => {
+                    btn.classList.replace('bg-sky-600', 'bg-slate-700');
+                    btn.classList.replace('text-white', 'text-slate-300');
+                    btn.classList.remove('shadow-inner');
+                });
+                
+                let activeBtn;
+                if(mode === 'single') {
+                    activeBtn = ui.btnSingle;
+                    ui.pnlK2.classList.add('hidden');
+                } else if(mode === 'series') {
+                    activeBtn = ui.btnSeries;
+                    ui.pnlK2.classList.remove('hidden');
+                } else {
+                    activeBtn = ui.btnParallel;
+                    ui.pnlK2.classList.remove('hidden');
+                }
+                
+                activeBtn.classList.replace('bg-slate-700', 'bg-sky-600');
+                activeBtn.classList.replace('text-slate-300', 'text-white');
+                activeBtn.classList.add('shadow-inner');
+
+                updateEquivalentK();
+            };
+
+            ui.btnSingle.addEventListener('click', () => setMode('single'));
+            ui.btnSeries.addEventListener('click', () => setMode('series'));
+            ui.btnParallel.addEventListener('click', () => setMode('parallel'));
+
+            // Sliders
+            ui.slK1.addEventListener('input', (e) => {
+                k1 = parseFloat(e.target.value);
+                ui.valK1.textContent = `${k1} N/m`;
+                updateEquivalentK();
+            });
+            ui.slK2.addEventListener('input', (e) => {
+                k2 = parseFloat(e.target.value);
+                ui.valK2.textContent = `${k2} N/m`;
+                updateEquivalentK();
+            });
+            ui.slM.addEventListener('input', (e) => {
+                mass = parseFloat(e.target.value);
+                ui.valM.textContent = `${mass.toFixed(1)} kg`;
+                // Trigger an immediate displacement change to cause oscillation
+            });
+
+            // Toggles & Actions
+            ui.chkDamp.addEventListener('change', e => isDamped = e.target.checked);
+            ui.chkVectors.addEventListener('change', e => showVectors = e.target.checked);
+            
+            ui.btnStop.addEventListener('click', () => {
+                // Snap to equilibrium
+                vel_y = 0;
+                // Equilibrium position x = F/k
+                const eqDisp = (mass * GRAVITY) / k_eq;
+                pos_y = -eqDisp; 
+            });
+
+            // Modals & Camera
+            ui.btnInfo.addEventListener('click', () => ui.modal.classList.remove('hidden'));
+            ui.btnClose.addEventListener('click', () => ui.modal.classList.add('hidden'));
+
+            let is2DMode = false;
+            ui.btnCam.addEventListener('click', () => {
+                is2DMode = !is2DMode;
+                if(is2DMode) {
+                    ui.camText.textContent = "มุมมอง 3D";
+                    camera.position.set(0, 0, 10); // Front view
+                    controls.enableRotate = false;
+                } else {
+                    ui.camText.textContent = "มุมมอง 2D";
+                    camera.position.set(-4, 2, 6);
+                    controls.enableRotate = true;
+                }
+                controls.update();
+            });
+
+            // Graph resize
+            const resizeObserver = new ResizeObserver(() => {
+                resizeGraphCanvas();
+                drawGraph();
+            });
+            resizeObserver.observe(document.getElementById('graph-container'));
+        }
+
+        function updateEquivalentK() {
+            if (currentMode === 'single') {
+                k_eq = k1;
+            } else if (currentMode === 'series') {
+                k_eq = (k1 * k2) / (k1 + k2);
+            } else if (currentMode === 'parallel') {
+                k_eq = k1 + k2;
+            }
+            ui.readKeq.textContent = `${k_eq.toFixed(1)} N/m`;
+        }
+
+        function resizeGraphCanvas() {
+            const container = document.getElementById('graph-container');
+            ui.canvas.width = container.clientWidth * window.devicePixelRatio;
+            ui.canvas.height = container.clientHeight * window.devicePixelRatio;
+        }
+
+        function drawGraph(currentForce, currentDisp) {
+            const ctx = ui.ctx;
+            const w = ui.canvas.width;
+            const h = ui.canvas.height;
+            
+            ctx.clearRect(0, 0, w, h);
+            
+            const pad = 30 * window.devicePixelRatio;
+            const gw = w - pad * 2;
+            const gh = h - pad * 2;
+
+            // Map functions
+            const mapX = (x) => pad + (Math.abs(x) / maxDispGraph) * gw;
+            const mapY = (f) => (h - pad) - (Math.abs(f) / maxForceGraph) * gh;
+
+            // Draw axes
+            ctx.strokeStyle = "rgba(100, 116, 139, 0.5)";
+            ctx.lineWidth = 1 * window.devicePixelRatio;
+            ctx.beginPath();
+            ctx.moveTo(pad, pad); ctx.lineTo(pad, h - pad); // Y axis (Force)
+            ctx.lineTo(w - pad, h - pad); // X axis (Disp)
+            ctx.stroke();
+
+            // Draw theoretical line F = k_eq * x
+            ctx.strokeStyle = "#38bdf8"; // sky-400
+            ctx.lineWidth = 2 * window.devicePixelRatio;
+            ctx.beginPath();
+            ctx.moveTo(mapX(0), mapY(0));
+            // Point at far right
+            const maxF = k_eq * maxDispGraph;
+            ctx.lineTo(mapX(maxDispGraph), mapY(maxF));
+            ctx.stroke();
+
+            // Draw current point
+            if (currentDisp !== undefined && currentForce !== undefined) {
+                const px = mapX(currentDisp);
+                const py = mapY(currentForce);
+
+                // Draw drop lines
+                ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(px, py); ctx.lineTo(px, mapY(0)); // drop to X
+                ctx.moveTo(px, py); ctx.lineTo(mapX(0), py); // drop to Y
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Draw Point
+                ctx.fillStyle = "#fcd34d"; // amber-300
+                ctx.beginPath();
+                ctx.arc(px, py, 4 * window.devicePixelRatio, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function updateVisuals(disp) {
+            // Support point is Y=3.0
+            const supportY = 3.0;
+            const currentY = supportY - restLength + disp; // disp is negative when stretched downwards
+            
+            // Position Mass
+            massMesh.position.set(0, currentY - 0.25, 0); // offset by half height
+
+            // Draw Springs based on mode
+            if (currentMode === 'single') {
+                spring1.visible = true;
+                spring2.visible = false;
+                middleJoint.visible = false;
+                
+                spring1.geometry.dispose();
+                spring1.geometry = generateSpringGeometry(supportY, currentY, 0.15, 15, k1);
+                spring1.position.set(0,0,0);
+                
+            } else if (currentMode === 'parallel') {
+                spring1.visible = true;
+                spring2.visible = true;
+                middleJoint.visible = false;
+                
+                spring1.geometry.dispose();
+                spring1.geometry = generateSpringGeometry(supportY, currentY, 0.1, 15, k1);
+                spring1.position.set(-0.25, 0, 0);
+                
+                spring2.geometry.dispose();
+                spring2.geometry = generateSpringGeometry(supportY, currentY, 0.1, 15, k2);
+                spring2.position.set(0.25, 0, 0);
+                
+            } else if (currentMode === 'series') {
+                spring1.visible = true;
+                spring2.visible = true;
+                middleJoint.visible = true;
+                
+                // For series, the total displacement (from rest length) is distributed
+                // proportional to 1/k. 
+                // tension is uniform: F = k1*x1 = k2*x2 = k_eq*x_tot
+                // x1 = x_tot * (k_eq / k1)
+                
+                const absDisp = (currentY - (supportY - restLength)); // total physical stretch
+                
+                const stretch1 = absDisp * (k_eq / k1);
+                // Rest length is also split evenly for visual purposes
+                const midY = supportY - (restLength/2) + stretch1;
+                
+                spring1.geometry.dispose();
+                spring1.geometry = generateSpringGeometry(supportY, midY, 0.12, 10, k1);
+                spring1.position.set(0,0,0);
+                
+                spring2.geometry.dispose();
+                spring2.geometry = generateSpringGeometry(midY, currentY, 0.12, 10, k2);
+                spring2.position.set(0,0,0);
+                
+                middleJoint.position.set(0, midY, 0);
+            }
+
+            // Vectors
+            if (showVectors) {
+                arrowGravity.visible = (mass > 0);
+                arrowSpring.visible = (Math.abs(disp) > 0.01);
+                
+                const baseVecY = currentY - 0.25;
+                
+                // Fg = mg
+                const Fg = mass * GRAVITY;
+                arrowGravity.position.set(0.5, baseVecY, 0);
+                arrowGravity.setLength(Math.max(0.1, (Fg / maxForceGraph) * 3), 0.2, 0.1);
+
+                // Fs = -kx
+                // disp is negative when stretched down, so -k*disp is positive (Up)
+                const Fs = -k_eq * disp;
+                const dirY = Fs >= 0 ? 1 : -1;
+                arrowSpring.position.set(-0.5, baseVecY, 0);
+                arrowSpring.setDirection(new THREE.Vector3(0, dirY, 0));
+                arrowSpring.setLength(Math.max(0.1, (Math.abs(Fs) / maxForceGraph) * 3), 0.2, 0.1);
+            } else {
+                arrowGravity.visible = false;
+                arrowSpring.visible = false;
+            }
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            resizeGraphCanvas();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = Math.min(clock.getDelta(), 0.05);
+            
+            controls.update();
+
+            // PHYSICS SOLVER (Damped Harmonic Oscillator)
+            // F_net = F_gravity + F_spring + F_damping
+            // F_net = (m * g) + (-k * y) + (-c * v)
+            // Note: Our coordinates: y=0 is rest position. Down is negative y.
+            // Gravity acts in negative y direction -> -mg
+            // Spring force: -k * y (if y is negative, force is positive/upwards)
+            
+            let force = 0;
+            if (mass > 0) {
+                const f_gravity = -mass * GRAVITY;
+                const f_spring = -k_eq * pos_y;
+                const f_damping = isDamped ? - (2.0 * mass) * vel_y : 0; // c = 2m is a reasonable visual damping
+                
+                force = f_gravity + f_spring + f_damping;
+                
+                const acc = force / mass;
+                vel_y += acc * delta;
+                pos_y += vel_y * delta;
+            } else {
+                // If mass is 0, spring snaps back to rest
+                force = -k_eq * pos_y;
+                const f_damping = isDamped ? -10 * vel_y : 0;
+                // Treat small mass for snapback
+                const acc = (force + f_damping) / 0.1;
+                vel_y += acc * delta;
+                pos_y += vel_y * delta;
+            }
+
+            // Update 3D Geometry
+            updateVisuals(pos_y);
+
+            // Calculate Data
+            const currentForceMag = Math.abs(-k_eq * pos_y);
+            const currentDispMag = Math.abs(pos_y);
+            const pe = 0.5 * k_eq * (pos_y * pos_y);
+
+            // Update UI
+            ui.readF.textContent = `${(mass * GRAVITY).toFixed(1)} N`; // Applied force
+            ui.readX.textContent = `${currentDispMag.toFixed(3)} m`;
+            ui.readPe.textContent = `${pe.toFixed(2)} J`;
+            
+            // Normalize PE bar (assuming max disp = 1.0)
+            const maxPe = 0.5 * k_eq * (maxDispGraph * maxDispGraph);
+            const pePercent = Math.min(100, (pe / maxPe) * 100);
+            ui.barPe.style.width = `${pePercent}%`;
+
+            // Draw Graph
+            drawGraph(currentForceMag, currentDispMag);
+
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>

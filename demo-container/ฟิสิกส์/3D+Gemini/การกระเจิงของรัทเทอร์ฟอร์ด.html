@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>การกระเจิงของรัทเทอร์ฟอร์ด (Rutherford Scattering)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        panelBg: 'rgba(30, 41, 59, 0.85)',
+                        alpha: '#ef4444',     // Red for Alpha particle
+                        nucleus: '#eab308',   // Gold for Nucleus
+                        screen: '#10b981',    // Green for Fluorescent screen
+                        accent: '#8b5cf6'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Sarabun', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        input[type=range] { accent-color: #eab308; }
+        
+        .math-display { font-size: 0.85rem; color: #e2e8f0; }
+
+        .scintillation {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #10b981;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px #10b981, 0 0 20px #10b981;
+            pointer-events: none;
+            animation: fadeOut 1s forwards;
+            z-index: 50;
+        }
+
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(2); }
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col">
+
+    <header class="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 z-20 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center shadow-lg shadow-yellow-500/30">
+                <i class="fa-solid fa-atom text-white text-sm"></i>
+            </div>
+            <a href="../physics.html">
+                <h1 class="text-base font-semibold tracking-wide flex items-center gap-2">
+                การกระเจิงของรัทเทอร์ฟอร์ด
+                <span class="text-xs font-normal text-slate-400 bg-slate-800 px-2 py-0.5 rounded">Rutherford Scattering</span>
+            </h1>
+            </a>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="btn-camera" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-video text-amber-400"></i> มุมมองด้านบน (Top View)
+            </button>
+            <button id="btn-info" class="bg-indigo-600 hover:bg-indigo-500 text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-book-open text-white"></i> ทฤษฎี & ความรู้
+            </button>
+        </div>
+    </header>
+
+    <div class="flex-1 relative overflow-hidden flex">
+        
+        <!-- ThreeJS Canvas -->
+        <div id="canvas-container" class="absolute inset-0 w-full h-full z-0 cursor-move">
+            <canvas id="three-canvas"></canvas>
+        </div>
+
+        <aside class="absolute top-4 left-4 w-80 glass-panel rounded-xl flex flex-col z-10 max-h-[calc(100vh-6rem)] overflow-y-auto">
+            <div class="p-4 border-b border-slate-700/50">
+                <h2 class="text-sm font-semibold text-amber-400 flex items-center gap-2 uppercase tracking-wide">
+                    <i class="fa-solid fa-sliders"></i> ควบคุมการทดลอง
+                </h2>
+            </div>
+            
+            <div class="p-4 space-y-5">
+                
+                <!-- Model Toggle -->
+                <div>
+                    <label class="block text-xs text-slate-300 mb-2">แบบจำลองอะตอม (Atomic Model)</label>
+                    <div class="flex rounded-lg overflow-hidden border border-slate-600">
+                        <button id="btn-model-thomson" class="flex-1 py-1.5 text-xs bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors">พุดดิ้งลูกเกด (Thomson)</button>
+                        <button id="btn-model-rutherford" class="flex-1 py-1.5 text-xs bg-amber-600 text-white font-medium shadow-inner transition-colors">นิวเคลียร์ (Rutherford)</button>
+                    </div>
+                </div>
+
+                <!-- Particle Energy Slider -->
+                <div class="bg-slate-900/50 p-3 rounded-lg border border-slate-700">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">พลังงานอนุภาคแอลฟา (Kinetic Energy)</span>
+                        <span id="val-energy" class="font-mono text-alpha">High</span>
+                    </div>
+                    <input type="range" id="slider-energy" min="1" max="20" step="1" value="10" class="w-full h-1.5 bg-slate-700 rounded-lg cursor-pointer">
+                    <p class="text-[9px] text-slate-500 mt-1">ส่งผลต่อความเร็วเริ่มต้น (v)</p>
+                </div>
+
+                <!-- Target Charge Slider -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">ประจุนิวเคลียสเป้าหมาย (Z)</span>
+                        <span id="val-charge" class="font-mono text-amber-300">79 (Au)</span>
+                    </div>
+                    <input type="range" id="slider-charge" min="10" max="100" step="1" value="79" class="w-full h-1.5 bg-slate-700 rounded-lg cursor-pointer">
+                    <p class="text-[9px] text-slate-500 mt-1">ทองคำ (Au) มี Z = 79</p>
+                </div>
+
+                <!-- Impact Parameter Slider -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">ระยะเฉียด (Impact Parameter, b)</span>
+                        <span id="val-b" class="font-mono text-slate-300">0.5 fm</span>
+                    </div>
+                    <input type="range" id="slider-b" min="-5" max="5" step="0.1" value="0.5" class="w-full h-1.5 bg-slate-700 rounded-lg cursor-pointer">
+                    <div class="flex justify-between text-[9px] text-slate-500 mt-1">
+                        <span>ชนตรงกลาง (b=0)</span>
+                        <span>เฉียดห่างๆ</span>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="pt-2 grid grid-cols-2 gap-2">
+                    <button id="btn-fire-single" class="bg-alpha hover:bg-red-500 text-white text-sm py-2 rounded-lg font-medium transition-all shadow-lg shadow-red-900/50 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-bullseye"></i> ยิง 1 อนุภาค
+                    </button>
+                    <button id="btn-fire-beam" class="bg-amber-600 hover:bg-amber-500 text-white text-sm py-2 rounded-lg font-medium transition-all shadow-lg shadow-amber-900/50 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-stream"></i> ยิงเป็นลำแสง
+                    </button>
+                </div>
+                <button id="btn-clear" class="w-full bg-slate-700 hover:bg-slate-600 text-white text-xs py-1.5 rounded-lg transition-colors mt-2">
+                    ล้างรอยเส้นทาง (Clear Trails)
+                </button>
+            </div>
+        </aside>
+
+        <aside class="absolute top-4 right-4 w-72 glass-panel rounded-xl flex flex-col z-10 pointer-events-none">
+            <div class="p-4 border-b border-slate-700/50">
+                <h2 class="text-sm font-semibold text-screen flex items-center gap-2 uppercase tracking-wide">
+                    <i class="fa-solid fa-chart-line"></i> ข้อมูลการกระเจิงล่าสุด
+                </h2>
+            </div>
+            
+            <div class="p-4 space-y-4">
+                
+                <!-- Status -->
+                <div class="flex items-center justify-between bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                    <div class="text-xs text-slate-400">มุมกระเจิง (Scattering Angle, $\theta$)</div>
+                    <div id="readout-angle" class="font-mono text-xl font-bold text-screen">
+                        0.0°
+                    </div>
+                </div>
+
+                <div class="bg-slate-900/80 rounded-lg p-3 border border-slate-600 space-y-2">
+                    <h3 class="text-[11px] font-semibold text-slate-300 border-b border-slate-700 pb-1 mb-2">แรงคูลอมบ์ (Coulomb Force)</h3>
+                    <div class="math-display">$$F = \frac{1}{4\pi\varepsilon_0} \frac{(2e)(Ze)}{r^2}$$</div>
+                    <div class="text-[10px] text-slate-400 mt-2 space-y-1">
+                        <div class="flex justify-between">
+                            <span>ประจุ Alpha ($q_1$):</span>
+                            <span class="text-alpha">+2e</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>ประจุเป้าหมาย ($q_2$):</span>
+                            <span id="readout-target-q" class="text-amber-400">+79e</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                    <div class="text-xs font-semibold text-slate-300 mb-1">การวิเคราะห์ผล</div>
+                    <p id="analysis-text" class="text-[10px] text-slate-400 leading-relaxed">
+                        รอการยิงอนุภาค... หากยิงตรงกลาง (b=0) อนุภาคจะสะท้อนกลับ (180°) แต่ส่วนใหญ่จะทะลุผ่านไปตรงๆ บ่งบอกว่าอะตอมส่วนใหญ่คือพื้นที่ว่าง
+                    </p>
+                </div>
+            </div>
+        </aside>
+
+        <div id="theory-modal" class="hidden absolute inset-0 bg-slate-900/90 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+            <div class="bg-slate-800 border border-slate-600 rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl pointer-events-auto">
+                <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50 rounded-t-xl shrink-0">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-book-open text-indigo-400"></i> ทฤษฎีการกระเจิงของรัทเทอร์ฟอร์ด</h2>
+                    <button id="btn-close-modal" class="text-slate-400 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                
+                <div class="p-6 overflow-y-auto space-y-6 text-sm text-slate-300 leading-relaxed">
+                    
+                    <section>
+                        <h3 class="text-amber-400 font-semibold mb-2 text-base">1. การจัดอุปกรณ์ทดลอง (The Setup)</h3>
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li><strong class="text-alpha">แหล่งกำเนิดอนุภาคแอลฟา (Alpha Source):</strong> กล่องตะกั่วเจาะรูปล่อยลำอนุภาคแอลฟา (ประจุบวก +2e, มวลมาก)</li>
+                            <li><strong class="text-nucleus">แผ่นทองคำเปลว (Gold Foil):</strong> ตีจนบางเฉียบ วางเป็นเป้าหมาย ทองคำมีนิวเคลียสขนาดใหญ่ (Z=79)</li>
+                            <li><strong class="text-screen">ฉากเรืองแสง (Fluorescent Screen):</strong> โค้งล้อมรอบ เมื่ออนุภาคแอลฟากระทบจะเกิดแสงวาบ (Scintillation) ทำให้รู้ว่ากระเจิงไปมุมใด</li>
+                        </ul>
+                    </section>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <section class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                            <h3 class="text-indigo-400 font-semibold mb-2">แบบจำลองพุดดิ้งลูกเกด (Thomson)</h3>
+                            <p class="text-[11px] mb-2">เชื่อว่าอะตอมเป็นก้อนประจุบวกเนื้อเดียว และมีอิเล็กตรอนฝังอยู่</p>
+                            <p class="text-[11px] text-slate-400"><strong>ผลลัพธ์ที่คาด:</strong> อนุภาคแอลฟาซึ่งมีมวลมากและวิ่งเร็วมาก ควรจะทะลุผ่านไปได้ตรงๆ ทั้งหมด หรือเบี่ยงเบนเพียงเล็กน้อยมาก (ไม่เกิน 1 องศา) เพราะประจุบวกกระจายตัวเบาบางไม่หนาแน่นพอจะผลักแอลฟา</p>
+                        </section>
+                        <section class="bg-slate-900/50 p-4 rounded-lg border border-amber-900/50">
+                            <h3 class="text-amber-400 font-semibold mb-2">แบบจำลองนิวเคลียร์ (Rutherford)</h3>
+                            <p class="text-[11px] mb-2">เสนอใหม่ว่า อะตอมส่วนใหญ่คือพื้นที่ว่าง แต่มี "นิวเคลียส" เล็กจิ๋วตรงกลางที่มีมวลและประจุบวกมหาศาล</p>
+                            <p class="text-[11px] text-slate-400"><strong>ผลการทดลองจริง:</strong> ส่วนใหญ่ทะลุตรง (พื้นที่ว่าง) แต่มีบางส่วนที่กระเจิงมุมกว้าง หรือ "สะท้อนกลับด้านหลัง" ซึ่งเกิดจากการพุ่งชนนิวเคลียสตรงๆ แรงผลักคูลอมบ์ทำให้มันสะท้อนกลับ</p>
+                        </section>
+                    </div>
+
+                    <section>
+                        <h3 class="text-white font-semibold mb-2">ปัจจัยที่มีผลต่อมุมกระเจิง ($\theta$)</h3>
+                        <div class="space-y-2 text-[11px]">
+                            <p>1. <strong>ระยะเฉียด (Impact Parameter, $b$):</strong> ยิ่งค่านี้น้อย (เล็งใกล้จุดศูนย์กลางนิวเคลียส) มุมกระเจิงจะยิ่งกว้าง หาก $b=0$ จะสะท้อนกลับ 180°</p>
+                            <p>2. <strong>พลังงานจลน์ของอนุภาคแอลฟา ($E_k$ หรือ $v$):</strong> พลังงานสูง (วิ่งเร็ว) จะทะลวงผ่านแรงผลักไปได้ง่าย มุมหักเหจะน้อยลง</p>
+                            <p>3. <strong>ประจุเป้าหมาย ($Z$):</strong> ยิ่งนิวเคลียสมีโปรตอนมาก (ประจุบวกสูง) แรงผลักคูลอมบ์ยิ่งรุนแรง มุมกระเจิงจะกว้างขึ้น</p>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 1. Physics & State Variables ---
+        const COULOMB_CONSTANT = 50.0; // Scaled for visual simulation
+        const ALPHA_MASS = 1.0; 
+        const ALPHA_CHARGE = 2.0;
+        
+        let currentModel = 'nuclear'; // 'thomson' or 'nuclear'
+        let alphaEnergy = 10; // Maps to initial velocity
+        let targetCharge = 79;
+        let impactParameter = 0.5;
+        
+        let isBeamMode = false;
+        let beamTimer = 0;
+
+        let activeParticles = []; // Store flying alphas
+        let trails = []; // Store lines
+        
+        // --- 2. Three.js Setup ---
+        let scene, camera, renderer, controls;
+        const clock = new THREE.Clock();
+        
+        let targetNucleus, thomsonCloud;
+        let screenMesh;
+        let emitterBox;
+        let flashesGroup;
+
+        // UI Elements
+        const ui = {
+            btnThomson: document.getElementById('btn-model-thomson'),
+            btnRutherford: document.getElementById('btn-model-rutherford'),
+            slEnergy: document.getElementById('slider-energy'),
+            slCharge: document.getElementById('slider-charge'),
+            slB: document.getElementById('slider-b'),
+            valEnergy: document.getElementById('val-energy'),
+            valCharge: document.getElementById('val-charge'),
+            valB: document.getElementById('val-b'),
+            btnFireSingle: document.getElementById('btn-fire-single'),
+            btnFireBeam: document.getElementById('btn-fire-beam'),
+            btnClear: document.getElementById('btn-clear'),
+            btnCamera: document.getElementById('btn-camera'),
+            readAngle: document.getElementById('readout-angle'),
+            readTargetQ: document.getElementById('readout-target-q'),
+            analysisText: document.getElementById('analysis-text'),
+            modal: document.getElementById('theory-modal'),
+            btnInfo: document.getElementById('btn-info'),
+            btnClose: document.getElementById('btn-close-modal')
+        };
+
+        init();
+        animate();
+
+        function init() {
+            const container = document.getElementById('canvas-container');
+            
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color('#0f172a');
+            // Subtle grid to give spatial awareness
+            const grid = new THREE.GridHelper(40, 40, 0x334155, 0x1e293b);
+            grid.position.y = -5;
+            scene.add(grid);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 5, 25);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three-canvas'), antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+            const pointLight = new THREE.PointLight(0xffffff, 0.8);
+            pointLight.position.set(0, 10, 10);
+            scene.add(pointLight);
+
+            flashesGroup = new THREE.Group();
+            scene.add(flashesGroup);
+
+            buildApparatus();
+            setupEvents();
+            updateUI();
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function buildApparatus() {
+            // 1. Target (Center)
+            // Nuclear Model (Tiny heavy gold dot)
+            const nucGeo = new THREE.SphereGeometry(0.3, 32, 32);
+            const nucMat = new THREE.MeshStandardMaterial({ 
+                color: 0xeab308, emissive: 0xb45309, roughness: 0.2, metalness: 1.0 
+            });
+            targetNucleus = new THREE.Mesh(nucGeo, nucMat);
+            scene.add(targetNucleus);
+
+            // Thomson Model (Diffused pinkish cloud)
+            const thomsonGeo = new THREE.SphereGeometry(3, 32, 32);
+            const thomsonMat = new THREE.MeshPhysicalMaterial({
+                color: 0xf472b6, transparent: true, opacity: 0.2, transmission: 0.9, roughness: 0.5
+            });
+            thomsonCloud = new THREE.Mesh(thomsonGeo, thomsonMat);
+            thomsonCloud.visible = false;
+            scene.add(thomsonCloud);
+            
+            // Add tiny electrons inside Thomson cloud just for visual
+            for(let i=0; i<15; i++) {
+                const e = new THREE.Mesh(new THREE.SphereGeometry(0.1), new THREE.MeshBasicMaterial({color: 0x3b82f6}));
+                e.position.set((Math.random()-0.5)*4, (Math.random()-0.5)*4, (Math.random()-0.5)*4);
+                thomsonCloud.add(e);
+            }
+
+            // 2. Fluorescent Screen (Curved cylinder behind target)
+            // Arc from -150 deg to +150 deg, leaving a gap for emitter
+            const screenGeo = new THREE.CylinderGeometry(15, 15, 4, 64, 1, true, Math.PI * 0.15, Math.PI * 1.7);
+            const screenMat = new THREE.MeshStandardMaterial({ 
+                color: 0x10b981, transparent: true, opacity: 0.1, side: THREE.DoubleSide,
+                emissive: 0x059669, emissiveIntensity: 0.2
+            });
+            screenMesh = new THREE.Mesh(screenGeo, screenMat);
+            scene.add(screenMesh);
+            
+            // Screen borders
+            const edges = new THREE.EdgesGeometry(screenGeo);
+            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x10b981, opacity: 0.5, transparent: true }));
+            screenMesh.add(line);
+
+            // 3. Alpha Emitter (Lead box)
+            const boxGeo = new THREE.BoxGeometry(2, 2, 4);
+            const boxMat = new THREE.MeshStandardMaterial({ color: 0x475569 }); // Lead color
+            emitterBox = new THREE.Mesh(boxGeo, boxMat);
+            emitterBox.position.set(0, 0, 18); // Outside screen gap
+            scene.add(emitterBox);
+
+            // Emitter hole
+            const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.1), new THREE.MeshBasicMaterial({color: 0x000000}));
+            hole.rotation.x = Math.PI/2;
+            hole.position.set(0, 0, -2);
+            emitterBox.add(hole);
+        }
+
+        function setupEvents() {
+            // Models
+            ui.btnThomson.addEventListener('click', () => setModel('thomson'));
+            ui.btnRutherford.addEventListener('click', () => setModel('nuclear'));
+
+            // Sliders
+            ui.slEnergy.addEventListener('input', (e) => {
+                alphaEnergy = parseInt(e.target.value);
+                let text = alphaEnergy < 5 ? "Low" : (alphaEnergy < 15 ? "Medium" : "High");
+                ui.valEnergy.textContent = text;
+            });
+            
+            ui.slCharge.addEventListener('input', (e) => {
+                targetCharge = parseInt(e.target.value);
+                let element = "Unknown";
+                if(targetCharge === 79) element = "Au";
+                else if(targetCharge === 29) element = "Cu";
+                else if(targetCharge === 47) element = "Ag";
+                else element = `Z=${targetCharge}`;
+                ui.valCharge.textContent = `${targetCharge} (${element})`;
+                ui.readTargetQ.textContent = `+${targetCharge}e`;
+            });
+
+            ui.slB.addEventListener('input', (e) => {
+                impactParameter = parseFloat(e.target.value);
+                ui.valB.textContent = `${impactParameter.toFixed(1)} fm`;
+            });
+
+            // Buttons
+            ui.btnFireSingle.addEventListener('click', () => {
+                isBeamMode = false;
+                fireParticle(impactParameter);
+            });
+
+            ui.btnFireBeam.addEventListener('click', () => {
+                isBeamMode = !isBeamMode;
+                ui.btnFireBeam.innerHTML = isBeamMode ? '<i class="fa-solid fa-stop"></i> หยุดลำแสง' : '<i class="fa-solid fa-stream"></i> ยิงเป็นลำแสง';
+                if(isBeamMode) {
+                    ui.btnFireBeam.classList.replace('bg-amber-600', 'bg-red-600');
+                } else {
+                    ui.btnFireBeam.classList.replace('bg-red-600', 'bg-amber-600');
+                }
+            });
+
+            ui.btnClear.addEventListener('click', clearTrails);
+
+            // Camera toggle
+            let isTopView = false;
+            ui.btnCamera.addEventListener('click', () => {
+                isTopView = !isTopView;
+                if(isTopView) {
+                    camera.position.set(0, 30, 0);
+                    camera.lookAt(0,0,0);
+                    ui.btnCamera.innerHTML = '<i class="fa-solid fa-cube text-amber-400"></i> มุมมอง 3D';
+                } else {
+                    camera.position.set(0, 5, 25);
+                    camera.lookAt(0,0,0);
+                    ui.btnCamera.innerHTML = '<i class="fa-solid fa-video text-amber-400"></i> มุมมองด้านบน (Top View)';
+                }
+            });
+
+            // Modals
+            ui.btnInfo.addEventListener('click', () => ui.modal.classList.remove('hidden'));
+            ui.btnClose.addEventListener('click', () => ui.modal.classList.add('hidden'));
+        }
+
+        function setModel(model) {
+            currentModel = model;
+            if(model === 'thomson') {
+                ui.btnThomson.classList.replace('bg-slate-700', 'bg-amber-600');
+                ui.btnThomson.classList.add('text-white', 'shadow-inner');
+                ui.btnThomson.classList.remove('text-slate-300');
+                
+                ui.btnRutherford.classList.replace('bg-amber-600', 'bg-slate-700');
+                ui.btnRutherford.classList.remove('text-white', 'shadow-inner');
+                ui.btnRutherford.classList.add('text-slate-300');
+
+                targetNucleus.visible = false;
+                thomsonCloud.visible = true;
+            } else {
+                ui.btnRutherford.classList.replace('bg-slate-700', 'bg-amber-600');
+                ui.btnRutherford.classList.add('text-white', 'shadow-inner');
+                ui.btnRutherford.classList.remove('text-slate-300');
+                
+                ui.btnThomson.classList.replace('bg-amber-600', 'bg-slate-700');
+                ui.btnThomson.classList.remove('text-white', 'shadow-inner');
+                ui.btnThomson.classList.add('text-slate-300');
+
+                targetNucleus.visible = true;
+                thomsonCloud.visible = false;
+            }
+        }
+
+        function fireParticle(bOffset) {
+            // Create particle mesh
+            const geo = new THREE.SphereGeometry(0.1, 8, 8);
+            const mat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+            const p = new THREE.Mesh(geo, mat);
+            
+            // Start at emitter hole
+            const startZ = 16.0;
+            p.position.set(bOffset, 0, startZ);
+            scene.add(p);
+
+            // Velocity (v = energy mapping)
+            const vBase = 10 + alphaEnergy; 
+            const velocity = new THREE.Vector3(0, 0, -vBase); // Move along -Z
+
+            // Trail
+            const trailMat = new THREE.LineBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.5 });
+            const trailGeo = new THREE.BufferGeometry();
+            const trailLine = new THREE.Line(trailGeo, trailMat);
+            scene.add(trailLine);
+            trails.push(trailLine);
+
+            activeParticles.push({
+                mesh: p,
+                vel: velocity,
+                path: [p.position.clone()],
+                trailLine: trailLine,
+                b: bOffset, // store initial impact param
+                alive: true
+            });
+        }
+
+        function clearTrails() {
+            trails.forEach(t => scene.remove(t));
+            trails = [];
+            // Remove active particles
+            activeParticles.forEach(p => {
+                scene.remove(p.mesh);
+            });
+            activeParticles = [];
+            // Clear flashes
+            while(flashesGroup.children.length > 0) flashesGroup.remove(flashesGroup.children[0]);
+            
+            ui.readAngle.textContent = "0.0°";
+            ui.analysisText.textContent = "ล้างข้อมูลแล้ว รอการยิงครั้งถัดไป...";
+        }
+
+        function createScintillation(position) {
+            // Flash on the 3D screen
+            const flashMat = new THREE.MeshBasicMaterial({ color: 0x10b981 });
+            const flash = new THREE.Mesh(new THREE.SphereGeometry(0.2), flashMat);
+            flash.position.copy(position);
+            flashesGroup.add(flash);
+
+            // Animate it fading out in the render loop by shrinking/fading
+            flash.userData = { life: 1.0 };
+        }
+
+        function updateUI(finalVelVec, initialB) {
+            if(!finalVelVec) return;
+            
+            // Calculate angle from original trajectory (-Z axis)
+            // Initial is (0,0,-1). Dot product to find angle.
+            const initialDir = new THREE.Vector3(0, 0, -1);
+            const finalDir = finalVelVec.clone().normalize();
+            
+            let angleRad = initialDir.angleTo(finalDir);
+            let angleDeg = angleRad * 180 / Math.PI;
+            
+            ui.readAngle.textContent = `${angleDeg.toFixed(1)}°`;
+
+            if (currentModel === 'thomson') {
+                ui.analysisText.textContent = "แบบจำลอง Thomson: ประจุบวกกระจายเบาบาง อนุภาคทะลุผ่านไปตรงๆ (หักเหน้อยมาก) ซึ่งขัดแย้งกับการทดลองจริง";
+            } else {
+                if (angleDeg < 5) {
+                    ui.analysisText.textContent = "ทะลุผ่าน (หักเหน้อย): อนุภาคบินผ่านพื้นที่ว่างในอะตอม ซึ่งมีขนาดกว้างใหญ่มาก";
+                } else if (angleDeg < 90) {
+                    ui.analysisText.textContent = "กระเจิงมุมกว้าง: อนุภาคเฉียดใกล้นิวเคลียส ถูกแรงผลักคูลอมบ์ผลักออก";
+                } else {
+                    ui.analysisText.textContent = "สะท้อนกลับ (Backscatter): ชนตรงๆ เข้ากับนิวเคลียสที่หนาแน่นและมีประจุบวกมหาศาล!";
+                }
+            }
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = Math.min(clock.getDelta(), 0.03); // cap delta
+            
+            controls.update();
+
+            // Handle Beam Firing
+            if(isBeamMode) {
+                beamTimer += delta;
+                if(beamTimer > 0.1) { // Fire 10 times a sec
+                    beamTimer = 0;
+                    // Random impact parameter between -5 and 5, biased towards center to show effects
+                    let randB = (Math.random() - 0.5) * 10;
+                    // Slightly centralize it
+                    randB = randB * Math.random(); 
+                    fireParticle(randB);
+                }
+            }
+
+            // Handle Active Particles
+            for (let i = activeParticles.length - 1; i >= 0; i--) {
+                let p = activeParticles[i];
+                if(!p.alive) continue;
+
+                const pos = p.mesh.position;
+                
+                // --- PHYSICS ENGINE ---
+                if (currentModel === 'nuclear') {
+                    // Rutherford: F = k * (Z_alpha * Z_target) / r^2
+                    const rVec = pos.clone(); // target is at (0,0,0)
+                    const r2 = rVec.lengthSq();
+                    
+                    if (r2 > 0.1) { // Prevent singularity dividing by zero
+                        // Force direction (repulsive, away from center)
+                        const dir = rVec.clone().normalize();
+                        // Magnitude
+                        const forceMag = (COULOMB_CONSTANT * ALPHA_CHARGE * targetCharge) / r2;
+                        
+                        // F = ma -> a = F/m
+                        const accel = dir.multiplyScalar(forceMag / ALPHA_MASS);
+                        
+                        // Update Velocity
+                        p.vel.add(accel.multiplyScalar(delta));
+                    }
+                } else {
+                    // Thomson: Very weak force or random scatter
+                    // Simulate slight scattering by adding a tiny random velocity once it passes center
+                    if (pos.z < 0 && pos.length() < 3) {
+                        p.vel.x += (Math.random() - 0.5) * 0.5;
+                        p.vel.y += (Math.random() - 0.5) * 0.5;
+                    }
+                }
+
+                // Update Position
+                pos.add(p.vel.clone().multiplyScalar(delta));
+                
+                // Add to trail path (throttle updates for performance)
+                if (p.path.length < 500) {
+                    const lastPt = p.path[p.path.length-1];
+                    if (lastPt.distanceTo(pos) > 0.5) {
+                        p.path.push(pos.clone());
+                        p.trailLine.geometry.setFromPoints(p.path);
+                    }
+                }
+
+                // Check collision with Fluorescent Screen (Radius = 15)
+                const distToCenter = Math.sqrt(pos.x*pos.x + pos.z*pos.z);
+                if (distToCenter >= 14.8 && distToCenter <= 15.2 && pos.length() > 5) {
+                    // It hit the screen
+                    createScintillation(pos.clone());
+                    updateUI(p.vel, p.b);
+                    p.alive = false;
+                    scene.remove(p.mesh); // hide particle
+                }
+                
+                // Remove if it flies too far away (e.g. backscattered past emitter)
+                if (pos.length() > 30) {
+                    p.alive = false;
+                    scene.remove(p.mesh);
+                }
+            }
+            
+            // Clean up dead particles array
+            activeParticles = activeParticles.filter(p => p.alive);
+
+            // Animate flashes
+            for (let i = flashesGroup.children.length - 1; i >= 0; i--) {
+                let flash = flashesGroup.children[i];
+                flash.userData.life -= delta * 2.0; // fade out in 0.5s
+                if (flash.userData.life <= 0) {
+                    flashesGroup.remove(flash);
+                } else {
+                    flash.scale.setScalar(1 + (1 - flash.userData.life) * 2);
+                    flash.material.opacity = flash.userData.life;
+                    flash.material.transparent = true;
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>

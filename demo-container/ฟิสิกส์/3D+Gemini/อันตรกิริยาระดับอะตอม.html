@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>อันตรกิริยาระดับอะตอม (Atomic Interactions & Lennard-Jones Potential)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        panelBg: 'rgba(30, 41, 59, 0.85)',
+                        repel: '#ef4444',     // Red for repulsion
+                        attract: '#3b82f6',   // Blue for attraction
+                        equilibrium: '#10b981', // Green for stable bond
+                        energy: '#f59e0b'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Sarabun', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        input[type=range] { accent-color: #8b5cf6; }
+        
+        .math-display { font-size: 0.85rem; color: #e2e8f0; }
+
+        /* Custom graph canvas styling */
+        #graph-container {
+            width: 100%;
+            height: 200px;
+            position: relative;
+            border-radius: 0.5rem;
+            background: #1e293b;
+            border: 1px solid #334155;
+            overflow: hidden;
+        }
+        #graph-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col">
+
+    <header class="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 z-20 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-atom text-white text-sm"></i>
+            </div>
+            <a href="../physics.html">
+                <h1 class="text-base font-semibold tracking-wide flex items-center gap-2">
+                อันตรกิริยาระดับอะตอม 
+                <span class="text-xs font-normal text-slate-400 bg-slate-800 px-2 py-0.5 rounded">Atomic Interactions</span>
+            </h1>
+            </a>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="btn-info" class="bg-indigo-600 hover:bg-indigo-500 text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-book-open text-white"></i> ทฤษฎี & ความรู้
+            </button>
+        </div>
+    </header>
+
+    <div class="flex-1 relative overflow-hidden flex">
+        
+        <!-- ThreeJS Canvas -->
+        <div id="canvas-container" class="absolute inset-0 w-full h-full z-0 cursor-move">
+            <canvas id="three-canvas"></canvas>
+        </div>
+
+        <!-- Left HUD: Controls -->
+        <aside class="absolute top-4 left-4 w-80 glass-panel rounded-xl flex flex-col z-10 max-h-[calc(100vh-6rem)] overflow-y-auto">
+            <div class="p-4 border-b border-slate-700/50">
+                <h2 class="text-sm font-semibold text-indigo-400 flex items-center gap-2 uppercase tracking-wide">
+                    <i class="fa-solid fa-sliders"></i> ควบคุมตัวแปร
+                </h2>
+            </div>
+            
+            <div class="p-4 space-y-5">
+                
+                <!-- Atom Pairs Preset -->
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">เลือกคู่สสาร (Atom Pair Preset)</label>
+                    <select id="select-preset" class="w-full bg-slate-800/80 border border-slate-600 rounded-md p-2 text-sm focus:outline-none focus:border-indigo-500 text-slate-200">
+                        <option value="custom">ปรับแต่งเอง (Custom)</option>
+                        <option value="argon">อาร์กอน-อาร์กอน (Ar-Ar) - Van der Waals</option>
+                        <option value="hydrogen">ไฮโดรเจน-ไฮโดรเจน (H-H) - Covalent Bond</option>
+                    </select>
+                </div>
+
+                <!-- Distance Slider (r) -->
+                <div class="bg-slate-900/50 p-3 rounded-lg border border-slate-700">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300 font-semibold">ระยะห่างระหว่างนิวเคลียส (r)</span>
+                        <span id="val-distance" class="font-mono text-indigo-300">1.50 σ</span>
+                    </div>
+                    <input type="range" id="slider-distance" min="0.8" max="4.0" step="0.01" value="1.5" class="w-full h-1.5 bg-slate-700 rounded-lg cursor-pointer">
+                    <div class="text-[10px] text-slate-500 mt-1 flex justify-between">
+                        <span>ชิดเกินไป (ผลัก)</span>
+                        <span>ไกลเกินไป (อิสระ)</span>
+                    </div>
+                </div>
+
+                <!-- Well Depth Slider (epsilon) -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">ความลึกบ่อศักย์ / ความแข็งแรงพันธะ (ε)</span>
+                        <span id="val-epsilon" class="font-mono text-indigo-300">1.00 u</span>
+                    </div>
+                    <input type="range" id="slider-epsilon" min="0.1" max="3.0" step="0.1" value="1.0" class="w-full h-1.5 bg-slate-700 rounded-lg cursor-pointer">
+                </div>
+
+                <!-- Sigma Slider (size) -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">ขนาดรัศมีอ้างอิง (σ)</span>
+                        <span id="val-sigma" class="font-mono text-indigo-300">1.00 u</span>
+                    </div>
+                    <input type="range" id="slider-sigma" min="0.5" max="2.0" step="0.1" value="1.0" class="w-full h-1.5 bg-slate-700 rounded-lg cursor-pointer">
+                </div>
+
+                <!-- Action Button -->
+                <div class="pt-2">
+                    <button id="btn-snap" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-sm py-2 rounded-lg font-medium transition-all shadow-lg shadow-emerald-900/50 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-compress-arrows-alt"></i> ปล่อยสู่จุดสมดุล (Snap to Equilibrium)
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <aside class="absolute top-4 right-4 w-[22rem] glass-panel rounded-xl flex flex-col z-10 pointer-events-auto">
+            <div class="p-4 border-b border-slate-700/50">
+                <h2 class="text-sm font-semibold text-emerald-400 flex items-center gap-2 uppercase tracking-wide">
+                    <i class="fa-solid fa-chart-line"></i> กราฟพลังงานศักย์ (Lennard-Jones)
+                </h2>
+            </div>
+            
+            <div class="p-4 space-y-4">
+                
+                <!-- Status & Forces -->
+                <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                    <div class="flex justify-between items-center mb-2">
+                        <div class="text-xs text-slate-400">สถานะปัจจุบัน</div>
+                        <div id="status-badge" class="px-2 py-1 rounded text-xs font-bold bg-slate-700 text-white">
+                            ดึงดูด (Attracting)
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-2 border-t border-slate-700 pt-2">
+                        <div>
+                            <div class="text-[10px] text-slate-400">พลังงานศักย์ (V)</div>
+                            <div class="font-mono text-sm font-bold" id="readout-v">-0.50 ε</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-slate-400">แรงลัพธ์ (F)</div>
+                            <div class="font-mono text-sm font-bold" id="readout-f">-0.20 N</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Equation -->
+                <div class="text-center">
+                    <div class="math-display">$$V(r) = 4\epsilon \left[ \left(\frac{\sigma}{r}\right)^{12} - \left(\frac{\sigma}{r}\right)^6 \right]$$</div>
+                </div>
+
+                <!-- Canvas Graph -->
+                <div id="graph-container">
+                    <canvas id="graph-canvas"></canvas>
+                    
+                    <!-- Graph Labels Overlay -->
+                    <div class="absolute top-1 left-2 text-[9px] text-slate-400">พลังงาน (V)</div>
+                    <div class="absolute bottom-1 right-2 text-[9px] text-slate-400">ระยะ (r)</div>
+                    <div class="absolute top-1/2 left-0 w-full h-[1px] bg-slate-500/50 border-dashed" style="transform: translateY(-50%);"></div> <!-- Zero line -->
+                </div>
+                
+                <div class="text-[10px] text-slate-400 leading-tight">
+                    * จุดต่ำสุดของกราฟ (Potential Well) คือจุดที่อะตอมเสถียรที่สุด เกิดการสร้างพันธะ
+                </div>
+            </div>
+        </aside>
+
+        <div id="theory-modal" class="hidden absolute inset-0 bg-slate-900/90 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+            <div class="bg-slate-800 border border-slate-600 rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl pointer-events-auto">
+                <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50 rounded-t-xl shrink-0">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-book-open text-indigo-400"></i> ทฤษฎีอันตรกิริยาระดับอะตอม</h2>
+                    <button id="btn-close-modal" class="text-slate-400 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                
+                <div class="p-6 overflow-y-auto space-y-6 text-sm text-slate-300 leading-relaxed">
+                    
+                    <section>
+                        <h3 class="text-amber-400 font-semibold mb-2 text-base flex items-center gap-2">
+                            1. แรงพื้นฐาน 2 ชนิดในระดับอะตอม
+                        </h3>
+                        <p class="mb-2">เมื่ออะตอมสองตัววิ่งเข้าหากัน จะเกิดแรงกระทำตาม กฎของคูลอมบ์ (Coulomb's Law) สองรูปแบบควบคู่กัน:</p>
+                        <ul class="list-disc pl-5 space-y-1">
+                            <li><strong class="text-attract">แรงดึงดูด (Attractive Force):</strong> เกิดขึ้นระหว่าง <em>ประจุบวกของนิวเคลียส</em> ของอะตอมหนึ่ง กับ <em>ประจุลบของกลุ่มหมอกอิเล็กตรอน</em> ของอีกอะตอมหนึ่ง</li>
+                            <li><strong class="text-repel">แรงผลัก (Repulsive Force / Pauli Repulsion):</strong> เกิดขึ้นเมื่ออะตอมเข้าใกล้กันมากเกินไป จนทำให้ <em>นิวเคลียส (บวกกับบวก)</em> หรือ <em>อิเล็กตรอน (ลบกับลบ)</em> ของทั้งสองฝ่ายผลักกันเองตามหลักการกีดกันของเพาลี (Pauli exclusion principle)</li>
+                        </ul>
+                    </section>
+
+                    <section>
+                        <h3 class="text-emerald-400 font-semibold mb-2 text-base flex items-center gap-2">
+                            2. กราฟพลังงานศักย์ (Lennard-Jones Potential Curve) กับจุดสมดุล
+                        </h3>
+                        <p class="mb-2">พฤติกรรมนี้อธิบายด้วยกราฟพลังงานศักย์ตามระยะห่างระหว่างนิวเคลียส (Internuclear Distance):</p>
+                        <div class="bg-slate-900/50 p-4 rounded-lg border border-slate-700 text-xs">
+                            <ul class="space-y-2">
+                                <li><span class="text-slate-100 font-semibold">ระยะไกลกันมาก (ขวาสุด):</span> พลังงานศักย์เข้าใกล้ศูนย์ อะตอมแทบไม่มีอันตรกิริยาต่อกัน</li>
+                                <li><span class="text-attract font-semibold">ระยะเริ่มเข้าใกล้:</span> แรงดึงดูดชนะ พลังงานศักย์ของระบบจะลดลง (กราฟดิ่งลง) บ่งบอกถึงระบบที่เสถียรขึ้น</li>
+                                <li><span class="text-equilibrium font-semibold">จุดต่ำสุดของกราฟ (Equilibrium / Bond Length):</span> เป็นจุดที่ <ins>แรงดึงดูดและแรงผลักหักล้างกันพอดี (F=0)</ins> ระบบมีความเสถียรสูงสุด อะตอมจะสร้างพันธะกัน ณ ระยะนี้ ความลึกของบ่อศักย์ (Potential Well Depth, $\epsilon$) บ่งบอกถึงพลังงานพันธะ</li>
+                                <li><span class="text-repel font-semibold">ระยะชิดกันเกินไป (ซ้ายสุด):</span> หากบีบให้อะตอมชิดกันกว่านี้ แรงผลักจะเพิ่มขึ้นมหาศาล ทำให้พลังงานศักย์พุ่งสูงขึ้นอย่างรวดเร็ว (กราฟชันขึ้นทันที)</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 class="text-indigo-400 font-semibold mb-2 text-base flex items-center gap-2">
+                            3. ประเภทของอันตรกิริยาที่พบบ่อย
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-slate-900/50 p-3 rounded-lg border border-slate-700">
+                                <h4 class="font-semibold text-slate-200">พันธะเคมี (Chemical Bonds)</h4>
+                                <p class="text-[11px] mt-1">เช่น พันธะโควาเลนต์ มีการแชร์อิเล็กตรอนร่วมกัน มีบ่อศักย์ที่ลึกมาก (ค่า $\epsilon$ สูง) ทำให้ยึดเหนี่ยวกันอย่างแข็งแรง</p>
+                            </div>
+                            <div class="bg-slate-900/50 p-3 rounded-lg border border-slate-700">
+                                <h4 class="font-semibold text-slate-200">แรงแวนเดอร์วาลส์ (Van der Waals)</h4>
+                                <p class="text-[11px] mt-1">เป็นอันตรกิริยาอ่อนๆ เช่น London dispersion forces เกิดจากขั้วชั่วคราว มีบ่อศักย์ตื้น (ค่า $\epsilon$ ต่ำ) ยึดเหนี่ยวกันได้ไม่แข็งแรง</p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Physics Variables ---
+        let r = 1.5; // current distance (multiples of sigma technically)
+        let epsilon = 1.0; // well depth
+        let sigma = 1.0; // distance at which V=0
+        
+        let currentV = 0;
+        let currentF = 0;
+        
+        let isAnimatingToEq = false; // flag for "Snap" feature
+
+        // --- 2. Three.js Setup ---
+        let scene, camera, renderer, controls;
+        let atom1, atom2, nucleus1, nucleus2;
+        let arrowAttract1, arrowAttract2, arrowRepel1, arrowRepel2;
+        let distanceLine;
+        
+        const clock = new THREE.Clock();
+
+        // UI Elements
+        const ui = {
+            slDist: document.getElementById('slider-distance'),
+            slEps: document.getElementById('slider-epsilon'),
+            slSig: document.getElementById('slider-sigma'),
+            selPreset: document.getElementById('select-preset'),
+            btnSnap: document.getElementById('btn-snap'),
+            
+            valDist: document.getElementById('val-distance'),
+            valEps: document.getElementById('val-epsilon'),
+            valSig: document.getElementById('val-sigma'),
+            
+            readV: document.getElementById('readout-v'),
+            readF: document.getElementById('readout-f'),
+            badgeStat: document.getElementById('status-badge'),
+            
+            canvas: document.getElementById('graph-canvas'),
+            ctx: document.getElementById('graph-canvas').getContext('2d'),
+            
+            modal: document.getElementById('theory-modal'),
+            btnInfo: document.getElementById('btn-info'),
+            btnClose: document.getElementById('btn-close-modal')
+        };
+
+        init();
+        animate();
+
+        function init() {
+            const container = document.getElementById('canvas-container');
+            
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color('#0f172a');
+            scene.fog = new THREE.FogExp2('#0f172a', 0.02);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 2, 8);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three-canvas'), antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.enablePan = false;
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 10, 5);
+            scene.add(dirLight);
+
+            // Build Scene Objects
+            buildAtoms();
+            
+            // Setup Events
+            setupEvents();
+            
+            // Initial calculations and graph draw
+            calculatePhysics();
+            updatePositions();
+            drawGraph();
+
+            window.addEventListener('resize', onWindowResize);
+            
+            // Handle high DPI for canvas graph
+            resizeGraphCanvas();
+        }
+
+        function buildAtoms() {
+            // Atom Materials
+            // Cloud: semi-transparent, additive blending to look like electron probability cloud
+            const cloudGeo = new THREE.SphereGeometry(1, 32, 32);
+            const cloudMat = new THREE.MeshPhysicalMaterial({
+                color: 0x818cf8, // Indigo
+                transparent: true,
+                opacity: 0.3,
+                roughness: 0.1,
+                transmission: 0.9,
+                thickness: 0.5
+            });
+
+            // Nucleus: small solid core
+            const nucGeo = new THREE.SphereGeometry(0.15, 16, 16);
+            const nucMat = new THREE.MeshStandardMaterial({
+                color: 0xf43f5e, // Rose/Red for positive nucleus
+                emissive: 0x9f1239,
+                roughness: 0.4
+            });
+
+            // Atom 1 (Left - Fixed near center)
+            atom1 = new THREE.Group();
+            const c1 = new THREE.Mesh(cloudGeo, cloudMat);
+            nucleus1 = new THREE.Mesh(nucGeo, nucMat);
+            atom1.add(c1);
+            atom1.add(nucleus1);
+            scene.add(atom1);
+
+            // Atom 2 (Right - Movable)
+            atom2 = new THREE.Group();
+            const c2 = new THREE.Mesh(cloudGeo, cloudMat);
+            nucleus2 = new THREE.Mesh(nucGeo, nucMat);
+            atom2.add(c2);
+            atom2.add(nucleus2);
+            scene.add(atom2);
+
+            // Distance Line
+            const lineMat = new THREE.LineDashedMaterial({ color: 0x94a3b8, dashSize: 0.1, gapSize: 0.1 });
+            const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(1,0,0)]);
+            distanceLine = new THREE.Line(lineGeo, lineMat);
+            distanceLine.computeLineDistances();
+            scene.add(distanceLine);
+
+            // Force Arrows
+            // dir, origin, length, color, headLength, headWidth
+            const attractColor = 0x3b82f6;
+            const repelColor = 0xef4444;
+
+            arrowAttract1 = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(0,0,0), 1, attractColor, 0.3, 0.2);
+            arrowAttract2 = new THREE.ArrowHelper(new THREE.Vector3(-1,0,0), new THREE.Vector3(0,0,0), 1, attractColor, 0.3, 0.2);
+            
+            arrowRepel1 = new THREE.ArrowHelper(new THREE.Vector3(-1,0,0), new THREE.Vector3(0,0,0), 1, repelColor, 0.3, 0.2);
+            arrowRepel2 = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(0,0,0), 1, repelColor, 0.3, 0.2);
+
+            scene.add(arrowAttract1, arrowAttract2, arrowRepel1, arrowRepel2);
+        }
+
+        function setupEvents() {
+            // Sliders
+            ui.slDist.addEventListener('input', (e) => {
+                r = parseFloat(e.target.value);
+                isAnimatingToEq = false; // cancel animation if user manually moves
+                updateAll();
+            });
+
+            ui.slEps.addEventListener('input', (e) => {
+                epsilon = parseFloat(e.target.value);
+                updateAll();
+            });
+
+            ui.slSig.addEventListener('input', (e) => {
+                sigma = parseFloat(e.target.value);
+                // Dynamically update distance slider range based on sigma to keep things visible
+                ui.slDist.min = (sigma * 0.75).toFixed(2);
+                ui.slDist.max = (sigma * 4.0).toFixed(2);
+                
+                // Keep r within new bounds
+                r = Math.max(parseFloat(ui.slDist.min), Math.min(r, parseFloat(ui.slDist.max)));
+                ui.slDist.value = r;
+                
+                updateAll();
+            });
+
+            // Presets
+            ui.selPreset.addEventListener('change', (e) => {
+                if (e.target.value === 'argon') {
+                    // Weak Van der Waals
+                    epsilon = 0.5;
+                    sigma = 1.5;
+                } else if (e.target.value === 'hydrogen') {
+                    // Strong Covalent
+                    epsilon = 2.5;
+                    sigma = 0.8;
+                }
+                
+                // Update sliders
+                ui.slEps.value = epsilon;
+                ui.slSig.value = sigma;
+                
+                // Trigger sigma change logic
+                ui.slSig.dispatchEvent(new Event('input'));
+                
+                updateAll();
+            });
+
+            // Snap Button
+            ui.btnSnap.addEventListener('click', () => {
+                isAnimatingToEq = true;
+            });
+
+            // Modals
+            ui.btnInfo.addEventListener('click', () => ui.modal.classList.remove('hidden'));
+            ui.btnClose.addEventListener('click', () => ui.modal.classList.add('hidden'));
+            
+            // Canvas resize observer
+            const resizeObserver = new ResizeObserver(() => {
+                resizeGraphCanvas();
+                drawGraph();
+            });
+            resizeObserver.observe(document.getElementById('graph-container'));
+        }
+
+        function calculatePhysics() {
+            // Lennard-Jones Potential: V(r) = 4*eps * ((sig/r)^12 - (sig/r)^6)
+            const sr = sigma / r;
+            const sr6 = Math.pow(sr, 6);
+            const sr12 = sr6 * sr6;
+            
+            currentV = 4 * epsilon * (sr12 - sr6);
+            
+            // Force: F(r) = -dV/dr = 4*eps * (12*(sig^12/r^13) - 6*(sig^6/r^7))
+            // Simplify: F(r) = 24 * eps * (2*(sig/r)^12 - (sig/r)^6) / r
+            currentF = (24 * epsilon * (2 * sr12 - sr6)) / r;
+            
+            // Update Text Readouts
+            ui.valDist.textContent = `${r.toFixed(2)} (r)`;
+            ui.valEps.textContent = `${epsilon.toFixed(2)} (ε)`;
+            ui.valSig.textContent = `${sigma.toFixed(2)} (σ)`;
+            
+            ui.readV.textContent = `${currentV.toFixed(2)} ε`;
+            // Clamp Force display if it goes to infinity when too close
+            let displayF = currentF > 100 ? "> 100" : (currentF < -100 ? "< -100" : currentF.toFixed(2));
+            ui.readF.textContent = `${displayF} นิวตัน(จำลอง)`;
+
+            // Determine State
+            const eqDistance = Math.pow(2, 1/6) * sigma; // roughly 1.122 * sigma
+            const tolerance = 0.05;
+
+            if (r < eqDistance - tolerance) {
+                ui.badgeStat.textContent = "ผลักกัน (Repelling)";
+                ui.badgeStat.className = "px-2 py-1 rounded text-xs font-bold bg-repel text-white shadow-lg shadow-red-500/30";
+            } else if (r > eqDistance + tolerance) {
+                // Determine if it's very far
+                if (r > sigma * 3) {
+                    ui.badgeStat.textContent = "อิสระ (No Interaction)";
+                    ui.badgeStat.className = "px-2 py-1 rounded text-xs font-bold bg-slate-600 text-white";
+                } else {
+                    ui.badgeStat.textContent = "ดึงดูด (Attracting)";
+                    ui.badgeStat.className = "px-2 py-1 rounded text-xs font-bold bg-attract text-white shadow-lg shadow-blue-500/30";
+                }
+            } else {
+                ui.badgeStat.textContent = "สมดุล / พันธะ (Equilibrium)";
+                ui.badgeStat.className = "px-2 py-1 rounded text-xs font-bold bg-equilibrium text-white shadow-lg shadow-green-500/30 animate-pulse";
+            }
+        }
+
+        function updatePositions() {
+            // Keep Atom 1 at origin, move Atom 2 to X = r
+            // Visually center them both around origin for better camera view
+            atom1.position.set(-r/2, 0, 0);
+            atom2.position.set(r/2, 0, 0);
+
+            // Scale clouds based on sigma (atomic radius)
+            atom1.children[0].scale.setScalar(sigma);
+            atom2.children[0].scale.setScalar(sigma);
+
+            // Update Distance Line
+            distanceLine.geometry.setFromPoints([atom1.position, atom2.position]);
+            distanceLine.computeLineDistances();
+
+            // Update Vectors based on Force
+            const baseScale = 0.5; // Visual scaling factor for arrows
+            // Repulsive is positive Force in our derivative, Attractive is negative.
+            // Let's visualize: 
+            // If F > 0 (repulsive), show red arrows pointing outwards.
+            // If F < 0 (attractive), show blue arrows pointing inwards.
+            
+            // Hide all first
+            arrowAttract1.visible = false; arrowAttract2.visible = false;
+            arrowRepel1.visible = false; arrowRepel2.visible = false;
+
+            const eqDistance = Math.pow(2, 1/6) * sigma;
+            
+            if (Math.abs(currentF) > 0.01) { // Ignore tiny forces
+                if (currentF > 0 && r < eqDistance) {
+                    // Repulsive (Red outwards)
+                    // Cap visual length
+                    let len = Math.min(currentF * 0.1, 2.0); 
+                    
+                    arrowRepel1.visible = true;
+                    arrowRepel1.position.copy(atom1.position);
+                    arrowRepel1.setLength(len, 0.3, 0.2);
+                    
+                    arrowRepel2.visible = true;
+                    arrowRepel2.position.copy(atom2.position);
+                    arrowRepel2.setLength(len, 0.3, 0.2);
+                    
+                } else if (currentF < 0 && r > eqDistance) {
+                    // Attractive (Blue inwards)
+                    let len = Math.min(Math.abs(currentF) * 0.5, 1.5);
+                    
+                    arrowAttract1.visible = true;
+                    // Position at outside edge pointing in
+                    arrowAttract1.position.copy(atom1.position).add(new THREE.Vector3(-len, 0, 0));
+                    arrowAttract1.setLength(len, 0.3, 0.2);
+                    
+                    arrowAttract2.visible = true;
+                    arrowAttract2.position.copy(atom2.position).add(new THREE.Vector3(len, 0, 0));
+                    arrowAttract2.setLength(len, 0.3, 0.2);
+                }
+            }
+        }
+
+        function resizeGraphCanvas() {
+            const container = document.getElementById('graph-container');
+            ui.canvas.width = container.clientWidth * window.devicePixelRatio;
+            ui.canvas.height = container.clientHeight * window.devicePixelRatio;
+        }
+
+        function drawGraph() {
+            const ctx = ui.ctx;
+            const w = ui.canvas.width;
+            const h = ui.canvas.height;
+            
+            ctx.clearRect(0, 0, w, h);
+            
+            // Define graph bounds (Logical units)
+            const xMin = sigma * 0.7; // Don't start at 0, asymptote goes to infinity
+            const xMax = sigma * 4.0;
+            const yMin = -epsilon * 1.5; // Room below the well
+            const yMax = epsilon * 1.5;  // Room above zero
+
+            // Mapping functions
+            const mapX = (val) => ((val - xMin) / (xMax - xMin)) * w;
+            const mapY = (val) => h - (((val - yMin) / (yMax - yMin)) * h);
+
+            // Draw Zero Axis (V = 0)
+            ctx.beginPath();
+            ctx.strokeStyle = "rgba(100, 116, 139, 0.5)"; // slate-500
+            ctx.setLineDash([5, 5]);
+            ctx.moveTo(0, mapY(0));
+            ctx.lineTo(w, mapY(0));
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw Curve
+            ctx.beginPath();
+            ctx.strokeStyle = "#f59e0b"; // amber-500 (Energy color)
+            ctx.lineWidth = 3 * window.devicePixelRatio;
+            
+            const steps = 100;
+            let firstPoint = true;
+            
+            for (let i = 0; i <= steps; i++) {
+                let rx = xMin + (i / steps) * (xMax - xMin);
+                
+                // Calculate V(rx)
+                let srx = sigma / rx;
+                let srx6 = Math.pow(srx, 6);
+                let vy = 4 * epsilon * ((srx6 * srx6) - srx6);
+                
+                // Cap vy so it doesn't draw way off screen and break rendering
+                if (vy > yMax * 2) vy = yMax * 2;
+                
+                let px = mapX(rx);
+                let py = mapY(vy);
+                
+                if (firstPoint) {
+                    ctx.moveTo(px, py);
+                    firstPoint = false;
+                } else {
+                    ctx.lineTo(px, py);
+                }
+            }
+            ctx.stroke();
+
+            // Draw Current State Marker
+            let currentPx = mapX(r);
+            let currentPy = mapY(currentV);
+
+            // Clamp marker visually if it goes off top
+            if (currentPy < 0) currentPy = 0;
+
+            ctx.beginPath();
+            ctx.arc(currentPx, currentPy, 6 * window.devicePixelRatio, 0, Math.PI * 2);
+            ctx.fillStyle = "#ffffff";
+            ctx.fill();
+            ctx.strokeStyle = "#000000";
+            ctx.lineWidth = 1 * window.devicePixelRatio;
+            ctx.stroke();
+            
+            // Draw drop line to X axis
+            ctx.beginPath();
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+            ctx.moveTo(currentPx, currentPy);
+            ctx.lineTo(currentPx, mapY(yMin));
+            ctx.stroke();
+        }
+
+        function updateAll() {
+            calculatePhysics();
+            updatePositions();
+            drawGraph();
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            
+            resizeGraphCanvas();
+            drawGraph();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = Math.min(clock.getDelta(), 0.1);
+            
+            controls.update();
+
+            // Handle Snap to Equilibrium Animation
+            if (isAnimatingToEq) {
+                const eqDistance = Math.pow(2, 1/6) * sigma; // r_m
+                
+                // Simple spring/lerp towards equilibrium
+                const diff = eqDistance - r;
+                if (Math.abs(diff) < 0.01) {
+                    r = eqDistance;
+                    isAnimatingToEq = false; // Arrived
+                } else {
+                    r += diff * 5.0 * delta; // Move towards eq
+                }
+                
+                // Update UI Slider to match simulation
+                ui.slDist.value = r;
+                
+                updateAll();
+            }
+
+            // Subtle idle wobble for atoms to make them feel "alive" (electron cloud fluctuation)
+            if (atom1 && atom2) {
+                const time = clock.getElapsedTime();
+                const wobble1 = 1.0 + Math.sin(time * 5) * 0.02;
+                const wobble2 = 1.0 + Math.cos(time * 4) * 0.02;
+                
+                atom1.children[0].scale.setScalar(sigma * wobble1);
+                atom2.children[0].scale.setScalar(sigma * wobble2);
+            }
+
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>

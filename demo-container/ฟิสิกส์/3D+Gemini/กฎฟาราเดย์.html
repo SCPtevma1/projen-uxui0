@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>กฎฟาราเดย์ (Faraday's Law of Induction)</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        panelBg: 'rgba(30, 41, 59, 0.85)',
+                        copper: '#b87333',
+                        magnetN: '#ef4444',
+                        magnetS: '#3b82f6',
+                        accent: '#f59e0b'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Sarabun', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- MathJax -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        input[type=range] { accent-color: #f59e0b; }
+        input[type=checkbox] { accent-color: #f59e0b; }
+        
+        .math-display { font-size: 0.85rem; color: #fde68a; }
+
+        /* Galvanometer CSS */
+        .meter-container {
+            position: relative;
+            width: 100%;
+            height: 100px;
+            background: #1e293b;
+            border-radius: 8px 8px 0 0;
+            border: 2px solid #334155;
+            border-bottom: none;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        .meter-bg {
+            position: absolute;
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            border: 4px solid #475569;
+            top: 20px;
+            background: #0f172a;
+        }
+        .meter-ticks {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+        }
+        .meter-needle {
+            position: absolute;
+            bottom: -5px;
+            width: 4px;
+            height: 90px;
+            background: #ef4444;
+            transform-origin: bottom center;
+            transform: rotate(0deg);
+            transition: transform 0.1s ease-out;
+            z-index: 10;
+            border-radius: 2px;
+        }
+        .meter-needle::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: -4px;
+            width: 12px;
+            height: 12px;
+            background: #cbd5e1;
+            border-radius: 50%;
+        }
+        .meter-zero {
+            position: absolute;
+            top: 10px;
+            font-size: 12px;
+            color: #94a3b8;
+            font-weight: bold;
+        }
+        
+        /* Draggable Area */
+        .slider-magnet-wrapper {
+            position: relative;
+            width: 100%;
+            padding: 20px 0;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col">
+
+    <header class="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 z-20 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
+                <i class="fa-solid fa-magnet text-white text-sm"></i>
+            </div>
+           <a href="../physics.html"> <h1 class="text-base font-semibold tracking-wide flex items-center gap-2">
+                กฎฟาราเดย์ 
+                <span class="text-xs font-normal text-slate-400 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">Faraday's Law</span>
+            </h1></a>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="btn-toggle-cam" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-video text-amber-400"></i> <span id="cam-mode-text">มุมมอง 2D</span>
+            </button>
+            <button id="btn-info" class="bg-indigo-600 hover:bg-indigo-500 text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-book-open text-white"></i> ทฤษฎี & ความรู้
+            </button>
+        </div>
+    </header>
+
+    <div class="flex-1 relative overflow-hidden flex">
+        
+        <!-- ThreeJS Canvas -->
+        <div id="canvas-container" class="absolute inset-0 w-full h-full z-0 cursor-move">
+            <canvas id="three-canvas"></canvas>
+        </div>
+
+        <aside class="absolute top-4 left-4 w-80 glass-panel rounded-xl flex flex-col z-10 max-h-[calc(100vh-6rem)] overflow-y-auto">
+            <div class="p-4 border-b border-slate-700/50">
+                <h2 class="text-sm font-semibold text-amber-400 flex items-center gap-2 uppercase tracking-wide">
+                    <i class="fa-solid fa-sliders"></i> ตั้งค่าการทดลอง
+                </h2>
+            </div>
+            
+            <div class="p-4 space-y-5">
+                
+                <!-- Coil Settings -->
+                <div class="bg-slate-900/50 p-3 rounded-lg border border-slate-700 space-y-3">
+                    <h3 class="text-xs font-semibold text-slate-200 border-b border-slate-700 pb-1"><i class="fa-solid fa-ring text-copper"></i> ขดลวด (Copper Coil)</h3>
+                    
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-400">จำนวนรอบ (N)</span>
+                            <span id="val-turns" class="font-mono text-amber-300">4 รอบ</span>
+                        </div>
+                        <input type="range" id="sl-turns" min="1" max="8" step="1" value="4" class="w-full h-1.5 bg-slate-600 rounded-lg cursor-pointer">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-400">พื้นที่หน้าตัด / ขนาด (A)</span>
+                            <span id="val-area" class="font-mono text-amber-300">กลาง</span>
+                        </div>
+                        <input type="range" id="sl-area" min="0.5" max="1.5" step="0.5" value="1.0" class="w-full h-1.5 bg-slate-600 rounded-lg cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- Magnet Settings -->
+                <div class="bg-slate-900/50 p-3 rounded-lg border border-slate-700 space-y-3">
+                    <h3 class="text-xs font-semibold text-slate-200 border-b border-slate-700 pb-1"><i class="fa-solid fa-magnet text-magnetN"></i> แท่งแม่เหล็ก (Magnet)</h3>
+                    
+                    <div class="slider-magnet-wrapper">
+                        <div class="flex justify-between text-[10px] text-slate-400 mb-1">
+                            <span>ดึงซ้าย</span>
+                            <span class="text-amber-400">เลื่อนแม่เหล็ก (x)</span>
+                            <span>ดึงขวา</span>
+                        </div>
+                        <input type="range" id="sl-magnet-pos" min="-8" max="8" step="0.1" value="5" class="w-full h-2 bg-slate-600 rounded-lg cursor-pointer">
+                    </div>
+
+                    <!-- Auto Play Controls -->
+                    <div class="pt-2 border-t border-slate-700">
+                        <div class="flex justify-between text-xs mb-2">
+                            <span class="text-slate-400">ความเร็วอัตโนมัติ (v)</span>
+                            <span id="val-speed" class="font-mono text-amber-300">ปานกลาง</span>
+                        </div>
+                        <input type="range" id="sl-speed" min="1" max="10" step="1" value="5" class="w-full h-1.5 bg-slate-600 rounded-lg cursor-pointer mb-3">
+                        
+                        <button id="btn-autoplay" class="w-full bg-amber-600 hover:bg-amber-500 text-white text-sm py-2 rounded-lg font-medium transition-all shadow-lg shadow-amber-900/50 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-play"></i> ขยับแม่เหล็กอัตโนมัติ
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Field Lines Toggle -->
+                <div class="flex items-center justify-between pt-2">
+                    <span class="text-xs text-slate-300">แสดงเส้นแรงแม่เหล็ก (B-Field)</span>
+                    <div class="relative inline-block w-10 align-middle select-none">
+                        <input type="checkbox" id="toggle-field" checked class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 transition-all duration-300 left-0 checked:left-5"/>
+                        <label for="toggle-field" class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-600 cursor-pointer transition-colors duration-300"></label>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <aside class="absolute top-4 right-4 w-[22rem] glass-panel rounded-xl flex flex-col z-10 pointer-events-none">
+            <div class="p-4 border-b border-slate-700/50">
+                <h2 class="text-sm font-semibold text-emerald-400 flex items-center gap-2 uppercase tracking-wide">
+                    <i class="fa-solid fa-bolt"></i> การเหนี่ยวนำไฟฟ้า
+                </h2>
+            </div>
+            
+            <div class="p-4 space-y-4">
+                
+                <!-- Galvanometer UI -->
+                <div>
+                    <div class="text-[10px] text-slate-400 mb-1 text-center">กัลวาโนมิเตอร์ (วัดทิศทางและขนาดกระแส)</div>
+                    <div class="meter-container">
+                        <div class="meter-bg"></div>
+                        <div class="meter-zero">0</div>
+                        <!-- Negative side (Left) -->
+                        <div class="absolute left-6 top-10 text-[10px] text-slate-500">-V</div>
+                        <!-- Positive side (Right) -->
+                        <div class="absolute right-6 top-10 text-[10px] text-slate-500">+V</div>
+                        <div class="meter-needle" id="meter-needle"></div>
+                    </div>
+                    <div class="bg-slate-800 border-x border-b border-slate-700 rounded-b-lg p-2 text-center">
+                        <div class="font-mono text-xl text-white font-bold" id="readout-emf">0.00 <span class="text-xs text-slate-400">V</span></div>
+                    </div>
+                </div>
+
+                <!-- Equation & Flux -->
+                <div class="bg-slate-900/80 rounded-lg p-3 border border-slate-600">
+                    <div class="text-[10px] text-slate-400 mb-1 border-b border-slate-700 pb-1">กฎฟาราเดย์ และ กฎของเลนซ์</div>
+                    <div class="math-display text-center my-2">$$\mathcal{E} = -N \frac{\Delta \Phi_B}{\Delta t}$$</div>
+                    
+                    <div class="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-700">
+                        <div>
+                            <div class="text-[9px] text-slate-400">ฟลักซ์แม่เหล็ก ($\Phi_B$)</div>
+                            <div class="font-mono text-sm text-sky-300" id="readout-flux">0.00 Wb</div>
+                        </div>
+                        <div>
+                            <div class="text-[9px] text-slate-400">อัตราการเปลี่ยน ($\frac{\Delta \Phi}{\Delta t}$)</div>
+                            <div class="font-mono text-sm text-rose-300" id="readout-dflux">0.00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Analysis Text -->
+                <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                    <div class="text-[10px] font-semibold text-slate-300 mb-1">การวิเคราะห์ผล (Real-time Analysis)</div>
+                    <p id="analysis-text" class="text-[10px] text-slate-400 leading-relaxed min-h-[60px]">
+                        ลองขยับแท่งแม่เหล็กเข้าหรือออกจากขดลวด สังเกตความสว่างของหลอดไฟและทิศทางของเข็มมิเตอร์...
+                    </p>
+                </div>
+            </div>
+        </aside>
+
+        <div id="theory-modal" class="hidden absolute inset-0 bg-slate-900/90 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+            <div class="bg-slate-800 border border-slate-600 rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl pointer-events-auto">
+                <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50 rounded-t-xl shrink-0">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-book-open text-amber-400"></i> ทฤษฎีการเหนี่ยวนำแม่เหล็กไฟฟ้า (Faraday's Law)</h2>
+                    <button id="btn-close-modal" class="text-slate-400 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                
+                <div class="p-6 overflow-y-auto space-y-6 text-sm text-slate-300 leading-relaxed">
+                    
+                    <section>
+                        <h3 class="text-amber-400 font-semibold mb-2 text-base">กฎการเหนี่ยวนำของฟาราเดย์ (Faraday's Law)</h3>
+                        <p class="mb-2">ไมเคิล ฟาราเดย์ ค้นพบว่า <strong>"การเปลี่ยนแปลงของสนามแม่เหล็กที่ตัดผ่านขดลวด จะทำให้เกิดแรงเคลื่อนไฟฟ้าเหนี่ยวนำ (Induced EMF) และกระแสไฟฟ้าไหลในขดลวดนั้น"</strong></p>
+                        <div class="math-display text-center mb-2">$$\mathcal{E} = -N \frac{d\Phi_B}{dt}$$</div>
+                        <ul class="list-disc pl-5 space-y-1 text-[12px]">
+                            <li><strong class="text-white">$\mathcal{E}$ (EMF):</strong> แรงเคลื่อนไฟฟ้าเหนี่ยวนำ (มีหน่วยเป็นโวลต์, V) ทำให้หลอดไฟสว่าง</li>
+                            <li><strong class="text-white">$N$:</strong> จำนวนรอบของขดลวด (ยิ่งรอบเยอะ ยิ่งได้ไฟมาก)</li>
+                            <li><strong class="text-white">$\Phi_B$ (Magnetic Flux):</strong> ฟลักซ์แม่เหล็ก หรือเส้นแรงแม่เหล็กที่พุ่งผ่านพื้นที่หน้าตัดของขดลวด (ขึ้นอยู่กับความแรงแม่เหล็กและขนาดขดลวด)</li>
+                            <li><strong class="text-white">$dt$:</strong> เวลา หากแม่เหล็กเคลื่อนที่ <strong>เร็ว</strong> (เวลา $dt$ น้อย) อัตราการเปลี่ยนแปลงจะสูง ทำให้เกิดไฟแรงขึ้น</li>
+                            <li><strong class="text-rose-400">เครื่องหมายลบ ($-$) กฎของเลนซ์ (Lenz's Law):</strong> กระแสไฟฟ้าที่เกิดขึ้น จะสร้างสนามแม่เหล็กใหม่มา <strong>ต้านการเปลี่ยนแปลง</strong> ที่ทำให้มันเกิดเสมอ (เช่น แม่เหล็กพุ่งเข้า ขดลวดจะสร้างขั้วผลักออก)</li>
+                        </ul>
+                    </section>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <section class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                            <h3 class="text-sky-400 font-semibold mb-2 text-[13px]"><i class="fa-solid fa-arrows-left-right"></i> ทิศทางการเคลื่อนที่ (ซ้าย vs ขวา)</h3>
+                            <p class="text-[11px] mb-2">ทิศทางของกระแส (เข็มมิเตอร์) จะสลับด้านกัน:</p>
+                            <ul class="text-[11px] space-y-1 list-disc pl-4 text-slate-400">
+                                <li><strong>แม่เหล็กพุ่งเข้า:</strong> ฟลักซ์เพิ่มขึ้น เข็มตีไปด้านหนึ่ง</li>
+                                <li><strong>แม่เหล็กดึงออก:</strong> ฟลักซ์ลดลง เข็มจะตีกลับไป <strong>ทิศทางตรงกันข้าม</strong></li>
+                                <li><strong>แม่เหล็กหยุดนิ่ง:</strong> ฟลักซ์ไม่เปลี่ยนแปลง ($\Delta\Phi = 0$) <strong>ไม่เกิดกระแสไฟฟ้า</strong> แม้แม่เหล็กจะแช่อยู่ในขดลวดก็ตาม</li>
+                            </ul>
+                        </section>
+                        
+                        <section class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                            <h3 class="text-emerald-400 font-semibold mb-2 text-[13px]"><i class="fa-solid fa-expand"></i> ขนาดของขดลวด (เล็ก vs ใหญ่)</h3>
+                            <p class="text-[11px] mb-2">ส่งผลต่อพื้นที่หน้าตัด ($A$) และปริมาณฟลักซ์แม่เหล็ก:</p>
+                            <ul class="text-[11px] space-y-1 list-disc pl-4 text-slate-400">
+                                <li><strong>ขดลวดใหญ่ (พื้นที่ $A$ มาก) หรือ รอบ $N$ เยอะ:</strong> รับเส้นแรงแม่เหล็กได้เต็มที่ เมื่อเกิดการเปลี่ยนแปลงจะได้แรงดันไฟฟ้าสูง หลอดไฟสว่างมาก</li>
+                                <li><strong>ขดลวดเล็ก หรือ รอบ $N$ น้อย:</strong> รับเส้นแรงแม่เหล็กได้น้อย แรงดันไฟฟ้าเหนี่ยวนำต่ำ หลอดไฟสว่างน้อย</li>
+                            </ul>
+                        </section>
+                    </div>
+
+                    <section class="border-t border-slate-700 pt-4">
+                        <h3 class="text-white font-semibold mb-2 text-sm">ส่วนประกอบอุปกรณ์ในโมเดลจำลอง</h3>
+                        <p class="text-[11px] text-slate-400">
+                            <strong>ขดลวด:</strong> แทนด้วยลวดทองแดงอาบน้ำยาพันหลายรอบ | 
+                            <strong>แม่เหล็ก:</strong> แทนแม่เหล็กถาวรนีโอไดเมียม (แดง=ขั้วเหนือ, น้ำเงิน=ขั้วใต้) | 
+                            <strong>ตัวแสดงผล:</strong> กัลวาโนมิเตอร์และหลอดไฟ LED ที่จะสว่างตามขนาดของ $|\mathcal{E}|$
+                        </p>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 1. Physics State & Variables ---
+        let magnetPos = 5.0; // x-coordinate
+        let magnetVel = 0.0;
+        let coilTurns = 4;
+        let coilRadius = 1.0;
+        let showFieldLines = true;
+        
+        let isAutoPlaying = false;
+        let autoPlaySpeed = 5; // Maps to velocity
+        let autoPlayDir = -1; // -1 (moving left) or 1 (moving right)
+
+        // Calculated values
+        let currentFlux = 0;
+        let previousFlux = 0;
+        let inducedEMF = 0;
+
+        // --- 2. Three.js Setup ---
+        let scene, camera, renderer, controls;
+        const clock = new THREE.Clock();
+        
+        let is2DMode = false;
+
+        // 3D Objects
+        let magnetGroup, coilGroup, bulbGroup, meterGroup;
+        let bulbGlowMat;
+        let fieldLinesGroup;
+
+        // UI Refs
+        const ui = {
+            slTurns: document.getElementById('sl-turns'),
+            slArea: document.getElementById('sl-area'),
+            slMagnetPos: document.getElementById('sl-magnet-pos'),
+            slSpeed: document.getElementById('sl-speed'),
+            btnAutoPlay: document.getElementById('btn-autoplay'),
+            chkField: document.getElementById('toggle-field'),
+            
+            valTurns: document.getElementById('val-turns'),
+            valArea: document.getElementById('val-area'),
+            valSpeed: document.getElementById('val-speed'),
+            
+            needle: document.getElementById('meter-needle'),
+            readEmf: document.getElementById('readout-emf'),
+            readFlux: document.getElementById('readout-flux'),
+            readDFlux: document.getElementById('readout-dflux'),
+            analysisText: document.getElementById('analysis-text'),
+            
+            btnCam: document.getElementById('btn-toggle-cam'),
+            camText: document.getElementById('cam-mode-text'),
+            modal: document.getElementById('theory-modal'),
+            btnInfo: document.getElementById('btn-info'),
+            btnClose: document.getElementById('btn-close-modal')
+        };
+
+        init();
+        animate();
+
+        function init() {
+            const container = document.getElementById('canvas-container');
+            
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color('#0f172a');
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 5, 15);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three-canvas'), antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 10, 5);
+            dirLight.castShadow = true;
+            scene.add(dirLight);
+
+            // Base Grid
+            const grid = new THREE.GridHelper(20, 20, 0x334155, 0x1e293b);
+            grid.position.y = -2;
+            scene.add(grid);
+
+            buildScene();
+            setupEvents();
+            
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function buildScene() {
+            // 1. Build Coil (Copper wire)
+            coilGroup = new THREE.Group();
+            scene.add(coilGroup);
+            updateCoilGeometry(); // Will build toruses based on coilTurns & coilRadius
+
+            // 2. Build Magnet
+            magnetGroup = new THREE.Group();
+            scene.add(magnetGroup);
+
+            // Box: North(Red) right, South(Blue) left
+            const magGeo = new THREE.BoxGeometry(2, 0.6, 0.6);
+            // Multi-material to color halves
+            const matN = new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.3, roughness: 0.4 }); // Red
+            const matS = new THREE.MeshStandardMaterial({ color: 0x3b82f6, metalness: 0.3, roughness: 0.4 }); // Blue
+            
+            // In Three.js Box: right is +x, left is -x
+            // Materials index: 0=right, 1=left, 2=top, 3=bottom, 4=front, 5=back
+            // Let's just make two boxes side by side to be exact
+            const halfN = new THREE.Mesh(new THREE.BoxGeometry(1, 0.6, 0.6), matN);
+            halfN.position.x = 0.5;
+            halfN.castShadow = true;
+            
+            const halfS = new THREE.Mesh(new THREE.BoxGeometry(1, 0.6, 0.6), matS);
+            halfS.position.x = -0.5;
+            halfS.castShadow = true;
+
+            // Labels 'N' and 'S' (simplified as white dots for performance/clarity without texture loading)
+            const dotMat = new THREE.MeshBasicMaterial({color: 0xffffff});
+            const dotN = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.3), dotMat);
+            dotN.position.set(0.5, 0, 0.31);
+            const dotS = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.3), dotMat);
+            dotS.position.set(-0.5, 0, 0.31);
+
+            magnetGroup.add(halfN, halfS, dotN, dotS);
+
+            // Initial Magnet Position
+            magnetGroup.position.x = magnetPos;
+
+            // 3. Build Magnetic Field Lines
+            fieldLinesGroup = new THREE.Group();
+            magnetGroup.add(fieldLinesGroup); // Attach to magnet so it moves with it
+            buildFieldLines();
+
+            // 4. Build LED Bulb
+            bulbGroup = new THREE.Group();
+            bulbGroup.position.set(0, 3, -1);
+            scene.add(bulbGroup);
+            
+            // Wires from coil to bulb
+            const wireGeo = new THREE.CylinderGeometry(0.02, 0.02, 3);
+            const wireMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+            const w1 = new THREE.Mesh(wireGeo, wireMat);
+            w1.position.set(-0.5, 1.5, -0.5);
+            w1.rotation.z = Math.PI / 8;
+            const w2 = new THREE.Mesh(wireGeo, wireMat);
+            w2.position.set(0.5, 1.5, -0.5);
+            w2.rotation.z = -Math.PI / 8;
+            scene.add(w1, w2);
+
+            // Bulb base
+            const baseGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.4);
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: 0.8 });
+            const base = new THREE.Mesh(baseGeo, baseMat);
+            base.position.y = 0;
+            bulbGroup.add(base);
+
+            // Bulb glass
+            const glassGeo = new THREE.SphereGeometry(0.5, 32, 32);
+            bulbGlowMat = new THREE.MeshStandardMaterial({ 
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.8,
+                emissive: 0xffd700,
+                emissiveIntensity: 0.0 // Off initially
+            });
+            const glass = new THREE.Mesh(glassGeo, bulbGlowMat);
+            glass.position.y = 0.5;
+            bulbGroup.add(glass);
+        }
+
+        function updateCoilGeometry() {
+            // Remove old toruses
+            while(coilGroup.children.length > 0) coilGroup.remove(coilGroup.children[0]);
+            
+            const copperMat = new THREE.MeshStandardMaterial({ color: 0xb87333, metalness: 0.8, roughness: 0.2 });
+            const tubeThickness = 0.08;
+            
+            // Stack multiple toruses along X axis
+            const spacing = tubeThickness * 2.5;
+            const startX = -(coilTurns * spacing) / 2;
+
+            for(let i=0; i<coilTurns; i++) {
+                const geo = new THREE.TorusGeometry(coilRadius, tubeThickness, 16, 32);
+                const loop = new THREE.Mesh(geo, copperMat);
+                loop.rotation.y = Math.PI / 2; // Face X axis
+                loop.position.x = startX + (i * spacing);
+                loop.castShadow = true;
+                coilGroup.add(loop);
+            }
+        }
+
+        function buildFieldLines() {
+            // Draw simple curved lines looping from North (right) to South (left)
+            const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.15 });
+            
+            // We create simple ellipse arcs
+            const numLines = 6;
+            for(let i=0; i<numLines; i++) {
+                // Determine scale of loop
+                const hScale = 1.5 + i*0.5; // height of loop
+                const wScale = 1.2 + i*0.2; // width spread
+                
+                const points = [];
+                for(let t = 0; t <= Math.PI; t += 0.1) {
+                    // x goes from +1 to -1 roughly
+                    const x = wScale * Math.cos(t);
+                    const y = hScale * Math.sin(t);
+                    points.push(new THREE.Vector3(x, y, 0));
+                }
+                
+                // Top loop
+                const geoTop = new THREE.BufferGeometry().setFromPoints(points);
+                const lineTop = new THREE.Line(geoTop, lineMat);
+                fieldLinesGroup.add(lineTop);
+                
+                // Bottom loop
+                const pointsBot = points.map(p => new THREE.Vector3(p.x, -p.y, 0));
+                const geoBot = new THREE.BufferGeometry().setFromPoints(pointsBot);
+                const lineBot = new THREE.Line(geoBot, lineMat);
+                fieldLinesGroup.add(lineBot);
+            }
+        }
+
+        function setupEvents() {
+            // Sliders
+            ui.slTurns.addEventListener('input', (e) => {
+                coilTurns = parseInt(e.target.value);
+                ui.valTurns.textContent = `${coilTurns} รอบ`;
+                updateCoilGeometry();
+            });
+
+            ui.slArea.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                // Map 0.5 (Small), 1.0 (Med), 1.5 (Large)
+                let text = "กลาง";
+                if(val === 0.5) text = "เล็ก (Small)";
+                else if(val === 1.5) text = "ใหญ่ (Large)";
+                ui.valArea.textContent = text;
+                
+                // Update radius base size
+                coilRadius = val * 1.5; 
+                updateCoilGeometry();
+            });
+
+            // Manual Magnet Drag
+            ui.slMagnetPos.addEventListener('input', (e) => {
+                if (isAutoPlaying) {
+                    isAutoPlaying = false;
+                    ui.btnAutoPlay.innerHTML = '<i class="fa-solid fa-play"></i> ขยับแม่เหล็กอัตโนมัติ';
+                    ui.btnAutoPlay.classList.replace('bg-rose-600', 'bg-amber-600');
+                }
+                magnetPos = parseFloat(e.target.value);
+                magnetGroup.position.x = magnetPos;
+            });
+
+            ui.slSpeed.addEventListener('input', (e) => {
+                autoPlaySpeed = parseInt(e.target.value);
+                let text = "ปานกลาง";
+                if(autoPlaySpeed < 4) text = "ช้า (Slow)";
+                else if(autoPlaySpeed > 7) text = "เร็ว (Fast)";
+                ui.valSpeed.textContent = text;
+            });
+
+            ui.btnAutoPlay.addEventListener('click', () => {
+                isAutoPlaying = !isAutoPlaying;
+                if (isAutoPlaying) {
+                    ui.btnAutoPlay.innerHTML = '<i class="fa-solid fa-stop"></i> หยุดอัตโนมัติ';
+                    ui.btnAutoPlay.classList.replace('bg-amber-600', 'bg-rose-600');
+                    // Reset to edge to start
+                    if (Math.abs(magnetPos) < 2) magnetPos = 8 * autoPlayDir;
+                } else {
+                    ui.btnAutoPlay.innerHTML = '<i class="fa-solid fa-play"></i> ขยับแม่เหล็กอัตโนมัติ';
+                    ui.btnAutoPlay.classList.replace('bg-rose-600', 'bg-amber-600');
+                    magnetVel = 0;
+                }
+            });
+
+            ui.chkField.addEventListener('change', (e) => {
+                showFieldLines = e.target.checked;
+                fieldLinesGroup.visible = showFieldLines;
+            });
+
+            // Camera View
+            ui.btnCam.addEventListener('click', () => {
+                is2DMode = !is2DMode;
+                if(is2DMode) {
+                    ui.camText.textContent = "สลับมุมมอง 3D";
+                    camera.position.set(0, 0, 15);
+                    camera.lookAt(0,0,0);
+                    controls.enableRotate = false;
+                } else {
+                    ui.camText.textContent = "สลับมุมมอง 2D";
+                    camera.position.set(0, 5, 15);
+                    controls.target.set(0,0,0);
+                    controls.enableRotate = true;
+                }
+                controls.update();
+            });
+
+            // Modal
+            ui.btnInfo.addEventListener('click', () => ui.modal.classList.remove('hidden'));
+            ui.btnClose.addEventListener('click', () => ui.modal.classList.add('hidden'));
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function calculatePhysics(delta) {
+            // Save previous flux
+            previousFlux = currentFlux;
+
+            // 1. Calculate Flux at current position
+            // Simplified dipole flux through a loop: Phi ~ A * N / (1 + (x/R)^2)^1.5
+            // Using a Lorentzian-like bell curve for smooth response
+            const magnetStrength = 20.0;
+            const areaFactor = coilRadius * coilRadius; // A = pi*r^2
+            
+            // Effective distance scaled by radius to widen the pulse for larger coils
+            const effectiveRadius = coilRadius * 1.5; 
+            const distRatio = magnetPos / effectiveRadius;
+            
+            currentFlux = (coilTurns * areaFactor * magnetStrength) / Math.pow(1 + (distRatio * distRatio), 1.5);
+
+            // 2. Calculate Induced EMF (Faraday's Law: E = - dPhi / dt)
+            // Use numerical differentiation if delta is reasonable
+            if (delta > 0) {
+                // Calculate dPhi
+                const dFlux = currentFlux - previousFlux;
+                
+                // In manual drag, if delta is too small or user jumped slider, cap the spike
+                let dt = delta;
+                if (dt > 0.1) dt = 0.1; 
+                
+                inducedEMF = - (dFlux / dt);
+                
+                // Add some decay/smoothing so needle doesn't jitter wildly on mouse stop
+                inducedEMF = inducedEMF * 0.95; 
+            } else {
+                inducedEMF = 0;
+            }
+
+            // Update UI Data
+            ui.readFlux.textContent = `${currentFlux.toFixed(2)} Wb`;
+            
+            // Display derivative (approx)
+            const derivative = -inducedEMF; // Since E = -dPhi/dt
+            ui.readDFlux.textContent = derivative.toFixed(2);
+            
+            // Visual mapping (Scale EMF for display)
+            // Divide by large constant to get reasonable visual volts
+            const visualVolts = inducedEMF * 0.1;
+            ui.readEmf.innerHTML = `${visualVolts.toFixed(2)} <span class="text-xs text-slate-400 font-sans">V</span>`;
+
+            updateVisuals(visualVolts);
+            updateAnalysisText(visualVolts);
+        }
+
+        function updateVisuals(volts) {
+            // 1. Needle Rotation
+            // Max angle +/- 60 degrees. Cap volts.
+            const maxVolts = 15;
+            let angleDeg = (volts / maxVolts) * 60;
+            if (angleDeg > 60) angleDeg = 60;
+            if (angleDeg < -60) angleDeg = -60;
+            
+            ui.needle.style.transform = `rotate(${angleDeg}deg)`;
+
+            // 2. LED Brightness
+            // Intensity based on absolute voltage
+            const absV = Math.abs(volts);
+            let intensity = absV * 0.2;
+            if (intensity > 2.0) intensity = 2.0;
+            
+            bulbGlowMat.emissiveIntensity = intensity;
+        }
+
+        function updateAnalysisText(volts) {
+            const absV = Math.abs(volts);
+            
+            if (absV < 0.1) {
+                ui.analysisText.textContent = "แม่เหล็กหยุดนิ่ง ฟลักซ์แม่เหล็กไม่เปลี่ยนแปลง (ΔΦ = 0) จึงไม่เกิดกระแสไฟฟ้าเหนี่ยวนำ";
+                ui.analysisText.className = "text-[10px] text-slate-400 leading-relaxed min-h-[60px]";
+            } else {
+                let msg = "";
+                let color = "";
+                
+                // Determine direction based on sign of voltage
+                // Due to our simple dPhi/dt: 
+                // Approaching center (x->0): Flux increases -> dPhi positive -> EMF negative.
+                // Leaving center (x->inf): Flux decreases -> dPhi negative -> EMF positive.
+                if (volts < 0) {
+                    msg = "ฟลักซ์แม่เหล็กกำลัง 'เพิ่มขึ้น' กระแสไหลไปทิศทางหนึ่งเพื่อต้านการเพิ่ม (เข็มตีไปซ้าย) ";
+                    color = "text-sky-300";
+                } else {
+                    msg = "ฟลักซ์แม่เหล็กกำลัง 'ลดลง' กระแสไหลย้อนกลับเพื่อต้านการลดลง (เข็มตีไปขวา) ";
+                    color = "text-rose-300";
+                }
+                
+                if (absV > 5.0) {
+                    msg += "- ความเร็วสูง/ขดลวดใหญ่ ทำให้ไฟสว่างมาก!";
+                }
+
+                ui.analysisText.textContent = msg;
+                ui.analysisText.className = `text-[10px] font-medium leading-relaxed min-h-[60px] ${color}`;
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            
+            controls.update();
+
+            // Auto Play Logic
+            if (isAutoPlaying) {
+                // v = speed slider (1-10 mapped to real speed)
+                const speedScale = autoPlaySpeed * 2.0; 
+                
+                magnetPos += autoPlayDir * speedScale * delta;
+                
+                // Oscillation bounds
+                if (magnetPos > 8) {
+                    magnetPos = 8;
+                    autoPlayDir = -1; // Bounce left
+                } else if (magnetPos < -8) {
+                    magnetPos = -8;
+                    autoPlayDir = 1; // Bounce right
+                }
+                
+                magnetGroup.position.x = magnetPos;
+                // Sync slider
+                ui.slMagnetPos.value = magnetPos;
+            } else {
+                // In manual drag, pos is already updated by slider event.
+                // But we still need to calculate physics to see the delta.
+            }
+
+            calculatePhysics(delta);
+
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>

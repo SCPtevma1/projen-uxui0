@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สถานะของสสาร เบื้องต้น (States of Matter: Basics)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        panelBg: 'rgba(30, 41, 59, 0.85)',
+                        solid: '#3b82f6',   // Blue
+                        liquid: '#10b981',  // Green
+                        gas: '#ef4444',     // Red
+                        accent: '#8b5cf6'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Sarabun', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        /* Thermometer CSS */
+        .thermometer-wrapper {
+            position: relative;
+            width: 24px;
+            height: 200px;
+            background: #1e293b;
+            border-radius: 12px;
+            border: 2px solid #334155;
+            margin: 0 auto;
+        }
+        .thermometer-bulb {
+            position: absolute;
+            bottom: -16px;
+            left: -10px;
+            width: 40px;
+            height: 40px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 2px solid #334155;
+            z-index: 10;
+        }
+        .thermometer-fill {
+            position: absolute;
+            bottom: 10px;
+            left: 2px;
+            width: 16px;
+            height: 50%;
+            background: linear-gradient(to top, #ef4444, #f59e0b);
+            border-radius: 8px;
+            transition: height 0.2s ease-out;
+            z-index: 5;
+        }
+        
+        /* Heat/Cool Button Animations */
+        .btn-heat:active { background-color: #dc2626; transform: scale(0.95); }
+        .btn-cool:active { background-color: #2563eb; transform: scale(0.95); }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col">
+
+    <header class="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 z-20 shrink-0 shadow-md">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-atom text-white text-sm"></i>
+            </div>
+  <a href="../physics.html">
+              <h1 class="text-base font-semibold tracking-wide flex items-center gap-2">
+                สถานะของสสาร เบื้องต้น
+                <span class="text-xs font-normal text-slate-400 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">States of Matter</span>
+            </h1>
+  </a>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="btn-info" class="bg-indigo-600 hover:bg-indigo-500 text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-book-open text-white"></i> ทฤษฎี & โมเดลจำลอง
+            </button>
+        </div>
+    </header>
+
+    <div class="flex-1 relative overflow-hidden flex">
+        
+        <!-- ThreeJS Canvas -->
+        <div id="canvas-container" class="absolute inset-0 w-full h-full z-0 cursor-move">
+            <canvas id="three-canvas"></canvas>
+        </div>
+
+        <aside class="absolute top-4 left-4 w-72 glass-panel rounded-xl flex flex-col z-10 max-h-[calc(100vh-6rem)] overflow-y-auto">
+            <div class="p-4 border-b border-slate-700/50 flex justify-between items-center">
+                <h2 class="text-sm font-semibold text-indigo-400 flex items-center gap-2 uppercase tracking-wide">
+                    <i class="fa-solid fa-flask"></i> ควบคุมสสาร
+                </h2>
+            </div>
+            
+            <div class="p-4 space-y-5">
+                <!-- Substance Selector -->
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">เลือกชนิดสสาร (Substance)</label>
+                    <select id="select-substance" class="w-full bg-slate-800/80 border border-slate-600 rounded-md p-2 text-sm focus:outline-none focus:border-indigo-500 text-slate-200">
+                        <option value="water">น้ำ (Water, H₂O)</option>
+                        <option value="neon">นีออน (Neon, Ne)</option>
+                        <option value="argon">อาร์กอน (Argon, Ar)</option>
+                    </select>
+                </div>
+
+                <!-- Temperature Controls -->
+                <div class="bg-slate-900/50 p-3 rounded-lg border border-slate-700">
+                    <div class="text-center mb-4">
+                        <div class="text-[10px] text-slate-400">อุณหภูมิ (Temperature)</div>
+                        <div class="font-mono text-2xl font-bold text-white" id="readout-temp">273 K</div>
+                        <div class="text-xs text-slate-400 font-mono" id="readout-temp-c">0 °C</div>
+                    </div>
+
+                    <div class="flex justify-center mb-6">
+                        <!-- Custom CSS Thermometer -->
+                        <div class="thermometer-wrapper">
+                            <div class="thermometer-fill" id="thermo-fill"></div>
+                            <div class="thermometer-bulb"></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 mt-4">
+                        <button id="btn-cool" class="btn-cool bg-blue-600 hover:bg-blue-500 text-white text-sm py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 select-none shadow-[0_4px_0_rgb(30,58,138)] active:shadow-none active:translate-y-1">
+                            <i class="fa-solid fa-snowflake"></i> ลดความร้อน
+                        </button>
+                        <button id="btn-heat" class="btn-heat bg-red-600 hover:bg-red-500 text-white text-sm py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 select-none shadow-[0_4px_0_rgb(153,27,27)] active:shadow-none active:translate-y-1">
+                            <i class="fa-solid fa-fire"></i> ให้ความร้อน
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <aside class="absolute top-4 right-4 w-72 glass-panel rounded-xl flex flex-col z-10 pointer-events-none">
+            <div class="p-4 border-b border-slate-700/50">
+                <h2 class="text-sm font-semibold text-emerald-400 flex items-center gap-2 uppercase tracking-wide">
+                    <i class="fa-solid fa-microscope"></i> ระดับโมเลกุล
+                </h2>
+            </div>
+            
+            <div class="p-4 space-y-4">
+                <!-- Current State Badge -->
+                <div class="flex items-center justify-between bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                    <div class="text-xs text-slate-400">สถานะปัจจุบัน</div>
+                    <div id="state-badge" class="px-3 py-1 rounded text-sm font-bold bg-solid text-white shadow-lg shadow-blue-500/30">
+                        ของแข็ง (Solid)
+                    </div>
+                </div>
+
+                <!-- Properties Comparison -->
+                <div class="bg-slate-900/80 rounded-lg p-3 border border-slate-600">
+                    <h3 class="text-xs font-semibold text-slate-300 mb-2 border-b border-slate-700 pb-1">ลักษณะทางกายภาพ</h3>
+                    <ul class="text-[11px] space-y-2 text-slate-300">
+                        <li class="flex gap-2">
+                            <i class="fa-solid fa-cubes text-slate-500 w-4"></i> 
+                            <span id="prop-shape">รูปร่าง: คงที่ (Fixed)</span>
+                        </li>
+                        <li class="flex gap-2">
+                            <i class="fa-solid fa-box-open text-slate-500 w-4"></i> 
+                            <span id="prop-volume">ปริมาตร: คงที่ (Fixed)</span>
+                        </li>
+                        <li class="flex gap-2">
+                            <i class="fa-solid fa-arrows-down-to-line text-slate-500 w-4"></i> 
+                            <span id="prop-compress">การบีบอัด: ทำได้ยากมาก</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Substance Info -->
+                <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                    <div class="text-[10px] text-slate-400 mb-1">จุดหลอมเหลว (Melting Point)</div>
+                    <div class="font-mono text-sm text-blue-300 font-bold mb-2" id="readout-mp">273 K (0 °C)</div>
+                    
+                    <div class="text-[10px] text-slate-400 mb-1">จุดเดือด (Boiling Point)</div>
+                    <div class="font-mono text-sm text-red-300 font-bold" id="readout-bp">373 K (100 °C)</div>
+                </div>
+            </div>
+        </aside>
+
+        <div id="theory-modal" class="hidden absolute inset-0 bg-slate-900/90 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+            <div class="bg-slate-800 border border-slate-600 rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl pointer-events-auto">
+                <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50 rounded-t-xl shrink-0">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-book-open text-indigo-400"></i> ทฤษฎีสถานะของสสาร และการทำโมเดลจำลอง</h2>
+                    <button id="btn-close-modal" class="text-slate-400 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                
+                <div class="p-6 overflow-y-auto space-y-8 text-sm text-slate-300 leading-relaxed">
+                    
+                    <!-- Section 1: Physical Model -->
+                    <section>
+                        <h3 class="text-amber-400 font-semibold mb-3 text-base flex items-center gap-2">
+                            <i class="fa-solid fa-box"></i> อุปกรณ์ทำโมเดลจำลอง (Physical Model)
+                        </h3>
+                        <div class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                            <p class="mb-3">การทำโมเดลที่เห็นภาพชัดเจนที่สุดคือการจำลอง <strong>"อนุภาค (Particles)"</strong> ของสสารเพื่อให้เห็นระยะห่างและการเคลื่อนที่ โดยมีอุปกรณ์ดังนี้:</p>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li><strong>ตัวแทนอนุภาค:</strong> ลูกปิงปอง, เม็ดโฟม, หรือลูกปัดกลม ที่มีขนาดเท่ากัน</li>
+                                <li><strong>กล่องจำลอง (Container):</strong> กล่องพลาสติกใสทรงสี่เหลี่ยม เพื่อให้มองเห็นการจัดเรียงจากภายนอก</li>
+                                <li><strong>กลไกสร้างการสั่น:</strong> แผ่นลำโพงเก่าต่อเครื่องกำเนิดความถี่ หรือใช้วิธี <span class="text-rose-400">"เขย่ากล่องด้วยมือ"</span> ด้วยความเร็วต่างกัน แทนค่าพลังงานความร้อน (อุณหภูมิ)</li>
+                            </ul>
+                            <div class="mt-4 grid grid-cols-3 gap-4 text-center">
+                                <div class="bg-blue-900/30 p-2 rounded border border-blue-500/30">
+                                    <div class="font-bold text-blue-400">ของแข็ง (Solid)</div>
+                                    <div class="text-[10px] mt-1">ใส่อนุภาคแน่นเต็มกล่อง เขย่าเบาๆ อนุภาคจะสั่นอยู่กับที่</div>
+                                </div>
+                                <div class="bg-emerald-900/30 p-2 rounded border border-emerald-500/30">
+                                    <div class="font-bold text-emerald-400">ของเหลว (Liquid)</div>
+                                    <div class="text-[10px] mt-1">ลดจำนวนอนุภาคลง เขย่าแรงขึ้น อนุภาคไหลลื่นเปลี่ยนรูปตามก้นกล่อง</div>
+                                </div>
+                                <div class="bg-red-900/30 p-2 rounded border border-red-500/30">
+                                    <div class="font-bold text-red-400">แก๊ส (Gas)</div>
+                                    <div class="text-[10px] mt-1">ใส่อนุภาคน้อยลูก เขย่ารวดเร็ว อนุภาคฟุ้งกระจายชนผนังกล่อง</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Section 2: Phase Changes Diagram -->
+                    <section>
+                        <h3 class="text-indigo-400 font-semibold mb-3 text-base flex items-center gap-2">
+                            <i class="fa-solid fa-random"></i> แผนผังการเปลี่ยนสถานะ (Phase Changes)
+                        </h3>
+                        <div class="bg-slate-900/50 p-4 rounded-lg border border-slate-700 text-center">
+                            <p class="mb-4 text-left">เมื่ออุณหภูมิเปลี่ยนแปลง (เพิ่ม/ลด ความร้อน) พลังงานจลน์ของอนุภาคจะเปลี่ยนไป ทำให้เกิดการเปลี่ยนสถานะ:</p>
+                            
+                            <div class="flex flex-col md:flex-row items-center justify-center gap-4">
+                                <div class="w-24 h-24 rounded-full bg-blue-600/20 border-2 border-blue-500 flex items-center justify-center font-bold text-blue-400">ของแข็ง<br>(Solid)</div>
+                                
+                                <div class="flex flex-col items-center text-[10px] w-24">
+                                    <div class="text-rose-400 flex flex-col items-center">
+                                        <span>หลอมเหลว (Melting) &rarr;</span>
+                                        <i class="fa-solid fa-arrow-right"></i>
+                                    </div>
+                                    <div class="text-blue-400 flex flex-col items-center mt-2">
+                                        <i class="fa-solid fa-arrow-left"></i>
+                                        <span>&larr; แข็งตัว (Freezing)</span>
+                                    </div>
+                                </div>
+
+                                <div class="w-24 h-24 rounded-full bg-emerald-600/20 border-2 border-emerald-500 flex items-center justify-center font-bold text-emerald-400">ของเหลว<br>(Liquid)</div>
+                                
+                                <div class="flex flex-col items-center text-[10px] w-24">
+                                    <div class="text-rose-400 flex flex-col items-center">
+                                        <span>กลายเป็นไอ (Boiling) &rarr;</span>
+                                        <i class="fa-solid fa-arrow-right"></i>
+                                    </div>
+                                    <div class="text-blue-400 flex flex-col items-center mt-2">
+                                        <i class="fa-solid fa-arrow-left"></i>
+                                        <span>&larr; ควบแน่น (Condensation)</span>
+                                    </div>
+                                </div>
+
+                                <div class="w-24 h-24 rounded-full bg-red-600/20 border-2 border-red-500 flex items-center justify-center font-bold text-red-400">แก๊ส<br>(Gas)</div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Section 3: Properties table -->
+                    <section>
+                        <h3 class="text-emerald-400 font-semibold mb-3 text-base">เปรียบเทียบอนุภาคทั้งสามสถานะ</h3>
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-700/50">
+                                    <th class="p-2 border border-slate-600">คุณสมบัติ</th>
+                                    <th class="p-2 border border-slate-600 text-blue-400">ของแข็ง</th>
+                                    <th class="p-2 border border-slate-600 text-emerald-400">ของเหลว</th>
+                                    <th class="p-2 border border-slate-600 text-red-400">แก๊ส</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="p-2 border border-slate-600 font-semibold">การจัดเรียงอนุภาค</td>
+                                    <td class="p-2 border border-slate-600">ชิดกันมาก เป็นระเบียบ</td>
+                                    <td class="p-2 border border-slate-600">อยู่ใกล้กัน แต่ไม่เป็นระเบียบ</td>
+                                    <td class="p-2 border border-slate-600">ห่างกันมาก กระจัดกระจาย</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 border border-slate-600 font-semibold">การเคลื่อนที่</td>
+                                    <td class="p-2 border border-slate-600">สั่นอยู่กับที่</td>
+                                    <td class="p-2 border border-slate-600">ไหลและกลิ้งทับกันได้</td>
+                                    <td class="p-2 border border-slate-600">เคลื่อนที่อิสระทุกทิศทางด้วยความเร็วสูง</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 border border-slate-600 font-semibold">แรงยึดเหนี่ยว</td>
+                                    <td class="p-2 border border-slate-600">สูงมาก</td>
+                                    <td class="p-2 border border-slate-600">ปานกลาง</td>
+                                    <td class="p-2 border border-slate-600">น้อยมาก (แทบไม่มี)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Physics Engine Variables ---
+        const clock = new THREE.Clock();
+        
+        // Substances Data (Temperatures in Kelvin)
+        const SUBSTANCES = {
+            'water': { name: 'น้ำ (H₂O)', mp: 273, bp: 373, color: 0x38bdf8, minTemp: 0, maxTemp: 600, radius: 0.35 },
+            'neon': { name: 'นีออน (Ne)', mp: 24, bp: 27, color: 0xf97316, minTemp: 0, maxTemp: 100, radius: 0.3 },
+            'argon': { name: 'อาร์กอน (Ar)', mp: 84, bp: 87, color: 0xc084fc, minTemp: 0, maxTemp: 200, radius: 0.4 }
+        };
+
+        let currentSubstance = 'water';
+        let currentTemp = 273; // Start exactly at melting point for water
+        let currentState = 'SOLID'; // 'SOLID', 'LIQUID', 'GAS'
+        
+        // Heat controls
+        let isHeating = false;
+        let isCooling = false;
+
+        // Container (The Box)
+        const boxSize = 10; // 10x10x10 box (-5 to 5)
+        
+        // Particles
+        let particles = [];
+        const NUM_PARTICLES = 125; // 5x5x5 grid for solid
+        
+        // Three.js Objects
+        let scene, camera, renderer, controls;
+        let particlesGroup;
+
+        // UI Elements
+        const ui = {
+            selSubstance: document.getElementById('select-substance'),
+            readTemp: document.getElementById('readout-temp'),
+            readTempC: document.getElementById('readout-temp-c'),
+            thermoFill: document.getElementById('thermo-fill'),
+            btnHeat: document.getElementById('btn-heat'),
+            btnCool: document.getElementById('btn-cool'),
+            
+            badgeState: document.getElementById('state-badge'),
+            propShape: document.getElementById('prop-shape'),
+            propVol: document.getElementById('prop-volume'),
+            propComp: document.getElementById('prop-compress'),
+            
+            readMP: document.getElementById('readout-mp'),
+            readBP: document.getElementById('readout-bp'),
+            
+            modal: document.getElementById('theory-modal'),
+            btnInfo: document.getElementById('btn-info'),
+            btnClose: document.getElementById('btn-close-modal')
+        };
+
+        init();
+        animate();
+
+        function init() {
+            const container = document.getElementById('canvas-container');
+            
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color('#0f172a');
+            scene.fog = new THREE.FogExp2('#0f172a', 0.015);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 5, 25);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three-canvas'), antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxDistance = 50;
+            controls.minDistance = 10;
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(10, 20, 10);
+            scene.add(dirLight);
+
+            // Build Environment
+            buildContainer();
+            buildParticles();
+            
+            // Setup Events
+            setupEvents();
+            
+            // Initial UI Update
+            updateSubstanceInfo();
+            updateThermometerUI();
+            
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function buildContainer() {
+            // A transparent wireframe box to represent the "Physical Container"
+            const geometry = new THREE.BoxGeometry(boxSize, boxSize, boxSize);
+            const edges = new THREE.EdgesGeometry(geometry);
+            const lineMat = new THREE.LineBasicMaterial({ color: 0x475569, linewidth: 2 });
+            const boxFrame = new THREE.LineSegments(edges, lineMat);
+            scene.add(boxFrame);
+            
+            // Subtle floor/back planes for depth
+            const planeGeo = new THREE.PlaneGeometry(boxSize, boxSize);
+            const planeMat = new THREE.MeshBasicMaterial({ color: 0x1e293b, transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false });
+            
+            const floor = new THREE.Mesh(planeGeo, planeMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = -boxSize / 2;
+            scene.add(floor);
+        }
+
+        function buildParticles() {
+            if(particlesGroup) scene.remove(particlesGroup);
+            
+            particlesGroup = new THREE.Group();
+            particles = [];
+            
+            const subData = SUBSTANCES[currentSubstance];
+            const geometry = new THREE.SphereGeometry(subData.radius, 16, 16);
+            const material = new THREE.MeshStandardMaterial({ 
+                color: subData.color,
+                roughness: 0.3,
+                metalness: 0.2
+            });
+
+            // Arrange in a 5x5x5 grid initially (Solid structure)
+            const gridSize = 5;
+            const spacing = subData.radius * 2.2;
+            const offset = (gridSize - 1) * spacing / 2;
+
+            for(let x = 0; x < gridSize; x++) {
+                for(let y = 0; y < gridSize; y++) {
+                    for(let z = 0; z < gridSize; z++) {
+                        const mesh = new THREE.Mesh(geometry, material);
+                        
+                        // Calculate base grid position (bottom center of the box)
+                        const bx = (x * spacing) - offset;
+                        const by = (y * spacing) - (boxSize/2) + subData.radius; // Start from floor
+                        const bz = (z * spacing) - offset;
+                        
+                        mesh.position.set(bx, by, bz);
+                        particlesGroup.add(mesh);
+                        
+                        particles.push({
+                            mesh: mesh,
+                            basePos: new THREE.Vector3(bx, by, bz), // Original lattice position
+                            velocity: new THREE.Vector3((Math.random()-0.5), (Math.random()-0.5), (Math.random()-0.5))
+                        });
+                    }
+                }
+            }
+            scene.add(particlesGroup);
+        }
+
+        function setupEvents() {
+            ui.selSubstance.addEventListener('change', (e) => {
+                currentSubstance = e.target.value;
+                const subData = SUBSTANCES[currentSubstance];
+                
+                // Set temp to halfway between 0 and boiling to show a reasonable start, or just MP
+                currentTemp = subData.mp - 10; // Start as solid
+                
+                buildParticles(); // Rebuild with new colors/sizes
+                updateSubstanceInfo();
+                updateThermometerUI();
+            });
+
+            // Heat/Cool Mouse/Touch holding
+            const startHeating = () => { isHeating = true; };
+            const stopHeating = () => { isHeating = false; };
+            const startCooling = () => { isCooling = true; };
+            const stopCooling = () => { isCooling = false; };
+
+            ui.btnHeat.addEventListener('mousedown', startHeating);
+            ui.btnHeat.addEventListener('touchstart', (e) => { e.preventDefault(); startHeating(); });
+            window.addEventListener('mouseup', stopHeating);
+            window.addEventListener('touchend', stopHeating);
+
+            ui.btnCool.addEventListener('mousedown', startCooling);
+            ui.btnCool.addEventListener('touchstart', (e) => { e.preventDefault(); startCooling(); });
+            window.addEventListener('mouseup', stopCooling);
+            window.addEventListener('touchend', stopCooling);
+
+            // Modals
+            ui.btnInfo.addEventListener('click', () => ui.modal.classList.remove('hidden'));
+            ui.btnClose.addEventListener('click', () => ui.modal.classList.add('hidden'));
+        }
+
+        function updateSubstanceInfo() {
+            const subData = SUBSTANCES[currentSubstance];
+            
+            ui.readMP.textContent = `${subData.mp} K (${(subData.mp - 273).toFixed(1)} °C)`;
+            ui.readBP.textContent = `${subData.bp} K (${(subData.bp - 273).toFixed(1)} °C)`;
+        }
+
+        function updateThermometerUI() {
+            const subData = SUBSTANCES[currentSubstance];
+            
+            // Readouts
+            ui.readTemp.textContent = `${Math.round(currentTemp)} K`;
+            ui.readTempC.textContent = `${(currentTemp - 273).toFixed(1)} °C`;
+
+            // Fill visual (0 to 100%)
+            const range = subData.maxTemp - subData.minTemp;
+            const percent = ((currentTemp - subData.minTemp) / range) * 100;
+            ui.thermoFill.style.height = `${Math.max(5, Math.min(100, percent))}%`;
+            
+            // Color mapping based on state thresholds
+            if (currentTemp >= subData.bp) {
+                ui.thermoFill.style.background = 'linear-gradient(to top, #ef4444, #dc2626)'; // Red
+            } else if (currentTemp >= subData.mp) {
+                ui.thermoFill.style.background = 'linear-gradient(to top, #10b981, #059669)'; // Green
+            } else {
+                ui.thermoFill.style.background = 'linear-gradient(to top, #3b82f6, #2563eb)'; // Blue
+            }
+        }
+
+        function determineState() {
+            const subData = SUBSTANCES[currentSubstance];
+            let newState = 'SOLID';
+            
+            if (currentTemp >= subData.bp) {
+                newState = 'GAS';
+            } else if (currentTemp >= subData.mp) {
+                newState = 'LIQUID';
+            }
+
+            if (newState !== currentState) {
+                currentState = newState;
+                updateStateUI();
+            }
+        }
+
+        function updateStateUI() {
+            if (currentState === 'SOLID') {
+                ui.badgeState.textContent = 'ของแข็ง (Solid)';
+                ui.badgeState.className = 'px-3 py-1 rounded text-sm font-bold bg-solid text-white shadow-lg shadow-blue-500/30';
+                ui.propShape.textContent = 'รูปร่าง: คงที่ (Fixed shape)';
+                ui.propVol.textContent = 'ปริมาตร: คงที่ (Fixed volume)';
+                ui.propComp.textContent = 'การบีบอัด: ทำไม่ได้/ยากมาก';
+            } else if (currentState === 'LIQUID') {
+                ui.badgeState.textContent = 'ของเหลว (Liquid)';
+                ui.badgeState.className = 'px-3 py-1 rounded text-sm font-bold bg-liquid text-white shadow-lg shadow-green-500/30';
+                ui.propShape.textContent = 'รูปร่าง: เปลี่ยนตามภาชนะ';
+                ui.propVol.textContent = 'ปริมาตร: คงที่ (Fixed volume)';
+                ui.propComp.textContent = 'การบีบอัด: ทำได้ยาก';
+            } else {
+                ui.badgeState.textContent = 'แก๊ส (Gas)';
+                ui.badgeState.className = 'px-3 py-1 rounded text-sm font-bold bg-gas text-white shadow-lg shadow-red-500/30';
+                ui.propShape.textContent = 'รูปร่าง: อิสระฟุ้งกระจาย';
+                ui.propVol.textContent = 'ปริมาตร: ขยายเต็มภาชนะ';
+                ui.propComp.textContent = 'การบีบอัด: ทำได้ง่ายมาก';
+            }
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = Math.min(clock.getDelta(), 0.1);
+            
+            controls.update();
+
+            const subData = SUBSTANCES[currentSubstance];
+
+            // 1. Handle Temperature Change
+            if (isHeating) {
+                currentTemp += (subData.maxTemp - subData.minTemp) * 0.1 * delta; // Temp scale rate
+                if (currentTemp > subData.maxTemp) currentTemp = subData.maxTemp;
+                determineState();
+                updateThermometerUI();
+            } else if (isCooling) {
+                currentTemp -= (subData.maxTemp - subData.minTemp) * 0.1 * delta;
+                if (currentTemp < subData.minTemp) currentTemp = subData.minTemp;
+                determineState();
+                updateThermometerUI();
+            }
+
+            // 2. Physics Simulation based on State
+            const halfBox = (boxSize / 2) - subData.radius;
+            
+            // Kinetic energy magnitude based on temperature relative to phase thresholds
+            let kineticEnergy = 0;
+            
+            if (currentState === 'SOLID') {
+                // T < MP. Energy defines vibration amplitude.
+                let tRatio = Math.max(0, currentTemp / subData.mp);
+                kineticEnergy = tRatio * 0.2; 
+                
+                for(let p of particles) {
+                    // Spring back to base position
+                    const force = p.basePos.clone().sub(p.mesh.position).multiplyScalar(10.0);
+                    p.velocity.add(force.multiplyScalar(delta));
+                    
+                    // Add thermal vibration (random kick)
+                    p.velocity.x += (Math.random() - 0.5) * kineticEnergy;
+                    p.velocity.y += (Math.random() - 0.5) * kineticEnergy;
+                    p.velocity.z += (Math.random() - 0.5) * kineticEnergy;
+                    
+                    // Damping to prevent explosion
+                    p.velocity.multiplyScalar(0.9);
+                    
+                    p.mesh.position.add(p.velocity.clone().multiplyScalar(delta));
+                }
+                
+            } else if (currentState === 'LIQUID') {
+                // MP <= T < BP. Particles fall, slide, stay together.
+                let tRatio = (currentTemp - subData.mp) / (subData.bp - subData.mp);
+                kineticEnergy = 0.5 + (tRatio * 1.5);
+                
+                const gravity = 9.8;
+                
+                for(let i=0; i<particles.length; i++) {
+                    let p = particles[i];
+                    
+                    // Gravity
+                    p.velocity.y -= gravity * delta;
+                    
+                    // Thermal movement
+                    p.velocity.x += (Math.random() - 0.5) * kineticEnergy;
+                    p.velocity.y += (Math.random() - 0.5) * kineticEnergy;
+                    p.velocity.z += (Math.random() - 0.5) * kineticEnergy;
+
+                    // Weak attraction to center (x,z) to keep them pooled
+                    p.velocity.x += -p.mesh.position.x * 0.5 * delta;
+                    p.velocity.z += -p.mesh.position.z * 0.5 * delta;
+
+                    // Collision with other particles (Repulsion to maintain volume)
+                    for(let j=i+1; j<particles.length; j++) {
+                        let p2 = particles[j];
+                        let dist = p.mesh.position.distanceTo(p2.mesh.position);
+                        let minDist = subData.radius * 2;
+                        
+                        if(dist < minDist) {
+                            let overlap = minDist - dist;
+                            let pushDir = p.mesh.position.clone().sub(p2.mesh.position).normalize();
+                            let pushForce = pushDir.multiplyScalar(overlap * 20.0 * delta); // Spring force
+                            
+                            p.velocity.add(pushForce);
+                            p2.velocity.sub(pushForce);
+                        }
+                    }
+
+                    // Damping (viscosity)
+                    p.velocity.multiplyScalar(0.95);
+                    
+                    p.mesh.position.add(p.velocity.clone().multiplyScalar(delta));
+                    
+                    // Box Boundaries (Bounce)
+                    if(p.mesh.position.y < -halfBox) { p.mesh.position.y = -halfBox; p.velocity.y *= -0.5; } // Floor
+                    if(p.mesh.position.x < -halfBox) { p.mesh.position.x = -halfBox; p.velocity.x *= -0.8; }
+                    if(p.mesh.position.x > halfBox) { p.mesh.position.x = halfBox; p.velocity.x *= -0.8; }
+                    if(p.mesh.position.z < -halfBox) { p.mesh.position.z = -halfBox; p.velocity.z *= -0.8; }
+                    if(p.mesh.position.z > halfBox) { p.mesh.position.z = halfBox; p.velocity.z *= -0.8; }
+                }
+
+            } else if (currentState === 'GAS') {
+                // T >= BP. High kinetic energy, free flying, bounce off all walls.
+                let tRatio = (currentTemp - subData.bp) / (subData.maxTemp - subData.bp);
+                kineticEnergy = 5.0 + (tRatio * 15.0); // Speed multiplier
+                
+                for(let p of particles) {
+                    // Ensure minimum speed if just transitioned
+                    if (p.velocity.lengthSq() < 1) {
+                        p.velocity.set((Math.random()-0.5), (Math.random()-0.5), (Math.random()-0.5)).normalize().multiplyScalar(kineticEnergy);
+                    }
+                    
+                    // Continually apply speed based on temp
+                    p.velocity.normalize().multiplyScalar(kineticEnergy);
+                    
+                    p.mesh.position.add(p.velocity.clone().multiplyScalar(delta));
+                    
+                    // Perfect elastic bounce off all walls
+                    if(p.mesh.position.y < -halfBox) { p.mesh.position.y = -halfBox; p.velocity.y *= -1; }
+                    if(p.mesh.position.y > halfBox) { p.mesh.position.y = halfBox; p.velocity.y *= -1; } // Hit ceiling
+                    if(p.mesh.position.x < -halfBox) { p.mesh.position.x = -halfBox; p.velocity.x *= -1; }
+                    if(p.mesh.position.x > halfBox) { p.mesh.position.x = halfBox; p.velocity.x *= -1; }
+                    if(p.mesh.position.z < -halfBox) { p.mesh.position.z = -halfBox; p.velocity.z *= -1; }
+                    if(p.mesh.position.z > halfBox) { p.mesh.position.z = halfBox; p.velocity.z *= -1; }
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>

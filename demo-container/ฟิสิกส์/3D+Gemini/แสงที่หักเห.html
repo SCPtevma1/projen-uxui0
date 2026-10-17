@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ปฏิบัติการการหักเหของแสง (Light Refraction & Snell's Law)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        panelBg: 'rgba(30, 41, 59, 0.85)',
+                        accent: '#0ea5e9',
+                        laser: '#ef4444',
+                        medium1: 'rgba(255, 255, 255, 0.05)',
+                        medium2: 'rgba(56, 189, 248, 0.15)'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Sarabun', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        input[type=range] { accent-color: #0ea5e9; }
+        input[type=checkbox] { accent-color: #0ea5e9; }
+        
+        .math-display { font-size: 0.85rem; color: #bae6fd; }
+
+        .toggle-checkbox:checked { right: 0; border-color: #0ea5e9; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #0ea5e9; }
+
+        /* Wavelength Slider Gradient */
+        #slider-wavelength {
+            background: linear-gradient(to right, 
+                #7800FF 0%, #0000FF 20%, #00FFFF 40%, 
+                #00FF00 60%, #FFFF00 80%, #FF0000 100%);
+        }
+        #slider-wavelength::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px; width: 8px;
+            background: white;
+            border: 1px solid #000;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col">
+
+    <header class="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 z-20 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center shadow-lg shadow-sky-500/30">
+                <i class="fa-solid fa-arrows-split-up-and-left text-white text-sm"></i>
+            </div>
+<a href="../physics.html">            <h1 class="text-base font-semibold tracking-wide flex items-center gap-2">
+                ปฏิบัติการการหักเหของแสง 
+                <span class="text-xs font-normal text-slate-400 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">Refraction & Snell's Law</span>
+            </h1></a>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="btn-toggle-cam" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-cube text-sky-400"></i> <span id="cam-mode-text">สลับมุมมอง 3D</span>
+            </button>
+            <button id="btn-info" class="bg-indigo-600 hover:bg-indigo-500 text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-book-open text-white"></i> ทฤษฎี & ความรู้
+            </button>
+        </div>
+    </header>
+
+    <div class="flex-1 relative overflow-hidden flex">
+        
+        <!-- ThreeJS Canvas -->
+        <div id="canvas-container" class="absolute inset-0 w-full h-full z-0 cursor-crosshair">
+            <canvas id="three-canvas"></canvas>
+        </div>
+
+        <aside class="absolute top-4 left-4 w-80 glass-panel rounded-xl flex flex-col z-10 max-h-[calc(100vh-6rem)] overflow-y-auto">
+            <div class="p-4 border-b border-slate-700/50">
+                <h2 class="text-sm font-semibold text-sky-400 flex items-center gap-2 uppercase tracking-wide">
+                    <i class="fa-solid fa-sliders"></i> ควบคุมตัวแปร
+                </h2>
+            </div>
+            
+            <div class="p-4 space-y-4">
+                
+                <!-- Medium 1 -->
+                <div class="bg-slate-900/50 p-3 rounded-lg border border-slate-700">
+                    <label class="block text-xs font-semibold text-slate-300 mb-2">ตัวกลางที่ 1 (Medium 1) - ด้านบน</label>
+                    <select id="sel-m1" class="w-full bg-slate-800 border border-slate-600 rounded-md p-1.5 text-xs text-slate-200 mb-2">
+                        <option value="1.000">อากาศ (Air) - n ≈ 1.00</option>
+                        <option value="1.333">น้ำ (Water) - n ≈ 1.33</option>
+                        <option value="1.520">แก้วคราวน์ (Crown Glass) - n ≈ 1.52</option>
+                        <option value="2.419">เพชร (Diamond) - n ≈ 2.42</option>
+                        <option value="custom">กำหนดค่าเอง (Custom)</option>
+                    </select>
+                    <div class="flex justify-between text-[10px] mb-1">
+                        <span class="text-slate-400">ดรรชนีหักเห ($n_1$)</span>
+                        <span id="val-n1" class="font-mono text-sky-300 font-bold">1.00</span>
+                    </div>
+                    <input type="range" id="sl-n1" min="1.0" max="3.0" step="0.01" value="1.0" class="w-full h-1 bg-slate-600 rounded-lg cursor-pointer" disabled>
+                </div>
+
+                <!-- Medium 2 -->
+                <div class="bg-slate-900/50 p-3 rounded-lg border border-slate-700">
+                    <label class="block text-xs font-semibold text-slate-300 mb-2">ตัวกลางที่ 2 (Medium 2) - ด้านล่าง</label>
+                    <select id="sel-m2" class="w-full bg-slate-800 border border-slate-600 rounded-md p-1.5 text-xs text-slate-200 mb-2">
+                        <option value="1.000">อากาศ (Air) - n ≈ 1.00</option>
+                        <option value="1.333" selected>น้ำ (Water) - n ≈ 1.33</option>
+                        <option value="1.520">แก้ว (Glass) - n ≈ 1.52</option>
+                        <option value="2.419">เพชร (Diamond) - n ≈ 2.42</option>
+                        <option value="custom">กำหนดค่าเอง (Custom)</option>
+                    </select>
+                    <div class="flex justify-between text-[10px] mb-1">
+                        <span class="text-slate-400">ดรรชนีหักเห ($n_2$)</span>
+                        <span id="val-n2" class="font-mono text-sky-300 font-bold">1.33</span>
+                    </div>
+                    <input type="range" id="sl-n2" min="1.0" max="3.0" step="0.01" value="1.33" class="w-full h-1 bg-slate-600 rounded-lg cursor-pointer" disabled>
+                </div>
+
+                <!-- Angle -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300 font-semibold">มุมตกกระทบ ($\theta_1$)</span>
+                        <span id="val-theta1" class="font-mono text-sky-300">45.0°</span>
+                    </div>
+                    <input type="range" id="sl-theta1" min="0" max="90" step="0.1" value="45" class="w-full h-1.5 bg-slate-700 rounded-lg cursor-pointer">
+                </div>
+
+                <!-- Light Type & Wavelength -->
+                <div class="pt-2 border-t border-slate-700">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs text-slate-300 font-semibold">ชนิดแสง (Light Mode)</span>
+                        <div class="relative inline-block w-10 align-middle select-none">
+                            <input type="checkbox" id="toggle-white" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 transition-all duration-300 left-0 checked:left-5"/>
+                            <label for="toggle-white" class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-600 cursor-pointer transition-colors duration-300"></label>
+                        </div>
+                    </div>
+                    <div class="text-[10px] text-slate-400 text-right mb-2" id="txt-mode-desc">เลเซอร์สีเดียว (Monochromatic)</div>
+
+                    <div id="wavelength-container">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-300">ความยาวคลื่น ($\lambda$)</span>
+                            <span id="val-wave" class="font-mono text-sky-300">650 nm</span>
+                        </div>
+                        <input type="range" id="slider-wavelength" min="380" max="750" step="1" value="650" class="w-full h-2 rounded-lg cursor-pointer">
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between pt-2">
+                    <span class="text-xs text-slate-400">เปิดแสงสะท้อน (Reflection)</span>
+                    <input type="checkbox" id="toggle-refl" checked class="w-4 h-4 rounded bg-slate-700 border-slate-600 text-sky-500 focus:ring-sky-500 focus:ring-offset-slate-800">
+                </div>
+
+            </div>
+        </aside>
+
+        <aside class="absolute top-4 right-4 w-[22rem] glass-panel rounded-xl flex flex-col z-10 pointer-events-none">
+            <div class="p-4 border-b border-slate-700/50">
+                <h2 class="text-sm font-semibold text-emerald-400 flex items-center gap-2 uppercase tracking-wide">
+                    <i class="fa-solid fa-chart-line"></i> การคำนวณเรียลไทม์
+                </h2>
+            </div>
+            
+            <div class="p-4 space-y-4">
+                <!-- Snell's Law -->
+                <div class="bg-slate-900/80 rounded-lg p-3 border border-slate-600">
+                    <div class="text-xs text-slate-400 mb-1 border-b border-slate-700 pb-1">กฎของสเนลล์ (Snell's Law)</div>
+                    <div class="math-display text-center my-2">$$n_1 \sin(\theta_1) = n_2 \sin(\theta_2)$$</div>
+                    <div class="grid grid-cols-2 gap-2 mt-3 text-center">
+                        <div class="bg-slate-800/80 p-2 rounded border border-slate-700/50">
+                            <div class="text-[10px] text-slate-400">มุมหักเห ($\theta_2$)</div>
+                            <div class="font-mono text-xl text-emerald-400 font-bold" id="out-theta2">32.1°</div>
+                        </div>
+                        <div class="bg-slate-800/80 p-2 rounded border border-slate-700/50">
+                            <div class="text-[10px] text-slate-400">มุมวิกฤต ($\theta_c$)</div>
+                            <div class="font-mono text-lg text-rose-400 font-bold" id="out-thetac">N/A</div>
+                        </div>
+                    </div>
+                    <div id="tir-warning" class="hidden mt-2 text-center text-xs font-bold text-white bg-rose-600/80 py-1 rounded shadow shadow-rose-900/50 animate-pulse">
+                        เกิดการสะท้อนกลับหมด (Total Internal Reflection)
+                    </div>
+                </div>
+
+                <!-- Light Speed & Wavelength Data -->
+                <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 space-y-3">
+                    <div>
+                        <div class="text-xs text-slate-300 font-semibold mb-1 border-b border-slate-700 pb-1">ความเร็วแสง (v = c/n)</div>
+                        <div class="flex justify-between items-center mt-1">
+                            <span class="text-[10px] text-slate-400">ตัวกลาง 1 ($v_1$):</span>
+                            <span class="font-mono text-xs text-sky-200" id="out-v1">3.00 × 10⁸ m/s</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] text-slate-400">ตัวกลาง 2 ($v_2$):</span>
+                            <span class="font-mono text-xs text-sky-200" id="out-v2">2.25 × 10⁸ m/s</span>
+                        </div>
+                    </div>
+
+                    <div id="wave-data-box">
+                        <div class="text-xs text-slate-300 font-semibold mb-1 border-b border-slate-700 pb-1">ความยาวคลื่น ($\lambda' = \lambda/n$)</div>
+                        <div class="flex justify-between items-center mt-1">
+                            <span class="text-[10px] text-slate-400">ในตัวกลาง 1 ($\lambda_1$):</span>
+                            <span class="font-mono text-xs text-fuchsia-300" id="out-w1">650 nm</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] text-slate-400">ในตัวกลาง 2 ($\lambda_2$):</span>
+                            <span class="font-mono text-xs text-fuchsia-300" id="out-w2">488 nm</span>
+                        </div>
+                        <div class="text-[9px] text-slate-500 mt-1 italic text-right">*ความถี่ (f) คงที่เสมอ</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <div id="theory-modal" class="hidden absolute inset-0 bg-slate-900/90 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+            <div class="bg-slate-800 border border-slate-600 rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl pointer-events-auto">
+                <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50 rounded-t-xl shrink-0">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-book-open text-sky-400"></i> ทฤษฎีการหักเหของแสง (Refraction & Snell's Law)</h2>
+                    <button id="btn-close-modal" class="text-slate-400 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                
+                <div class="p-6 overflow-y-auto space-y-6 text-sm text-slate-300 leading-relaxed">
+                    
+                    <section>
+                        <h3 class="text-sky-400 font-semibold mb-2 text-base">ทำไม Simulation ถึงดีสำหรับการศึกษาเรื่องนี้?</h3>
+                        <ul class="list-disc pl-5 space-y-1">
+                            <li><strong>เห็นการเปลี่ยนแปลงทันที:</strong> สามารถปรับดรรชนีหักเหของตัวกลางและเห็นเส้นทางแสงหักเหเหหรือสะท้อนกลับหมดได้ทันทีโดยไม่ต้องตั้งค่าอุปกรณ์จริงที่ยุ่งยาก</li>
+                            <li><strong>เข้าใจปรากฏการณ์การกระจายแสง (Dispersion):</strong> ในโลกจริงการหาปริซึมที่สมบูรณ์แบบเพื่อแยกแสงขาวอาจทำได้ยาก แต่จำลองนี้สามารถแสดงรุ้งและการแยกความยาวคลื่นแต่ละสีได้อย่างชัดเจน</li>
+                            <li><strong>เห็นความสัมพันธ์เชิงปริมาณ:</strong> โปรแกรมคำนวณและแสดงความเร็วแสง ($v$) และความยาวคลื่น ($\lambda$) ที่หดสั้นลงในตัวกลางที่หนาแน่นขึ้นให้เห็นเป็นตัวเลขเรียลไทม์ ซึ่งตาเปล่ามองไม่เห็น</li>
+                        </ul>
+                    </section>
+
+                    <section class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                        <h3 class="text-emerald-400 font-semibold mb-2">หลักการหักเหและ กฎของสเนลล์ (Snell's Law)</h3>
+                        <p class="mb-2">เมื่อแสงเดินทางผ่านรอยต่อระหว่างสองตัวกลางที่มีความหนาแน่นต่างกัน ความเร็วของแสงจะเปลี่ยนไป ทำให้เกิดการเบนของลำแสง</p>
+                        <div class="math-display text-center mb-2">$$n_1 \sin(\theta_1) = n_2 \sin(\theta_2)$$</div>
+                        <ul class="space-y-2 text-[12px] mt-2">
+                            <li><i class="fa-solid fa-arrow-right text-sky-500"></i> <strong>หนาแน่นน้อย $\rightarrow$ มาก (เช่น อากาศไปน้ำ):</strong> $n_1 < n_2$ แสงจะวิ่งช้าลงและ <strong>เบนเข้าหา</strong> เส้นปกติ ($\theta_2 < \theta_1$)</li>
+                            <li><i class="fa-solid fa-arrow-right text-rose-500"></i> <strong>หนาแน่นมาก $\rightarrow$ น้อย (เช่น แก้วไปอากาศ):</strong> $n_1 > n_2$ แสงจะวิ่งเร็วขึ้นและ <strong>เบนออกจาก</strong> เส้นปกติ ($\theta_2 > \theta_1$)</li>
+                        </ul>
+                    </section>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <section class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                            <h3 class="text-amber-400 font-semibold mb-2">การสะท้อนกลับหมด (TIR)</h3>
+                            <p class="text-[11px] mb-2">เกิดขึ้นเมื่อแสงเดินทางจากตัวกลางที่แน่น <strong>มากไปน้อย</strong> ($n_1 > n_2$) และมุมตกกระทบโตกกว่า "มุมวิกฤต ($\theta_c$)" แสงจะไม่ทะลุผ่านเลย แต่สะท้อนกลับ 100%</p>
+                            <div class="math-display">$$\sin(\theta_c) = \frac{n_2}{n_1}$$</div>
+                            <p class="text-[11px] mt-2"><em>*ประยุกต์ใช้ในเส้นใยแก้วนำแสง (Fiber Optics)</em></p>
+                        </section>
+                        
+                        <section class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                            <h3 class="text-fuchsia-400 font-semibold mb-2">แสงขาวและการเกิดรุ้ง (Dispersion)</h3>
+                            <p class="text-[11px]">ปริซึมทำให้เกิดรุ้งได้ เพราะแสงขาวประกอบด้วยหลายความยาวคลื่น (สี) ดรรชนีหักเหของตัวกลางจะ <strong>ขึ้นอยู่กับความยาวคลื่น</strong> เล็กน้อย โดยปกติ $n_{สีน้ำเงิน} > n_{สีแดง}$ ทำให้แสงสีน้ำเงิน/ม่วงหักเห (เบน) มากกว่าสีแดง เมื่อแสงผ่านปริซึม สีต่างๆ จึงแยกออกจากกัน</p>
+                        </section>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Physics State & Variables ---
+        let n1 = 1.0;
+        let n2 = 1.333;
+        let theta1Deg = 45.0;
+        let wavelength = 650; // nm
+        
+        let isWhiteLight = false;
+        let showReflection = true;
+
+        const SPEED_OF_LIGHT = 299792458; // m/s (approx 3x10^8)
+
+        // --- 2. Three.js Setup ---
+        let scene, camera, renderer, controls;
+        let clock = new THREE.Clock();
+        
+        let is2DMode = true;
+
+        // Visual Objects
+        let medium1Mesh, medium2Mesh, protractorMesh;
+        let laserDevice;
+        let normalLine;
+        
+        // Beam objects
+        let incidentBeam, reflectedBeam, refractedBeam;
+        // Array for white light spread
+        let spectrumBeams = [];
+
+        // UI Mapping
+        const ui = {
+            selM1: document.getElementById('sel-m1'),
+            selM2: document.getElementById('sel-m2'),
+            slN1: document.getElementById('sl-n1'),
+            slN2: document.getElementById('sl-n2'),
+            valN1: document.getElementById('val-n1'),
+            valN2: document.getElementById('val-n2'),
+            
+            slTheta1: document.getElementById('sl-theta1'),
+            valTheta1: document.getElementById('val-theta1'),
+            
+            togWhite: document.getElementById('toggle-white'),
+            txtModeDesc: document.getElementById('txt-mode-desc'),
+            waveContainer: document.getElementById('wavelength-container'),
+            slWave: document.getElementById('slider-wavelength'),
+            valWave: document.getElementById('val-wave'),
+            
+            togRefl: document.getElementById('toggle-refl'),
+            
+            outTheta2: document.getElementById('out-theta2'),
+            outThetaC: document.getElementById('out-thetac'),
+            tirWarning: document.getElementById('tir-warning'),
+            
+            outV1: document.getElementById('out-v1'),
+            outV2: document.getElementById('out-v2'),
+            outW1: document.getElementById('out-w1'),
+            outW2: document.getElementById('out-w2'),
+            waveDataBox: document.getElementById('wave-data-box'),
+            
+            btnCam: document.getElementById('btn-toggle-cam'),
+            camText: document.getElementById('cam-mode-text'),
+            btnInfo: document.getElementById('btn-info'),
+            btnClose: document.getElementById('btn-close-modal'),
+            modal: document.getElementById('theory-modal')
+        };
+
+        // --- Utility: Wavelength to Color (Approximate) ---
+        function waveLengthToRGB(Wavelength) {
+            let factor, Red, Green, Blue;
+            if((Wavelength >= 380) && (Wavelength<440)){
+                Red = -(Wavelength - 440) / (440 - 380);
+                Green = 0.0;
+                Blue = 1.0;
+            } else if((Wavelength >= 440) && (Wavelength<490)){
+                Red = 0.0;
+                Green = (Wavelength - 440) / (490 - 440);
+                Blue = 1.0;
+            } else if((Wavelength >= 490) && (Wavelength<510)){
+                Red = 0.0;
+                Green = 1.0;
+                Blue = -(Wavelength - 510) / (510 - 490);
+            } else if((Wavelength >= 510) && (Wavelength<580)){
+                Red = (Wavelength - 510) / (580 - 510);
+                Green = 1.0;
+                Blue = 0.0;
+            } else if((Wavelength >= 580) && (Wavelength<645)){
+                Red = 1.0;
+                Green = -(Wavelength - 645) / (645 - 580);
+                Blue = 0.0;
+            } else if((Wavelength >= 645) && (Wavelength<=780)){
+                Red = 1.0;
+                Green = 0.0;
+                Blue = 0.0;
+            } else {
+                Red = 0.0; Green = 0.0; Blue = 0.0;
+            }
+            
+            // Intensity falloff near vision limits
+            if((Wavelength >= 380) && (Wavelength<420)){
+                factor = 0.3 + 0.7*(Wavelength - 380) / (420 - 380);
+            } else if((Wavelength >= 420) && (Wavelength<701)){
+                factor = 1.0;
+            } else if((Wavelength >= 701) && (Wavelength<=780)){
+                factor = 0.3 + 0.7*(780 - Wavelength) / (780 - 700);
+            } else {
+                factor = 0.0;
+            }
+            
+            let r = Math.round(Red * factor * 255);
+            let g = Math.round(Green * factor * 255);
+            let b = Math.round(Blue * factor * 255);
+            
+            return new THREE.Color(`rgb(${r},${g},${b})`);
+        }
+
+        // --- 3. Initialization ---
+        init();
+        animate();
+
+        function init() {
+            const container = document.getElementById('canvas-container');
+            
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color('#0f172a');
+            
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            // Default to 2D view initially for clarity
+            camera.position.set(0, 0, 30);
+            camera.lookAt(0,0,0);
+
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three-canvas'), antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            // Add additive blending capability for lasers
+            renderer.sortObjects = true;
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.enableRotate = false; // Lock initially to 2D
+
+            // Lighting
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambient);
+            const dir = new THREE.DirectionalLight(0xffffff, 0.5);
+            dir.position.set(0, 0, 10);
+            scene.add(dir);
+
+            buildEnvironment();
+            setupEvents();
+            
+            updatePhysics();
+            
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function buildEnvironment() {
+            // Medium 2 (Bottom Half Box) - Glass/Water representation
+            const m2Geo = new THREE.BoxGeometry(40, 20, 5);
+            const m2Mat = new THREE.MeshPhysicalMaterial({
+                color: 0x38bdf8,
+                transmission: 0.8,
+                opacity: 0.3,
+                transparent: true,
+                roughness: 0.1,
+                side: THREE.DoubleSide
+            });
+            medium2Mesh = new THREE.Mesh(m2Geo, m2Mat);
+            medium2Mesh.position.y = -10; // Center is at 0, bottom half
+            scene.add(medium2Mesh);
+            
+            // Add a subtle line for the interface boundary
+            const boundaryGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-20,0,0), new THREE.Vector3(20,0,0)]);
+            const boundaryMat = new THREE.LineBasicMaterial({color: 0xffffff, opacity: 0.5, transparent: true});
+            scene.add(new THREE.Line(boundaryGeo, boundaryMat));
+
+            // Protractor (Generated via Canvas)
+            const protractorTex = createProtractorTexture();
+            const proGeo = new THREE.PlaneGeometry(16, 16);
+            const proMat = new THREE.MeshBasicMaterial({ map: protractorTex, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
+            protractorMesh = new THREE.Mesh(proGeo, proMat);
+            // Position slightly behind origin to avoid z-fighting with lines
+            protractorMesh.position.set(0, 0, -0.1); 
+            scene.add(protractorMesh);
+
+            // Normal Line (Dashed Vertical)
+            const normGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 12, 0), new THREE.Vector3(0, -12, 0)]);
+            const normMat = new THREE.LineDashedMaterial({ color: 0x94a3b8, dashSize: 0.5, gapSize: 0.5 });
+            normalLine = new THREE.Line(normGeo, normMat);
+            normalLine.computeLineDistances(); // Required for dashes
+            scene.add(normalLine);
+
+            // Laser Device
+            const laserGeo = new THREE.CylinderGeometry(0.3, 0.3, 2, 16);
+            laserGeo.translate(0, 1, 0); // Pivot at base
+            const laserMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 });
+            laserDevice = new THREE.Mesh(laserGeo, laserMat);
+            scene.add(laserDevice);
+
+            // Beams setup
+            const beamMatBase = new THREE.LineBasicMaterial({ linewidth: 3, transparent: true, opacity: 0.9 });
+            
+            incidentBeam = new THREE.Line(new THREE.BufferGeometry(), beamMatBase.clone());
+            reflectedBeam = new THREE.Line(new THREE.BufferGeometry(), beamMatBase.clone());
+            refractedBeam = new THREE.Line(new THREE.BufferGeometry(), beamMatBase.clone());
+            
+            scene.add(incidentBeam);
+            scene.add(reflectedBeam);
+            scene.add(refractedBeam);
+
+            // Setup Spectrum Beams for White Light
+            const spectrumColors = [400, 450, 500, 550, 600, 650, 700]; // Representative wavelengths
+            spectrumColors.forEach(w => {
+                const mat = new THREE.LineBasicMaterial({ color: waveLengthToRGB(w), linewidth: 2, transparent: true, opacity: 0.8 });
+                const line = new THREE.Line(new THREE.BufferGeometry(), mat);
+                line.userData = { w: w };
+                line.visible = false;
+                spectrumBeams.push(line);
+                scene.add(line);
+            });
+        }
+
+        function createProtractorTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024; canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+            const cx = 512, cy = 512, r = 480;
+            
+            // Draw background rings
+            ctx.clearRect(0, 0, 1024, 1024);
+            ctx.strokeStyle = 'rgba(100, 116, 139, 0.6)'; // slate-500
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, 2*Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(cx, cy, r-40, 0, 2*Math.PI);
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(203, 213, 225, 0.9)'; // slate-300
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Draw ticks and labels
+            for(let i=0; i<360; i+=2) {
+                // Angle logic: Standard trig starts X-right (0), Top (90).
+                // We want Normal (Top Y) to be 0 degrees.
+                // So Top = 0, Right = 90, Bottom = 180, Left = 270 (for labelling)
+                // In canvas, rotation is clockwise from X+. Top is -90deg.
+                
+                const rad = (i - 90) * Math.PI / 180; 
+                
+                const isMajor = i % 10 === 0;
+                const isMed = i % 5 === 0;
+                const len = isMajor ? 40 : (isMed ? 25 : 10);
+                
+                ctx.beginPath();
+                ctx.moveTo(cx + Math.cos(rad) * r, cy + Math.sin(rad) * r);
+                ctx.lineTo(cx + Math.cos(rad) * (r - len), cy + Math.sin(rad) * (r - len));
+                ctx.lineWidth = isMajor ? 3 : 1;
+                ctx.stroke();
+                
+                if (isMajor && i % 10 === 0) {
+                    // Calculate displayed angle (0 at vertical Y, up to 90 at horizontal)
+                    let displayAngle = 0;
+                    if (i <= 90) displayAngle = i;
+                    else if (i <= 180) displayAngle = 180 - i;
+                    else if (i <= 270) displayAngle = i - 180;
+                    else displayAngle = 360 - i;
+                    
+                    const textR = r - 65;
+                    ctx.fillText(displayAngle, cx + Math.cos(rad)*textR, cy + Math.sin(rad)*textR);
+                }
+            }
+            
+            // X and Y axis lines
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, cy); ctx.lineTo(1024, cy);
+            ctx.moveTo(cx, 0); ctx.lineTo(cx, 1024);
+            ctx.stroke();
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function setupEvents() {
+            // Medium 1 Handlers
+            ui.selM1.addEventListener('change', (e) => {
+                if (e.target.value === 'custom') {
+                    ui.slN1.disabled = false;
+                } else {
+                    ui.slN1.disabled = true;
+                    ui.slN1.value = e.target.value;
+                    n1 = parseFloat(e.target.value);
+                    ui.valN1.textContent = n1.toFixed(2);
+                    updatePhysics();
+                }
+            });
+            ui.slN1.addEventListener('input', (e) => {
+                n1 = parseFloat(e.target.value);
+                ui.valN1.textContent = n1.toFixed(2);
+                updatePhysics();
+            });
+
+            // Medium 2 Handlers
+            ui.selM2.addEventListener('change', (e) => {
+                if (e.target.value === 'custom') {
+                    ui.slN2.disabled = false;
+                } else {
+                    ui.slN2.disabled = true;
+                    ui.slN2.value = e.target.value;
+                    n2 = parseFloat(e.target.value);
+                    ui.valN2.textContent = n2.toFixed(2);
+                    updatePhysics();
+                }
+            });
+            ui.slN2.addEventListener('input', (e) => {
+                n2 = parseFloat(e.target.value);
+                ui.valN2.textContent = n2.toFixed(2);
+                updatePhysics();
+            });
+
+            // Angle
+            ui.slTheta1.addEventListener('input', (e) => {
+                theta1Deg = parseFloat(e.target.value);
+                ui.valTheta1.textContent = `${theta1Deg.toFixed(1)}°`;
+                updatePhysics();
+            });
+
+            // Modes
+            ui.togWhite.addEventListener('change', (e) => {
+                isWhiteLight = e.target.checked;
+                if (isWhiteLight) {
+                    ui.txtModeDesc.textContent = "แสงขาว (White Light & Dispersion)";
+                    ui.txtModeDesc.className = "text-[10px] text-fuchsia-400 text-right mb-2";
+                    ui.waveContainer.classList.add('opacity-30', 'pointer-events-none');
+                    ui.waveDataBox.classList.add('hidden');
+                } else {
+                    ui.txtModeDesc.textContent = "เลเซอร์สีเดียว (Monochromatic)";
+                    ui.txtModeDesc.className = "text-[10px] text-slate-400 text-right mb-2";
+                    ui.waveContainer.classList.remove('opacity-30', 'pointer-events-none');
+                    ui.waveDataBox.classList.remove('hidden');
+                }
+                updatePhysics();
+            });
+
+            ui.slWave.addEventListener('input', (e) => {
+                wavelength = parseFloat(e.target.value);
+                ui.valWave.textContent = `${wavelength} nm`;
+                updatePhysics();
+            });
+
+            ui.togRefl.addEventListener('change', (e) => {
+                showReflection = e.target.checked;
+                updatePhysics();
+            });
+
+            // Camera Toggle
+            ui.btnCam.addEventListener('click', () => {
+                is2DMode = !is2DMode;
+                if(is2DMode) {
+                    ui.camText.textContent = "สลับมุมมอง 3D";
+                    camera.position.set(0, 0, 30);
+                    camera.lookAt(0,0,0);
+                    controls.enableRotate = false;
+                } else {
+                    ui.camText.textContent = "สลับมุมมอง 2D";
+                    camera.position.set(-15, 10, 25);
+                    controls.target.set(0,0,0);
+                    controls.enableRotate = true;
+                }
+                controls.update();
+            });
+
+            // Modal
+            ui.btnInfo.addEventListener('click', () => ui.modal.classList.remove('hidden'));
+            ui.btnClose.addEventListener('click', () => ui.modal.classList.add('hidden'));
+        }
+
+        function updatePhysics() {
+            const rad1 = theta1Deg * Math.PI / 180;
+            
+            // 1. Critical Angle Check (if n1 > n2)
+            let isTIR = false;
+            let thetaC = "N/A";
+            
+            if (n1 > n2) {
+                const val = n2 / n1;
+                const criticalRad = Math.asin(val);
+                thetaC = (criticalRad * 180 / Math.PI).toFixed(1) + "°";
+                
+                if (rad1 > criticalRad) {
+                    isTIR = true;
+                }
+            }
+            ui.outThetaC.textContent = thetaC;
+
+            // 2. Calculate Refraction (Snell's Law)
+            let theta2Deg = "N/A";
+            let rad2 = 0;
+            if (!isTIR) {
+                const sinT2 = (n1 / n2) * Math.sin(rad1);
+                rad2 = Math.asin(sinT2);
+                theta2Deg = (rad2 * 180 / Math.PI).toFixed(1) + "°";
+            }
+            
+            ui.outTheta2.textContent = isTIR ? "N/A" : theta2Deg;
+            
+            if (isTIR) {
+                ui.tirWarning.classList.remove('hidden');
+                ui.outTheta2.classList.replace('text-emerald-400', 'text-slate-500');
+            } else {
+                ui.tirWarning.classList.add('hidden');
+                ui.outTheta2.classList.replace('text-slate-500', 'text-emerald-400');
+            }
+
+            // 3. Update Speeds & Wavelength (for single color mode)
+            const v1 = SPEED_OF_LIGHT / n1;
+            const v2 = SPEED_OF_LIGHT / n2;
+            ui.outV1.textContent = `${(v1/1e8).toFixed(2)} × 10⁸ m/s`;
+            ui.outV2.textContent = `${(v2/1e8).toFixed(2)} × 10⁸ m/s`;
+
+            if (!isWhiteLight) {
+                // Wavelength changes based on refractive index: lam2 = lam1 * (n1 / n2)
+                // Assuming slider wavelength is the vacuum wavelength (or in n=1)
+                const wave1 = wavelength / n1;
+                const wave2 = wavelength / n2;
+                ui.outW1.textContent = `${wave1.toFixed(0)} nm`;
+                ui.outW2.textContent = `${wave2.toFixed(0)} nm`;
+            }
+
+            // 4. Update Visuals
+            const L = 12; // Ray length
+
+            // Incident Beam Position (Top-Left quadrant relative to Normal)
+            // Normal is +Y. So beam comes from (-X, +Y)
+            const inX = -L * Math.sin(rad1);
+            const inY = L * Math.cos(rad1);
+            
+            // Position Laser Device
+            // Device points inwards, so rotation needs to match vector
+            laserDevice.position.set(inX, inY, 0);
+            // Rotate cylinder to point at origin (0,0,0)
+            const dirVec = new THREE.Vector3(0,0,0).sub(laserDevice.position).normalize();
+            const up = new THREE.Vector3(0,1,0);
+            const axis = new THREE.Vector3().crossVectors(up, dirVec).normalize();
+            const angle = Math.acos(up.dot(dirVec));
+            laserDevice.quaternion.setFromAxisAngle(axis, angle);
+
+            // Draw Incident
+            incidentBeam.geometry.setFromPoints([new THREE.Vector3(inX, inY, 0), new THREE.Vector3(0,0,0)]);
+            incidentBeam.material.color = isWhiteLight ? new THREE.Color(0xffffff) : waveLengthToRGB(wavelength);
+            
+            // Draw Reflected
+            if (showReflection) {
+                reflectedBeam.visible = true;
+                const refX = L * Math.sin(rad1);
+                const refY = L * Math.cos(rad1);
+                reflectedBeam.geometry.setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(refX, refY, 0)]);
+                reflectedBeam.material.color = incidentBeam.material.color;
+                
+                // Opacity logic: If TIR, 100% reflection. Otherwise partial.
+                reflectedBeam.material.opacity = isTIR ? 1.0 : 0.3; 
+            } else {
+                reflectedBeam.visible = false;
+            }
+
+            // Draw Refracted
+            if (isTIR) {
+                refractedBeam.visible = false;
+                spectrumBeams.forEach(b => b.visible = false);
+            } else {
+                if (!isWhiteLight) {
+                    refractedBeam.visible = true;
+                    spectrumBeams.forEach(b => b.visible = false);
+                    
+                    const outX = L * Math.sin(rad2);
+                    const outY = -L * Math.cos(rad2);
+                    refractedBeam.geometry.setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(outX, outY, 0)]);
+                    refractedBeam.material.color = waveLengthToRGB(wavelength);
+                } else {
+                    refractedBeam.visible = false;
+                    
+                    // Dispersion logic for white light
+                    // n depends on wavelength. Roughly n_blue > n_red
+                    spectrumBeams.forEach(beam => {
+                        beam.visible = true;
+                        const w = beam.userData.w;
+                        
+                        // Fake dispersion model: shift n2 slightly based on wavelength diff from 550nm
+                        // Lower wavelength (blue/400) -> higher index -> bends more towards normal
+                        const dispersionFactor = (550 - w) * 0.0002; 
+                        
+                        // Only disperse if entering a different medium (n1 != n2)
+                        // If n1 == n2, light goes straight. 
+                        const effectiveN2 = (n1 === n2) ? n2 : Math.max(1.0, n2 + dispersionFactor);
+                        
+                        const sT2 = (n1 / effectiveN2) * Math.sin(rad1);
+                        
+                        if (sT2 > 1.0) {
+                            beam.visible = false; // Individual color TIR
+                        } else {
+                            const r2 = Math.asin(sT2);
+                            const ox = L * Math.sin(r2);
+                            const oy = -L * Math.cos(r2);
+                            beam.geometry.setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(ox, oy, 0)]);
+                        }
+                    });
+                }
+            }
+
+            // Update Medium 2 Visuals
+            if (n2 === 1.0) {
+                medium2Mesh.material.opacity = 0; // Air
+            } else {
+                medium2Mesh.material.opacity = 0.2 + (n2 - 1) * 0.1; // Denser = more opaque
+                // Tint based on material
+                if (n2 > 2.0) medium2Mesh.material.color.setHex(0xaaaaaa); // Diamond/dense
+                else if (n2 > 1.4) medium2Mesh.material.color.setHex(0x34d399); // Glass (greenish)
+                else medium2Mesh.material.color.setHex(0x38bdf8); // Water (blue)
+            }
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
