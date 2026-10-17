@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แบบจำลองอนุกรมฟูเรียร์ กลุ่มคลื่น เสียง และหลักความไม่แน่นอน (Fourier & Wave Physics Lab)</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        lab: {
+                            bg: '#090d16',
+                            panel: '#111827',
+                            accent: '#38bdf8',
+                            purple: '#a855f7',
+                            emerald: '#10b981',
+                            amber: '#f59e0b',
+                            rose: '#f43f5e'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Sarabun', 'Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- KaTeX for Mathematics & Physics Formulas -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #060911;
+            color: #f3f4f6;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+        }
+
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-card {
+            background: rgba(31, 41, 55, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.3);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(56, 189, 248, 0.7);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 4px;
+            height: 5px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 15px;
+            width: 15px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+            transition: all 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #7dd3fc;
+        }
+
+        .tab-btn.active {
+            background-color: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            border-bottom: 2px solid #38bdf8;
+            font-weight: 600;
+        }
+
+        .mode-btn.active {
+            background-color: #38bdf8;
+            color: #0f172a;
+            font-weight: 700;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .math-box {
+            font-family: 'Fira Code', monospace;
+        }
+    </style>
+</head>
+<body class="select-none text-slate-100">
+
+    <!-- Top Header Navigation -->
+    <header class="absolute top-2 left-2 right-2 z-30 flex items-center justify-between glass-panel px-4 py-2 rounded-xl">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-sky-500/20 text-sky-400 rounded-lg border border-sky-500/30">
+                <i data-lucide="waves" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-sm md:text-base text-white flex items-center gap-2">
+                    ห้องปฏิบัติการฟิสิกส์เสมือน: อนุกรมฟูเรียร์ กลุ่มคลื่น เสียง & หลักความไม่แน่นอน
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">Fourier, Conjugate Variables & Harmonics</span>
+                </h1>
+                <p class="text-[11px] text-slate-400 hidden sm:block">สังเกตการสังเคราะห์คลื่น, ฮาร์มอนิกของเสียง, กลุ่มคลื่น (Wave Packet) และความสัมพันธ์ $\Delta x \cdot \Delta k \ge 1/2$</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Audio Toggle Button -->
+            <button id="btn-toggle-audio" onclick="toggleAudio()" class="px-3 py-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 rounded-lg transition border border-emerald-500/40 text-xs flex items-center gap-1.5 font-medium">
+                <i data-lucide="volume-2" id="icon-audio" class="w-4 h-4"></i>
+                <span id="txt-audio">เปิดเสียงสังเคราะห์ (Audio)</span>
+            </button>
+
+            <!-- Reset Button -->
+            <button onclick="resetSimulation()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition border border-white/10" title="รีเซ็ตค่าเริ่มต้น">
+                <i data-lucide="rotate-ccw" class="w-4 h-4 text-sky-400"></i>
+            </button>
+            <button onclick="toggleFullscreen()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition border border-white/10" title="เต็มจอ">
+                <i data-lucide="maximize" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Layout Grid -->
+    <div class="absolute inset-0 pt-14 p-2 pointer-events-none grid grid-cols-1 md:grid-cols-12 gap-2 h-full pb-2">
+
+        <!-- ================= LEFT PANEL: Controls & Presets ================= -->
+        <aside class="md:col-span-3 lg:col-span-3 glass-panel rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <div class="p-2.5 border-b border-white/10 bg-slate-900/80 flex justify-between items-center">
+                <span class="font-semibold text-xs text-white flex items-center gap-1.5">
+                    <i data-lucide="sliders" class="w-4 h-4 text-sky-400"></i>
+                    โหมดทดลอง & การตั้งค่า (Sandbox)
+                </span>
+            </div>
+
+            <!-- Mode Selector Tabs -->
+            <div class="p-2 bg-slate-950/60 border-b border-white/10 grid grid-cols-2 gap-1 text-[11px]">
+                <button id="mode-fourier" onclick="switchLabMode('fourier')" class="mode-btn active py-1.5 rounded text-center transition flex items-center justify-center gap-1">
+                    <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+                    <span>1. ฟูเรียร์ & ฮาร์มอนิก</span>
+                </button>
+                <button id="mode-packet" onclick="switchLabMode('packet')" class="mode-btn px-2 py-1.5 text-slate-400 hover:text-white rounded text-center transition flex items-center justify-center gap-1">
+                    <i data-lucide="shrink" class="w-3.5 h-3.5"></i>
+                    <span>2. กลุ่มคลื่น & ความไม่แน่นอน</span>
+                </button>
+            </div>
+
+            <!-- Dynamic Settings Sliders Container -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-3 text-xs">
+
+                <!-- PANEL SECTION 1: Fourier Series Controls -->
+                <div id="controls-fourier" class="space-y-3">
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-sky-400 block border-b border-white/10 pb-1">แม่แบบรูปคลื่นมาตรฐาน (Waveform Presets)</span>
+                        <div class="grid grid-cols-2 gap-1.5">
+                            <button onclick="applyPreset('square')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-sky-300 rounded border border-white/10 text-center font-medium">คลื่นสี่เหลี่ยม (Square)</button>
+                            <button onclick="applyPreset('sawtooth')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-purple-300 rounded border border-white/10 text-center font-medium">คลื่นฟันเลื่อย (Sawtooth)</button>
+                            <button onclick="applyPreset('triangle')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded border border-white/10 text-center font-medium">คลื่นสามเหลี่ยม (Triangle)</button>
+                            <button onclick="applyPreset('sine')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded border border-white/10 text-center font-medium">คลื่นไซน์บริสุทธิ์ (Pure Sine)</button>
+                        </div>
+                    </div>
+
+                    <!-- Fundamental Frequency Control -->
+                    <div class="glass-card p-2.5 rounded-lg space-y-1.5">
+                        <div class="flex justify-between items-center text-[11px]">
+                            <span class="text-slate-300 font-semibold">ความถี่มูลฐาน ($f_0$):</span>
+                            <span id="val-freq-base" class="font-mono text-sky-300 font-bold">220 Hz</span>
+                        </div>
+                        <input type="range" id="slider-freq-base" min="110" max="880" step="10" value="220" class="w-full" oninput="onControlChange()">
+                    </div>
+
+                    <!-- Number of Terms / Harmonics -->
+                    <div class="glass-card p-2.5 rounded-lg space-y-1.5">
+                        <div class="flex justify-between items-center text-[11px]">
+                            <span class="text-slate-300 font-semibold">จำนวนพจน์ฮาร์มอนิก ($N$):</span>
+                            <span id="val-harmonics-count" class="font-mono text-purple-300 font-bold">5 พจน์</span>
+                        </div>
+                        <input type="range" id="slider-harmonics-count" min="1" max="16" step="1" value="5" class="w-full" oninput="onControlChange()">
+                    </div>
+
+                    <!-- Individual Harmonics Amplitudes (Custom Sliders) -->
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-slate-300 block border-b border-white/10 pb-1 flex justify-between">
+                            <span>ปรับแอมพลิจูดฮาร์มอนิกย่อย ($A_n$)</span>
+                            <span class="text-[10px] text-slate-400">Harmonics 1 - 8</span>
+                        </span>
+                        <div id="harmonics-sliders-list" class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                            <!-- Injected dynamically by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANEL SECTION 2: Wave Packet & Uncertainty Controls -->
+                <div id="controls-packet" class="space-y-3 hidden">
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-purple-400 block border-b border-white/10 pb-1">การแจกแจงเวกเตอร์คลื่น ($\Delta k$)</span>
+                        <p class="text-[10px] text-slate-400 leading-relaxed">
+                            ตามหลักฟูเรียร์และการแปลงฟูเรียร์ ยิ่งกระจายค่าเลขคลื่น $\Delta k$ กว้างขึ้น กลุ่มคลื่นตำแหน่ง $\Delta x$ จะยิ่งแคบลง
+                        </p>
+                    </div>
+
+                    <!-- Spatial Spread vs Momentum Spread Slider -->
+                    <div class="glass-card p-2.5 rounded-lg space-y-1.5">
+                        <div class="flex justify-between items-center text-[11px]">
+                            <span class="text-slate-300 font-semibold">ความกว้างเลขคลื่น ($\Delta k$):</span>
+                            <span id="val-delta-k" class="font-mono text-amber-300 font-bold">2.50 rad/m</span>
+                        </div>
+                        <input type="range" id="slider-delta-k" min="0.2" max="8.0" step="0.1" value="2.5" class="w-full" oninput="onControlChange()">
+                    </div>
+
+                    <!-- Central Wave Vector k0 -->
+                    <div class="glass-card p-2.5 rounded-lg space-y-1.5">
+                        <div class="flex justify-between items-center text-[11px]">
+                            <span class="text-slate-300 font-semibold">เลขคลื่นศูนย์กลาง ($k_0$):</span>
+                            <span id="val-k0" class="font-mono text-sky-300 font-bold">12.0 rad/m</span>
+                        </div>
+                        <input type="range" id="slider-k0" min="4.0" max="25.0" step="0.5" value="12.0" class="w-full" oninput="onControlChange()">
+                    </div>
+
+                    <!-- Group & Phase Velocity Controls -->
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-slate-300 block border-b border-white/10 pb-1">ความเร็วกลุ่ม vs ความเร็วเฟส ($v_g, v_p$)</span>
+                        <div class="space-y-1.5">
+                            <div class="flex justify-between text-[10px]">
+                                <span class="text-slate-400">ความเร็วเฟส ($v_p = \omega/k$):</span>
+                                <span id="val-vp" class="font-mono text-emerald-400 font-bold">1.5 m/s</span>
+                            </div>
+                            <input type="range" id="slider-vp" min="0.2" max="4.0" step="0.1" value="1.5" class="w-full" oninput="onControlChange()">
+
+                            <div class="flex justify-between text-[10px] pt-1">
+                                <span class="text-slate-400">ความเร็วกลุ่ม ($v_g = d\omega/dk$):</span>
+                                <span id="val-vg" class="font-mono text-rose-400 font-bold">1.0 m/s</span>
+                            </div>
+                            <input type="range" id="slider-vg" min="0.1" max="4.0" step="0.1" value="1.0" class="w-full" oninput="onControlChange()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Display Options Toggles -->
+                <div class="glass-card p-2.5 rounded-lg space-y-1.5">
+                    <span class="text-[11px] font-bold text-slate-300 block border-b border-white/10 pb-1">ตัวเลือกการแสดงผล (Visual Overlays)</span>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white pt-1">
+                        <span>แสดงวงกลมเฟสเซอร์ (Phasor Circles)</span>
+                        <input type="checkbox" id="toggle-phasors" checked onchange="onControlChange()" class="accent-sky-500 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>แสดงสเปกตรัมความถี่ (FFT Spectrum)</span>
+                        <input type="checkbox" id="toggle-spectrum" checked onchange="onControlChange()" class="accent-sky-500 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>แสดงซองหุ้มคลื่น (Envelope Curve)</span>
+                        <input type="checkbox" id="toggle-envelope" checked onchange="onControlChange()" class="accent-purple-500 rounded">
+                    </label>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- ================= CENTER: Interactive Canvas Viewport ================= -->
+        <main class="md:col-span-5 lg:col-span-5 glass-panel rounded-xl flex flex-col pointer-events-auto border border-white/10 shadow-2xl relative overflow-hidden">
+            <!-- Viewport Canvas Container -->
+            <div id="viewport-container" class="flex-1 bg-slate-950/80 relative cursor-crosshair">
+                <canvas id="canvas-main" class="absolute inset-0 w-full h-full z-10"></canvas>
+
+                <!-- Status Badge Overlay -->
+                <div class="absolute top-2 left-2 bg-slate-900/90 backdrop-blur px-3 py-1.5 rounded-lg border border-white/10 text-[11px] text-slate-300 flex items-center gap-2 pointer-events-none z-20 font-mono">
+                    <i data-lucide="radio" class="w-3.5 h-3.5 text-sky-400 animate-pulse"></i>
+                    <span id="status-mode-label">โหมด: อนุกรมฟูเรียร์สังเคราะห์คลื่น (Fourier Synthesis)</span>
+                </div>
+
+                <!-- Live Conjugate Readings Badge -->
+                <div class="absolute bottom-2 left-2 bg-slate-900/90 backdrop-blur p-2 rounded-lg border border-white/10 text-[10px] font-mono text-slate-300 z-20 space-y-1 min-w-[210px]">
+                    <div class="flex justify-between border-b border-white/10 pb-0.5">
+                        <span class="text-slate-400">ขนาดกระจายขอบเขต ($\Delta x$):</span>
+                        <span id="readout-dx" class="text-emerald-400 font-bold">0.40 m</span>
+                    </div>
+                    <div class="flex justify-between border-b border-white/10 pb-0.5">
+                        <span class="text-slate-400">ขนาดกระจายเลขคลื่น ($\Delta k$):</span>
+                        <span id="readout-dk" class="text-amber-400 font-bold">2.50 rad/m</span>
+                    </div>
+                    <div class="flex justify-between font-bold pt-0.5">
+                        <span class="text-purple-300">ผลคูณ $\Delta x \cdot \Delta k$:</span>
+                        <span id="readout-product" class="text-purple-400">1.000 $\ge 0.5$</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- ================= RIGHT PANEL: Theory, Math & Audio Analysis ================= -->
+        <aside class="md:col-span-4 lg:col-span-4 glass-panel rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <!-- Navigation Tabs -->
+            <div class="p-2 border-b border-white/10 bg-slate-900/80">
+                <div class="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded-lg text-[11px] font-semibold text-center">
+                    <button onclick="switchRightTab('math')" id="tab-math" class="tab-btn active py-1 rounded transition">คณิตศาสตร์ & สมการ</button>
+                    <button onclick="switchRightTab('theory')" id="tab-theory" class="tab-btn py-1 rounded transition">ทฤษฎี & เสียง</button>
+                    <button onclick="switchRightTab('conjugate')" id="tab-conjugate" class="tab-btn py-1 rounded transition">Conjugate Variables</button>
+                </div>
+            </div>
+
+            <!-- Scrollable Content Panels -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-3 text-xs">
+
+                <!-- TAB 1: Real-time Mathematical Formulas & Spectral Decomposition -->
+                <div id="content-math" class="space-y-3">
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-sky-400 block border-b border-white/10 pb-1">สมการอนุกรมฟูเรียร์ (Fourier Series Formula)</span>
+                        <div id="math-fourier-formula" class="py-1 text-center text-sky-200 font-mono text-xs bg-slate-950/60 rounded p-2"></div>
+                        <p class="text-[10px] text-slate-300 leading-relaxed">
+                            ฟังก์ชันคลื่นคาบใดๆ สามารถย่อยให้อยู่ในรูปผลรวมของคลื่นไซน์และโคไซน์ที่มีความถี่เป็นพหุคูณ整 (Harmonics) ได้เสมอ
+                        </p>
+                    </div>
+
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-purple-400 block border-b border-white/10 pb-1">สมการการแปลงฟูเรียร์ (Fourier Transform)</span>
+                        <div id="math-transform-formula" class="py-1 text-center text-purple-200 font-mono text-xs bg-slate-950/60 rounded p-2"></div>
+                        <p class="text-[10px] text-slate-300 leading-relaxed">
+                            แปลงสัญญาณจากโดเมนพื้นที่/เวลา ($x, t$) ไปสู่โดเมนความถี่/เลขคลื่น ($k, f$)
+                        </p>
+                    </div>
+
+                    <!-- Live Fourier Spectrum Bar Chart -->
+                    <div class="glass-card p-2.5 rounded-lg space-y-1.5">
+                        <span class="text-[11px] font-bold text-amber-400 block border-b border-white/10 pb-1">สเปกตรัมแอมพลิจูดความถี่ ($A_n$ Spectrum)</span>
+                        <canvas id="canvas-spectrum" class="w-full h-24 bg-slate-950/80 rounded border border-white/10 my-1"></canvas>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Physical Explanations (Sound, Harmonics & Waves) -->
+                <div id="content-theory" class="space-y-3 hidden">
+                    <div class="p-2.5 border-l-2 border-sky-400 bg-slate-900/60 rounded-r-lg space-y-1">
+                        <h4 class="font-bold text-sky-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="music" class="w-3.5 h-3.5"></i> 1. เสียงและฮาร์มอนิก (Sound & Timbre)
+                        </h4>
+                        <p class="text-slate-300 text-[10px] leading-relaxed">
+                            ระดับเสียง (Pitch) ขึ้นกับความถี่มูลฐาน ($f_0$) ในขณะที่ <strong>"คุณภาพเสียง" หรือ "สีสันเสียง" (Timbre)</strong> ของเครื่องดนตรีแต่ละชนิด (เปียโน ไวโอลิน หรือเสียงคน) เกิดจากสัดส่วนแอมพลิจูดของฮาร์มอนิกย่อย ($A_1, A_2, A_3, \dots$) ที่ผสมกันอยู่
+                        </p>
+                    </div>
+
+                    <div class="p-2.5 border-l-2 border-emerald-400 bg-slate-900/60 rounded-r-lg space-y-1">
+                        <h4 class="font-bold text-emerald-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="layers" class="w-3.5 h-3.5"></i> 2. การซ้อนทับกันของคลื่น (Superposition)
+                        </h4>
+                        <p class="text-slate-300 text-[10px] leading-relaxed">
+                            เมื่อคลื่นหลายความถี่เคลื่อนที่ผ่านตัวกลางเดียวกัน การขจัดรวมจะเป็นผลบวกทางคณิตศาสตร์แบบพีชคณิต ($y_{total}(x) = \sum y_n(x)$) เกิดเป็นคลื่นรวมที่มีรูปร่างซับซ้อน เช่น คลื่นสี่เหลี่ยม หรือคลื่นบีตส์ (Beats)
+                        </p>
+                    </div>
+
+                    <div class="p-2.5 border-l-2 border-purple-400 bg-slate-900/60 rounded-r-lg space-y-1">
+                        <h4 class="font-bold text-purple-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="zap" class="w-3.5 h-3.5"></i> 3. กลุ่มคลื่น (Wave Packet) & ความเร็ว
+                        </h4>
+                        <p class="text-slate-300 text-[10px] leading-relaxed">
+                            กลุ่มคลื่นเกิดจากการรวมคลื่นที่มีความถี่ใกล้เคียงกัน ความเร็วของเฟสคลื่นย่อยเรียกว่า <strong>Phase Velocity ($v_p = \omega/k$)</strong> ในขณะที่ความเร็วของซองหุ้มพลังงานเรียกว่า <strong>Group Velocity ($v_g = d\omega/dk$)</strong>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- TAB 3: Conjugate Variables & Quantum Uncertainty -->
+                <div id="content-conjugate" class="space-y-3 hidden">
+                    <div class="p-2.5 border-l-2 border-amber-400 bg-slate-900/60 rounded-r-lg space-y-1">
+                        <h4 class="font-bold text-amber-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="compass" class="w-3.5 h-3.5"></i> ตัวแปรสังยุค (Conjugate Variables)
+                        </h4>
+                        <p class="text-slate-300 text-[10px] leading-relaxed">
+                            ในทางฟูเรียร์และกลศาสตร์ควอนตัม ตัวแปรคู่อบรมสังยุค (Conjugate Pairs) คือคู่ตัวแปรที่เชื่อมโยงกันด้วยการแปลงฟูเรียร์ ได้แก่:
+                        </p>
+                        <ul class="list-disc list-inside text-[10px] text-slate-300 space-y-0.5 pt-1 font-mono">
+                            <li>ตำแหน่ง ($x$) $\longleftrightarrow$ เลขคลื่น/โมเมนตัม ($k, p$)</li>
+                            <li>เวลา ($t$) $\longleftrightarrow$ ความถี่/พลังงาน ($f, E$)</li>
+                        </ul>
+                    </div>
+
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-rose-400 block border-b border-white/10 pb-1">หลักความไม่แน่นอนไฮเซนแบร์ก (Heisenberg Uncertainty)</span>
+                        <div id="math-uncertainty-formula" class="py-1 text-center text-rose-200 font-mono text-xs bg-slate-950/60 rounded p-2"></div>
+                        <p class="text-[10px] text-slate-300 leading-relaxed">
+                            ไม่ใช่ข้อจำกัดของเครื่องมือวัด แต่เป็น <strong>คุณสมบัติทางคลื่นโดยธรรมชาติ!</strong> หากเราต้องการจำกัดขอบเขตตำแหน่งของกลุ่มคลื่นให้แคบมาก ($\Delta x \to 0$) เราต้องผสมช่วงความถี่เลขคลื่นที่กว้างมาก ($\Delta k \to \infty$) เข้าไปด้วย
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- MAIN INTERACTIVE SIMULATION LOGIC SCRIPT -->
+    <script>
+        // Global Simulation Physics State
+        const state = {
+            labMode: 'fourier',          // 'fourier' or 'packet'
+            
+            // Fourier Synthesizer State
+            baseFreq: 220,               // Hz
+            harmonicsCount: 5,           // Number of active terms (1..16)
+            harmonicsAmps: [1.0, 0, 0.33, 0, 0.20, 0, 0.14, 0, 0.11, 0, 0.09, 0, 0.08, 0, 0.07, 0], // A_1 to A_16
+            harmonicsPhases: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+
+            // Wave Packet State
+            deltaK: 2.5,                 // rad/m (Spread in wavenumber)
+            k0: 12.0,                    // rad/m (Central wavenumber)
+            vp: 1.5,                     // Phase velocity m/s
+            vg: 1.0,                     // Group velocity m/s
+
+            // Visual Toggles
+            showPhasors: true,
+            showSpectrum: true,
+            showEnvelope: true,
+
+            // Audio Web Engine
+            audioCtx: null,
+            audioGain: null,
+            audioOscs: [],
+            audioPlaying: false,
+
+            // Animation Clock
+            time: 0
+        };
+
+        // DOM Element References
+        let mainCanvas, mainCtx, spectrumCanvas, spectrumCtx;
+        let lastTimestamp = performance.now();
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initMathKaTeX();
+            initCanvases();
+            buildHarmonicsSlidersUI();
+            lucide.createIcons();
+
+            updateUIReadouts();
+            
+            lastTimestamp = performance.now();
+            requestAnimationFrame(simulationLoop);
+
+            window.addEventListener('resize', onResize);
+        });
+
+        function initMathKaTeX() {
+            if (window.katex) {
+                katex.render("f(x) = \\frac{a_0}{2} + \\sum_{n=1}^{N} \\left[ A_n \\sin(n k_0 x + \\phi_n) \\right]", document.getElementById('math-fourier-formula'));
+                katex.render("F(k) = \\int_{-\\infty}^{\\infty} f(x) e^{-i k x} dx", document.getElementById('math-transform-formula'));
+                katex.render("\\Delta x \\cdot \\Delta k \\ge \\frac{1}{2} \\implies \\Delta x \\cdot \\Delta p_x \\ge \\frac{\\hbar}{2}", document.getElementById('math-uncertainty-formula'));
+            }
+        }
+
+        function initCanvases() {
+            mainCanvas = document.getElementById('canvas-main');
+            mainCtx = mainCanvas.getContext('2d');
+
+            spectrumCanvas = document.getElementById('canvas-spectrum');
+            spectrumCtx = spectrumCanvas.getContext('2d');
+        }
+
+        function buildHarmonicsSlidersUI() {
+            const list = document.getElementById('harmonics-sliders-list');
+            list.innerHTML = '';
+
+            for (let i = 0; i < 8; i++) {
+                const n = i + 1;
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-2 text-[10px]';
+                div.innerHTML = `
+                    <span class="w-8 font-mono text-sky-400 font-bold">A_${n}:</span>
+                    <input type="range" min="0" max="1" step="0.02" value="${state.harmonicsAmps[i]}" 
+                        oninput="onHarmonicSliderInput(${i}, this.value)" class="flex-1">
+                    <span id="txt-amp-${i}" class="w-8 font-mono text-right text-slate-300">${state.harmonicsAmps[i].toFixed(2)}</span>
+                `;
+                list.appendChild(div);
+            }
+        }
+
+        function onHarmonicSliderInput(index, val) {
+            state.harmonicsAmps[index] = parseFloat(val);
+            document.getElementById(`txt-amp-${index}`).innerText = parseFloat(val).toFixed(2);
+            updateAudioEngine();
+            renderSpectrumChart();
+        }
+
+        function simulationLoop(timestamp) {
+            const dt = Math.min((timestamp - lastTimestamp) / 1000, 0.033);
+            lastTimestamp = timestamp;
+
+            state.time += dt;
+
+            renderMainCanvas();
+            renderSpectrumChart();
+
+            requestAnimationFrame(simulationLoop);
+        }
+
+        function renderMainCanvas() {
+            const w = mainCanvas.clientWidth;
+            const h = mainCanvas.clientHeight;
+            if (w === 0 || h === 0) return;
+
+            mainCanvas.width = w * window.devicePixelRatio;
+            mainCanvas.height = h * window.devicePixelRatio;
+            mainCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+            mainCtx.clearRect(0, 0, w, h);
+
+            // Draw Background Grid
+            drawGrid(mainCtx, w, h);
+
+            if (state.labMode === 'fourier') {
+                renderFourierVisualization(w, h);
+            } else if (state.labMode === 'packet') {
+                renderWavePacketVisualization(w, h);
+            }
+        }
+
+        function drawGrid(ctx, w, h) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 1;
+
+            const gridSize = 30;
+            ctx.beginPath();
+            for (let x = 0; x < w; x += gridSize) {
+                ctx.moveTo(x, 0); ctx.lineTo(x, h);
+            }
+            for (let y = 0; y < h; y += gridSize) {
+                ctx.moveTo(0, y); ctx.lineTo(w, y);
+            }
+            ctx.stroke();
+
+            // Center Axis
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.beginPath();
+            ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2);
+            ctx.stroke();
+        }
+
+        function renderFourierVisualization(w, h) {
+            const centerY = h * 0.5;
+            const phasorCenterX = 110;
+            const waveStartX = 220;
+            const waveWidth = w - waveStartX - 20;
+
+            let currentX = phasorCenterX;
+            let currentY = centerY;
+
+            // Draw Rotating Phasor Circles (Epicycles)
+            if (state.showPhasors) {
+                for (let n = 1; n <= state.harmonicsCount; n++) {
+                    const amp = state.harmonicsAmps[n - 1] * 45;
+                    if (amp < 0.5) continue;
+
+                    const speed = n * 2.0;
+                    const angle = state.time * speed + state.harmonicsPhases[n - 1];
+
+                    const prevX = currentX;
+                    const prevY = currentY;
+
+                    currentX += Math.cos(angle) * amp;
+                    currentY -= Math.sin(angle) * amp;
+
+                    // Draw Circle
+                    mainCtx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+                    mainCtx.lineWidth = 1;
+                    mainCtx.beginPath();
+                    mainCtx.arc(prevX, prevY, amp, 0, Math.PI * 2);
+                    mainCtx.stroke();
+
+                    // Draw Radius Line
+                    mainCtx.strokeStyle = '#38bdf8';
+                    mainCtx.lineWidth = 1.5;
+                    mainCtx.beginPath();
+                    mainCtx.moveTo(prevX, prevY);
+                    mainCtx.lineTo(currentX, currentY);
+                    mainCtx.stroke();
+                }
+
+                // Connector line from phasor tip to waveform start
+                mainCtx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
+                mainCtx.setLineDash([3, 3]);
+                mainCtx.beginPath();
+                mainCtx.moveTo(currentX, currentY);
+                mainCtx.lineTo(waveStartX, currentY);
+                mainCtx.stroke();
+                mainCtx.setLineDash([]);
+            }
+
+            // Draw Waveform Profile $y(x, t)$
+            mainCtx.strokeStyle = '#f59e0b';
+            mainCtx.lineWidth = 2.5;
+            mainCtx.beginPath();
+
+            for (let px = 0; px <= waveWidth; px++) {
+                const xPos = waveStartX + px;
+                const spatialPhase = (px / waveWidth) * Math.PI * 6;
+
+                let yVal = 0;
+                for (let n = 1; n <= state.harmonicsCount; n++) {
+                    const amp = state.harmonicsAmps[n - 1] * 45;
+                    if (amp < 0.1) continue;
+
+                    const speed = n * 2.0;
+                    yVal += Math.sin(spatialPhase * n - state.time * speed) * amp;
+                }
+
+                const plotY = centerY - yVal;
+                if (px === 0) mainCtx.moveTo(xPos, plotY);
+                else mainCtx.lineTo(xPos, plotY);
+            }
+            mainCtx.stroke();
+
+            // Draw Axis Labels
+            mainCtx.fillStyle = '#94a3b8';
+            mainCtx.font = '10px Sarabun, sans-serif';
+            mainCtx.fillText('วงกลมเฟสเซอร์ (Phasors)', phasorCenterX - 50, h - 15);
+            mainCtx.fillText('รูปคลื่นสังเคราะห์ y(x, t)', waveStartX + 20, h - 15);
+        }
+
+        function renderWavePacketVisualization(w, h) {
+            const centerY = h * 0.5;
+            const waveWidth = w - 40;
+            const waveStartX = 20;
+
+            const deltaK = state.deltaK;
+            const k0 = state.k0;
+            const vp = state.vp;
+            const vg = state.vg;
+
+            // Spatial spread Delta x is inversely proportional to Delta k
+            const sigmaX = 1.0 / deltaK;
+            const dxPhysical = sigmaX;
+
+            // Envelope Curve
+            if (state.showEnvelope) {
+                mainCtx.strokeStyle = 'rgba(168, 85, 247, 0.6)';
+                mainCtx.lineWidth = 2;
+                mainCtx.setLineDash([4, 4]);
+
+                // Upper Envelope
+                mainCtx.beginPath();
+                for (let px = 0; px <= waveWidth; px++) {
+                    const x = (px - waveWidth / 2) / 40.0;
+                    const xCenter = (state.time * vg) % 10 - 5;
+                    const envelope = Math.exp(-Math.pow(x - xCenter, 2) / (2 * Math.pow(sigmaX, 2))) * 65;
+
+                    const xPos = waveStartX + px;
+                    if (px === 0) mainCtx.moveTo(xPos, centerY - envelope);
+                    else mainCtx.lineTo(xPos, centerY - envelope);
+                }
+                mainCtx.stroke();
+
+                // Lower Envelope
+                mainCtx.beginPath();
+                for (let px = 0; px <= waveWidth; px++) {
+                    const x = (px - waveWidth / 2) / 40.0;
+                    const xCenter = (state.time * vg) % 10 - 5;
+                    const envelope = Math.exp(-Math.pow(x - xCenter, 2) / (2 * Math.pow(sigmaX, 2))) * 65;
+
+                    const xPos = waveStartX + px;
+                    if (px === 0) mainCtx.moveTo(xPos, centerY + envelope);
+                    else mainCtx.lineTo(xPos, centerY + envelope);
+                }
+                mainCtx.stroke();
+                mainCtx.setLineDash([]);
+            }
+
+            // Draw Dynamic Wave Packet Carrier Wave
+            mainCtx.strokeStyle = '#38bdf8';
+            mainCtx.lineWidth = 2.5;
+            mainCtx.beginPath();
+
+            for (let px = 0; px <= waveWidth; px++) {
+                const x = (px - waveWidth / 2) / 40.0;
+                const xCenter = (state.time * vg) % 10 - 5;
+                const envelope = Math.exp(-Math.pow(x - xCenter, 2) / (2 * Math.pow(sigmaX, 2))) * 65;
+
+                const carrier = Math.cos(k0 * x - state.time * k0 * vp);
+                const yVal = envelope * carrier;
+
+                const xPos = waveStartX + px;
+                if (px === 0) mainCtx.moveTo(xPos, centerY - yVal);
+                else mainCtx.lineTo(xPos, centerY - yVal);
+            }
+            mainCtx.stroke();
+
+            // Update Uncertainty Readout Badge Values
+            document.getElementById('readout-dx').innerText = `${sigmaX.toFixed(2)} m`;
+            document.getElementById('readout-dk').innerText = `${deltaK.toFixed(2)} rad/m`;
+            
+            const product = sigmaX * deltaK;
+            document.getElementById('readout-product').innerHTML = `${product.toFixed(3)} $\\ge 0.5$`;
+        }
+
+        function renderSpectrumChart() {
+            const w = spectrumCanvas.clientWidth;
+            const h = spectrumCanvas.clientHeight;
+            if (w === 0 || h === 0) return;
+
+            spectrumCanvas.width = w * window.devicePixelRatio;
+            spectrumCanvas.height = h * window.devicePixelRatio;
+            spectrumCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+            spectrumCtx.clearRect(0, 0, w, h);
+
+            if (state.labMode === 'fourier') {
+                const barCount = 12;
+                const barWidth = (w - 20) / barCount - 4;
+
+                for (let i = 0; i < barCount; i++) {
+                    const n = i + 1;
+                    const amp = i < state.harmonicsAmps.length ? state.harmonicsAmps[i] : 0;
+                    const barHeight = amp * (h - 25);
+
+                    const x = 10 + i * (barWidth + 4);
+                    const y = h - 15 - barHeight;
+
+                    // Bar fill gradient
+                    const grad = spectrumCtx.createLinearGradient(0, y, 0, h - 15);
+                    grad.addColorStop(0, '#f59e0b');
+                    grad.addColorStop(1, 'rgba(245, 158, 11, 0.2)');
+
+                    spectrumCtx.fillStyle = grad;
+                    spectrumCtx.fillRect(x, y, barWidth, barHeight);
+
+                    spectrumCtx.strokeStyle = '#f59e0b';
+                    spectrumCtx.strokeRect(x, y, barWidth, barHeight);
+
+                    // Harmonic Index Label
+                    spectrumCtx.fillStyle = '#94a3b8';
+                    spectrumCtx.font = '9px Fira Code, monospace';
+                    spectrumCtx.textAlign = 'center';
+                    spectrumCtx.fillText(`${n}f`, x + barWidth / 2, h - 4);
+                }
+            } else {
+                // Wave Packet Spectral Gaussian Distribution
+                const points = 60;
+                const step = w / points;
+
+                spectrumCtx.strokeStyle = '#a855f7';
+                spectrumCtx.lineWidth = 2;
+                spectrumCtx.beginPath();
+
+                for (let i = 0; i <= points; i++) {
+                    const k = (i / points) * 20 - 10;
+                    const val = Math.exp(-Math.pow(k, 2) / (2 * Math.pow(state.deltaK / 2, 2)));
+
+                    const x = i * step;
+                    const y = h - 15 - val * (h - 25);
+
+                    if (i === 0) spectrumCtx.moveTo(x, y);
+                    else spectrumCtx.lineTo(x, y);
+                }
+                spectrumCtx.stroke();
+            }
+        }
+
+        function toggleAudio() {
+            if (!state.audioPlaying) {
+                initAudioEngine();
+                if (state.audioCtx && state.audioCtx.state === 'suspended') {
+                    state.audioCtx.resume();
+                }
+                state.audioPlaying = true;
+                document.getElementById('btn-toggle-audio').className = 'px-3 py-1.5 bg-rose-600/40 hover:bg-rose-600/60 text-rose-300 rounded-lg transition border border-rose-500/40 text-xs flex items-center gap-1.5 font-medium';
+                document.getElementById('txt-audio').innerText = 'ปิดเสียงสังเคราะห์';
+            } else {
+                stopAudioEngine();
+                state.audioPlaying = false;
+                document.getElementById('btn-toggle-audio').className = 'px-3 py-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 rounded-lg transition border border-emerald-500/40 text-xs flex items-center gap-1.5 font-medium';
+                document.getElementById('txt-audio').innerText = 'เปิดเสียงสังเคราะห์ (Audio)';
+            }
+        }
+
+        function initAudioEngine() {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+
+            if (!state.audioCtx) {
+                state.audioCtx = new AudioContext();
+            }
+
+            if (state.audioCtx.state === 'suspended') {
+                state.audioCtx.resume();
+            }
+
+            if (!state.audioGain) {
+                state.audioGain = state.audioCtx.createGain();
+                state.audioGain.gain.setValueAtTime(0.2, state.audioCtx.currentTime);
+                state.audioGain.connect(state.audioCtx.destination);
+            }
+
+            updateAudioEngine();
+        }
+
+        function updateAudioEngine() {
+            if (!state.audioPlaying || !state.audioCtx) return;
+
+            if (state.audioCtx.state === 'suspended') {
+                state.audioCtx.resume();
+            }
+
+            // Stop existing active oscillators cleanly
+            state.audioOscs.forEach(item => {
+                try {
+                    item.osc.stop();
+                    item.osc.disconnect();
+                } catch(e) {}
+            });
+            state.audioOscs = [];
+
+            if (state.labMode === 'fourier') {
+                for (let n = 1; n <= state.harmonicsCount; n++) {
+                    const amp = state.harmonicsAmps[n - 1];
+                    if (amp <= 0.005) continue;
+
+                    const osc = state.audioCtx.createOscillator();
+                    const gain = state.audioCtx.createGain();
+
+                    osc.type = 'sine';
+                    const freq = Math.min(state.baseFreq * n, 12000); // Prevent ultrasonic overflow
+                    osc.frequency.setValueAtTime(freq, state.audioCtx.currentTime);
+
+                    // Normalize volume across multiple harmonics
+                    const targetGain = (amp * 0.25) / Math.sqrt(state.harmonicsCount);
+                    gain.gain.setValueAtTime(targetGain, state.audioCtx.currentTime);
+
+                    osc.connect(gain);
+                    gain.connect(state.audioGain);
+
+                    osc.start();
+                    state.audioOscs.push({ osc, gain });
+                }
+            } else if (state.labMode === 'packet') {
+                // Synthesize wave packet audio tone based on k0 central wave vector
+                const baseAudioFreq = Math.max(120, state.k0 * 25);
+                const osc = state.audioCtx.createOscillator();
+                const gain = state.audioCtx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(baseAudioFreq, state.audioCtx.currentTime);
+                
+                // Bandwidth modulation effect on volume
+                const packetGain = 0.15 / (1.0 + state.deltaK * 0.1);
+                gain.gain.setValueAtTime(packetGain, state.audioCtx.currentTime);
+
+                osc.connect(gain);
+                gain.connect(state.audioGain);
+
+                osc.start();
+                state.audioOscs.push({ osc, gain });
+            }
+        }
+
+        function stopAudioEngine() {
+            if (state.audioGain && state.audioCtx) {
+                state.audioGain.gain.linearRampToValueAtTime(0.0001, state.audioCtx.currentTime + 0.05);
+                setTimeout(() => {
+                    state.audioOscs.forEach(item => {
+                        try {
+                            item.osc.stop();
+                            item.osc.disconnect();
+                        } catch(e) {}
+                    });
+                    state.audioOscs = [];
+                }, 60);
+            }
+        }
+
+        function initAudioEngine() {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+
+            state.audioCtx = new AudioContext();
+            state.audioGain = state.audioCtx.createGain();
+            state.audioGain.gain.setValueAtTime(0.15, state.audioCtx.currentTime);
+            state.audioGain.connect(state.audioCtx.destination);
+
+            updateAudioEngine();
+        }
+
+        function updateAudioEngine() {
+            if (!state.audioPlaying || !state.audioCtx) return;
+
+            // Stop existing oscillators
+            state.audioOscs.forEach(osc => osc.stop());
+            state.audioOscs = [];
+
+            if (state.labMode === 'fourier') {
+                for (let n = 1; n <= state.harmonicsCount; n++) {
+                    const amp = state.harmonicsAmps[n - 1];
+                    if (amp <= 0.01) continue;
+
+                    const osc = state.audioCtx.createOscillator();
+                    const gain = state.audioCtx.createGain();
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(state.baseFreq * n, state.audioCtx.currentTime);
+
+                    gain.gain.setValueAtTime(amp * 0.2, state.audioCtx.currentTime);
+
+                    osc.connect(gain);
+                    gain.connect(state.audioGain);
+
+                    osc.start();
+                    state.audioOscs.push(osc);
+                }
+            }
+        }
+
+        function stopAudioEngine() {
+            if (state.audioCtx) {
+                state.audioGain.gain.linearRampToValueAtTime(0.001, state.audioCtx.currentTime + 0.1);
+                setTimeout(() => {
+                    if (state.audioCtx) {
+                        state.audioCtx.close();
+                        state.audioCtx = null;
+                    }
+                }, 150);
+            }
+        }
+
+        function applyPreset(type) {
+            if (type === 'square') {
+                for (let i = 0; i < 16; i++) {
+                    const n = i + 1;
+                    state.harmonicsAmps[i] = (n % 2 !== 0) ? (4 / (Math.PI * n)) : 0;
+                }
+            } else if (type === 'sawtooth') {
+                for (let i = 0; i < 16; i++) {
+                    const n = i + 1;
+                    state.harmonicsAmps[i] = 2 / (Math.PI * n);
+                }
+            } else if (type === 'triangle') {
+                for (let i = 0; i < 16; i++) {
+                    const n = i + 1;
+                    state.harmonicsAmps[i] = (n % 2 !== 0) ? (8 / (Math.PI * Math.PI * n * n)) : 0;
+                }
+            } else if (type === 'sine') {
+                for (let i = 0; i < 16; i++) {
+                    state.harmonicsAmps[i] = (i === 0) ? 1.0 : 0;
+                }
+            }
+
+            buildHarmonicsSlidersUI();
+            updateAudioEngine();
+            renderSpectrumChart();
+        }
+
+        function onControlChange() {
+            state.baseFreq = parseFloat(document.getElementById('slider-freq-base').value);
+            state.harmonicsCount = parseInt(document.getElementById('slider-harmonics-count').value, 10);
+            
+            state.deltaK = parseFloat(document.getElementById('slider-delta-k').value);
+            state.k0 = parseFloat(document.getElementById('slider-k0').value);
+            state.vp = parseFloat(document.getElementById('slider-vp').value);
+            state.vg = parseFloat(document.getElementById('slider-vg').value);
+
+            state.showPhasors = document.getElementById('toggle-phasors').checked;
+            state.showSpectrum = document.getElementById('toggle-spectrum').checked;
+            state.showEnvelope = document.getElementById('toggle-envelope').checked;
+
+            updateUIReadouts();
+            updateAudioEngine();
+        }
+
+        function updateUIReadouts() {
+            document.getElementById('val-freq-base').innerText = `${state.baseFreq} Hz`;
+            document.getElementById('val-harmonics-count').innerText = `${state.harmonicsCount} พจน์`;
+            
+            document.getElementById('val-delta-k').innerText = `${state.deltaK.toFixed(2)} rad/m`;
+            document.getElementById('val-k0').innerText = `${state.k0.toFixed(1)} rad/m`;
+            document.getElementById('val-vp').innerText = `${state.vp.toFixed(1)} m/s`;
+            document.getElementById('val-vg').innerText = `${state.vg.toFixed(1)} m/s`;
+        }
+
+        function switchLabMode(mode) {
+            state.labMode = mode;
+            
+            const btnFourier = document.getElementById('mode-fourier');
+            const btnPacket = document.getElementById('mode-packet');
+            const panelFourier = document.getElementById('controls-fourier');
+            const panelPacket = document.getElementById('controls-packet');
+            const statusLabel = document.getElementById('status-mode-label');
+
+            if (mode === 'fourier') {
+                btnFourier.className = 'mode-btn active py-1.5 rounded text-center transition flex items-center justify-center gap-1';
+                btnPacket.className = 'mode-btn px-2 py-1.5 text-slate-400 hover:text-white rounded text-center transition flex items-center justify-center gap-1';
+                panelFourier.classList.remove('hidden');
+                panelPacket.classList.add('hidden');
+                statusLabel.innerText = 'โหมด: อนุกรมฟูเรียร์สังเคราะห์คลื่น (Fourier Synthesis)';
+            } else {
+                btnPacket.className = 'mode-btn active py-1.5 rounded text-center transition flex items-center justify-center gap-1';
+                btnFourier.className = 'mode-btn px-2 py-1.5 text-slate-400 hover:text-white rounded text-center transition flex items-center justify-center gap-1';
+                panelPacket.classList.remove('hidden');
+                panelFourier.classList.add('hidden');
+                statusLabel.innerText = 'โหมด: กลุ่มคลื่น & หลักความไม่แน่นอน (Wave Packet & Uncertainty)';
+            }
+
+            updateAudioEngine();
+        }
+
+        function switchRightTab(tabKey) {
+            ['math', 'theory', 'conjugate'].forEach(k => {
+                document.getElementById(`content-${k}`).classList.add('hidden');
+                document.getElementById(`tab-${k}`).classList.remove('active');
+            });
+
+            document.getElementById(`content-${tabKey}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabKey}`).classList.add('active');
+        }
+
+        function resetSimulation() {
+            state.baseFreq = 220;
+            state.harmonicsCount = 5;
+            state.deltaK = 2.5;
+            state.k0 = 12.0;
+            state.vp = 1.5;
+            state.vg = 1.0;
+
+            document.getElementById('slider-freq-base').value = 220;
+            document.getElementById('slider-harmonics-count').value = 5;
+            document.getElementById('slider-delta-k').value = 2.5;
+            document.getElementById('slider-k0').value = 12.0;
+            document.getElementById('slider-vp').value = 1.5;
+            document.getElementById('slider-vg').value = 1.0;
+
+            applyPreset('square');
+            updateUIReadouts();
+        }
+
+        function toggleFullscreen() {
+            try {
+                if (!document.fullscreenElement) {
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen().catch(err => console.warn(err));
+                    }
+                } else if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(err => console.warn(err));
+                }
+            } catch (err) {
+                console.warn("Fullscreen policy restricted:", err);
+            }
+        }
+
+        function onResize() {
+            renderMainCanvas();
+            renderSpectrumChart();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ปฏิบัติการเสมือนจริง: กฎของแก๊สอุดมคติ (Ideal Gas Laws 2D/3D Lab)</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        lab: {
+                            bg: '#080d1a',
+                            panel: '#0f172a',
+                            accent: '#38bdf8',
+                            heat: '#ef4444',
+                            cool: '#3b82f6'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Sarabun', 'Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- KaTeX for Physics Equations -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+    <!-- Three.js Library for 3D Simulation Mode -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #080d1a;
+            color: #f3f4f6;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            touch-action: none;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.3);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(56, 189, 248, 0.7);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 4px;
+            height: 6px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+            transition: all 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #7dd3fc;
+        }
+
+        .tab-btn.active {
+            background-color: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            border-bottom: 2px solid #38bdf8;
+            font-weight: 600;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body class="select-none text-slate-100">
+
+    <!-- Navigation Header -->
+    <header class="absolute top-2 left-2 right-2 z-30 flex items-center justify-between glass-panel px-4 py-2 rounded-xl">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/30">
+                <i data-lucide="gauge" class="w-5 h-5 animate-pulse"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-sm md:text-base text-white flex items-center gap-2">
+                    ปฏิบัติการเสมือนจริง: กฎของแก๊สอุดมคติ
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Ideal Gas Laws ($PV = nRT$)</span>
+                </h1>
+                <p class="text-[11px] text-slate-400 hidden sm:block">ความดัน ($P$), ปริมาตร ($V$), อุณหภูมิ ($T$) & จำนวนโมล ($n$) ในมิติ 2D และ 3D Interactive</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Mode Switch 2D / 3D -->
+            <div class="flex bg-slate-900/90 p-1 rounded-lg border border-white/10 text-xs font-semibold">
+                <button id="btn-mode-2d" onclick="switchDimension('2D')" class="px-3 py-1 rounded-md bg-cyan-500 text-slate-950 font-bold transition">
+                    2D View
+                </button>
+                <button id="btn-mode-3d" onclick="switchDimension('3D')" class="px-3 py-1 rounded-md text-slate-400 hover:text-white transition">
+                    3D Scene
+                </button>
+            </div>
+
+            <!-- Reset Lab State -->
+            <button onclick="resetSimulation()" class="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-lg transition border border-rose-500/40 text-xs flex items-center gap-1.5 font-medium">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                <span>รีเซ็ต</span>
+            </button>
+
+            <!-- Fullscreen Toggle -->
+            <button onclick="toggleFullscreen()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition border border-white/10" title="เต็มจอ">
+                <i data-lucide="maximize" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Layout Container -->
+    <div class="absolute inset-0 pt-14 p-2 pointer-events-none grid grid-cols-1 md:grid-cols-12 gap-2 h-full pb-2">
+
+        <!-- ================= LEFT PANEL: Controls & Sandbox Controls ================= -->
+        <aside class="md:col-span-3 lg:col-span-3 glass-panel rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <div class="p-2.5 border-b border-white/10 bg-slate-900/80 flex justify-between items-center">
+                <span class="font-semibold text-xs text-white flex items-center gap-1.5">
+                    <i data-lucide="sliders" class="w-4 h-4 text-cyan-400"></i>
+                    ตั้งค่าแก๊ส & ตัวแปร (Controls)
+                </span>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-3 space-y-3 text-xs">
+
+                <!-- CONSTANT VARIABLE LOCK SELECTION -->
+                <div class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-amber-400">
+                    <span class="font-bold text-amber-400 text-[11px] block border-b border-white/10 pb-1 flex items-center gap-1">
+                        <i data-lucide="lock" class="w-3.5 h-3.5"></i> เลือกตัวแปรที่ต้องการให้คงที่ (Hold Constant)
+                    </span>
+                    <div class="grid grid-cols-2 gap-1 text-[10px]">
+                        <label class="flex items-center gap-1.5 bg-slate-900/60 p-1.5 rounded border border-white/5 cursor-pointer">
+                            <input type="radio" name="holdConst" value="none" checked onchange="onHoldConstantChange('none')" class="accent-cyan-400">
+                            <span>ไม่ล็อกตัวแปร</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 bg-slate-900/60 p-1.5 rounded border border-white/5 cursor-pointer">
+                            <input type="radio" name="holdConst" value="V" onchange="onHoldConstantChange('V')" class="accent-cyan-400">
+                            <span>ปริมาตร ($V$)</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 bg-slate-900/60 p-1.5 rounded border border-white/5 cursor-pointer">
+                            <input type="radio" name="holdConst" value="T" onchange="onHoldConstantChange('T')" class="accent-cyan-400">
+                            <span>อุณหภูมิ ($T$)</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 bg-slate-900/60 p-1.5 rounded border border-white/5 cursor-pointer">
+                            <input type="radio" name="holdConst" value="P" onchange="onHoldConstantChange('P')" class="accent-cyan-400">
+                            <span>ความดัน ($P$)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- TEMPERATURE (T) THERMODYNAMIC CONTROL -->
+                <div id="card-temp" class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-rose-400">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-rose-400 text-[11px] flex items-center gap-1">
+                            <i data-lucide="thermometer" class="w-3.5 h-3.5"></i> อุณหภูมิระบบ ($T$)
+                        </span>
+                        <span id="val-temp-display" class="font-mono text-rose-300 font-bold">300 K</span>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] text-slate-300">
+                            <span>สไลเดอร์อุณหภูมิ ($T$):</span>
+                            <span id="txt-temp-val">300 K (27 °C)</span>
+                        </div>
+                        <input type="range" id="slider-temp" min="50" max="1000" step="5" value="300" class="w-full" oninput="onControlChange('T')">
+                    </div>
+
+                    <div class="flex items-center justify-between gap-1 pt-1 border-t border-white/5">
+                        <span class="text-[9.5px] text-slate-400">ป้อนค่า $T$ ตรง:</span>
+                        <div class="flex items-center gap-1">
+                            <input type="number" id="input-temp" value="300" min="50" max="1000" class="w-16 bg-slate-900 text-rose-300 border border-white/10 rounded px-1.5 py-0.5 text-[10px] font-mono" onchange="onDirectInput('T')">
+                            <span class="text-[9.5px] text-slate-400">K</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VOLUME (V) / PISTON CONTROL -->
+                <div id="card-vol" class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-cyan-400">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-cyan-400 text-[11px] flex items-center gap-1">
+                            <i data-lucide="box" class="w-3.5 h-3.5"></i> ปริมาตรภาชนะ ($V$)
+                        </span>
+                        <span id="val-vol-display" class="font-mono text-cyan-300 font-bold">10.0 L</span>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] text-slate-300">
+                            <span>ตำแหน่งลูกสูบ ($V$):</span>
+                            <span id="txt-vol-val">10.0 L</span>
+                        </div>
+                        <input type="range" id="slider-vol" min="3.0" max="20.0" step="0.2" value="10.0" class="w-full" oninput="onControlChange('V')">
+                    </div>
+
+                    <div class="flex items-center justify-between gap-1 pt-1 border-t border-white/5">
+                        <span class="text-[9.5px] text-slate-400">ป้อนค่า $V$ ตรง:</span>
+                        <div class="flex items-center gap-1">
+                            <input type="number" id="input-vol" value="10.0" min="3.0" max="20.0" step="0.1" class="w-16 bg-slate-900 text-cyan-300 border border-white/10 rounded px-1.5 py-0.5 text-[10px] font-mono" onchange="onDirectInput('V')">
+                            <span class="text-[9.5px] text-slate-400">L</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GAS MOLES / PARTICLES (N) -->
+                <div class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-emerald-400">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-emerald-400 text-[11px] flex items-center gap-1">
+                            <i data-lucide="atom" class="w-3.5 h-3.5"></i> จำนวนโมเลกุล ($N$ / $n$)
+                        </span>
+                        <span id="val-moles-display" class="font-mono text-emerald-300 font-bold">100 อนุภาค</span>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] text-slate-300">
+                            <span>อนุภาคแก๊สหนัก (A - สีส้ม):</span>
+                            <span id="txt-numA-val" class="font-mono text-amber-300 font-bold">50</span>
+                        </div>
+                        <input type="range" id="slider-numA" min="0" max="200" step="5" value="50" class="w-full" oninput="onControlChange('N')">
+                    </div>
+
+                    <div class="space-y-1 pt-1 border-t border-white/5">
+                        <div class="flex justify-between text-[10px] text-slate-300">
+                            <span>อนุภาคแก๊สเบา (B - สีฟ้า):</span>
+                            <span id="txt-numB-val" class="font-mono text-cyan-300 font-bold">50</span>
+                        </div>
+                        <input type="range" id="slider-numB" min="0" max="200" step="5" value="50" class="w-full" oninput="onControlChange('N')">
+                    </div>
+                </div>
+
+                <!-- VISUAL OVERLAYS & OPTION TOGGLES -->
+                <div class="glass-card p-2.5 rounded-lg space-y-1.5">
+                    <span class="text-[11px] font-bold text-slate-300 block border-b border-white/10 pb-1 flex items-center justify-between">
+                        <span>เครื่องมือ & Visual Overlays</span>
+                        <i data-lucide="eye" class="w-3.5 h-3.5 text-cyan-400"></i>
+                    </span>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>แสดงเวกเตอร์ความเร็ว ($\vec{v}$)</span>
+                        <input type="checkbox" id="toggle-vectors" checked onchange="onControlChange()" class="accent-cyan-500 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>Interactive Highlight อนุภาคตัวอย่าง</span>
+                        <input type="checkbox" id="toggle-highlights" checked onchange="onControlChange()" class="accent-amber-500 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>แสดงกราฟกระจายความเร็ว Maxwell Spectrum</span>
+                        <input type="checkbox" id="toggle-spectrum" checked onchange="onControlChange()" class="accent-emerald-500 rounded">
+                    </label>
+                </div>
+
+                <!-- PRESET EXPERIMENTS -->
+                <div class="glass-card p-2.5 rounded-lg space-y-1.5">
+                    <span class="text-[11px] font-bold text-amber-400 block border-b border-white/10 pb-1">การทดลองกฎของแก๊ส (Presets)</span>
+                    <div class="grid grid-cols-2 gap-1">
+                        <button onclick="applyPreset('boyle')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px] text-left border border-white/5">
+                            <span class="font-bold text-cyan-300 block">กฎของบอยล์</span>
+                            <span class="text-[9px] text-slate-400">$P \propto 1/V$ (คงที่ $T$)</span>
+                        </button>
+                        <button onclick="applyPreset('charles')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px] text-left border border-white/5">
+                            <span class="font-bold text-rose-300 block">กฎของชาร์ลส์</span>
+                            <span class="text-[9px] text-slate-400">$V \propto T$ (คงที่ $P$)</span>
+                        </button>
+                        <button onclick="applyPreset('gay-lussac')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px] text-left border border-white/5">
+                            <span class="font-bold text-amber-300 block">กฎของเกย์-ลูสแซก</span>
+                            <span class="text-[9px] text-slate-400">$P \propto T$ (คงที่ $V$)</span>
+                        </button>
+                        <button onclick="applyPreset('avogadro')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px] text-left border border-white/5">
+                            <span class="font-bold text-emerald-300 block">กฎของอาโวกาโดร</span>
+                            <span class="text-[9px] text-slate-400">$V \propto n$ (คงที่ $P, T$)</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- ================= CENTER: Interactive Viewport (2D Canvas / 3D Three.js) ================= -->
+        <main class="md:col-span-5 lg:col-span-5 glass-panel rounded-xl flex flex-col pointer-events-auto border border-white/10 shadow-2xl relative overflow-hidden">
+            
+            <div id="viewport-container" class="flex-1 bg-slate-950 relative cursor-grab active:cursor-grabbing flex flex-col overflow-hidden">
+                
+                <!-- 2D Particle Simulation Canvas -->
+                <canvas id="canvas-2d" class="w-full h-full absolute inset-0 z-10 block"></canvas>
+
+                <!-- 3D Three.js Container -->
+                <div id="container-3d" class="w-full h-full absolute inset-0 z-10 hidden"></div>
+
+                <!-- Bottom Maxwell-Boltzmann Velocity Distribution Chart -->
+                <div id="spectrum-container" class="absolute bottom-0 left-0 right-0 h-28 bg-slate-900/90 backdrop-blur border-t border-white/10 z-20 flex flex-col">
+                    <div class="px-3 py-1 bg-slate-950/80 text-[10px] font-mono text-cyan-400 border-b border-white/5 flex justify-between items-center">
+                        <span class="flex items-center gap-1 font-bold">
+                            <i data-lucide="activity" class="w-3 h-3"></i>
+                            กราฟการกระจายความเร็ว Maxwell-Boltzmann: $f(v) = 4\pi \left(\frac{m}{2\pi k T}\right)^{3/2} v^2 e^{-\frac{mv^2}{2kT}}$
+                        </span>
+                        <span id="spectrum-readout" class="text-slate-300 text-[9.5px]">Avg Speed: 483 m/s</span>
+                    </div>
+                    <canvas id="canvas-spectrum" class="w-full flex-1 block"></canvas>
+                </div>
+
+                <!-- Navigation Controls Overlay (Pan & Zoom) -->
+                <div class="absolute top-2 right-2 flex items-center gap-1 z-20 pointer-events-auto">
+                    <button onclick="adjustZoom(1.1)" class="p-2 bg-slate-900/80 hover:bg-slate-800 text-slate-200 rounded-lg border border-white/10" title="ขยาย (Zoom In)">
+                        <i data-lucide="zoom-in" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="adjustZoom(0.9)" class="p-2 bg-slate-900/80 hover:bg-slate-800 text-slate-200 rounded-lg border border-white/10" title="ย่อ (Zoom Out)">
+                        <i data-lucide="zoom-out" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="resetZoomPan()" class="p-2 bg-slate-900/80 hover:bg-slate-800 text-slate-200 rounded-lg border border-white/10" title="รีเซ็ตมุมมอง">
+                        <i data-lucide="locate-fixed" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Live Pressure Gauge & Numerical Readout Badge -->
+                <div class="absolute top-2 left-2 bg-slate-900/90 backdrop-blur p-2.5 rounded-xl border border-white/10 text-slate-200 z-20 space-y-1.5 w-52 shadow-2xl pointer-events-none">
+                    <div class="flex items-center justify-between border-b border-white/10 pb-1">
+                        <span class="text-[10px] font-bold text-amber-400 flex items-center gap-1">
+                            <i data-lucide="gauge" class="w-3.5 h-3.5"></i> เกจวัดความดัน ($P$)
+                        </span>
+                        <span id="badge-p-val" class="font-mono text-cyan-300 font-bold text-sm">2.49 atm</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-1 text-[10px] font-mono">
+                        <div>ปริมาตร ($V$): <span id="badge-v-val" class="text-white font-bold">10.0 L</span></div>
+                        <div>อุณหภูมิ ($T$): <span id="badge-t-val" class="text-rose-300 font-bold">300 K</span></div>
+                        <div class="col-span-2">จำนวนโมล ($n$): <span id="badge-n-val" class="text-emerald-300 font-bold">1.01 mol</span></div>
+                    </div>
+                </div>
+
+                <!-- Touch gesture instruction footer -->
+                <div class="absolute bottom-30 right-2 bg-slate-900/80 backdrop-blur px-2.5 py-1 rounded text-[10px] text-slate-400 z-20 pointer-events-none">
+                    💡 ใช้นิ้ว/เมาส์ลากลูกสูบเพื่อเปลี่ยนปริมาตร หรือหมุนกล้องในโหมด 3D
+                </div>
+            </div>
+        </main>
+
+        <!-- ================= RIGHT PANEL: Calculations & Physics Theory ================= -->
+        <aside class="md:col-span-4 lg:col-span-4 glass-panel rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <!-- Navigation Tabs -->
+            <div class="p-2 border-b border-white/10 bg-slate-900/80">
+                <div class="grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-lg text-[11px] font-semibold text-center">
+                    <button onclick="switchRightTab('calc')" id="tab-calc" class="tab-btn active py-1 rounded transition">การคำนวณสด & กฎแก๊ส</button>
+                    <button onclick="switchRightTab('theory')" id="tab-theory" class="tab-btn py-1 rounded transition">ทฤษฎีจลน์ของแก๊ส</button>
+                </div>
+            </div>
+
+            <!-- Scrollable Content Panels -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-3 text-xs">
+
+                <!-- TAB 1: Live Calculation & Ideal Gas Equation Breakdown -->
+                <div id="content-calc" class="space-y-3">
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-cyan-400 block border-b border-white/10 pb-1 flex justify-between items-center">
+                            <span>สมการแก๊สอุดมคติ (Ideal Gas Law Equation)</span>
+                            <i data-lucide="calculator" class="w-3.5 h-3.5 text-cyan-400"></i>
+                        </span>
+                        <div id="math-formula-idealgas" class="py-1 text-center text-cyan-200 font-mono text-xs bg-slate-950/60 rounded p-1.5"></div>
+                        <p class="text-[10px] text-slate-300 leading-relaxed">
+                            โดยที่ $P$ คือความดัน (atm), $V$ คือปริมาตร (L), $n$ คือจำนวนโมล, $R = 0.0821\text{ L}\cdot\text{atm}/(\text{mol}\cdot\text{K})$ คือค่าคงที่แก๊ส และ $T$ คืออุณหภูมิสัมบูรณ์ (Kelvin)
+                        </p>
+                    </div>
+
+                    <!-- Step-by-Step Calculation Breakdown -->
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-emerald-400 block border-b border-white/10 pb-1">ขั้นตอนการคำนวณหาความดันสด ($P = \frac{nRT}{V}$)</span>
+                        <div class="space-y-2 font-mono text-[10px] text-slate-300 leading-relaxed">
+                            <div class="bg-slate-950/60 p-2 rounded border border-white/5 space-y-1">
+                                <span class="text-slate-400 block font-sans text-[9.5px]">1. สรุปตัวแปรปัจจุบัน:</span>
+                                <div>• $n = $ <span id="math-n-val" class="text-emerald-300">1.01</span> mol (แก๊สรวม <span id="math-total-particles">100</span> โมเลกุล)</div>
+                                <div>• $T = $ <span id="math-t-val" class="text-rose-300">300</span> K</div>
+                                <div>• $V = $ <span id="math-v-val" class="text-cyan-300">10.0</span> L</div>
+                                <div>• $R = $ <span class="text-amber-300">0.08206</span> $\text{L}\cdot\text{atm}/(\text{mol}\cdot\text{K})$</div>
+                            </div>
+
+                            <div class="bg-slate-950/60 p-2 rounded border border-white/5 space-y-1">
+                                <span class="text-slate-400 block font-sans text-[9.5px]">2. แทนค่าลงในสมการ:</span>
+                                <div>• $P = \frac{(<span id="math-n-sub">1.01</span>)(0.08206)(<span id="math-t-sub">300</span>)}{<span id="math-v-sub">10.0</span>}$</div>
+                            </div>
+
+                            <div class="bg-slate-950/60 p-2 rounded border border-white/5 space-y-1">
+                                <span class="text-slate-400 block font-sans text-[9.5px]">3. ผลลัพธ์ความดันที่คำนวณได้:</span>
+                                <div id="math-step-final" class="text-cyan-300 font-bold text-xs">P = 2.49\text{ atm}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Individual Gas Laws Summary Table -->
+                    <div class="glass-card p-2.5 rounded-lg space-y-1.5">
+                        <span class="text-[11px] font-bold text-amber-400 block border-b border-white/10 pb-1">สรุปกฎย่อยของแก๊สย่อย</span>
+                        <div class="space-y-1 text-[10px] text-slate-300">
+                            <div class="flex justify-between border-b border-white/5 pb-1">
+                                <span class="font-bold text-cyan-300">กฎของบอยล์ (Boyle's):</span>
+                                <span class="font-mono">$P_1 V_1 = P_2 V_2$ ($T, n$ คงที่)</span>
+                            </div>
+                            <div class="flex justify-between border-b border-white/5 pb-1">
+                                <span class="font-bold text-rose-300">กฎของชาร์ลส์ (Charles's):</span>
+                                <span class="font-mono">$\frac{V_1}{T_1} = \frac{V_2}{T_2}$ ($P, n$ คงที่)</span>
+                            </div>
+                            <div class="flex justify-between border-b border-white/5 pb-1">
+                                <span class="font-bold text-amber-300">กฎเกย์-ลูสแซก (Gay-Lussac's):</span>
+                                <span class="font-mono">$\frac{P_1}{T_1} = \frac{P_2}{T_2}$ ($V, n$ คงที่)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="font-bold text-emerald-300">กฎอาโวกาโดร (Avogadro's):</span>
+                                <span class="font-mono">$\frac{V_1}{n_1} = \frac{V_2}{n_2}$ ($P, T$ คงที่)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Thermodynamics Physics Theory -->
+                <div id="content-theory" class="space-y-3 hidden">
+                    <div class="p-2.5 border-l-2 border-rose-400 bg-slate-900/60 rounded-r-lg space-y-1">
+                        <h4 class="font-bold text-rose-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="flame" class="w-3.5 h-3.5"></i> ทฤษฎีจลน์ของแก๊ส (Kinetic Theory of Gases)
+                        </h4>
+                        <p class="text-slate-300 text-[10px] leading-relaxed">
+                            • ความดันของแก๊ส ($P$) เกิดจากการที่โมเลกุลแก๊สเคลื่อนที่เข้าชนผนังภาชนะ secara continuous
+                            <br>• พลังงานจลน์เฉลี่ยของแก๊สขึ้นอยู่กับอุณหภูมิสัมบูรณ์เพียงอย่างเดียว: $E_k = \frac{3}{2} k_B T = \frac{1}{2} m v_{rms}^2$
+                        </p>
+                    </div>
+
+                    <div class="p-2.5 border-l-2 border-cyan-400 bg-slate-900/60 rounded-r-lg space-y-1">
+                        <h4 class="font-bold text-cyan-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="wind" class="w-3.5 h-3.5"></i> สมมติฐานของแก๊สอุดมคติ
+                        </h4>
+                        <p class="text-slate-300 text-[10px] leading-relaxed">
+                            1. โมเลกุลแก๊สมีขนาดเล็กมากจนถือว่าปริมาตรโมเลกุลเป็นศูนย์เมื่อเทียบกับปริมาตรภาชนะ
+                            <br>2. ไม่มีแรงดึงดูดหรือแรงผลักระหว่างโมเลกุล (ไม่มีแรง inter-molecular)
+                            <br>3. การชนระหว่างโมเลกุลและผนังเป็นการชนแบบยืดหยุ่นสมบูรณ์ (Elastic Collision) พลังงานจลน์ไม่สูญหาย
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- MAIN SIMULATION ENGINE & PHYSICS LOGIC SCRIPT -->
+    <script>
+        // Simulation Physics State
+        const state = {
+            renderMode: '2D', // '2D' or '3D'
+            holdConstant: 'none', // 'none', 'V', 'T', 'P'
+
+            // Physical Parameters
+            temp: 300,      // Kelvin
+            vol: 10.0,      // Liters (3.0 to 20.0 L)
+            numA: 50,       // Heavy particles (Orange - 32 g/mol)
+            numB: 50,       // Light particles (Cyan - 4 g/mol)
+            pressure: 2.49, // Calculated in atm
+
+            // Constants
+            massA: 32, // g/mol
+            massB: 4,  // g/mol
+            R: 0.08206, // Gas constant L*atm / (mol*K)
+            molScale: 0.0101, // Particle count to mole conversion scale
+
+            // Visual Toggles
+            showVectors: true,
+            showHighlights: true,
+            showSpectrum: true,
+
+            // Viewport Navigation (Pan & Zoom)
+            zoom: 1.0,
+            panX: 0,
+            panY: 0,
+
+            // Particles Array
+            particles: []
+        };
+
+        // Canvas Context & Three.js References
+        let canvas2D, ctx2D;
+        let canvasSpectrum, ctxSpectrum;
+
+        // Three.js 3D Objects
+        let scene3D, camera3D, renderer3D;
+        let particlesMesh3D, pistonMesh3D, containerCylinder3D, heatGlowMesh3D;
+        let is3DInitialized = false;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initKaTeX();
+            initCanvases();
+            lucide.createIcons();
+            window.addEventListener('resize', onWindowResize);
+
+            setup2DInteraction();
+            resetParticles();
+            recalculatePhysics();
+
+            requestAnimationFrame(animateLoop);
+        });
+
+        function initKaTeX() {
+            if (window.katex) {
+                katex.render("P V = n R T", document.getElementById('math-formula-idealgas'));
+            }
+        }
+
+        function initCanvases() {
+            canvas2D = document.getElementById('canvas-2d');
+            ctx2D = canvas2D.getContext('2d');
+
+            canvasSpectrum = document.getElementById('canvas-spectrum');
+            ctxSpectrum = canvasSpectrum.getContext('2d');
+
+            resizeCanvases();
+        }
+
+        function resizeCanvases() {
+            if (canvas2D) {
+                canvas2D.width = canvas2D.clientWidth * window.devicePixelRatio;
+                canvas2D.height = canvas2D.clientHeight * window.devicePixelRatio;
+            }
+            if (canvasSpectrum) {
+                canvasSpectrum.width = canvasSpectrum.clientWidth * window.devicePixelRatio;
+                canvasSpectrum.height = canvasSpectrum.clientHeight * window.devicePixelRatio;
+            }
+            if (renderer3D && is3DInitialized) {
+                const container = document.getElementById('container-3d');
+                camera3D.aspect = container.clientWidth / container.clientHeight;
+                camera3D.updateProjectionMatrix();
+                renderer3D.setSize(container.clientWidth, container.clientHeight);
+            }
+        }
+
+        // Initialize / Reset Particle Physics Array
+        function resetParticles() {
+            state.particles = [];
+
+            const total = state.numA + state.numB;
+            if (total === 0) return;
+
+            const w = canvas2D ? canvas2D.clientWidth : 600;
+            const h = canvas2D ? canvas2D.clientHeight : 400;
+
+            const pistonX = Math.max(100, (state.vol / 20.0) * (w - 80));
+
+            // Gas A (Heavy - Orange)
+            const speedScaleA = Math.sqrt(state.temp / state.massA) * 0.35;
+            for (let i = 0; i < state.numA; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = (0.7 + Math.random() * 0.6) * speedScaleA;
+                state.particles.push({
+                    type: 'A',
+                    mass: state.massA,
+                    x: 30 + Math.random() * (pistonX - 60),
+                    y: 30 + Math.random() * (h - 60),
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    radius: 6,
+                    color: '#f97316',
+                    highlight: i === 0
+                });
+            }
+
+            // Gas B (Light - Cyan)
+            const speedScaleB = Math.sqrt(state.temp / state.massB) * 0.35;
+            for (let i = 0; i < state.numB; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = (0.7 + Math.random() * 0.6) * speedScaleB;
+                state.particles.push({
+                    type: 'B',
+                    mass: state.massB,
+                    x: 30 + Math.random() * (pistonX - 60),
+                    y: 30 + Math.random() * (h - 60),
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    radius: 4,
+                    color: '#06b6d4',
+                    highlight: i === 0
+                });
+            }
+        }
+
+        // Recalculate Ideal Gas Law Parameters (P = nRT / V)
+        function recalculatePhysics() {
+            const totalParticles = state.numA + state.numB;
+            const moles = totalParticles * state.molScale;
+
+            if (state.vol > 0) {
+                state.pressure = (moles * state.R * state.temp) / state.vol;
+            } else {
+                state.pressure = 0;
+            }
+
+            // UI Label and Badge Sync
+            document.getElementById('badge-p-val').innerText = `${state.pressure.toFixed(2)} atm`;
+            document.getElementById('badge-v-val').innerText = `${state.vol.toFixed(1)} L`;
+            document.getElementById('badge-t-val').innerText = `${Math.round(state.temp)} K`;
+            document.getElementById('badge-n-val').innerText = `${moles.toFixed(2)} mol`;
+
+            // Math Tab Updates
+            document.getElementById('math-n-val').innerText = moles.toFixed(2);
+            document.getElementById('math-total-particles').innerText = totalParticles;
+            document.getElementById('math-t-val').innerText = Math.round(state.temp);
+            document.getElementById('math-v-val').innerText = state.vol.toFixed(1);
+
+            document.getElementById('math-n-sub').innerText = moles.toFixed(2);
+            document.getElementById('math-t-sub').innerText = Math.round(state.temp);
+            document.getElementById('math-v-sub').innerText = state.vol.toFixed(1);
+
+            if (window.katex) {
+                katex.render(`P = ${state.pressure.toFixed(2)}\\text{ atm}`, document.getElementById('math-step-final'));
+            }
+        }
+
+        // Main Animation Loop
+        function animateLoop() {
+            updateParticlesPhysics();
+
+            if (state.renderMode === '2D') {
+                render2DCanvas();
+            } else if (state.renderMode === '3D' && is3DInitialized) {
+                render3DScene();
+            }
+
+            renderSpectrumCanvas();
+
+            requestAnimationFrame(animateLoop);
+        }
+
+        function updateParticlesPhysics() {
+            if (!canvas2D) return;
+            const w = canvas2D.clientWidth;
+            const h = canvas2D.clientHeight;
+
+            const pistonX = Math.max(100, (state.vol / 20.0) * (w - 80));
+
+            state.particles.forEach(p => {
+                const speedScale = Math.sqrt(state.temp / p.mass) * 0.35;
+                const curSpeed = Math.hypot(p.vx, p.vy);
+
+                if (curSpeed > 0) {
+                    const targetSpeed = speedScale * (curSpeed / (curSpeed || 1));
+                    p.vx = (p.vx * 0.96) + (p.vx / curSpeed * targetSpeed * 0.04);
+                    p.vy = (p.vy * 0.96) + (p.vy / curSpeed * targetSpeed * 0.04);
+                }
+
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // Container Boundary Collisions
+                if (p.x - p.radius < 20) { p.x = 20 + p.radius; p.vx *= -1; }
+                if (p.x + p.radius > pistonX) { p.x = pistonX - p.radius; p.vx *= -1; }
+                if (p.y - p.radius < 20) { p.y = 20 + p.radius; p.vy *= -1; }
+                if (p.y + p.radius > h - 40) { p.y = h - 40 - p.radius; p.vy *= -1; }
+            });
+        }
+
+        function render2DCanvas() {
+            if (!canvas2D) return;
+            const w = canvas2D.clientWidth;
+            const h = canvas2D.clientHeight;
+            if (w === 0 || h === 0) return;
+
+            ctx2D.save();
+            ctx2D.scale(window.devicePixelRatio, window.devicePixelRatio);
+            ctx2D.clearRect(0, 0, w, h);
+
+            // Apply Pan & Zoom
+            ctx2D.translate(state.panX, state.panY);
+            ctx2D.scale(state.zoom, state.zoom);
+
+            const pistonX = Math.max(100, (state.vol / 20.0) * (w - 80));
+
+            // Draw Gas Cylinder Background & Glass
+            ctx2D.fillStyle = 'rgba(15, 23, 42, 0.8)';
+            ctx2D.fillRect(20, 20, pistonX - 20, h - 60);
+
+            ctx2D.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx2D.lineWidth = 2;
+            ctx2D.strokeRect(20, 20, pistonX - 20, h - 60);
+
+            // Draw Heating/Cooling Burner Glow
+            const tempRatio = (state.temp - 50) / 950;
+            const heatColor = tempRatio > 0.5 
+                ? `rgba(239, 68, 68, ${0.1 + tempRatio * 0.4})` 
+                : `rgba(59, 130, 246, ${0.1 + (1 - tempRatio) * 0.4})`;
+            ctx2D.fillStyle = heatColor;
+            ctx2D.fillRect(20, h - 38, pistonX - 20, 15);
+
+            // Draw Piston Head Handle
+            ctx2D.fillStyle = '#38bdf8';
+            ctx2D.fillRect(pistonX, 15, 12, h - 50);
+
+            // Piston Arm
+            ctx2D.fillStyle = '#64748b';
+            ctx2D.fillRect(pistonX + 12, h / 2 - 8, w - pistonX - 12, 16);
+
+            // Draw Gas Particles
+            state.particles.forEach(p => {
+                ctx2D.save();
+                if (state.showHighlights && p.highlight) {
+                    ctx2D.shadowColor = p.color;
+                    ctx2D.shadowBlur = 15;
+                }
+
+                ctx2D.fillStyle = p.color;
+                ctx2D.beginPath();
+                ctx2D.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx2D.fill();
+
+                if (state.showVectors) {
+                    ctx2D.strokeStyle = p.color;
+                    ctx2D.lineWidth = 1.5;
+                    ctx2D.beginPath();
+                    ctx2D.moveTo(p.x, p.y);
+                    ctx2D.lineTo(p.x + p.vx * 6, p.y + p.vy * 6);
+                    ctx2D.stroke();
+                }
+                ctx2D.restore();
+            });
+
+            ctx2D.restore();
+        }
+
+        function init3DScene() {
+            const container = document.getElementById('container-3d');
+            if (!container || is3DInitialized) return;
+
+            scene3D = new THREE.Scene();
+            scene3D.background = new THREE.Color(0x080d1a);
+
+            camera3D = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera3D.position.set(0, 10, 30);
+            camera3D.lookAt(0, 0, 0);
+
+            renderer3D = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer3D.setSize(container.clientWidth, container.clientHeight);
+            renderer3D.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer3D.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene3D.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0x38bdf8, 1.2);
+            dirLight.position.set(10, 20, 15);
+            scene3D.add(dirLight);
+
+            // Cylinder Container Wall (Translucent Glass)
+            const cylinderGeo = new THREE.CylinderGeometry(5, 5, 10, 32, 1, true);
+            const cylinderMat = new THREE.MeshPhongMaterial({
+                color: 0x38bdf8,
+                transparent: true,
+                opacity: 0.25,
+                side: THREE.DoubleSide
+            });
+            containerCylinder3D = new THREE.Mesh(cylinderGeo, cylinderMat);
+            scene3D.add(containerCylinder3D);
+
+            // Piston Top Disc
+            const pistonGeo = new THREE.CylinderGeometry(4.9, 4.9, 0.4, 32);
+            const pistonMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.8, roughness: 0.2 });
+            pistonMesh3D = new THREE.Mesh(pistonGeo, pistonMat);
+            scene3D.add(pistonMesh3D);
+
+            // 3D Particles Group
+            particlesMesh3D = new THREE.Group();
+            scene3D.add(particlesMesh3D);
+
+            is3DInitialized = true;
+        }
+
+        function render3DScene() {
+            if (!is3DInitialized) return;
+
+            // Update Piston Height based on Volume V
+            const pistonY = (state.vol / 20.0) * 8 - 4;
+            pistonMesh3D.position.y = pistonY;
+
+            // Sync 3D Particles Position
+            while (particlesMesh3D.children.length > 0) {
+                particlesMesh3D.remove(particlesMesh3D.children[0]);
+            }
+
+            const pCount = Math.min(100, state.particles.length);
+            for (let i = 0; i < pCount; i++) {
+                const p = state.particles[i];
+                const sphereGeo = new THREE.SphereGeometry(p.radius * 0.05, 12, 12);
+                const sphereMat = new THREE.MeshBasicMaterial({ color: p.color });
+                const mesh = new THREE.Mesh(sphereGeo, sphereMat);
+
+                mesh.position.set(
+                    (p.x / 40) - 4,
+                    (p.y / 40) - 4,
+                    (Math.sin(i) * 3)
+                );
+                particlesMesh3D.add(mesh);
+            }
+
+            renderer3D.render(scene3D, camera3D);
+        }
+
+        // Render Maxwell-Boltzmann Speed Spectrum Chart
+        function renderSpectrumCanvas() {
+            if (!canvasSpectrum || !state.showSpectrum) return;
+            const w = canvasSpectrum.clientWidth;
+            const h = canvasSpectrum.clientHeight;
+            if (w === 0 || h === 0) return;
+
+            ctxSpectrum.save();
+            ctxSpectrum.scale(window.devicePixelRatio, window.devicePixelRatio);
+            ctxSpectrum.clearRect(0, 0, w, h);
+
+            const speedScaleA = Math.sqrt(state.temp / state.massA);
+            const speedScaleB = Math.sqrt(state.temp / state.massB);
+
+            // Gas A (Orange Curve)
+            ctxSpectrum.strokeStyle = '#f97316';
+            ctxSpectrum.lineWidth = 2;
+            ctxSpectrum.beginPath();
+            for (let x = 0; x < w; x++) {
+                const v = x * 0.1;
+                const y = h - 10 - (100 * (v / speedScaleA) * Math.exp(-Math.pow(v / speedScaleA, 2)));
+                if (x === 0) ctxSpectrum.moveTo(x, y);
+                else ctxSpectrum.lineTo(x, y);
+            }
+            ctxSpectrum.stroke();
+
+            // Gas B (Cyan Curve)
+            ctxSpectrum.strokeStyle = '#06b6d4';
+            ctxSpectrum.lineWidth = 2;
+            ctxSpectrum.beginPath();
+            for (let x = 0; x < w; x++) {
+                const v = x * 0.1;
+                const y = h - 10 - (100 * (v / speedScaleB) * Math.exp(-Math.pow(v / speedScaleB, 2)));
+                if (x === 0) ctxSpectrum.moveTo(x, y);
+                else ctxSpectrum.lineTo(x, y);
+            }
+            ctxSpectrum.stroke();
+
+            ctxSpectrum.restore();
+        }
+
+        function setup2DInteraction() {
+            let isDragging = false;
+            let lastX = 0, lastY = 0;
+
+            canvas2D.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                lastX = e.clientX;
+                lastY = e.clientY;
+            });
+
+            canvas2D.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                state.panX += e.clientX - lastX;
+                state.panY += e.clientY - lastY;
+                lastX = e.clientX;
+                lastY = e.clientY;
+            });
+
+            window.addEventListener('mouseup', () => { isDragging = false; });
+        }
+
+        function onControlChange(param) {
+            if (param === 'T' && state.holdConstant !== 'T') {
+                state.temp = parseFloat(document.getElementById('slider-temp').value);
+            } else if (param === 'V' && state.holdConstant !== 'V') {
+                state.vol = parseFloat(document.getElementById('slider-vol').value);
+            } else if (param === 'N') {
+                state.numA = parseInt(document.getElementById('slider-numA').value);
+                state.numB = parseInt(document.getElementById('slider-numB').value);
+                resetParticles();
+            }
+
+            state.showVectors = document.getElementById('toggle-vectors').checked;
+            state.showHighlights = document.getElementById('toggle-highlights').checked;
+            state.showSpectrum = document.getElementById('toggle-spectrum').checked;
+
+            syncLabels();
+            recalculatePhysics();
+        }
+
+        function onDirectInput(param) {
+            if (param === 'T') {
+                state.temp = Math.max(50, Math.min(1000, parseFloat(document.getElementById('input-temp').value) || 300));
+                document.getElementById('slider-temp').value = state.temp;
+            } else if (param === 'V') {
+                state.vol = Math.max(3.0, Math.min(20.0, parseFloat(document.getElementById('input-vol').value) || 10.0));
+                document.getElementById('slider-vol').value = state.vol;
+            }
+            syncLabels();
+            recalculatePhysics();
+        }
+
+        function onHoldConstantChange(constantKey) {
+            state.holdConstant = constantKey;
+
+            document.getElementById('slider-temp').disabled = (constantKey === 'T');
+            document.getElementById('slider-vol').disabled = (constantKey === 'V');
+            document.getElementById('input-temp').disabled = (constantKey === 'T');
+            document.getElementById('input-vol').disabled = (constantKey === 'V');
+        }
+
+        function syncLabels() {
+            document.getElementById('val-temp-display').innerText = `${Math.round(state.temp)} K`;
+            document.getElementById('txt-temp-val').innerText = `${Math.round(state.temp)} K (${Math.round(state.temp - 273.15)} °C)`;
+            document.getElementById('input-temp').value = Math.round(state.temp);
+
+            document.getElementById('val-vol-display').innerText = `${state.vol.toFixed(1)} L`;
+            document.getElementById('txt-vol-val').innerText = `${state.vol.toFixed(1)} L`;
+            document.getElementById('input-vol').value = state.vol.toFixed(1);
+
+            document.getElementById('txt-numA-val').innerText = state.numA;
+            document.getElementById('txt-numB-val').innerText = state.numB;
+            document.getElementById('val-moles-display').innerText = `${state.numA + state.numB} อนุภาค`;
+        }
+
+        function switchDimension(dim) {
+            state.renderMode = dim;
+            const btn2D = document.getElementById('btn-mode-2d');
+            const btn3D = document.getElementById('btn-mode-3d');
+            const canvas2DObj = document.getElementById('canvas-2d');
+            const container3DObj = document.getElementById('container-3d');
+
+            if (dim === '2D') {
+                btn2D.className = 'px-3 py-1 rounded-md bg-cyan-500 text-slate-950 font-bold transition';
+                btn3D.className = 'px-3 py-1 rounded-md text-slate-400 hover:text-white transition';
+                canvas2DObj.classList.remove('hidden');
+                container3DObj.classList.add('hidden');
+            } else {
+                btn3D.className = 'px-3 py-1 rounded-md bg-cyan-500 text-slate-950 font-bold transition';
+                btn2D.className = 'px-3 py-1 rounded-md text-slate-400 hover:text-white transition';
+                canvas2DObj.classList.add('hidden');
+                container3DObj.classList.remove('hidden');
+
+                if (!is3DInitialized) {
+                    init3DScene();
+                }
+            }
+        }
+
+        function applyPreset(presetKey) {
+            if (presetKey === 'boyle') {
+                onHoldConstantChange('T');
+                state.temp = 300; state.vol = 10.0;
+            } else if (presetKey === 'charles') {
+                onHoldConstantChange('P');
+                state.temp = 300; state.vol = 10.0;
+            } else if (presetKey === 'gay-lussac') {
+                onHoldConstantChange('V');
+                state.temp = 300; state.vol = 10.0;
+            } else if (presetKey === 'avogadro') {
+                onHoldConstantChange('P');
+                state.numA = 50; state.numB = 50;
+            }
+
+            document.getElementById('slider-temp').value = state.temp;
+            document.getElementById('slider-vol').value = state.vol;
+            document.getElementById('slider-numA').value = state.numA;
+            document.getElementById('slider-numB').value = state.numB;
+
+            resetParticles();
+            syncLabels();
+            recalculatePhysics();
+        }
+
+        function adjustZoom(factor) {
+            state.zoom = Math.max(0.5, Math.min(2.5, state.zoom * factor));
+        }
+
+        function resetZoomPan() {
+            state.zoom = 1.0;
+            state.panX = 0;
+            state.panY = 0;
+        }
+
+        function resetSimulation() {
+            state.temp = 300;
+            state.vol = 10.0;
+            state.numA = 50;
+            state.numB = 50;
+            state.holdConstant = 'none';
+
+            document.getElementById('slider-temp').value = 300;
+            document.getElementById('slider-vol').value = 10.0;
+            document.getElementById('slider-numA').value = 50;
+            document.getElementById('slider-numB').value = 50;
+
+            onHoldConstantChange('none');
+            resetZoomPan();
+            resetParticles();
+            syncLabels();
+            recalculatePhysics();
+        }
+
+        function switchRightTab(tabKey) {
+            ['calc', 'theory'].forEach(k => {
+                document.getElementById(`content-${k}`).classList.add('hidden');
+                document.getElementById(`tab-${k}`).classList.remove('active');
+            });
+
+            document.getElementById(`content-${tabKey}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabKey}`).classList.add('active');
+        }
+
+        function toggleFullscreen() {
+            try {
+                if (!document.fullscreenElement) {
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen().catch(err => console.warn(err));
+                    }
+                } else if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(err => console.warn(err));
+                }
+            } catch (err) {
+                console.warn("Fullscreen restricted:", err);
+            }
+        }
+
+        function onWindowResize() {
+            resizeCanvases();
+        }
+    </script>
+</body>
+</html>

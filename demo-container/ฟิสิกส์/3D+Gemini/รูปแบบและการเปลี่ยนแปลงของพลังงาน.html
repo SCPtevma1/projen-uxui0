@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ปฏิบัติการเสมือนจริง: รูปแบบและการเปลี่ยนแปลงของพลังงาน (Energy Forms and Changes)</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        lab: {
+                            bg: '#080d1a',
+                            panel: '#0f172a',
+                            accent: '#38bdf8',
+                        },
+                        energy: {
+                            light: '#fde047',    // Yellow
+                            heat: '#ef4444',     // Red
+                            mech: '#94a3b8',     // Gray
+                            elec: '#3b82f6',     // Blue
+                            chem: '#22c55e'      // Green
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Sarabun', 'Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- KaTeX for Physics Equations -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+    <!-- Three.js for 3D Viewport -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #080d1a;
+            color: #f3f4f6;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            touch-action: none;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(56, 189, 248, 0.7); }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            height: 6px;
+            outline: none;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+            transition: all 0.1s ease;
+        }
+        
+        .tab-btn.active {
+            background-color: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            border-bottom: 2px solid #38bdf8;
+            font-weight: 600;
+        }
+
+        .btn-select {
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .btn-select.active {
+            border-color: #38bdf8;
+            background-color: rgba(56, 189, 248, 0.1);
+        }
+
+        .energy-legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+    </style>
+</head>
+<body class="select-none text-slate-100">
+
+    <header class="absolute top-2 left-2 right-2 z-30 flex items-center justify-between glass-panel px-4 py-2 rounded-xl">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-blue-500/20 text-blue-400 rounded-lg border border-blue-500/30">
+                <i data-lucide="zap" class="w-5 h-5"></i>
+            </div>
+            <div>
+<a href="../physics.html">
+                    <h1 class="font-bold text-sm md:text-base text-white flex items-center gap-2">
+                    รูปแบบและการเปลี่ยนแปลงของพลังงาน
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Energy Conservation</span>
+                </h1>
+</a>
+                <p class="text-[11px] text-slate-400 hidden sm:block">ระบบพลังงาน, การเปลี่ยนรูป (Transformation), และการถ่ายโอนความร้อน</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Mode Switch 2D / 3D -->
+            <div class="flex bg-slate-900/90 p-1 rounded-lg border border-white/10 text-xs font-semibold">
+                <button id="btn-mode-2d" onclick="switchDimension('2D')" class="px-3 py-1 rounded-md bg-blue-500 text-white font-bold transition shadow-lg shadow-blue-500/30">
+                    2D Flow
+                </button>
+                <button id="btn-mode-3d" onclick="switchDimension('3D')" class="px-3 py-1 rounded-md text-slate-400 hover:text-white transition">
+                    3D Scene
+                </button>
+            </div>
+            <button onclick="toggleFullscreen()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition border border-white/10" title="เต็มจอ">
+                <i data-lucide="maximize" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <div class="absolute inset-0 pt-14 p-2 pointer-events-none grid grid-cols-1 md:grid-cols-12 gap-2 h-full pb-2">
+
+        <!-- ================= LEFT PANEL: System Builder ================= -->
+        <aside class="md:col-span-3 lg:col-span-3 glass-panel rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <div class="p-2.5 border-b border-white/10 bg-slate-900/80 flex justify-between items-center">
+                <span class="font-semibold text-xs text-white flex items-center gap-1.5">
+                    <i data-lucide="blocks" class="w-4 h-4 text-blue-400"></i>
+                    ออกแบบระบบพลังงาน
+                </span>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-3 space-y-4 text-xs">
+                
+                <!-- 1. Source Selection -->
+                <div class="space-y-2">
+                    <span class="text-[11px] font-bold text-slate-300 block border-b border-white/10 pb-1">1. แหล่งพลังงาน (Source)</span>
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <button onclick="setComponent('source', 'sun')" id="btn-src-sun" class="btn-select active glass-card p-2 rounded-lg flex flex-col items-center gap-1 hover:bg-slate-700/50">
+                            <i data-lucide="sun" class="w-5 h-5 text-yellow-400"></i>
+                            <span class="text-[9px]">ดวงอาทิตย์</span>
+                        </button>
+                        <button onclick="setComponent('source', 'water')" id="btn-src-water" class="btn-select glass-card p-2 rounded-lg flex flex-col items-center gap-1 hover:bg-slate-700/50">
+                            <i data-lucide="droplets" class="w-5 h-5 text-blue-400"></i>
+                            <span class="text-[9px]">ก๊อกน้ำ</span>
+                        </button>
+                        <button onclick="setComponent('source', 'teapot')" id="btn-src-teapot" class="btn-select glass-card p-2 rounded-lg flex flex-col items-center gap-1 hover:bg-slate-700/50">
+                            <i data-lucide="coffee" class="w-5 h-5 text-red-400"></i>
+                            <span class="text-[9px]">กาน้ำร้อน</span>
+                        </button>
+                    </div>
+                    <!-- Intensity Slider -->
+                    <div class="pt-2">
+                        <div class="flex justify-between text-[10px] text-slate-400 mb-1">
+                            <span>ความแรง (Intensity)</span>
+                            <span id="lbl-intensity">50%</span>
+                        </div>
+                        <input type="range" id="slider-intensity" min="0" max="100" value="50" class="w-full accent-blue-500" oninput="updateIntensity()">
+                    </div>
+                </div>
+
+                <!-- 2. Converter Selection -->
+                <div class="space-y-2">
+                    <span class="text-[11px] font-bold text-slate-300 block border-b border-white/10 pb-1">2. อุปกรณ์แปลงพลังงาน (Converter)</span>
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <button onclick="setComponent('converter', 'solar')" id="btn-conv-solar" class="btn-select active glass-card p-2 rounded-lg flex flex-col items-center gap-1 hover:bg-slate-700/50">
+                            <i data-lucide="grid-3x3" class="w-5 h-5 text-blue-300"></i>
+                            <span class="text-[9px]">แผงโซลาร์เซลล์</span>
+                        </button>
+                        <button onclick="setComponent('converter', 'turbine')" id="btn-conv-turbine" class="btn-select glass-card p-2 rounded-lg flex flex-col items-center gap-1 hover:bg-slate-700/50">
+                            <i data-lucide="fan" class="w-5 h-5 text-gray-400"></i>
+                            <span class="text-[9px]">กังหัน / เจนเนอเรเตอร์</span>
+                        </button>
+                    </div>
+                    <div id="compatibility-warning" class="hidden mt-1 p-1.5 bg-rose-500/20 border border-rose-500/30 rounded text-[9px] text-rose-300 text-center">
+                        <i data-lucide="alert-triangle" class="w-3 h-3 inline-block mb-0.5"></i> อุปกรณ์ไม่เข้ากัน! (ไม่มีการผลิตไฟฟ้า)
+                    </div>
+                </div>
+
+                <!-- 3. Load Selection -->
+                <div class="space-y-2">
+                    <span class="text-[11px] font-bold text-slate-300 block border-b border-white/10 pb-1">3. ผู้ใช้พลังงาน (Load / Output)</span>
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <button onclick="setComponent('load', 'bulb')" id="btn-load-bulb" class="btn-select active glass-card p-2 rounded-lg flex flex-col items-center gap-1 hover:bg-slate-700/50">
+                            <i data-lucide="lightbulb" class="w-5 h-5 text-yellow-200"></i>
+                            <span class="text-[9px]">หลอดไฟ</span>
+                        </button>
+                        <button onclick="setComponent('load', 'fan')" id="btn-load-fan" class="btn-select glass-card p-2 rounded-lg flex flex-col items-center gap-1 hover:bg-slate-700/50">
+                            <i data-lucide="wind" class="w-5 h-5 text-gray-300"></i>
+                            <span class="text-[9px]">พัดลม</span>
+                        </button>
+                        <button onclick="setComponent('load', 'beaker')" id="btn-load-beaker" class="btn-select glass-card p-2 rounded-lg flex flex-col items-center gap-1 hover:bg-slate-700/50">
+                            <i data-lucide="thermometer" class="w-5 h-5 text-red-300"></i>
+                            <span class="text-[9px]">ขดลวดความร้อน</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Energy Legend -->
+                <div class="glass-card p-2 rounded-lg space-y-2 mt-4 border border-white/10">
+                    <span class="text-[10px] font-bold text-slate-400 block border-b border-white/10 pb-1 text-center">สัญลักษณ์รูปแบบพลังงาน (Energy Symbols)</span>
+                    <div class="flex flex-wrap justify-center gap-1.5">
+                        <div class="energy-legend-item text-yellow-300"><span class="w-2.5 h-2.5 rounded-full bg-yellow-400 inline-block"></span> E แสง</div>
+                        <div class="energy-legend-item text-red-400"><span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span> E ความร้อน</div>
+                        <div class="energy-legend-item text-slate-300"><span class="w-2.5 h-2.5 rounded-full bg-slate-400 inline-block"></span> E กล</div>
+                        <div class="energy-legend-item text-blue-300"><span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span> E ไฟฟ้า</div>
+                        <div class="energy-legend-item text-green-400"><span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span> E เคมี</div>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- ================= CENTER: Viewport ================= -->
+        <main class="md:col-span-5 lg:col-span-5 glass-panel rounded-xl flex flex-col pointer-events-auto border border-white/10 shadow-2xl relative overflow-hidden">
+            
+            <div id="viewport-container" class="flex-1 bg-[#050810] relative flex flex-col overflow-hidden">
+                
+                <!-- 2D Canvas -->
+                <canvas id="canvas-2d" class="w-full h-full absolute inset-0 z-10 block"></canvas>
+
+                <!-- 3D Three.js Container -->
+                <div id="container-3d" class="w-full h-full absolute inset-0 z-10 hidden"></div>
+
+                <!-- Overlay UI elements (Thermometer for Beaker) -->
+                <div id="thermometer-ui" class="absolute bottom-4 right-4 bg-slate-900/90 backdrop-blur border border-white/20 p-2 rounded-lg shadow-xl z-20 flex flex-col items-center gap-1 hidden">
+                    <span class="text-[9px] font-bold text-slate-300">อุณหภูมิน้ำ</span>
+                    <div class="w-4 h-24 bg-slate-800 rounded-full border border-white/20 relative overflow-hidden p-0.5">
+                        <div id="thermo-fluid" class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-blue-500 via-amber-500 to-red-500 transition-all duration-300 rounded-full" style="height: 10%;"></div>
+                    </div>
+                    <span id="lbl-temp" class="text-[10px] font-mono text-white mt-1">20°C</span>
+                </div>
+
+                <!-- Info Badges -->
+                <div class="absolute top-4 left-4 flex flex-col gap-1 z-20">
+                    <div class="bg-black/60 backdrop-blur px-2 py-1 rounded border border-white/10 text-[10px] text-emerald-300 flex items-center gap-1">
+                        <i data-lucide="activity" class="w-3 h-3"></i> <span id="sys-status">ระบบทำงานปกติ</span>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- ================= RIGHT PANEL: Theory & Physics ================= -->
+        <aside class="md:col-span-4 lg:col-span-4 glass-panel rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <!-- Navigation Tabs -->
+            <div class="p-2 border-b border-white/10 bg-slate-900/80">
+                <div class="grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-lg text-[11px] font-semibold text-center">
+                    <button onclick="switchRightTab('theory')" id="tab-theory" class="tab-btn active py-1 rounded transition">การเปลี่ยนรูป & ระบบ</button>
+                    <button onclick="switchRightTab('thermal')" id="tab-thermal" class="tab-btn py-1 rounded transition">ความร้อน & การถ่ายโอน</button>
+                </div>
+            </div>
+
+            <!-- Scrollable Content -->
+            <div class="flex-1 overflow-y-auto p-3 text-xs">
+
+                <!-- TAB 1: Theory -->
+                <div id="content-theory" class="space-y-4">
+                    
+                    <div class="glass-card p-2.5 rounded-lg border-l-2 border-blue-400">
+                        <h3 class="font-bold text-blue-300 text-[12px] mb-1">กฎการอนุรักษ์พลังงาน (Conservation of Energy)</h3>
+                        <p class="text-[10px] text-slate-300 leading-relaxed">
+                            พลังงานไม่สามารถถูกสร้างขึ้นใหม่หรือทำลายได้ แต่สามารถ <b>เปลี่ยนรูปแบบ (Transform)</b> หรือ <b>ถ่ายโอน (Transfer)</b> จากที่หนึ่งไปยังอีกที่หนึ่งได้
+                        </p>
+                        <div id="math-conservation" class="py-2 text-center text-blue-100 font-mono text-[11px] bg-slate-950/60 rounded mt-2"></div>
+                    </div>
+
+                    <div class="bg-slate-900/60 p-2.5 rounded-lg border border-white/5 space-y-2">
+                        <h4 class="font-bold text-emerald-400 text-[11px] flex items-center gap-1">
+                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> การเปลี่ยนรูปพลังงานในระบบนี้
+                        </h4>
+                        <div id="dynamic-explanation" class="text-[10px] text-slate-300 leading-relaxed p-2 bg-slate-950 rounded border border-white/5">
+                            <!-- Injected by JS based on selection -->
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900/60 p-2.5 rounded-lg border border-white/5 space-y-1.5">
+                        <h4 class="font-bold text-yellow-400 text-[11px] flex items-center gap-1">
+                            <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> ทำไมเครื่องใช้ไฟฟ้าถึงร้อน?
+                        </h4>
+                        <p class="text-[10px] text-slate-300 leading-relaxed">
+                            สังเกตสัญลักษณ์พลังงานความร้อน (สีแดง) ที่กระจายออกมาจากหลอดไฟหรือกังหัน ในทุกการเปลี่ยนรูปพลังงาน จะมีการสูญเสียพลังงานบางส่วนไปในรูปของ <b>พลังงานความร้อน (Waste Heat)</b> สู่สิ่งแวดล้อมเสมอ ทำให้ประสิทธิภาพ (Efficiency, $\eta$) ไม่ถึง 100%
+                        </p>
+                    </div>
+
+                </div>
+
+                <!-- TAB 2: Thermal Transfer -->
+                <div id="content-thermal" class="space-y-4 hidden">
+                    
+                    <div class="glass-card p-2.5 rounded-lg border-l-2 border-red-400">
+                        <h3 class="font-bold text-red-300 text-[12px] mb-1">การถ่ายโอนความร้อน (Heat Transfer)</h3>
+                        <p class="text-[10px] text-slate-300 leading-relaxed">
+                            ความร้อนจะถ่ายโอนจากวัตถุที่มี <b>อุณหภูมิสูงกว่า</b> ไปยังวัตถุที่มี <b>อุณหภูมิต่ำกว่า</b> เสมอ จนกว่าทั้งสองจะเข้าสู่ <b>สมดุลความร้อน (Thermal Equilibrium)</b>
+                        </p>
+                        <div id="math-heat" class="py-2 text-center text-red-100 font-mono text-[11px] bg-slate-950/60 rounded mt-2"></div>
+                    </div>
+
+                    <div class="bg-slate-900/60 p-2.5 rounded-lg border border-white/5 space-y-2">
+                        <h4 class="font-bold text-orange-400 text-[11px] flex items-center gap-1">
+                            <i data-lucide="flame" class="w-3.5 h-3.5"></i> การคาดการณ์ (Prediction)
+                        </h4>
+                        <ul class="text-[10px] text-slate-300 list-disc pl-4 space-y-1">
+                            <li><b>วัตถุที่ถูกทำให้ร้อน:</b> พลังงานจลน์เฉลี่ยของอนุภาคภายในจะเพิ่มขึ้น (อุณหภูมิสูงขึ้น)</li>
+                            <li><b>วัตถุที่ถูกทำให้เย็น:</b> พลังงานจลน์เฉลี่ยของอนุภาคภายในจะลดลง (อุณหภูมิต่ำลง)</li>
+                            <li><b>เมื่อสัมผัสกัน:</b> พลังงานจะถูกถ่ายโอนผ่าน <b>การนำความร้อน (Conduction)</b> เช่น เมื่อใช้ "ขดลวดความร้อน" ในน้ำ น้ำจะรับพลังงานความร้อนทำให้อุณหภูมิสูงขึ้นจนเดือด</li>
+                        </ul>
+                    </div>
+
+                    <!-- Small Interactive block for Thermal Demo -->
+                    <div class="bg-slate-950 p-2.5 rounded-lg border border-white/10 text-center">
+                        <span class="text-[10px] text-slate-400">ลองเลือก "กาน้ำร้อน" เป็นแหล่งพลังงาน และ "ขดลวดความร้อน (Beaker)" เป็นผู้ใช้พลังงาน เพื่อดูการถ่ายโอนความร้อนอย่างชัดเจน!</span>
+                    </div>
+
+                </div>
+
+            </div>
+        </aside>
+
+    </div>
+
+    <script>
+        // --- State Management ---
+        const state = {
+            renderMode: '2D', // '2D' or '3D'
+            source: 'sun',    // 'sun', 'water', 'teapot'
+            converter: 'solar', // 'solar', 'turbine'
+            load: 'bulb',     // 'bulb', 'fan', 'beaker'
+            intensity: 50,    // 0 - 100
+            
+            isCompatible: true,
+            
+            // Physics / Visual state
+            particles: [], // Energy chunks
+            temperature: 20, // For beaker
+            lastTime: 0
+        };
+
+        // Configuration
+        const config = {
+            colors: {
+                light: '#fde047',
+                heat: '#ef4444',
+                mech: '#94a3b8',
+                elec: '#3b82f6',
+                chem: '#22c55e'
+            }
+        };
+
+        // 2D & 3D Variables
+        let canvas, ctx;
+        let scene, camera, renderer, clock;
+        let objects3D = {};
+
+        // Initialize Application
+        window.addEventListener('DOMContentLoaded', () => {
+            initKaTeX();
+            init2D();
+            lucide.createIcons();
+            
+            checkCompatibility();
+            updateDynamicText();
+            
+            window.addEventListener('resize', onWindowResize);
+            requestAnimationFrame(simulationLoop);
+        });
+
+        function initKaTeX() {
+            if (window.katex) {
+                katex.render("E_{in} = E_{out} + E_{waste}", document.getElementById('math-conservation'));
+                katex.render("Q = mc\\Delta T", document.getElementById('math-heat'));
+            }
+        }
+
+        // --- UI Interactions ---
+        function setComponent(type, value) {
+            state[type] = value;
+            
+            // Update UI Buttons
+            const prefix = type === 'source' ? 'btn-src-' : (type === 'converter' ? 'btn-conv-' : 'btn-load-');
+            
+            // Clear active state in group
+            let btns;
+            if(type === 'source') btns = ['sun', 'water', 'teapot'];
+            if(type === 'converter') btns = ['solar', 'turbine'];
+            if(type === 'load') btns = ['bulb', 'fan', 'beaker'];
+            
+            btns.forEach(b => {
+                document.getElementById(prefix + b).classList.remove('active');
+            });
+            
+            // Set active
+            document.getElementById(prefix + value).classList.add('active');
+            
+            // Reset temp if load changed
+            if (type === 'load') {
+                state.temperature = 20;
+                if (value === 'beaker') {
+                    document.getElementById('thermometer-ui').classList.remove('hidden');
+                } else {
+                    document.getElementById('thermometer-ui').classList.add('hidden');
+                }
+            }
+
+            checkCompatibility();
+            updateDynamicText();
+            
+            // Update 3D scene if active
+            if (state.renderMode === '3D') {
+                update3DSceneModels();
+            }
+        }
+
+        function updateIntensity() {
+            state.intensity = parseInt(document.getElementById('slider-intensity').value);
+            document.getElementById('lbl-intensity').innerText = `${state.intensity}%`;
+        }
+
+        function checkCompatibility() {
+            // Logic: Sun only works with Solar. Water/Teapot only work with Turbine.
+            if (state.source === 'sun' && state.converter !== 'solar') {
+                state.isCompatible = false;
+            } else if ((state.source === 'water' || state.source === 'teapot') && state.converter !== 'turbine') {
+                state.isCompatible = false;
+            } else {
+                state.isCompatible = true;
+            }
+
+            const warning = document.getElementById('compatibility-warning');
+            const status = document.getElementById('sys-status');
+            
+            if (!state.isCompatible) {
+                warning.classList.remove('hidden');
+                status.innerText = "อุปกรณ์ไม่เข้ากัน (No Power)";
+                status.parentElement.className = "bg-black/60 backdrop-blur px-2 py-1 rounded border border-rose-500/30 text-[10px] text-rose-400 flex items-center gap-1";
+            } else {
+                warning.classList.add('hidden');
+                if (state.intensity === 0) {
+                    status.innerText = "แหล่งพลังงานปิดอยู่";
+                    status.parentElement.className = "bg-black/60 backdrop-blur px-2 py-1 rounded border border-slate-500/30 text-[10px] text-slate-400 flex items-center gap-1";
+                } else {
+                    status.innerText = "ระบบทำงานปกติ";
+                    status.parentElement.className = "bg-black/60 backdrop-blur px-2 py-1 rounded border border-emerald-500/30 text-[10px] text-emerald-300 flex items-center gap-1";
+                }
+            }
+        }
+
+        function updateDynamicText() {
+            let text = "";
+            let srcName = state.source === 'sun' ? "ดวงอาทิตย์ (พลังงานแสง)" : (state.source === 'water' ? "ก๊อกน้ำ (พลังงานกล/ศักย์โน้มถ่วง)" : "กาน้ำร้อน (พลังงานความร้อน -> กล)");
+            let convName = state.converter === 'solar' ? "แผงโซลาร์เซลล์" : "กังหัน";
+            let loadName = state.load === 'bulb' ? "หลอดไฟ" : (state.load === 'fan' ? "พัดลม" : "ขดลวดความร้อนในน้ำ");
+
+            if (!state.isCompatible) {
+                text = `คุณพยายามเชื่อมต่อ <b>${srcName}</b> เข้ากับ <b>${convName}</b> ซึ่งไม่สามารถทำงานร่วมกันได้! (เช่น แผงโซลาร์เซลล์ไม่สามารถรับพลังงานกลจากน้ำได้) ระบบจึงไม่มีการถ่ายโอนพลังงาน`;
+            } else {
+                let eIn = state.source === 'sun' ? 'พลังงานแสง' : 'พลังงานกล';
+                let eConv = 'พลังงานไฟฟ้า';
+                let eOut = state.load === 'bulb' ? 'พลังงานแสงและความร้อน' : (state.load === 'fan' ? 'พลังงานกลและความร้อน' : 'พลังงานความร้อน');
+                
+                text = `1. <b>${srcName}</b> ปล่อย <b>${eIn}</b> เข้าสู่ระบบ<br>
+                        2. <b>${convName}</b> ทำหน้าที่แปลง ${eIn} ให้กลายเป็น <b>${eConv}</b> ส่งผ่านสายไฟ<br>
+                        3. <b>${loadName}</b> รับ ${eConv} มาแปลงเป็น <b>${eOut}</b> เพื่อใช้งาน (และสูญเสียบางส่วนเป็น Waste Heat)`;
+            }
+
+            document.getElementById('dynamic-explanation').innerHTML = text;
+        }
+
+        // --- Main Simulation Engine ---
+        function simulationLoop(timestamp) {
+            if (!state.lastTime) state.lastTime = timestamp;
+            const dt = (timestamp - state.lastTime) / 1000;
+            state.lastTime = timestamp;
+
+            updatePhysics(dt);
+
+            if (state.renderMode === '2D') {
+                render2D(dt);
+            } else if (state.renderMode === '3D') {
+                render3D(dt);
+            }
+
+            requestAnimationFrame(simulationLoop);
+        }
+
+        function updatePhysics(dt) {
+            // 1. Spawner Logic (Emit chunks based on intensity and compatibility)
+            if (state.intensity > 0 && state.isCompatible) {
+                // Emit rate based on intensity (chance per frame)
+                if (Math.random() < (state.intensity / 100) * 0.2) { // Max ~12 chunks per sec at 60fps
+                    spawnParticle();
+                }
+            }
+
+            // 2. Update Beaker Temperature
+            if (state.load === 'beaker') {
+                let heatingRate = 0;
+                let coolingRate = 0.5; // Natural cooling
+                
+                // Count active particles hitting the load
+                // Actually, just base it on intensity if compatible
+                if (state.isCompatible && state.intensity > 0) {
+                    heatingRate = (state.intensity / 100) * 2.0; 
+                }
+
+                state.temperature += (heatingRate - coolingRate) * dt;
+                // Clamp temp
+                if (state.temperature < 20) state.temperature = 20;
+                if (state.temperature > 100) state.temperature = 100;
+
+                // Update UI
+                document.getElementById('lbl-temp').innerText = `${Math.floor(state.temperature)}°C`;
+                const percent = ((state.temperature - 20) / 80) * 100;
+                document.getElementById('thermo-fluid').style.height = `${percent}%`;
+                
+                // Change fluid color based on temp
+                let r = Math.min(255, (percent / 100) * 255 + 50);
+                let b = Math.max(50, 255 - (percent / 100) * 255);
+                document.getElementById('thermo-fluid').style.background = `rgb(${r}, 50, ${b})`;
+            }
+
+            // 3. Update Particles
+            for (let i = state.particles.length - 1; i >= 0; i--) {
+                let p = state.particles[i];
+                p.progress += p.speed * dt;
+
+                // Phase transitions
+                if (p.phase === 0 && p.progress >= 1.0) {
+                    // Reached Converter
+                    p.phase = 1;
+                    p.progress = 0;
+                    p.type = 'elec'; // Converts to electrical in wires
+                    
+                    // Waste heat from converter (20% chance)
+                    if(Math.random() < 0.2) {
+                        p.type = 'heat';
+                        p.isWaste = true;
+                    }
+                } else if (p.phase === 1 && p.progress >= 1.0) {
+                    // Reached Load
+                    p.phase = 2;
+                    p.progress = 0;
+                    
+                    if (p.isWaste) {
+                        // Already waste, just float away
+                    } else {
+                        // Convert at load
+                        if (state.load === 'bulb') {
+                            p.type = Math.random() < 0.6 ? 'light' : 'heat';
+                        } else if (state.load === 'fan') {
+                            p.type = Math.random() < 0.7 ? 'mech' : 'heat';
+                        } else if (state.load === 'beaker') {
+                            p.type = 'heat';
+                        }
+                    }
+                } else if (p.phase === 2 && p.progress >= 1.0) {
+                    // Fades away
+                    state.particles.splice(i, 1);
+                }
+            }
+        }
+
+        function spawnParticle() {
+            let startType = 'light';
+            if (state.source === 'sun') startType = 'light';
+            if (state.source === 'water') startType = 'mech';
+            if (state.source === 'teapot') startType = Math.random() < 0.5 ? 'heat' : 'mech';
+
+            state.particles.push({
+                id: Math.random(),
+                type: startType,
+                phase: 0, // 0: Src->Conv, 1: Conv->Load, 2: Load->Environment
+                progress: 0,
+                speed: 0.8 + Math.random() * 0.4,
+                isWaste: false,
+                offsetY: (Math.random() - 0.5) * 40, // For visual spread in 2D
+                offsetX: (Math.random() - 0.5) * 40
+            });
+        }
+
+        function init2D() {
+            canvas = document.getElementById('canvas-2d');
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+        }
+
+        function resizeCanvas() {
+            if (!canvas) return;
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth * window.devicePixelRatio;
+            canvas.height = container.clientHeight * window.devicePixelRatio;
+            if (renderer && state.renderMode === '3D') {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }
+        }
+        
+        function onWindowResize() { resizeCanvas(); }
+
+        function render2D(dt) {
+            ctx.save();
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const w = canvas.width / window.devicePixelRatio;
+            const h = canvas.height / window.devicePixelRatio;
+            
+            const cy = h / 2;
+            const p1 = { x: w * 0.2, y: cy }; // Source
+            const p2 = { x: w * 0.5, y: cy }; // Converter
+            const p3 = { x: w * 0.8, y: cy }; // Load
+
+            // Draw Connections (Wires/Pipes)
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p3.x, p3.y);
+            ctx.stroke();
+
+            // Draw Nodes
+            drawNode2D(p1.x, p1.y, state.source, 'source');
+            drawNode2D(p2.x, p2.y, state.converter, 'converter');
+            drawNode2D(p3.x, p3.y, state.load, 'load');
+
+            // Draw Particles
+            state.particles.forEach(p => {
+                let x, y;
+                let alpha = 1;
+                let scale = 1;
+
+                if (p.phase === 0) {
+                    // Src to Conv
+                    x = p1.x + (p2.x - p1.x) * p.progress;
+                    y = p1.y + p.offsetY * Math.sin(p.progress * Math.PI);
+                } else if (p.phase === 1) {
+                    // Conv to Load
+                    if (p.isWaste) {
+                        // Float up from converter
+                        x = p2.x + p.offsetX;
+                        y = p2.y - (p.progress * 150);
+                        alpha = 1 - p.progress;
+                    } else {
+                        x = p2.x + (p3.x - p2.x) * p.progress;
+                        y = p2.y + p.offsetY * Math.sin(p.progress * Math.PI);
+                    }
+                } else if (p.phase === 2) {
+                    // Out from Load
+                    x = p3.x + p.offsetX * 2 * p.progress;
+                    y = p3.y - (p.progress * 150) + p.offsetY;
+                    alpha = 1 - p.progress;
+                    scale = 1 + p.progress * 0.5;
+                }
+
+                drawEnergyChunk2D(x, y, p.type, alpha, scale);
+            });
+
+            ctx.restore();
+        }
+
+        function drawNode2D(x, y, type, category) {
+            ctx.fillStyle = '#1e293b';
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 2;
+            
+            // Base circle
+            ctx.beginPath();
+            ctx.arc(x, y, 40, 0, Math.PI*2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Icons/Text simplified
+            ctx.fillStyle = '#f8fafc';
+            ctx.font = '12px Inter';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            let label = "";
+            let emoji = "";
+            
+            if (type === 'sun') { label = "Sun"; emoji = "☀️"; }
+            else if (type === 'water') { label = "Water"; emoji = "💧"; }
+            else if (type === 'teapot') { label = "Heat"; emoji = "🔥"; }
+            
+            else if (type === 'solar') { label = "Panel"; emoji = "⬛"; }
+            else if (type === 'turbine') { label = "Turbine"; emoji = "⚙️"; }
+            
+            else if (type === 'bulb') { label = "Bulb"; emoji = "💡"; }
+            else if (type === 'fan') { label = "Fan"; emoji = "🌀"; }
+            else if (type === 'beaker') { label = "Heater"; emoji = "♨️"; }
+
+            ctx.font = '24px sans-serif';
+            ctx.fillText(emoji, x, y - 5);
+            ctx.font = '10px Inter';
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillText(label, x, y + 20);
+        }
+
+        function drawEnergyChunk2D(x, y, type, alpha, scale) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(scale, scale);
+            ctx.globalAlpha = alpha;
+
+            let color = config.colors[type];
+            
+            ctx.fillStyle = color;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 10;
+            
+            ctx.beginPath();
+            // rounded square
+            const s = 14;
+            ctx.roundRect(-s/2, -s/2, s, s, 3);
+            ctx.fill();
+
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#000';
+            ctx.font = 'bold 10px Inter';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('E', 0, 1);
+
+            ctx.restore();
+        }
+
+        function init3D() {
+            const container = document.getElementById('container-3d');
+            scene = new THREE.Scene();
+            
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 5, 25);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambient);
+            const directional = new THREE.DirectionalLight(0xffffff, 0.8);
+            directional.position.set(10, 20, 10);
+            scene.add(directional);
+
+            // Base Plane
+            const grid = new THREE.GridHelper(40, 40, 0x475569, 0x1e293b);
+            grid.position.y = -2;
+            scene.add(grid);
+
+            // Create Groups for positions
+            objects3D.sourceGroup = new THREE.Group();
+            objects3D.sourceGroup.position.set(-8, 0, 0);
+            scene.add(objects3D.sourceGroup);
+
+            objects3D.convGroup = new THREE.Group();
+            objects3D.convGroup.position.set(0, 0, 0);
+            scene.add(objects3D.convGroup);
+
+            objects3D.loadGroup = new THREE.Group();
+            objects3D.loadGroup.position.set(8, 0, 0);
+            scene.add(objects3D.loadGroup);
+
+            // Wires
+            const wireGeo = new THREE.CylinderGeometry(0.1, 0.1, 16);
+            const wireMat = new THREE.MeshPhongMaterial({color: 0x334155});
+            const wire = new THREE.Mesh(wireGeo, wireMat);
+            wire.rotation.z = Math.PI / 2;
+            scene.add(wire);
+
+            // Particle System container
+            objects3D.particles = new THREE.Group();
+            scene.add(objects3D.particles);
+
+            clock = new THREE.Clock();
+            
+            update3DSceneModels();
+        }
+
+        function createBasicModel(type) {
+            const group = new THREE.Group();
+            let mesh;
+            
+            if (type === 'sun') {
+                mesh = new THREE.Mesh(new THREE.SphereGeometry(1.5, 16, 16), new THREE.MeshPhongMaterial({color: 0xfde047, emissive: 0xca8a04}));
+                mesh.position.y = 3;
+            } else if (type === 'water') {
+                mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 3), new THREE.MeshPhongMaterial({color: 0x3b82f6}));
+                mesh.position.y = 2;
+            } else if (type === 'teapot') {
+                mesh = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), new THREE.MeshPhongMaterial({color: 0xef4444}));
+            } else if (type === 'solar') {
+                mesh = new THREE.Mesh(new THREE.BoxGeometry(3, 0.2, 3), new THREE.MeshPhongMaterial({color: 0x1e3a8a}));
+                mesh.rotation.x = Math.PI / 6;
+                mesh.rotation.y = Math.PI / 4;
+            } else if (type === 'turbine') {
+                mesh = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.5), new THREE.MeshPhongMaterial({color: 0x94a3b8}));
+                mesh.rotation.x = Math.PI / 2;
+                group.userData.spinMesh = mesh; // to animate
+            } else if (type === 'bulb') {
+                mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 16), new THREE.MeshPhysicalMaterial({transmission: 0.9, opacity: 1, transparent: true, roughness: 0.1}));
+                const filament = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1), new THREE.MeshBasicMaterial({color: 0xfef08a}));
+                mesh.add(filament);
+                mesh.position.y = 1;
+            } else if (type === 'fan') {
+                mesh = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2, 0.2), new THREE.MeshPhongMaterial({color: 0xf8fafc}));
+                const blade = new THREE.Mesh(new THREE.BoxGeometry(3, 0.1, 0.5), new THREE.MeshPhongMaterial({color: 0x94a3b8}));
+                mesh.add(blade);
+                mesh.position.y = 1;
+                group.userData.spinMesh = mesh;
+            } else if (type === 'beaker') {
+                mesh = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 2, 16), new THREE.MeshPhysicalMaterial({transmission: 0.8, opacity: 1, transparent: true, color: 0x93c5fd}));
+                const heater = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1), new THREE.MeshPhongMaterial({color: 0x475569}));
+                heater.position.y = -0.5;
+                mesh.add(heater);
+                mesh.position.y = 1;
+            }
+            
+            // Add a pedestal for everyone
+            if (!mesh) mesh = new THREE.Mesh(new THREE.BoxGeometry(1,1,1));
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.5, 0.5), new THREE.MeshPhongMaterial({color: 0x334155}));
+            base.position.y = -1.75;
+            group.add(base);
+            group.add(mesh);
+            
+            return group;
+        }
+
+        function update3DSceneModels() {
+            if (!scene) return;
+            
+            // Clear old
+            while(objects3D.sourceGroup.children.length > 0){ objects3D.sourceGroup.remove(objects3D.sourceGroup.children[0]); }
+            while(objects3D.convGroup.children.length > 0){ objects3D.convGroup.remove(objects3D.convGroup.children[0]); }
+            while(objects3D.loadGroup.children.length > 0){ objects3D.loadGroup.remove(objects3D.loadGroup.children[0]); }
+            
+            // Add new
+            objects3D.sourceObj = createBasicModel(state.source);
+            objects3D.sourceGroup.add(objects3D.sourceObj);
+            
+            objects3D.convObj = createBasicModel(state.converter);
+            objects3D.convGroup.add(objects3D.convObj);
+            
+            objects3D.loadObj = createBasicModel(state.load);
+            objects3D.loadGroup.add(objects3D.loadObj);
+        }
+
+        function render3D(dt) {
+            if (!scene) return;
+
+            // Animate mechanical parts if compatible & running
+            if (state.isCompatible && state.intensity > 0) {
+                const speed = (state.intensity / 100) * 10 * dt;
+                if (state.converter === 'turbine' && objects3D.convObj.userData.spinMesh) {
+                    objects3D.convObj.userData.spinMesh.rotation.z += speed;
+                }
+                if (state.load === 'fan' && objects3D.loadObj.userData.spinMesh) {
+                    objects3D.loadObj.userData.spinMesh.rotation.z += speed * 2;
+                }
+            }
+
+            // Sync Particles to 3D
+            // Fast way: create meshes for each particle if not exists, update position
+            while(objects3D.particles.children.length > state.particles.length) {
+                objects3D.particles.remove(objects3D.particles.children[objects3D.particles.children.length-1]);
+            }
+            while(objects3D.particles.children.length < state.particles.length) {
+                const mat = new THREE.MeshBasicMaterial({color: 0xffffff});
+                const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), mat);
+                objects3D.particles.add(mesh);
+            }
+
+            const p1x = -8, p2x = 0, p3x = 8;
+
+            for (let i = 0; i < state.particles.length; i++) {
+                const p = state.particles[i];
+                const mesh = objects3D.particles.children[i];
+                
+                // Color mapping
+                mesh.material.color.set(config.colors[p.type]);
+                
+                let x, y, z;
+                z = Math.sin(p.progress * Math.PI * 4) * 0.5; // slight wobble
+
+                if (p.phase === 0) {
+                    x = p1x + (p2x - p1x) * p.progress;
+                    y = p.offsetY * 0.05 * Math.sin(p.progress * Math.PI);
+                } else if (p.phase === 1) {
+                    if (p.isWaste) {
+                        x = p2x + p.offsetX * 0.05;
+                        y = p.progress * 5;
+                    } else {
+                        x = p2x + (p3x - p2x) * p.progress;
+                        y = p.offsetY * 0.05 * Math.sin(p.progress * Math.PI);
+                    }
+                } else if (p.phase === 2) {
+                    x = p3x + p.offsetX * 0.1 * p.progress;
+                    y = (p.progress * 5) + p.offsetY * 0.05;
+                }
+                
+                mesh.position.set(x, y, z);
+                
+                if (p.phase >= 1 && p.isWaste || p.phase === 2) {
+                    mesh.scale.setScalar(1 - p.progress);
+                } else {
+                    mesh.scale.setScalar(1);
+                }
+            }
+
+            // Gentle camera orbit
+            // camera.position.x = Math.sin(Date.now() * 0.0005) * 5;
+            // camera.lookAt(0, 0, 0);
+
+            renderer.render(scene, camera);
+        }
+
+        // --- Tabs and Modes ---
+        function switchDimension(dim) {
+            state.renderMode = dim;
+            const btn2D = document.getElementById('btn-mode-2d');
+            const btn3D = document.getElementById('btn-mode-3d');
+            const canvas2DObj = document.getElementById('canvas-2d');
+            const container3DObj = document.getElementById('container-3d');
+
+            if (dim === '2D') {
+                btn2D.className = 'px-3 py-1 rounded-md bg-blue-500 text-white font-bold transition shadow-lg shadow-blue-500/30';
+                btn3D.className = 'px-3 py-1 rounded-md text-slate-400 hover:text-white transition';
+                canvas2DObj.classList.remove('hidden');
+                container3DObj.classList.add('hidden');
+            } else {
+                btn3D.className = 'px-3 py-1 rounded-md bg-blue-500 text-white font-bold transition shadow-lg shadow-blue-500/30';
+                btn2D.className = 'px-3 py-1 rounded-md text-slate-400 hover:text-white transition';
+                canvas2DObj.classList.add('hidden');
+                container3DObj.classList.remove('hidden');
+
+                if (!scene) {
+                    init3D();
+                } else {
+                    resizeCanvas();
+                }
+            }
+        }
+
+        function switchRightTab(tabKey) {
+            ['theory', 'thermal'].forEach(k => {
+                document.getElementById(`content-${k}`).classList.add('hidden');
+                document.getElementById(`tab-${k}`).classList.remove('active');
+            });
+            document.getElementById(`content-${tabKey}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabKey}`).classList.add('active');
+        }
+
+        function toggleFullscreen() {
+            try {
+                if (!document.fullscreenElement) {
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen().catch(err => console.warn(err));
+                    }
+                } else if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(err => console.warn(err));
+                }
+            } catch (err) {
+                console.warn("Fullscreen restricted:", err);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ปฏิบัติการเสมือนจริง: คลื่นเบื้องต้น - แสง เสียง น้ำ (Wave Physics Lab)</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        wave: {
+                            bg: '#070b19',
+                            panel: '#0f172a',
+                            accent: '#38bdf8',
+                            water: '#06b6d4',
+                            sound: '#f59e0b',
+                            light: '#e11d48'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Sarabun', 'Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- KaTeX for Mathematics & Physics Formulas -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #070b19;
+            color: #f3f4f6;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            touch-action: none;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .interactive-highlight {
+            outline: 2px solid #38bdf8;
+            outline-offset: 3px;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
+            transition: all 0.2s ease;
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.3);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(56, 189, 248, 0.7);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 4px;
+            height: 6px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+            transition: all 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #7dd3fc;
+        }
+
+        .tab-btn.active {
+            background-color: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            border-bottom: 2px solid #38bdf8;
+            font-weight: 600;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body class="select-none text-slate-100">
+
+    <!-- Navigation Header -->
+    <header class="absolute top-2 left-2 right-2 z-30 flex items-center justify-between glass-panel px-4 py-2 rounded-xl">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/30">
+                <i data-lucide="waves" class="w-5 h-5 animate-pulse"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-sm md:text-base text-white flex items-center gap-2">
+                    ปฏิบัติการเสมือนจริง: คลื่นเบื้องต้น (Wave Physics Lab)
+                    <span id="badge-medium" class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">คลื่นน้ำ (Water)</span>
+                </h1>
+                <p class="text-[11px] text-slate-400 hidden sm:block">ความยาวคลื่น ($\lambda$), แอมพลิจูด ($A$), ความถี่ ($f$), อัตราเร็วคลื่น ($v = f\lambda$), โซนิฟิเคชัน & ระบบเสียงบรรยาย</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Medium Selector Buttons -->
+            <div class="bg-slate-900 p-1 rounded-lg border border-white/10 flex gap-1">
+                <button id="btn-med-water" onclick="selectMedium('water')" class="px-2.5 py-1 text-xs rounded font-medium transition bg-cyan-500 text-white flex items-center gap-1">
+                    <i data-lucide="droplet" class="w-3.5 h-3.5"></i>
+                    <span>คลื่นน้ำ</span>
+                </button>
+                <button id="btn-med-sound" onclick="selectMedium('sound')" class="px-2.5 py-1 text-xs rounded font-medium transition text-slate-400 hover:text-white flex items-center gap-1">
+                    <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+                    <span>คลื่นเสียง</span>
+                </button>
+                <button id="btn-med-light" onclick="selectMedium('light')" class="px-2.5 py-1 text-xs rounded font-medium transition text-slate-400 hover:text-white flex items-center gap-1">
+                    <i data-lucide="sun" class="w-3.5 h-3.5"></i>
+                    <span>คลื่นแสง</span>
+                </button>
+            </div>
+
+            <!-- Sonification Audio Toggle -->
+            <button id="btn-toggle-sound" onclick="toggleSonification()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition border border-white/10 text-xs flex items-center gap-1.5 font-medium" title="โซนิฟิเคชัน (Sonification Audio)">
+                <i id="icon-sound" data-lucide="volume-x" class="w-4 h-4 text-rose-400"></i>
+                <span class="hidden md:inline">Sonification</span>
+            </button>
+
+            <!-- Text-to-Speech Voicing Toggle -->
+            <button id="btn-toggle-voicing" onclick="toggleVoicing()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition border border-white/10 text-xs flex items-center gap-1.5 font-medium" title="เสียงอธิบายเรียลไทม์ (Voicing)">
+                <i id="icon-voicing" data-lucide="mic-off" class="w-4 h-4 text-slate-400"></i>
+                <span class="hidden md:inline">Voicing</span>
+            </button>
+
+            <!-- Reset Lab State -->
+            <button onclick="resetLab()" class="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-lg transition border border-rose-500/40 text-xs flex items-center gap-1.5 font-medium">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                <span>รีเซ็ต</span>
+            </button>
+
+            <!-- Fullscreen Toggle -->
+            <button onclick="toggleFullscreen()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition border border-white/10" title="เต็มจอ">
+                <i data-lucide="maximize" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Layout Container -->
+    <div class="absolute inset-0 pt-14 p-2 pointer-events-none grid grid-cols-1 md:grid-cols-12 gap-2 h-full pb-2">
+
+        <!-- ================= LEFT PANEL: Controls & Sandbox Inputs ================= -->
+        <aside class="md:col-span-3 lg:col-span-3 glass-panel rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <div class="p-2.5 border-b border-white/10 bg-slate-900/80 flex justify-between items-center">
+                <span class="font-semibold text-xs text-white flex items-center gap-1.5">
+                    <i data-lucide="sliders" class="w-4 h-4 text-cyan-400"></i>
+                    ตั้งค่าคลื่น & ตัวแปร (Wave Controls)
+                </span>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-3 space-y-3 text-xs">
+
+                <!-- FREQUENCY (f) CONTROL -->
+                <div id="card-freq" class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-cyan-400">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-cyan-400 text-[11px] flex items-center gap-1">
+                            <i data-lucide="activity" class="w-3.5 h-3.5"></i> ความถี่ ($f$)
+                        </span>
+                        <span id="val-freq-display" class="font-mono text-cyan-300 font-bold">2.00 Hz</span>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] text-slate-300">
+                            <span>ความถี่ ($f$):</span>
+                            <span id="txt-freq-val">2.00 Hz</span>
+                        </div>
+                        <input type="range" id="slider-freq" min="0.5" max="5.0" step="0.05" value="2.0" class="w-full" oninput="onControlChange('freq')">
+                    </div>
+
+                    <!-- Alternative Direct Keypad Input -->
+                    <div class="flex items-center gap-2 pt-1 border-t border-white/5">
+                        <span class="text-[9.5px] text-slate-400">ป้อนความถี่ $f$:</span>
+                        <input type="number" id="input-freq" value="2.00" min="0.5" max="5.0" step="0.05" class="w-20 bg-slate-900 text-cyan-300 border border-white/10 rounded px-1.5 py-0.5 text-[10px] font-mono" onchange="onDirectInput('freq')">
+                        <span class="text-[9.5px] text-slate-400">Hz</span>
+                    </div>
+                </div>
+
+                <!-- AMPLITUDE (A) CONTROL -->
+                <div id="card-amp" class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-amber-400">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-amber-400 text-[11px] flex items-center gap-1">
+                            <i data-lucide="bar-chart-2" class="w-3.5 h-3.5"></i> แอมพลิจูด ($A$)
+                        </span>
+                        <span id="val-amp-display" class="font-mono text-amber-300 font-bold">1.50 cm</span>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] text-slate-300">
+                            <span>แอมพลิจูด ($A$):</span>
+                            <span id="txt-amp-val">1.50 cm</span>
+                        </div>
+                        <input type="range" id="slider-amp" min="0.2" max="3.0" step="0.05" value="1.50" class="w-full" oninput="onControlChange('amp')">
+                    </div>
+
+                    <!-- Alternative Direct Keypad Input -->
+                    <div class="flex items-center gap-2 pt-1 border-t border-white/5">
+                        <span class="text-[9.5px] text-slate-400">ป้อนแอมพลิจูด $A$:</span>
+                        <input type="number" id="input-amp" value="1.50" min="0.2" max="3.0" step="0.05" class="w-20 bg-slate-900 text-amber-300 border border-white/10 rounded px-1.5 py-0.5 text-[10px] font-mono" onchange="onDirectInput('amp')">
+                        <span class="text-[9.5px] text-slate-400">cm</span>
+                    </div>
+                </div>
+
+                <!-- WAVELENGTH / SPEED MEDIUM PROPERTIES -->
+                <div id="card-medium-prop" class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-rose-400">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-rose-400 text-[11px] flex items-center gap-1">
+                            <i data-lucide="gauge" class="w-3.5 h-3.5"></i> อัตราเร็วคลื่นในตัวกลาง ($v$)
+                        </span>
+                        <span id="val-speed-display" class="font-mono text-rose-300 font-bold">4.00 m/s</span>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] text-slate-300">
+                            <span>ความเร็ว ($v$):</span>
+                            <span id="txt-speed-val">4.00 m/s</span>
+                        </div>
+                        <input type="range" id="slider-speed" min="1.0" max="10.0" step="0.1" value="4.0" class="w-full" oninput="onControlChange('speed')">
+                    </div>
+
+                    <!-- Alternative Direct Input -->
+                    <div class="flex items-center gap-2 pt-1 border-t border-white/5">
+                        <span class="text-[9.5px] text-slate-400">ป้อนความเร็ว $v$:</span>
+                        <input type="number" id="input-speed" value="4.00" min="1.0" max="10.0" step="0.1" class="w-20 bg-slate-900 text-rose-300 border border-white/10 rounded px-1.5 py-0.5 text-[10px] font-mono" onchange="onDirectInput('speed')">
+                        <span class="text-[9.5px] text-slate-400">m/s</span>
+                    </div>
+                </div>
+
+                <!-- DUAL SOURCE / INTERFERENCE SWITCH -->
+                <div class="glass-card p-2.5 rounded-lg space-y-1.5">
+                    <span class="text-[11px] font-bold text-slate-300 block border-b border-white/10 pb-1 flex items-center justify-between">
+                        <span>โหมดแหล่งกำเนิดคลื่น</span>
+                        <i data-lucide="circle-dot" class="w-3.5 h-3.5 text-cyan-400"></i>
+                    </span>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>แหล่งกำเนิดเดี่ยว (Single Source)</span>
+                        <input type="radio" name="source-mode" value="single" checked onchange="onControlChange('source')" class="accent-cyan-500">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>แหล่งกำเนิดคู่ (Dual Source - แทรกแซง)</span>
+                        <input type="radio" name="source-mode" value="dual" onchange="onControlChange('source')" class="accent-cyan-500">
+                    </label>
+                </div>
+
+                <!-- VISUAL OVERLAYS & ACCESSIBILITY OPTIONS -->
+                <div class="glass-card p-2.5 rounded-lg space-y-1.5">
+                    <span class="text-[11px] font-bold text-slate-300 block border-b border-white/10 pb-1 flex items-center justify-between">
+                        <span>เครื่องมือ & Visual Highlights</span>
+                        <i data-lucide="eye" class="w-3.5 h-3.5 text-cyan-400"></i>
+                    </span>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>แสดงไม้บรรทัดวัดความยาวคลื่น ($\lambda$)</span>
+                        <input type="checkbox" id="toggle-ruler" checked onchange="onControlChange()" class="accent-cyan-500 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>แสดงกราฟ Oscilloscope หน้าตัดคลื่น</span>
+                        <input type="checkbox" id="toggle-graph" checked onchange="onControlChange()" class="accent-amber-500 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>แสดงจุดยอดคลื่น & ท้องคลื่น (Crest/Trough)</span>
+                        <input type="checkbox" id="toggle-crests" checked onchange="onControlChange()" class="accent-rose-500 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>Interactive Focus Highlights</span>
+                        <input type="checkbox" id="toggle-highlight" checked onchange="onControlChange()" class="accent-cyan-400 rounded">
+                    </label>
+                </div>
+
+                <!-- PRESET EXPERIMENTS -->
+                <div class="glass-card p-2.5 rounded-lg space-y-1.5">
+                    <span class="text-[11px] font-bold text-amber-400 block border-b border-white/10 pb-1">การทดลองสำเร็จรูป (Presets)</span>
+                    <div class="grid grid-cols-2 gap-1">
+                        <button onclick="applyPreset('high_f')" class="p-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px]">ความถี่สูง ($\lambda$ สั้น)</button>
+                        <button onclick="applyPreset('low_f')" class="p-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px]">ความถี่ต่ำ ($\lambda$ ยาว)</button>
+                        <button onclick="applyPreset('high_amp')" class="p-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px]">แอมพลิจูดสูง</button>
+                        <button onclick="applyPreset('interference')" class="p-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px]">การแทรกแซงคลื่น</button>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- ================= CENTER: Interactive Viewport (Canvas 2D + Oscilloscope) ================= -->
+        <main class="md:col-span-5 lg:col-span-5 glass-panel rounded-xl flex flex-col pointer-events-auto border border-white/10 shadow-2xl relative overflow-hidden">
+            <!-- Canvas Simulation Container -->
+            <div id="viewport-container" class="flex-1 bg-slate-950 relative cursor-grab active:cursor-grabbing flex flex-col overflow-hidden">
+                <!-- 2D Interactive Wave Canvas -->
+                <canvas id="canvas-wave" class="w-full flex-1 z-10 block"></canvas>
+                
+                <!-- Bottom Oscilloscope Waveform Profile Graph -->
+                <div id="oscilloscope-container" class="h-32 bg-slate-900/90 border-t border-white/10 relative z-20 flex flex-col">
+                    <div class="px-3 py-1 bg-slate-950/80 text-[10px] font-mono text-cyan-400 border-b border-white/5 flex justify-between items-center">
+                        <span class="flex items-center gap-1 font-bold">
+                            <i data-lucide="activity" class="w-3 h-3"></i>
+                            กราฟ Oscilloscope หน้าตัดคลื่น: $y(x, t) = A \sin\left(2\pi\left(ft - \frac{x}{\lambda}\right)\right)$
+                        </span>
+                        <span id="scope-readout" class="text-slate-300">t = 0.00s</span>
+                    </div>
+                    <canvas id="canvas-scope" class="w-full flex-1 block"></canvas>
+                </div>
+
+                <!-- Status Overlay Badge -->
+                <div class="absolute top-2 left-2 bg-slate-900/90 backdrop-blur px-3 py-1.5 rounded-lg border border-white/10 text-[11px] text-slate-300 flex items-center gap-2 pointer-events-none z-20 font-mono">
+                    <i data-lucide="compass" class="w-3.5 h-3.5 text-cyan-400 animate-pulse"></i>
+                    <span id="status-label">ตัวกลาง: คลื่นน้ำ (Ripple Tank)</span>
+                </div>
+
+                <!-- Navigation Controls Overlay (Pan & Zoom) -->
+                <div class="absolute top-2 right-2 flex items-center gap-1 z-20 pointer-events-auto">
+                    <button onclick="adjustZoom(1.1)" class="p-2 bg-slate-900/80 hover:bg-slate-800 text-slate-200 rounded-lg border border-white/10" title="ขยาย (Zoom In)">
+                        <i data-lucide="zoom-in" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="adjustZoom(0.9)" class="p-2 bg-slate-900/80 hover:bg-slate-800 text-slate-200 rounded-lg border border-white/10" title="ย่อ (Zoom Out)">
+                        <i data-lucide="zoom-out" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="resetZoomPan()" class="p-2 bg-slate-900/80 hover:bg-slate-800 text-slate-200 rounded-lg border border-white/10" title="รีเซ็ตมุมมอง">
+                        <i data-lucide="locate-fixed" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Live Numerical Readouts Badge -->
+                <div class="absolute bottom-36 left-2 bg-slate-900/90 backdrop-blur p-2 rounded-lg border border-white/10 text-[10.5px] font-mono text-slate-300 z-20 space-y-1 w-52 shadow-xl pointer-events-none">
+                    <div class="flex justify-between items-center text-cyan-400 border-b border-white/10 pb-0.5">
+                        <span class="font-bold">ความยาวคลื่น ($\lambda$):</span>
+                        <span id="readout-lambda" class="font-bold text-xs">2.00 m</span>
+                    </div>
+                    <div class="flex justify-between items-center text-rose-300">
+                        <span>อัตราเร็วคลื่น ($v$):</span>
+                        <span id="readout-speed" class="font-bold">4.00 m/s</span>
+                    </div>
+                    <div class="flex justify-between items-center text-amber-300">
+                        <span>คาบการแกว่ง ($T = 1/f$):</span>
+                        <span id="readout-period" class="font-bold">0.50 s</span>
+                    </div>
+                </div>
+
+                <!-- Mobile Gesture Instruction Tooltip -->
+                <div id="instruction-tooltip" class="absolute bottom-36 right-2 bg-slate-900/80 backdrop-blur px-2.5 py-1 rounded text-[10px] text-slate-400 z-20 pointer-events-none">
+                    💡 **การใช้งาน**: เลื่อนเมาส์ลากจุดกำเนิดคลื่น หรือใช้นิ้วเลื่อน/ขยายมุมมอง Pan & Zoom
+                </div>
+            </div>
+        </main>
+
+        <!-- ================= RIGHT PANEL: Calculations & Wave Theory ================= -->
+        <aside class="md:col-span-4 lg:col-span-4 glass-panel rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <!-- Navigation Tabs -->
+            <div class="p-2 border-b border-white/10 bg-slate-900/80">
+                <div class="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded-lg text-[11px] font-semibold text-center">
+                    <button onclick="switchRightTab('calc')" id="tab-calc" class="tab-btn active py-1 rounded transition">คำนวณสด</button>
+                    <button onclick="switchRightTab('theory')" id="tab-theory" class="tab-btn py-1 rounded transition">ทฤษฎีคลื่น</button>
+                    <button onclick="switchRightTab('access')" id="tab-access" class="tab-btn py-1 rounded transition">การเข้าถึง & เสียง</button>
+                </div>
+            </div>
+
+            <!-- Scrollable Content Panels -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-3 text-xs">
+
+                <!-- TAB 1: Live Calculation & Formula Breakdown -->
+                <div id="content-calc" class="space-y-3">
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-cyan-400 block border-b border-white/10 pb-1 flex justify-between items-center">
+                            <span>สมการความสัมพันธ์ของคลื่น (Wave Equation)</span>
+                            <i data-lucide="calculator" class="w-3.5 h-3.5 text-cyan-400"></i>
+                        </span>
+                        <div id="math-formula-main" class="py-1 text-center text-cyan-200 font-mono text-xs bg-slate-950/60 rounded p-1.5"></div>
+                    </div>
+
+                    <!-- Step-by-Step Numerical Breakdown -->
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-emerald-400 block border-b border-white/10 pb-1">ขั้นตอนการคำนวณความยาวคลื่นจริง ($\lambda$)</span>
+                        <div class="space-y-2 font-mono text-[10px] text-slate-300 leading-relaxed">
+                            <div class="bg-slate-950/60 p-2 rounded border border-white/5 space-y-1">
+                                <span class="text-slate-400 block font-sans text-[9.5px]">1. กำหนดค่าตัวแปร:</span>
+                                <div>• ความถี่ ($f$) = <span id="math-f-val" class="text-cyan-300">2.00</span> Hz</div>
+                                <div>• อัตราเร็วคลื่น ($v$) = <span id="math-v-val" class="text-rose-300">4.00</span> m/s</div>
+                                <div>• แอมพลิจูด ($A$) = <span id="math-a-val" class="text-amber-300">1.50</span> cm</div>
+                            </div>
+
+                            <div class="bg-slate-950/60 p-2 rounded border border-white/5 space-y-1">
+                                <span class="text-slate-400 block font-sans text-[9.5px]">2. ย้ายข้างสูตรเพื่อหาความยาวคลื่น ($\lambda = \frac{v}{f}$):</span>
+                                <div>• $\lambda = \frac{<span id="math-v-sub">4.00</span>}{<span id="math-f-sub">2.00</span>}$</div>
+                            </div>
+
+                            <div class="bg-slate-950/60 p-2 rounded border border-white/5 space-y-1">
+                                <span class="text-slate-400 block font-sans text-[9.5px]">3. ผลลัพธ์ความยาวคลื่น ($\lambda$):</span>
+                                <div id="math-step-final" class="text-emerald-300 font-bold text-xs">\lambda = 2.00 \text{ m}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Wave Physics Theory -->
+                <div id="content-theory" class="space-y-3 hidden">
+                    <div class="p-2.5 border-l-2 border-cyan-400 bg-slate-900/60 rounded-r-lg space-y-1">
+                        <h4 class="font-bold text-cyan-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="waves" class="w-3.5 h-3.5"></i> องค์ประกอบของคลื่น (Wave Components)
+                        </h4>
+                        <p class="text-slate-300 text-[10px] leading-relaxed">
+                            • <strong>ความยาวคลื่น ($\lambda$)</strong>: ระยะห่างระหว่างยอดคลื่นสองยอดที่ติดกัน
+                            <br>• <strong>ความถี่ ($f$)</strong>: จำนวนรอบของคลื่นที่เคลื่อนที่ผ่านจุดๆ หนึ่งในหนึ่งวินาที (Hz)
+                            <br>• <strong>แอมพลิจูด ($A$)</strong>: การกระจัดสูงสุดจากตำแหน่งสมดุล บอกถึงพลังงานของคลื่น
+                        </p>
+                    </div>
+
+                    <div class="p-2.5 border-l-2 border-amber-400 bg-slate-900/60 rounded-r-lg space-y-1">
+                        <h4 class="font-bold text-amber-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="sun" class="w-3.5 h-3.5"></i> เปรียบเทียบ คลื่นน้ำ เสียง และแสง
+                        </h4>
+                        <p class="text-slate-300 text-[10px] leading-relaxed">
+                            • <strong>คลื่นน้ำ</strong>: คลื่นกลตามขวาง เกิดจากการไหวของผิวน้ำ
+                            <br>• <strong>คลื่นเสียง</strong>: คลื่นกลตามยาว ประกอบด้วยส่วนอัด (Compression) และส่วนขยาย (Rarefaction)
+                            <br>• <strong>คลื่นแสง</strong>: คลื่นแม่เหล็กไฟฟ้า มีความยาวคลื่นกำหนดสีสันในสเปกตรัมที่มองเห็นได้ ($380 - 750\text{ nm}$)
+                        </p>
+                    </div>
+                </div>
+
+                <!-- TAB 3: Accessibility, Sonification & Voicing -->
+                <div id="content-access" class="space-y-3 hidden">
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-cyan-400 block border-b border-white/10 pb-1 flex items-center gap-1">
+                            <i data-lucide="volume-2" class="w-3.5 h-3.5 text-cyan-400"></i>
+                            ระบบโซนิฟิเคชัน (Sonification Audio)
+                        </span>
+                        <p class="text-[10px] text-slate-300 leading-relaxed">
+                            แปลงค่าความถี่ ($f$) และแอมพลิจูด ($A$) ของคลื่นเป็นเสียงสังเคราะห์เรียลไทม์:
+                            <br>• ความถี่คลื่นสูงขึ้น $\rightarrow$ เสียงระดับสูงขึ้น (Pitch Height)
+                            <br>• แอมพลิจูดสูงขึ้น $\rightarrow$ ระดับความดังเสียงสูงขึ้น (Volume)
+                        </p>
+                    </div>
+
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-amber-400 block border-b border-white/10 pb-1 flex items-center gap-1">
+                            <i data-lucide="mic" class="w-3.5 h-3.5 text-amber-400"></i>
+                            ระบบบรรยายเสียง (Speech Voicing)
+                        </span>
+                        <p class="text-[10px] text-slate-300 leading-relaxed">
+                            ระบบจะอ่านออกเสียงภาษาไทยบรรยายสภาวะของตัวกลาง ความถี่ ความยาวคลื่น และแอมพลิจูดอัตโนมัติเมื่อมีการปรับเปลี่ยน
+                        </p>
+                        <button onclick="speakDescription(true)" class="w-full py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded text-[10.5px] font-semibold flex items-center justify-center gap-1">
+                            <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+                            ทดลองฟังเสียงบรรยายปัจจุบัน
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- MAIN SIMULATION & PHYSICS LOGIC SCRIPT -->
+    <script>
+        // Wave Physics State
+        const state = {
+            medium: 'water',       // 'water', 'sound', 'light'
+            freq: 2.0,            // Frequency f in Hz
+            amp: 1.5,             // Amplitude A in cm
+            speed: 4.0,           // Wave speed v in m/s
+            sourceMode: 'single', // 'single' or 'dual'
+
+            // Visual Toggles
+            showRuler: true,
+            showGraph: true,
+            showCrests: true,
+            showHighlight: true,
+
+            // Viewport Pan and Zoom
+            zoom: 1.0,
+            panX: 0,
+            panY: 0,
+            time: 0,
+
+            // Accessibility Audio Controls
+            sonificationActive: false,
+            voicingActive: false
+        };
+
+        // Canvas References
+        let canvasWave, ctxWave;
+        let canvasScope, ctxScope;
+
+        // Web Audio API References
+        let audioCtx = null;
+        let oscillator = null;
+        let gainNode = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initMathKaTeX();
+            initCanvases();
+            lucide.createIcons();
+            window.addEventListener('resize', onWindowResize);
+
+            setupInteraction();
+            updatePhysics();
+            requestAnimationFrame(animateLoop);
+        });
+
+        function initMathKaTeX() {
+            if (window.katex) {
+                katex.render("v = f \\cdot \\lambda \\implies \\lambda = \\frac{v}{f}", document.getElementById('math-formula-main'));
+            }
+        }
+
+        function initCanvases() {
+            canvasWave = document.getElementById('canvas-wave');
+            ctxWave = canvasWave.getContext('2d');
+
+            canvasScope = document.getElementById('canvas-scope');
+            ctxScope = canvasScope.getContext('2d');
+
+            resizeCanvas();
+        }
+
+        function resizeCanvas() {
+            if (canvasWave) {
+                canvasWave.width = canvasWave.clientWidth * window.devicePixelRatio;
+                canvasWave.height = canvasWave.clientHeight * window.devicePixelRatio;
+            }
+            if (canvasScope) {
+                canvasScope.width = canvasScope.clientWidth * window.devicePixelRatio;
+                canvasScope.height = canvasScope.clientHeight * window.devicePixelRatio;
+            }
+        }
+
+        // Calculate Wavelength lambda = v / f
+        function getWavelength() {
+            return state.speed / state.freq;
+        }
+
+        function updatePhysics() {
+            const lambda = getWavelength();
+            const period = 1 / state.freq;
+
+            // Update UI Numerical Readouts
+            document.getElementById('readout-lambda').innerText = lambda.toFixed(2) + " m";
+            document.getElementById('readout-speed').innerText = state.speed.toFixed(2) + " m/s";
+            document.getElementById('readout-period').innerText = period.toFixed(2) + " s";
+
+            // Math Tab Updates
+            document.getElementById('math-f-val').innerText = state.freq.toFixed(2);
+            document.getElementById('math-v-val').innerText = state.speed.toFixed(2);
+            document.getElementById('math-a-val').innerText = state.amp.toFixed(2);
+
+            document.getElementById('math-f-sub').innerText = state.freq.toFixed(2);
+            document.getElementById('math-v-sub').innerText = state.speed.toFixed(2);
+
+            if (window.katex) {
+                katex.render(`\\lambda = ${lambda.toFixed(2)} \\text{ m}`, document.getElementById('math-step-final'));
+            }
+
+            // Update Audio Pitch & Volume if Sonification is active
+            updateSonification();
+        }
+
+        function animateLoop(timestamp) {
+            state.time += 0.016; // increment time frame
+            document.getElementById('scope-readout').innerText = `t = ${state.time.toFixed(2)}s`;
+
+            renderWaveCanvas();
+            renderOscilloscope();
+
+            requestAnimationFrame(animateLoop);
+        }
+
+        function renderWaveCanvas() {
+            if (!canvasWave) return;
+            const w = canvasWave.clientWidth;
+            const h = canvasWave.clientHeight;
+            if (w === 0 || h === 0) return;
+
+            ctxWave.save();
+            ctxWave.scale(window.devicePixelRatio, window.devicePixelRatio);
+            ctxWave.clearRect(0, 0, w, h);
+
+            const lambda = getWavelength();
+            const scale = 40 * state.zoom; // 1 meter = 40 pixels
+            const lambdaPx = lambda * scale;
+
+            const originX = w / 2 + state.panX;
+            const originY = h / 2 + state.panY;
+
+            // Medium Specific Background Grid Color
+            if (state.medium === 'water') {
+                ctxWave.fillStyle = '#061a2e';
+            } else if (state.medium === 'sound') {
+                ctxWave.fillStyle = '#1c1308';
+            } else if (state.medium === 'light') {
+                ctxWave.fillStyle = '#1f0910';
+            }
+            ctxWave.fillRect(0, 0, w, h);
+
+            // Draw Source Center(s)
+            const sources = [];
+            if (state.sourceMode === 'single') {
+                sources.push({ x: originX - 100, y: originY });
+            } else {
+                sources.push({ x: originX - 100, y: originY - 60 });
+                sources.push({ x: originX - 100, y: originY + 60 });
+            }
+
+            // Render Concentric Wave Fronts (2D Ripple / Compression Rings)
+            const maxRadius = Math.hypot(w, h);
+            sources.forEach((src) => {
+                const phase = (state.time * state.freq) % 1;
+
+                for (let r = phase * lambdaPx; r < maxRadius; r += lambdaPx) {
+                    const alpha = Math.max(0.1, 1 - r / maxRadius);
+                    
+                    ctxWave.beginPath();
+                    ctxWave.arc(src.x, src.y, r, 0, Math.PI * 2);
+
+                    if (state.medium === 'water') {
+                        ctxWave.strokeStyle = `rgba(6, 182, 212, ${alpha * (state.amp / 3)})`;
+                        ctxWave.lineWidth = 4 * state.amp * state.zoom;
+                    } else if (state.medium === 'sound') {
+                        ctxWave.strokeStyle = `rgba(245, 158, 11, ${alpha * (state.amp / 3)})`;
+                        ctxWave.lineWidth = 6 * state.amp * state.zoom;
+                    } else if (state.medium === 'light') {
+                        const hue = Math.max(0, Math.min(280, (750 - (lambda * 150)) % 360));
+                        ctxWave.strokeStyle = `hsla(${hue}, 90%, 60%, ${alpha * (state.amp / 3)})`;
+                        ctxWave.lineWidth = 3 * state.amp * state.zoom;
+                    }
+                    ctxWave.stroke();
+                }
+
+                // Source Emitter Visual
+                ctxWave.save();
+                if (state.showHighlight) {
+                    ctxWave.shadowColor = state.medium === 'water' ? '#06b6d4' : (state.medium === 'sound' ? '#f59e0b' : '#e11d48');
+                    ctxWave.shadowBlur = 15;
+                }
+                ctxWave.fillStyle = '#ffffff';
+                ctxWave.beginPath();
+                ctxWave.arc(src.x, src.y, 8 * state.zoom, 0, Math.PI * 2);
+                ctxWave.fill();
+                ctxWave.restore();
+            });
+
+            // Draw Wavelength Ruler Tool ($\lambda$)
+            if (state.showRuler && sources.length > 0) {
+                const src = sources[0];
+                const r1 = 80;
+                const r2 = r1 + lambdaPx;
+
+                ctxWave.strokeStyle = '#38bdf8';
+                ctxWave.lineWidth = 2;
+                ctxWave.beginPath();
+                ctxWave.moveTo(src.x + r1, src.y);
+                ctxWave.lineTo(src.x + r2, src.y);
+                ctxWave.stroke();
+
+                // End ticks
+                ctxWave.beginPath();
+                ctxWave.moveTo(src.x + r1, src.y - 8);
+                ctxWave.lineTo(src.x + r1, src.y + 8);
+                ctxWave.moveTo(src.x + r2, src.y - 8);
+                ctxWave.lineTo(src.x + r2, src.y + 8);
+                ctxWave.stroke();
+
+                // Ruler Label
+                ctxWave.fillStyle = '#38bdf8';
+                ctxWave.font = 'bold 12px Fira Code, monospace';
+                ctxWave.textAlign = 'center';
+                ctxWave.fillText(`λ = ${lambda.toFixed(2)} m`, src.x + (r1 + r2) / 2, src.y - 12);
+            }
+
+            ctxWave.restore();
+        }
+
+        function renderOscilloscope() {
+            if (!canvasScope || !state.showGraph) return;
+            const w = canvasScope.clientWidth;
+            const h = canvasScope.clientHeight;
+            if (w === 0 || h === 0) return;
+
+            ctxScope.save();
+            ctxScope.scale(window.devicePixelRatio, window.devicePixelRatio);
+            ctxScope.clearRect(0, 0, w, h);
+
+            const centerY = h / 2;
+            const lambda = getWavelength();
+            const k = (2 * Math.PI) / lambda;
+            const omega = 2 * Math.PI * state.freq;
+
+            // Scope Center Baseline
+            ctxScope.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctxScope.lineWidth = 1;
+            ctxScope.beginPath();
+            ctxScope.moveTo(0, centerY);
+            ctxScope.lineTo(w, centerY);
+            ctxScope.stroke();
+
+            // Scope Waveform Trace
+            ctxScope.beginPath();
+            ctxScope.lineWidth = 2.5;
+
+            if (state.medium === 'water') {
+                ctxScope.strokeStyle = '#06b6d4';
+            } else if (state.medium === 'sound') {
+                ctxScope.strokeStyle = '#f59e0b';
+            } else {
+                ctxScope.strokeStyle = '#e11d48';
+            }
+
+            const scaleX = 0.02;
+            const scaleY = 15 * state.amp;
+
+            for (let x = 0; x < w; x++) {
+                const waveX = x * scaleX;
+                const y = centerY - state.amp * scaleY * Math.sin(omega * state.time - k * waveX);
+
+                if (x === 0) {
+                    ctxScope.moveTo(x, y);
+                } else {
+                    ctxScope.lineTo(x, y);
+                }
+            }
+            ctxScope.stroke();
+
+            ctxScope.restore();
+        }
+
+        // Setup Mouse and Touch Gestures (Pan & Zoom)
+        function setupInteraction() {
+            let isDragging = false;
+            let lastX = 0;
+            let lastY = 0;
+
+            canvasWave.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                lastX = e.clientX;
+                lastY = e.clientY;
+            });
+
+            canvasWave.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                state.panX += e.clientX - lastX;
+                state.panY += e.clientY - lastY;
+                lastX = e.clientX;
+                lastY = e.clientY;
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+        }
+
+        function onControlChange(param) {
+            state.freq = parseFloat(document.getElementById('slider-freq').value);
+            state.amp = parseFloat(document.getElementById('slider-amp').value);
+            state.speed = parseFloat(document.getElementById('slider-speed').value);
+
+            const sourceRadios = document.getElementsByName('source-mode');
+            for (let r of sourceRadios) {
+                if (r.checked) state.sourceMode = r.value;
+            }
+
+            state.showRuler = document.getElementById('toggle-ruler').checked;
+            state.showGraph = document.getElementById('toggle-graph').checked;
+            state.showCrests = document.getElementById('toggle-crests').checked;
+            state.showHighlight = document.getElementById('toggle-highlight').checked;
+
+            syncLabels();
+            updatePhysics();
+        }
+
+        function onDirectInput(param) {
+            if (param === 'freq') {
+                state.freq = Math.max(0.5, Math.min(5.0, parseFloat(document.getElementById('input-freq').value) || 2.0));
+                document.getElementById('slider-freq').value = state.freq;
+            } else if (param === 'amp') {
+                state.amp = Math.max(0.2, Math.min(3.0, parseFloat(document.getElementById('input-amp').value) || 1.5));
+                document.getElementById('slider-amp').value = state.amp;
+            } else if (param === 'speed') {
+                state.speed = Math.max(1.0, Math.min(10.0, parseFloat(document.getElementById('input-speed').value) || 4.0));
+                document.getElementById('slider-speed').value = state.speed;
+            }
+            syncLabels();
+            updatePhysics();
+        }
+
+        function syncLabels() {
+            document.getElementById('val-freq-display').innerText = `${state.freq.toFixed(2)} Hz`;
+            document.getElementById('txt-freq-val').innerText = `${state.freq.toFixed(2)} Hz`;
+            document.getElementById('input-freq').value = state.freq.toFixed(2);
+
+            document.getElementById('val-amp-display').innerText = `${state.amp.toFixed(2)} cm`;
+            document.getElementById('txt-amp-val').innerText = `${state.amp.toFixed(2)} cm`;
+            document.getElementById('input-amp').value = state.amp.toFixed(2);
+
+            document.getElementById('val-speed-display').innerText = `${state.speed.toFixed(2)} m/s`;
+            document.getElementById('txt-speed-val').innerText = `${state.speed.toFixed(2)} m/s`;
+            document.getElementById('input-speed').value = state.speed.toFixed(2);
+        }
+
+        function selectMedium(med) {
+            state.medium = med;
+
+            const btnW = document.getElementById('btn-med-water');
+            const btnS = document.getElementById('btn-med-sound');
+            const btnL = document.getElementById('btn-med-light');
+            const badge = document.getElementById('badge-medium');
+            const statusLabel = document.getElementById('status-label');
+
+            [btnW, btnS, btnL].forEach(b => b.className = 'px-2.5 py-1 text-xs rounded font-medium transition text-slate-400 hover:text-white flex items-center gap-1');
+
+            if (med === 'water') {
+                btnW.className = 'px-2.5 py-1 text-xs rounded font-medium transition bg-cyan-500 text-white flex items-center gap-1';
+                badge.className = 'text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30';
+                badge.innerText = 'คลื่นน้ำ (Water)';
+                statusLabel.innerText = 'ตัวกลาง: คลื่นน้ำ (Ripple Tank)';
+                state.speed = 4.0;
+            } else if (med === 'sound') {
+                btnS.className = 'px-2.5 py-1 text-xs rounded font-medium transition bg-amber-500 text-white flex items-center gap-1';
+                badge.className = 'text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30';
+                badge.innerText = 'คลื่นเสียง (Sound)';
+                statusLabel.innerText = 'ตัวกลาง: คลื่นเสียงในอากาศ (Sound Pressure)';
+                state.speed = 6.0;
+            } else if (med === 'light') {
+                btnL.className = 'px-2.5 py-1 text-xs rounded font-medium transition bg-rose-500 text-white flex items-center gap-1';
+                badge.className = 'text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30';
+                badge.innerText = 'คลื่นแสง (Light)';
+                statusLabel.innerText = 'ตัวกลาง: คลื่นแสงแม่เหล็กไฟฟ้า (Electromagnetic Wave)';
+                state.speed = 8.0;
+            }
+
+            syncLabels();
+            updatePhysics();
+            if (state.voicingActive) speakDescription();
+        }
+
+        function applyPreset(presetKey) {
+            if (presetKey === 'high_f') {
+                state.freq = 4.5; state.amp = 1.5; state.speed = 4.0;
+            } else if (presetKey === 'low_f') {
+                state.freq = 0.8; state.amp = 1.5; state.speed = 4.0;
+            } else if (presetKey === 'high_amp') {
+                state.amp = 2.8; state.freq = 2.0;
+            } else if (presetKey === 'interference') {
+                state.sourceMode = 'dual';
+                const sourceRadios = document.getElementsByName('source-mode');
+                for (let r of sourceRadios) {
+                    if (r.value === 'dual') r.checked = true;
+                }
+            }
+            syncLabels();
+            updatePhysics();
+            if (state.voicingActive) speakDescription();
+        }
+
+        // Audio Sonification Engine
+        function toggleSonification() {
+            state.sonificationActive = !state.sonificationActive;
+            const btn = document.getElementById('btn-toggle-sound');
+            const icon = document.getElementById('icon-sound');
+
+            if (state.sonificationActive) {
+                btn.className = 'px-2.5 py-1.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 rounded-lg transition text-xs flex items-center gap-1.5 font-medium';
+                icon.setAttribute('data-lucide', 'volume-2');
+                icon.className = 'w-4 h-4 text-cyan-400';
+                initAudioContext();
+            } else {
+                btn.className = 'px-2.5 py-1.5 bg-slate-800 text-slate-300 border border-white/10 rounded-lg transition text-xs flex items-center gap-1.5 font-medium';
+                icon.setAttribute('data-lucide', 'volume-x');
+                icon.className = 'w-4 h-4 text-rose-400';
+                stopAudioContext();
+            }
+            lucide.createIcons();
+        }
+
+        function initAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            oscillator = audioCtx.createOscillator();
+            gainNode = audioCtx.createGain();
+
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 220 + state.freq * 80;
+            gainNode.gain.value = 0.05 * (state.amp / 1.5);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.start();
+        }
+
+        function updateSonification() {
+            if (!state.sonificationActive || !oscillator || !audioCtx) return;
+            const targetFreq = 180 + state.freq * 120;
+            const targetGain = Math.min(0.15, 0.03 * state.amp);
+
+            oscillator.frequency.setTargetAtTime(targetFreq, audioCtx.currentTime, 0.05);
+            gainNode.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 0.05);
+        }
+
+        function stopAudioContext() {
+            if (oscillator) {
+                oscillator.stop();
+                oscillator.disconnect();
+                oscillator = null;
+            }
+        }
+
+        // Text-to-Speech Voicing
+        function toggleVoicing() {
+            state.voicingActive = !state.voicingActive;
+            const btn = document.getElementById('btn-toggle-voicing');
+            const icon = document.getElementById('icon-voicing');
+
+            if (state.voicingActive) {
+                btn.className = 'px-2.5 py-1.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-lg transition text-xs flex items-center gap-1.5 font-medium';
+                icon.setAttribute('data-lucide', 'mic');
+                icon.className = 'w-4 h-4 text-amber-400';
+                speakDescription();
+            } else {
+                btn.className = 'px-2.5 py-1.5 bg-slate-800 text-slate-300 border border-white/10 rounded-lg transition text-xs flex items-center gap-1.5 font-medium';
+                icon.setAttribute('data-lucide', 'mic-off');
+                icon.className = 'w-4 h-4 text-slate-400';
+                window.speechSynthesis?.cancel();
+            }
+            lucide.createIcons();
+        }
+
+        function speakDescription(forceSpeech = false) {
+            if (!state.voicingActive && !forceSpeech) return;
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const lambda = getWavelength();
+                const text = `ตัวกลาง ${state.medium === 'water' ? 'คลื่นน้ำ' : (state.medium === 'sound' ? 'คลื่นเสียง' : 'คลื่นแสง')}, ความถี่ ${state.freq.toFixed(2)} เฮิรตซ์, ความยาวคลื่น ${lambda.toFixed(2)} เมตร, แอมพลิจูด ${state.amp.toFixed(2)} เซนติเมตร`;
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'th-TH';
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function adjustZoom(factor) {
+            state.zoom = Math.max(0.5, Math.min(2.5, state.zoom * factor));
+        }
+
+        function resetZoomPan() {
+            state.zoom = 1.0;
+            state.panX = 0;
+            state.panY = 0;
+        }
+
+        function resetLab() {
+            state.freq = 2.0;
+            state.amp = 1.5;
+            state.speed = 4.0;
+            state.zoom = 1.0;
+            state.panX = 0;
+            state.panY = 0;
+
+            syncLabels();
+            updatePhysics();
+        }
+
+        function switchRightTab(tabKey) {
+            ['calc', 'theory', 'access'].forEach(k => {
+                document.getElementById(`content-${k}`).classList.add('hidden');
+                document.getElementById(`tab-${k}`).classList.remove('active');
+            });
+
+            document.getElementById(`content-${tabKey}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabKey}`).classList.add('active');
+        }
+
+        function toggleFullscreen() {
+            try {
+                if (!document.fullscreenElement) {
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen().catch(err => console.warn(err));
+                    }
+                } else if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(err => console.warn(err));
+                }
+            } catch (err) {
+                console.warn("Fullscreen restricted:", err);
+            }
+        }
+
+        function onWindowResize() {
+            resizeCanvas();
+        }
+    </script>
+</body>
+</html>

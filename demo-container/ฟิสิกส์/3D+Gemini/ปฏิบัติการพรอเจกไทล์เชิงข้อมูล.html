@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ปฏิบัติการพรอเจกไทล์เชิงข้อมูล 3D (Data-Driven Projectile Motion)</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Sarabun:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- KaTeX for Math Formatting -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    
+    <!-- Three.js & Controls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #020617;
+            --panel-bg: rgba(15, 23, 42, 0.85);
+            --panel-border: rgba(16, 185, 129, 0.3);
+            --emerald-accent: #10b981;
+            --cyan-accent: #06b6d4;
+            --rose-accent: #f43f5e;
+            --amber-accent: #f59e0b;
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: var(--bg-dark);
+            color: #f8fafc;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        .font-code { font-family: 'Fira Code', monospace; }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); }
+        ::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.4); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--emerald-accent); }
+
+        /* Glassmorphism Panels */
+        .glass-card {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+        }
+
+        #webgl-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
+        }
+
+        .hud-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10; pointer-events: none;
+            display: grid;
+            grid-template-columns: 360px 1fr 420px;
+            grid-template-rows: auto 1fr auto;
+            padding: 1rem; gap: 1rem;
+        }
+
+        .pointer-auto { pointer-events: auto; }
+
+        /* Graph Canvas */
+        #dataGraph {
+            width: 100%; height: 140px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px; margin-top: 0.5rem;
+        }
+
+        .data-badge {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 3D WebGL Canvas -->
+    <div id="webgl-container"></div>
+
+    <!-- UI Overlay HUD -->
+    <div class="hud-overlay">
+
+        <!-- Top Header -->
+        <header class="glass-card rounded-xl p-4 pointer-auto col-span-2 flex items-center justify-between">
+            <div>
+                <h1 class="font-orbitron font-bold text-xl text-emerald-400 flex items-center gap-2">
+                   <a href="../physics.html"><i class="fa-solid fa-rocket"></i> ปฏิบัติการพรอเจกไทล์เชิงข้อมูล 3D</a>
+                </h1>
+                <p class="text-xs text-slate-400 mt-1">
+                    วิเคราะห์การเคลื่อนที่วิถีโค้ง (Projectile Motion) พร้อมตัวแปรแรงต้านอากาศเชิงตัวเลข
+                </p>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-right">
+                    <div class="text-[10px] text-slate-400">สถานะระบบ (Status)</div>
+                    <div id="sim-status" class="font-bold text-sm text-cyan-400">พร้อมยิง (Ready)</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Left Controls Sidebar -->
+        <aside class="glass-card rounded-xl p-4 pointer-auto col-start-1 row-start-2 row-span-2 flex flex-col gap-4 overflow-y-auto max-h-[calc(100vh-6rem)]">
+            
+            <!-- Launch Controls -->
+            <div>
+                <h2 class="font-orbitron text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-gamepad"></i> ควบคุมการยิง (Launch Control)
+                </h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="launchProjectile()" id="btn-launch" class="col-span-2 py-2.5 rounded-lg text-sm bg-emerald-600 hover:bg-emerald-500 border border-emerald-400 text-white font-bold transition shadow-[0_0_15px_rgba(16,185,129,0.3)] flex justify-center items-center gap-2">
+                        <i class="fa-solid fa-fire"></i> ยิง (LAUNCH)
+                    </button>
+                    <button onclick="resetSimulation()" class="py-1.5 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 transition">
+                        <i class="fa-solid fa-rotate-left"></i> รีเซ็ต
+                    </button>
+                    <button onclick="clearTrails()" class="py-1.5 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 transition">
+                        <i class="fa-solid fa-eraser"></i> ลบเส้นทาง
+                    </button>
+                </div>
+            </div>
+
+            <!-- Physics Parameters -->
+            <div class="border-t border-slate-700 pt-3 space-y-4">
+                <h2 class="font-orbitron text-xs font-semibold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <i class="fa-solid fa-sliders"></i> ตัวแปรต้น (Independent Variables)
+                </h2>
+
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">ความเร็วต้น ($u$):</span>
+                        <span id="val-speed" class="font-code text-cyan-300 font-bold">20.0 m/s</span>
+                    </div>
+                    <input type="range" id="slider-speed" min="5" max="50" step="1" value="20" class="w-full accent-cyan-500" oninput="updateLaunchParams()">
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">มุมยิง ($\theta$):</span>
+                        <span id="val-angle" class="font-code text-amber-300 font-bold">45°</span>
+                    </div>
+                    <input type="range" id="slider-angle" min="0" max="90" step="1" value="45" class="w-full accent-amber-500" oninput="updateLaunchParams()">
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">ความสูงฐาน ($h_0$):</span>
+                        <span id="val-height" class="font-code text-rose-300 font-bold">0.0 m</span>
+                    </div>
+                    <input type="range" id="slider-height" min="0" max="30" step="1" value="0" class="w-full accent-rose-500" oninput="updateLaunchParams()">
+                </div>
+
+                <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+                    <label class="flex items-center gap-2 cursor-pointer mb-2">
+                        <input type="checkbox" id="toggle-drag" class="accent-emerald-500" onchange="updateLaunchParams()">
+                        <span class="text-xs font-bold text-slate-200">เปิดแรงต้านอากาศ (Air Resistance)</span>
+                    </label>
+                    <div id="drag-controls" class="opacity-50 pointer-events-none transition-opacity">
+                        <div class="flex justify-between text-[11px] mb-1">
+                            <span class="text-slate-400">มวลวัตถุ ($m$):</span>
+                            <span id="val-mass" class="font-code text-slate-300">1.0 kg</span>
+                        </div>
+                        <input type="range" id="slider-mass" min="0.1" max="10" step="0.1" value="1.0" class="w-full accent-slate-500 mb-2" oninput="updateLaunchParams()">
+                        
+                        <div class="flex justify-between text-[11px] mb-1">
+                            <span class="text-slate-400">สัมประสิทธิ์แรงต้าน ($C_d$):</span>
+                            <span id="val-drag" class="font-code text-slate-300">0.47 (ทรงกลม)</span>
+                        </div>
+                        <input type="range" id="slider-drag" min="0.1" max="1.5" step="0.01" value="0.47" class="w-full accent-slate-500" oninput="updateLaunchParams()">
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Visualization Options -->
+            <div class="border-t border-slate-700 pt-3 mt-auto">
+                <h2 class="font-orbitron text-[11px] font-semibold text-slate-400 mb-2">การแสดงผล 3D</h2>
+                <div class="grid grid-cols-2 gap-2 text-[11px]">
+                    <label class="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" id="vis-vectors" checked onchange="updateVis()" class="accent-cyan-500">
+                        <span class="text-slate-300">เวกเตอร์ความเร็ว ($\vec{v}$)</span>
+                    </label>
+                    <label class="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" id="vis-ideal" checked onchange="updateVis()" class="accent-emerald-500">
+                        <span class="text-slate-300">เส้นทางอุดมคติ (No Drag)</span>
+                    </label>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- Right Educational & Data Panel -->
+        <aside class="glass-card rounded-xl p-4 pointer-auto col-start-3 row-start-1 row-span-3 flex flex-col gap-3 max-h-[calc(100vh-2rem)]">
+            
+            <!-- Tabs -->
+            <div class="flex border-b border-slate-700 pb-2 gap-1.5">
+                <button onclick="switchTab('data')" id="tab-data" class="flex-1 py-1.5 rounded-md text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/50">วิเคราะห์ข้อมูล</button>
+                <button onclick="switchTab('theory')" id="tab-theory" class="flex-1 py-1.5 rounded-md text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">ทฤษฎี</button>
+                <button onclick="switchTab('chat')" id="tab-chat" class="flex-1 py-1.5 rounded-md text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">AI Tutor</button>
+            </div>
+
+            <!-- Data / Telemetry Content -->
+            <div id="content-data" class="flex-col gap-3 h-full flex">
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-black/40 border border-slate-700 rounded-lg p-2 text-center">
+                        <div class="text-[10px] text-slate-400">เวลา (Time - $t$)</div>
+                        <div id="stat-time" class="font-code text-white font-bold text-sm">0.00 s</div>
+                    </div>
+                    <div class="bg-black/40 border border-slate-700 rounded-lg p-2 text-center">
+                        <div class="text-[10px] text-slate-400">ระยะทางแกน X ($S_x$)</div>
+                        <div id="stat-sx" class="font-code text-cyan-300 font-bold text-sm">0.00 m</div>
+                    </div>
+                    <div class="bg-black/40 border border-slate-700 rounded-lg p-2 text-center">
+                        <div class="text-[10px] text-slate-400">ความสูงแกน Y ($S_y$)</div>
+                        <div id="stat-sy" class="font-code text-amber-300 font-bold text-sm">0.00 m</div>
+                    </div>
+                    <div class="bg-black/40 border border-slate-700 rounded-lg p-2 text-center">
+                        <div class="text-[10px] text-slate-400">ความเร็วลัพธ์ ($|v|$)</div>
+                        <div id="stat-v" class="font-code text-rose-300 font-bold text-sm">0.00 m/s</div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900/80 border border-slate-700 rounded-lg p-2">
+                    <div class="text-[11px] font-bold text-emerald-400 mb-1 border-b border-slate-700 pb-1">ผลลัพธ์รอบล่าสุด (Latest Result)</div>
+                    <div class="flex justify-between text-xs py-0.5">
+                        <span class="text-slate-400">ระยะตกไกลสุด (Range):</span>
+                        <span id="res-range" class="font-code text-white">-- m</span>
+                    </div>
+                    <div class="flex justify-between text-xs py-0.5">
+                        <span class="text-slate-400">จุดสูงสุด (Max Height):</span>
+                        <span id="res-height" class="font-code text-white">-- m</span>
+                    </div>
+                    <div class="flex justify-between text-xs py-0.5">
+                        <span class="text-slate-400">เวลาลอยตัว (Flight Time):</span>
+                        <span id="res-time" class="font-code text-white">-- s</span>
+                    </div>
+                </div>
+
+                <div class="mt-auto">
+                    <div class="flex justify-between items-center mb-1">
+                        <h2 class="font-orbitron text-[11px] font-semibold text-slate-300">กราฟ $y$ เทียบ $x$ (Trajectory)</h2>
+                    </div>
+                    <canvas id="dataGraph"></canvas>
+                </div>
+            </div>
+
+            <!-- Theory Content -->
+            <div id="content-theory" class="hidden overflow-y-auto text-xs text-slate-300 space-y-4 pr-1">
+                <section>
+                    <h3 class="text-cyan-400 font-bold text-sm mb-1.5"><i class="fa-solid fa-square-root-variable"></i> พรอเจกไทล์ในอุดมคติ</h3>
+                    <p>ไม่มีแรงต้านอากาศ ความเร่งมีเฉพาะแกน Y ($a_y = -g$)</p>
+                    <div class="bg-black/50 p-2 rounded border-l-2 border-cyan-400 my-2 font-code">
+                        x(t) = u \cos(\theta) t \\
+                        y(t) = h_0 + u \sin(\theta) t - \frac{1}{2}gt^2
+                    </div>
+                    <ul class="list-disc pl-4 space-y-1 text-[11px]">
+                        <li><b>ระยะตกไกลสุด:</b> $R = \frac{u^2 \sin(2\theta)}{g}$ (ไกลสุดที่ $\theta=45^\circ$)</li>
+                        <li><b>จุดสูงสุด:</b> $H = \frac{(u \sin\theta)^2}{2g}$</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h3 class="text-rose-400 font-bold text-sm mb-1.5"><i class="fa-solid fa-wind"></i> เมื่อมีแรงต้านอากาศ (Drag)</h3>
+                    <p>แรงต้านอากาศ ($F_d$) แปรผันตามความเร็วและทิศทางตรงข้ามกับการเคลื่อนที่</p>
+                    <div class="bg-black/50 p-2 rounded border-l-2 border-rose-400 my-2 font-code">
+                        \vec{F}_d = -\frac{1}{2} \rho C_d A |\vec{v}| \vec{v}
+                    </div>
+                    <ul class="list-disc pl-4 space-y-1 text-[11px]">
+                        <li>ทำให้วิถีโค้งไม่เป็นพาราโบลาสมมาตร (Non-symmetric)</li>
+                        <li>มวล ($m$) มีผล: วัตถุเบาจะได้รับผลกระทบจากแรงต้านอากาศมากกว่าวัตถุหนัก</li>
+                        <li>มุมตกไกลสุดเมื่อมีแรงต้านอากาศ จะ <span class="text-amber-400 font-bold">น้อยกว่า $45^\circ$</span></li>
+                    </ul>
+                </section>
+            </div>
+
+            <!-- AI Chat Content -->
+            <div id="content-chat" class="hidden flex-col h-full gap-2">
+                <div class="text-xs text-slate-400 mb-1"><i class="fa-solid fa-sparkles text-emerald-400"></i> ปรึกษาโจทย์และวิเคราะห์ผลกับ AI</div>
+                <div class="flex flex-wrap gap-1.5 mb-1">
+                    <button onclick="sendQuickChat('ทำไมเมื่อมีแรงต้านอากาศ มุมยิงไกลสุดถึงไม่ใช่ 45 องศา?')" class="text-[10px] bg-slate-800 text-amber-300 px-2 py-1 rounded border border-slate-700 hover:bg-slate-700">ทำไมมุมไกลสุดเปลี่ยน?</button>
+                    <button onclick="sendQuickChat('มวลมีผลต่อพรอเจกไทล์อย่างไรเมื่อมีแรงต้านอากาศ?')" class="text-[10px] bg-slate-800 text-cyan-300 px-2 py-1 rounded border border-slate-700 hover:bg-slate-700">ผลของมวลวัตถุ</button>
+                </div>
+                <div id="chatLog" class="flex-1 overflow-y-auto bg-black/40 border border-slate-700 rounded-lg p-2.5 space-y-2 text-xs">
+                    <div class="bg-slate-800/70 border border-slate-600 rounded p-2 text-slate-200">
+                        สวัสดีครับ! ผมคือ AI ประจำห้องปฏิบัติการนี้ สามารถให้ผมช่วยคำนวณหรืออธิบายผลกราฟที่คุณเพิ่งทดลองไปได้เลยครับ
+                    </div>
+                </div>
+                <div class="flex gap-2 mt-1">
+                    <input type="text" id="chatInput" placeholder="ถามเกี่ยวกับฟิสิกส์..." onkeypress="if(event.key==='Enter') sendChatMessage()" class="flex-1 bg-black/60 border border-slate-600 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-emerald-500">
+                    <button onclick="sendChatMessage()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-xs transition"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- Bottom Controls / Info -->
+        <footer class="glass-card rounded-xl px-4 py-2 pointer-auto col-start-2 row-start-3 justify-self-center flex items-center gap-4 text-xs">
+            <span class="text-slate-400 flex items-center gap-1.5"><i class="fa-solid fa-mouse"></i> ลากเมาส์เพื่อหมุนกล้อง</span>
+            <div class="h-4 w-px bg-slate-700"></div>
+            <button onclick="resetCamera()" class="text-slate-300 hover:text-white transition flex items-center gap-1">
+                <i class="fa-solid fa-camera"></i> รีเซ็ตมุมมอง
+            </button>
+        </footer>
+
+    </div>
+
+    <script>
+        let scene, camera, renderer, controls;
+        
+        // Physics variables
+        const g = 9.81;
+        let pParams = {
+            u: 20,
+            angle: 45, // degrees
+            h0: 0,
+            useDrag: false,
+            mass: 1.0,
+            cd: 0.47,
+            rho: 1.225, // Air density
+            A: 0.05 // Cross-sectional area (approx sphere r=0.12m)
+        };
+
+        // State variables
+        let isFlying = false;
+        let time = 0;
+        let dt = 0.016; // fixed time step for physics
+        let currentPos = new THREE.Vector3();
+        let currentVel = new THREE.Vector3();
+        
+        // Historical data for graphs and trails
+        let trailPoints = [];
+        let graphData = []; 
+        let idealCurvePoints = [];
+
+        // 3D Objects
+        let projectileMesh;
+        let cannonMesh, cannonBarrel;
+        let trailLine;
+        let idealTrailLine;
+        let vVector, vxVector, vyVector;
+        
+        // Scene bounds mapping for visual
+        const SCALE = 1;
+
+        function initScene() {
+            const container = document.getElementById('webgl-container');
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x020617, 0.008);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(-15, 20, 45);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.target.set(30, 0, 0);
+
+            // Lighting
+            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(10, 40, 20);
+            dirLight.castShadow = true;
+            dirLight.shadow.camera.top = 50;
+            dirLight.shadow.camera.bottom = -50;
+            dirLight.shadow.camera.left = -50;
+            dirLight.shadow.camera.right = 100;
+            scene.add(dirLight);
+
+            buildEnvironment();
+            buildCannon();
+            buildProjectile();
+            buildVectors();
+
+            window.addEventListener('resize', onWindowResize);
+            
+            // Render KaTeX
+            if (window.renderMathInElement) {
+                renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});
+            }
+
+            updateLaunchParams(); // Init params and draw ideal curve
+            
+            animate();
+            drawGraphLoop();
+        }
+
+        function buildEnvironment() {
+            // Ground Grid
+            const gridHelper = new THREE.GridHelper(200, 40, 0x10b981, 0x1e293b);
+            gridHelper.position.set(100, 0, 0);
+            scene.add(gridHelper);
+
+            // X Axis Line (Distance)
+            const axisMat = new THREE.LineBasicMaterial({ color: 0x06b6d4, linewidth: 2 });
+            const axisGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-5, 0, 0), new THREE.Vector3(150, 0, 0)]);
+            scene.add(new THREE.Line(axisGeo, axisMat));
+
+            // Target markers every 10m
+            for(let i=10; i<=150; i+=10) {
+                const mark = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 4), new THREE.MeshBasicMaterial({color: 0x475569}));
+                mark.position.set(i, 0, 0);
+                scene.add(mark);
+            }
+        }
+
+        function buildCannon() {
+            cannonMesh = new THREE.Group();
+            
+            // Base
+            const baseGeo = new THREE.CylinderGeometry(1.5, 2, 1, 16);
+            const baseMat = new THREE.MeshStandardMaterial({color: 0x334155, roughness: 0.7});
+            const base = new THREE.Mesh(baseGeo, baseMat);
+            base.position.y = 0.5;
+            cannonMesh.add(base);
+
+            // Barrel pivot
+            const pivot = new THREE.Group();
+            pivot.position.set(0, 1.5, 0);
+            
+            const barrelGeo = new THREE.CylinderGeometry(0.6, 0.8, 4, 16);
+            const barrelMat = new THREE.MeshStandardMaterial({color: 0x0f172a, metalness: 0.8});
+            cannonBarrel = new THREE.Mesh(barrelGeo, barrelMat);
+            // Rotate so cylinder points along X when unrotated
+            cannonBarrel.rotation.z = -Math.PI / 2;
+            cannonBarrel.position.x = 2; // Offset so pivot is at base
+            
+            pivot.add(cannonBarrel);
+            cannonMesh.add(pivot);
+
+            scene.add(cannonMesh);
+        }
+
+        function buildProjectile() {
+            const sphereGeo = new THREE.SphereGeometry(0.5, 16, 16);
+            const sphereMat = new THREE.MeshStandardMaterial({
+                color: 0xf59e0b, emissive: 0xd97706, emissiveIntensity: 0.5
+            });
+            projectileMesh = new THREE.Mesh(sphereGeo, sphereMat);
+            projectileMesh.castShadow = true;
+            projectileMesh.visible = false;
+            scene.add(projectileMesh);
+
+            // Trail setup (Empty geometry initially)
+            const trailMat = new THREE.LineBasicMaterial({ color: 0xf59e0b, linewidth: 2 });
+            trailLine = new THREE.Line(new THREE.BufferGeometry(), trailMat);
+            scene.add(trailLine);
+
+            // Ideal Trail setup
+            const idealMat = new THREE.LineDashedMaterial({ color: 0x10b981, dashSize: 0.5, gapSize: 0.5 });
+            idealTrailLine = new THREE.Line(new THREE.BufferGeometry(), idealMat);
+            scene.add(idealTrailLine);
+        }
+
+        function buildVectors() {
+            // ArrowHelpers for V, Vx, Vy
+            vVector = new THREE.ArrowHelper(new THREE.Vector3(1,1,0).normalize(), new THREE.Vector3(), 2, 0xf43f5e);
+            vxVector = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(), 2, 0x06b6d4);
+            vyVector = new THREE.ArrowHelper(new THREE.Vector3(0,1,0), new THREE.Vector3(), 2, 0xf59e0b);
+            scene.add(vVector);
+            scene.add(vxVector);
+            scene.add(vyVector);
+            hideVectors();
+        }
+
+        function hideVectors() {
+            vVector.visible = false;
+            vxVector.visible = false;
+            vyVector.visible = false;
+        }
+
+        function updateLaunchParams() {
+            pParams.u = parseFloat(document.getElementById('slider-speed').value);
+            pParams.angle = parseFloat(document.getElementById('slider-angle').value);
+            pParams.h0 = parseFloat(document.getElementById('slider-height').value);
+            
+            pParams.useDrag = document.getElementById('toggle-drag').checked;
+            const dragControls = document.getElementById('drag-controls');
+            if (pParams.useDrag) {
+                dragControls.classList.remove('opacity-50', 'pointer-events-none');
+            } else {
+                dragControls.classList.add('opacity-50', 'pointer-events-none');
+            }
+            
+            pParams.mass = parseFloat(document.getElementById('slider-mass').value);
+            pParams.cd = parseFloat(document.getElementById('slider-drag').value);
+
+            // Update Text UI
+            document.getElementById('val-speed').innerText = pParams.u.toFixed(1) + ' m/s';
+            document.getElementById('val-angle').innerText = pParams.angle + '°';
+            document.getElementById('val-height').innerText = pParams.h0.toFixed(1) + ' m';
+            document.getElementById('val-mass').innerText = pParams.mass.toFixed(1) + ' kg';
+            document.getElementById('val-drag').innerText = pParams.cd.toFixed(2);
+
+            // Update Cannon visual
+            cannonMesh.position.y = pParams.h0;
+            // The pivot is cannonMesh.children[1]
+            cannonMesh.children[1].rotation.z = THREE.MathUtils.degToRad(pParams.angle);
+
+            drawIdealCurve();
+        }
+
+        function drawIdealCurve() {
+            // Calculate pure kinematic trajectory for preview
+            const points = [];
+            const rad = THREE.MathUtils.degToRad(pParams.angle);
+            const ux = pParams.u * Math.cos(rad);
+            const uy = pParams.u * Math.sin(rad);
+            
+            let t = 0;
+            let y = pParams.h0;
+            let x = 0;
+            
+            while(y >= 0 && t < 20) { // cap at 20s max
+                x = ux * t;
+                y = pParams.h0 + (uy * t) - (0.5 * g * t * t);
+                if (y < 0) {
+                    // interpolate exact hit
+                    const t_hit = (uy + Math.sqrt(uy*uy + 2*g*pParams.h0)) / g;
+                    x = ux * t_hit;
+                    y = 0;
+                    points.push(new THREE.Vector3(x, y, 0));
+                    break;
+                }
+                points.push(new THREE.Vector3(x, y, 0));
+                t += 0.1;
+            }
+
+            idealCurvePoints = points;
+            idealTrailLine.geometry.setFromPoints(points);
+            idealTrailLine.computeLineDistances();
+            
+            // Adjust camera target slightly based on range
+            if(!isFlying && points.length > 0) {
+                const estRange = points[points.length-1].x;
+                controls.target.set(Math.min(estRange/2, 50), 0, 0);
+            }
+        }
+
+        function launchProjectile() {
+            if (isFlying) return; // Prevent double launch
+            
+            updateLaunchParams();
+            
+            const rad = THREE.MathUtils.degToRad(pParams.angle);
+            currentPos.set(0, pParams.h0 + 1.5, 0); // Start slightly above base based on pivot
+            
+            // Actually calculate start from barrel tip for visuals
+            const barrelLen = 4;
+            currentPos.x = barrelLen * Math.cos(rad);
+            currentPos.y = pParams.h0 + 1.5 + barrelLen * Math.sin(rad);
+
+            currentVel.set(pParams.u * Math.cos(rad), pParams.u * Math.sin(rad), 0);
+            
+            time = 0;
+            isFlying = true;
+            projectileMesh.visible = true;
+            projectileMesh.position.copy(currentPos);
+            
+            trailPoints = [currentPos.clone()];
+            graphData = [{x: 0, y: currentPos.y}];
+
+            document.getElementById('sim-status').innerText = 'กำลังเคลื่อนที่ (In Flight)';
+            document.getElementById('sim-status').className = 'font-bold text-sm text-amber-400';
+            document.getElementById('btn-launch').disabled = true;
+            document.getElementById('btn-launch').classList.add('opacity-50');
+
+            // Reset result texts
+            document.getElementById('res-range').innerText = '-- m';
+            document.getElementById('res-height').innerText = '-- m';
+            document.getElementById('res-time').innerText = '-- s';
+        }
+
+        function simulatePhysicsStep() {
+            if (!isFlying) return;
+
+            // Numerical Integration (Euler Method)
+            const k = 0.5 * pParams.rho * pParams.cd * pParams.A;
+            
+            // Gravity
+            let ay = -g;
+            let ax = 0;
+
+            if (pParams.useDrag) {
+                const vMag = currentVel.length();
+                // Fd = -k * v^2 -> a = Fd/m
+                // Vector form: a_drag = - (k * vMag * vVector) / m
+                const aDragX = -(k * vMag * currentVel.x) / pParams.mass;
+                const aDragY = -(k * vMag * currentVel.y) / pParams.mass;
+                
+                ax += aDragX;
+                ay += aDragY;
+            }
+
+            // Update velocity
+            currentVel.x += ax * dt;
+            currentVel.y += ay * dt;
+
+            // Update position
+            currentPos.x += currentVel.x * dt;
+            currentPos.y += currentVel.y * dt;
+            time += dt;
+
+            // Record trail
+            // Only add point every few frames to save memory
+            if (Math.random() < 0.3) {
+                trailPoints.push(currentPos.clone());
+                graphData.push({x: currentPos.x, y: currentPos.y});
+                trailLine.geometry.setFromPoints(trailPoints);
+            }
+
+            // Update 3D Mesh
+            projectileMesh.position.copy(currentPos);
+
+            // Update Vectors
+            updateVectorVisuals();
+
+            // Update Telemetry UI
+            document.getElementById('stat-time').innerText = time.toFixed(2) + ' s';
+            document.getElementById('stat-sx').innerText = currentPos.x.toFixed(2) + ' m';
+            document.getElementById('stat-sy').innerText = Math.max(0, currentPos.y).toFixed(2) + ' m';
+            document.getElementById('stat-v').innerText = currentVel.length().toFixed(2) + ' m/s';
+
+            // Check ground collision (y <= 0)
+            if (currentPos.y <= 0) {
+                // Interpolate to exactly 0
+                const t_overshoot = -currentPos.y / currentVel.y; // approximate
+                currentPos.x += currentVel.x * t_overshoot;
+                currentPos.y = 0;
+                time += t_overshoot;
+                
+                trailPoints.push(currentPos.clone());
+                graphData.push({x: currentPos.x, y: currentPos.y});
+                trailLine.geometry.setFromPoints(trailPoints);
+                projectileMesh.position.copy(currentPos);
+                
+                finishFlight();
+            }
+        }
+
+        function finishFlight() {
+            isFlying = false;
+            hideVectors();
+            
+            document.getElementById('sim-status').innerText = 'ตกกระทบ (Landed)';
+            document.getElementById('sim-status').className = 'font-bold text-sm text-rose-400';
+            document.getElementById('btn-launch').disabled = false;
+            document.getElementById('btn-launch').classList.remove('opacity-50');
+
+            // Calculate Max Height from recorded trail
+            let maxHeight = 0;
+            trailPoints.forEach(p => { if(p.y > maxHeight) maxHeight = p.y; });
+
+            // Set final results
+            document.getElementById('res-range').innerText = currentPos.x.toFixed(2) + ' m';
+            document.getElementById('res-height').innerText = maxHeight.toFixed(2) + ' m';
+            document.getElementById('res-time').innerText = time.toFixed(2) + ' s';
+        }
+
+        function updateVectorVisuals() {
+            const showV = document.getElementById('vis-vectors').checked;
+            if(!showV) { hideVectors(); return; }
+
+            const p = currentPos;
+            const v = currentVel;
+            
+            vVector.position.copy(p);
+            vxVector.position.copy(p);
+            vyVector.position.copy(p);
+
+            const vMag = v.length();
+            if(vMag > 0.1) {
+                vVector.setDirection(v.clone().normalize());
+                vVector.setLength(vMag * 0.2, 0.5, 0.3); // Scale length for visuals
+                vVector.visible = true;
+            }
+
+            if(Math.abs(v.x) > 0.1) {
+                vxVector.setDirection(new THREE.Vector3(Math.sign(v.x), 0, 0));
+                vxVector.setLength(Math.abs(v.x) * 0.2, 0.4, 0.3);
+                vxVector.visible = true;
+            }
+
+            if(Math.abs(v.y) > 0.1) {
+                vyVector.setDirection(new THREE.Vector3(0, Math.sign(v.y), 0));
+                vyVector.setLength(Math.abs(v.y) * 0.2, 0.4, 0.3);
+                vyVector.visible = true;
+            } else {
+                vyVector.visible = false;
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if(isFlying) {
+                // To make visual speed feel right, run multiple physics steps per frame
+                const steps = 3; 
+                for(let i=0; i<steps; i++) {
+                    simulatePhysicsStep();
+                    if(!isFlying) break;
+                }
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function drawGraphLoop() {
+            const canvas = document.getElementById('dataGraph');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const w = canvas.width;
+            const h = canvas.height;
+            const padding = 15;
+
+            // Determine scales based on ideal curve which is usually larger
+            let maxX = 10;
+            let maxY = 10;
+            
+            idealCurvePoints.forEach(p => {
+                if(p.x > maxX) maxX = p.x;
+                if(p.y > maxY) maxY = p.y;
+            });
+            
+            // Add padding to scales
+            maxX *= 1.1; 
+            maxY *= 1.2;
+
+            const scaleX = (w - padding * 2) / maxX;
+            const scaleY = (h - padding * 2) / maxY;
+
+            // Draw Axes
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            // X axis
+            ctx.moveTo(padding, h - padding);
+            ctx.lineTo(w - padding, h - padding);
+            // Y axis
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, h - padding);
+            ctx.stroke();
+
+            // Draw Ideal Curve (Emerald Dashed)
+            const showIdeal = document.getElementById('vis-ideal').checked;
+            if (showIdeal && idealCurvePoints.length > 0) {
+                ctx.strokeStyle = 'rgba(16,185,129,0.7)';
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                for(let i=0; i<idealCurvePoints.length; i++) {
+                    const px = padding + idealCurvePoints[i].x * scaleX;
+                    const py = (h - padding) - idealCurvePoints[i].y * scaleY;
+                    if(i===0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]); // Reset
+            }
+
+            // Draw Actual Trajectory (Amber Solid)
+            if (graphData.length > 0) {
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for(let i=0; i<graphData.length; i++) {
+                    const px = padding + graphData[i].x * scaleX;
+                    const py = (h - padding) - graphData[i].y * scaleY;
+                    if(i===0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.stroke();
+                
+                // Draw current dot
+                const last = graphData[graphData.length-1];
+                ctx.fillStyle = '#f59e0b';
+                ctx.beginPath();
+                ctx.arc(padding + last.x * scaleX, (h - padding) - last.y * scaleY, 4, 0, Math.PI*2);
+                ctx.fill();
+            }
+
+            requestAnimationFrame(drawGraphLoop);
+        }
+
+        function resetSimulation() {
+            isFlying = false;
+            hideVectors();
+            projectileMesh.visible = false;
+            
+            document.getElementById('sim-status').innerText = 'พร้อมยิง (Ready)';
+            document.getElementById('sim-status').className = 'font-bold text-sm text-cyan-400';
+            document.getElementById('btn-launch').disabled = false;
+            document.getElementById('btn-launch').classList.remove('opacity-50');
+
+            // Reset readouts
+            document.getElementById('stat-time').innerText = '0.00 s';
+            document.getElementById('stat-sx').innerText = '0.00 m';
+            document.getElementById('stat-sy').innerText = '0.00 m';
+            document.getElementById('stat-v').innerText = '0.00 m/s';
+            
+            // Keep graph and trail visible until explicitly cleared or re-launched
+        }
+
+        function clearTrails() {
+            trailPoints = [];
+            graphData = [];
+            trailLine.geometry.setFromPoints([]);
+        }
+
+        function updateVis() {
+            const showIdeal = document.getElementById('vis-ideal').checked;
+            idealTrailLine.visible = showIdeal;
+            
+            if(!isFlying) {
+                hideVectors();
+            }
+        }
+
+        function resetCamera() {
+            camera.position.set(-15, 20, 45);
+            controls.target.set(30, 0, 0);
+        }
+
+        function switchTab(tab) {
+            document.getElementById('content-data').style.display = tab === 'data' ? 'flex' : 'none';
+            document.getElementById('content-theory').style.display = tab === 'theory' ? 'block' : 'none';
+            document.getElementById('content-chat').style.display = tab === 'chat' ? 'flex' : 'none';
+            
+            const activeClass = "flex-1 py-1.5 rounded-md text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/50";
+            const inactiveClass = "flex-1 py-1.5 rounded-md text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700";
+
+            document.getElementById('tab-data').className = tab === 'data' ? activeClass : inactiveClass;
+            document.getElementById('tab-theory').className = tab === 'theory' ? activeClass : inactiveClass;
+            document.getElementById('tab-chat').className = tab === 'chat' ? activeClass : inactiveClass;
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            
+            const canvas = document.getElementById('dataGraph');
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+        }
+
+        // Initialize Canvas size
+        setTimeout(() => {
+            const canvas = document.getElementById('dataGraph');
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+        }, 100);
+
+        // --- Gemini AI ---
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if(!text) return;
+
+            const log = document.getElementById('chatLog');
+            log.innerHTML += `<div class="bg-emerald-900/40 border border-emerald-700/50 rounded p-2 text-emerald-100 text-right font-sans">${text}</div>`;
+            input.value = '';
+            log.scrollTop = log.scrollHeight;
+
+            const aiBubble = document.createElement('div');
+            aiBubble.className = "bg-slate-800/80 border border-slate-600 rounded p-2 text-slate-300 font-sans";
+            aiBubble.innerText = "กำลังคำนวณและวิเคราะห์...";
+            log.appendChild(aiBubble);
+            log.scrollTop = log.scrollHeight;
+
+            const prompt = "คุณคือครูสอนฟิสิกส์เรื่องการเคลื่อนที่แบบพรอเจกไทล์ (Projectile Motion) ทั้งแบบอุดมคติและแบบที่มีแรงต้านอากาศ (Air Resistance) อธิบายให้เข้าใจง่าย ถูกต้อง สั้นและกระชับ ตอบเป็นภาษาไทย";
+            const apiKey = ""; // System will inject this
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            try {
+                const res = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        contents: [{parts: [{text: text}]}],
+                        systemInstruction: {parts: [{text: prompt}]}
+                    })
+                });
+                const data = await res.json();
+                aiBubble.innerHTML = data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
+            } catch(e) {
+                aiBubble.innerText = "ขออภัย เกิดข้อผิดพลาดในการเชื่อมต่อกับ AI";
+            }
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function sendQuickChat(msg) {
+            document.getElementById('chatInput').value = msg;
+            sendChatMessage();
+        }
+
+        // Bootstrap
+        window.onload = initScene;
+    </script>
+</body>
+</html>

@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ปฏิบัติการเสมือนจริง: การแพร่ของแก๊ส & อุณหพลศาสตร์ (Gas Diffusion & Thermodynamics Lab)</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        lab: {
+                            bg: '#080d1a',
+                            panel: '#0f172a',
+                            accent: '#38bdf8',
+                            gasA: '#f43f5e',
+                            gasB: '#06b6d4'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Sarabun', 'Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- KaTeX for Physics Equations -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #080d1a;
+            color: #f3f4f6;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            touch-action: none;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.3);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(56, 189, 248, 0.7);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 4px;
+            height: 6px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+            transition: all 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #7dd3fc;
+        }
+
+        .tab-btn.active {
+            background-color: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            border-bottom: 2px solid #38bdf8;
+            font-weight: 600;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body class="select-none text-slate-100">
+
+    <!-- Navigation Header -->
+    <header class="absolute top-2 left-2 right-2 z-30 flex items-center justify-between glass-panel px-4 py-2 rounded-xl">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-cyan-500/20 text-cyan-400 rounded-lg border border-cyan-500/30">
+                <i data-lucide="atom" class="w-5 h-5 animate-spin-slow"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-sm md:text-base text-white flex items-center gap-2">
+                    ปฏิบัติการเสมือนจริง: การแพร่ของแก๊ส & เทอร์โมไดนามิค
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Gas Diffusion & Thermodynamics</span>
+                </h1>
+                <p class="text-[11px] text-slate-400 hidden sm:block">กฎการแพร่ของเกรแฮม (Graham's Law), ทฤษฎีจลน์ของแก๊ส ($v_{rms} \propto \sqrt{T/M}$), พลังงานความร้อน & เอนโทรปี</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Barrier Switch Action Button -->
+            <button id="btn-toggle-barrier" onclick="toggleBarrier()" class="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-lg transition border border-amber-500/40 text-xs flex items-center gap-1.5 font-semibold">
+                <i id="icon-barrier" data-lucide="columns" class="w-4 h-4"></i>
+                <span id="label-barrier">ดึงแผ่นกั้นออก (Open Barrier)</span>
+            </button>
+
+            <!-- Reset Lab State -->
+            <button onclick="resetSimulation()" class="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-lg transition border border-rose-500/40 text-xs flex items-center gap-1.5 font-medium">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                <span>รีเซ็ต</span>
+            </button>
+
+            <!-- Fullscreen Toggle -->
+            <button onclick="toggleFullscreen()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition border border-white/10" title="เต็มจอ">
+                <i data-lucide="maximize" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Layout Container -->
+    <div class="absolute inset-0 pt-14 p-2 pointer-events-none grid grid-cols-1 md:grid-cols-12 gap-2 h-full pb-2">
+
+        <!-- ================= LEFT PANEL: Controls & Alternative Input ================= -->
+        <aside class="md:col-span-3 lg:col-span-3 glass-panel rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <div class="p-2.5 border-b border-white/10 bg-slate-900/80 flex justify-between items-center">
+                <span class="font-semibold text-xs text-white flex items-center gap-1.5">
+                    <i data-lucide="sliders" class="w-4 h-4 text-cyan-400"></i>
+                    ตั้งค่าแก๊ส & ตัวแปร (Controls & Sandbox)
+                </span>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-3 space-y-3 text-xs">
+
+                <!-- TEMPERATURE (T) THERMODYNAMIC CONTROL -->
+                <div id="card-temp" class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-amber-400">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-amber-400 text-[11px] flex items-center gap-1">
+                            <i data-lucide="thermometer" class="w-3.5 h-3.5"></i> อุณหภูมิระบบ ($T$)
+                        </span>
+                        <span id="val-temp-display" class="font-mono text-amber-300 font-bold">300 K</span>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] text-slate-300">
+                            <span>ปรับอุณหภูมิ ($T$):</span>
+                            <span id="txt-temp-val">300 K</span>
+                        </div>
+                        <input type="range" id="slider-temp" min="100" max="1000" step="10" value="300" class="w-full" oninput="onControlChange('temp')">
+                    </div>
+
+                    <!-- Alternative Direct Keypad Input -->
+                    <div class="flex items-center gap-2 pt-1 border-t border-white/5">
+                        <span class="text-[9.5px] text-slate-400">ป้อนค่า $T$ (Alternative Input):</span>
+                        <input type="number" id="input-temp" value="300" min="100" max="1000" step="10" class="w-20 bg-slate-900 text-amber-300 border border-white/10 rounded px-1.5 py-0.5 text-[10px] font-mono" onchange="onDirectInput('temp')">
+                        <span class="text-[9.5px] text-slate-400">K</span>
+                    </div>
+                </div>
+
+                <!-- GAS SPECIES A (RED/HEAVY) -->
+                <div id="card-gas-a" class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-rose-400">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-rose-400 text-[11px] flex items-center gap-1">
+                            <i data-lucide="circle-dot" class="w-3.5 h-3.5 text-rose-400"></i> แก๊สชนิด A (Gas A - ฝั่งซ้าย)
+                        </span>
+                    </div>
+
+                    <!-- Mass A -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] text-slate-300">
+                            <span>มวลโมเลกุล ($M_A$):</span>
+                            <span id="txt-massA-val" class="font-mono text-rose-300 font-bold">32.0 g/mol</span>
+                        </div>
+                        <input type="range" id="slider-massA" min="4" max="100" step="1" value="32" class="w-full" oninput="onControlChange('massA')">
+                        <div class="flex items-center gap-2 pt-1">
+                            <span class="text-[9.5px] text-slate-400">ป้อนมวล $M_A$:</span>
+                            <input type="number" id="input-massA" value="32" min="4" max="100" step="1" class="w-16 bg-slate-900 text-rose-300 border border-white/10 rounded px-1.5 py-0.5 text-[10px] font-mono" onchange="onDirectInput('massA')">
+                            <span class="text-[9.5px] text-slate-400">g/mol</span>
+                        </div>
+                    </div>
+
+                    <!-- Count A -->
+                    <div class="space-y-1 pt-1 border-t border-white/5">
+                        <div class="flex justify-between text-[10px] text-slate-300">
+                            <span>จำนวนโมเลกุล ($N_A$):</span>
+                            <span id="txt-numA-val" class="font-mono text-rose-300 font-bold">60</span>
+                        </div>
+                        <input type="range" id="slider-numA" min="10" max="150" step="5" value="60" class="w-full" oninput="onControlChange('numA')">
+                    </div>
+                </div>
+
+                <!-- GAS SPECIES B (CYAN/LIGHT) -->
+                <div id="card-gas-b" class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-cyan-400">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-cyan-400 text-[11px] flex items-center gap-1">
+                            <i data-lucide="circle-dot" class="w-3.5 h-3.5 text-cyan-400"></i> แก๊สชนิด B (Gas B - ฝั่งขวา)
+                        </span>
+                    </div>
+
+                    <!-- Mass B -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] text-slate-300">
+                            <span>มวลโมเลกุล ($M_B$):</span>
+                            <span id="txt-massB-val" class="font-mono text-cyan-300 font-bold">4.0 g/mol</span>
+                        </div>
+                        <input type="range" id="slider-massB" min="4" max="100" step="1" value="4" class="w-full" oninput="onControlChange('massB')">
+                        <div class="flex items-center gap-2 pt-1">
+                            <span class="text-[9.5px] text-slate-400">ป้อนมวล $M_B$:</span>
+                            <input type="number" id="input-massB" value="4" min="4" max="100" step="1" class="w-16 bg-slate-900 text-cyan-300 border border-white/10 rounded px-1.5 py-0.5 text-[10px] font-mono" onchange="onDirectInput('massB')">
+                            <span class="text-[9.5px] text-slate-400">g/mol</span>
+                        </div>
+                    </div>
+
+                    <!-- Count B -->
+                    <div class="space-y-1 pt-1 border-t border-white/5">
+                        <div class="flex justify-between text-[10px] text-slate-300">
+                            <span>จำนวนโมเลกุล ($N_B$):</span>
+                            <span id="txt-numB-val" class="font-mono text-cyan-300 font-bold">60</span>
+                        </div>
+                        <input type="range" id="slider-numB" min="10" max="150" step="5" value="60" class="w-full" oninput="onControlChange('numB')">
+                    </div>
+                </div>
+
+                <!-- VISUAL OVERLAYS & ACCESSIBILITY OPTIONS -->
+                <div class="glass-card p-2.5 rounded-lg space-y-1.5">
+                    <span class="text-[11px] font-bold text-slate-300 block border-b border-white/10 pb-1 flex items-center justify-between">
+                        <span>เครื่องมือ & Visual Highlights</span>
+                        <i data-lucide="eye" class="w-3.5 h-3.5 text-cyan-400"></i>
+                    </span>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>แสดงเวกเตอร์ความเร็วอนุภาค ($\vec{v}$)</span>
+                        <input type="checkbox" id="toggle-vectors" checked onchange="onControlChange()" class="accent-cyan-500 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>Interactive Highlight อนุภาคตัวอย่าง</span>
+                        <input type="checkbox" id="toggle-highlights" checked onchange="onControlChange()" class="accent-amber-500 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>แสดงกราฟกระจายความเร็ว (Maxwell Spectrum)</span>
+                        <input type="checkbox" id="toggle-spectrum" checked onchange="onControlChange()" class="accent-emerald-500 rounded">
+                    </label>
+                </div>
+
+                <!-- PRESET EXPERIMENTS -->
+                <div class="glass-card p-2.5 rounded-lg space-y-1.5">
+                    <span class="text-[11px] font-bold text-amber-400 block border-b border-white/10 pb-1">การทดลองสำเร็จรูป (Presets)</span>
+                    <div class="grid grid-cols-2 gap-1">
+                        <button onclick="applyPreset('graham')" class="p-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px]">การแพร่ $O_2$ vs $He$</button>
+                        <button onclick="applyPreset('thermal_hot')" class="p-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px]">สภาวะอุณหภูมิสูง</button>
+                        <button onclick="applyPreset('thermal_cold')" class="p-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px]">สภาวะอุณหภูมิต่ำ</button>
+                        <button onclick="applyPreset('heavy_mix')" class="p-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px]">มวลแตกต่างกันมาก</button>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- ================= CENTER: Interactive Viewport (Canvas 2D + Speed Spectrum) ================= -->
+        <main class="md:col-span-5 lg:col-span-5 glass-panel rounded-xl flex flex-col pointer-events-auto border border-white/10 shadow-2xl relative overflow-hidden">
+            <!-- Canvas Simulation Container -->
+            <div id="viewport-container" class="flex-1 bg-slate-950 relative cursor-grab active:cursor-grabbing flex flex-col overflow-hidden">
+                <!-- 2D Particle Physics Canvas -->
+                <canvas id="canvas-physics" class="w-full flex-1 z-10 block"></canvas>
+
+                <!-- Bottom Maxwell-Boltzmann Velocity Distribution Spectrum -->
+                <div id="spectrum-container" class="h-32 bg-slate-900/90 border-t border-white/10 relative z-20 flex flex-col">
+                    <div class="px-3 py-1 bg-slate-950/80 text-[10px] font-mono text-cyan-400 border-b border-white/5 flex justify-between items-center">
+                        <span class="flex items-center gap-1 font-bold">
+                            <i data-lucide="activity" class="w-3 h-3"></i>
+                            กราฟการกระจายความเร็ว Maxwell-Boltzmann Spectrum: $f(v) \propto v^2 \exp\left(-\frac{M v^2}{2RT}\right)$
+                        </span>
+                        <span id="spectrum-readout" class="text-slate-300">Avg Speed: v_rms</span>
+                    </div>
+                    <canvas id="canvas-spectrum" class="w-full flex-1 block"></canvas>
+                </div>
+
+                <!-- Navigation Controls Overlay (Pan & Zoom) -->
+                <div class="absolute top-2 right-2 flex items-center gap-1 z-20 pointer-events-auto">
+                    <button onclick="adjustZoom(1.1)" class="p-2 bg-slate-900/80 hover:bg-slate-800 text-slate-200 rounded-lg border border-white/10" title="ขยาย (Zoom In)">
+                        <i data-lucide="zoom-in" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="adjustZoom(0.9)" class="p-2 bg-slate-900/80 hover:bg-slate-800 text-slate-200 rounded-lg border border-white/10" title="ย่อ (Zoom Out)">
+                        <i data-lucide="zoom-out" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="resetZoomPan()" class="p-2 bg-slate-900/80 hover:bg-slate-800 text-slate-200 rounded-lg border border-white/10" title="รีเซ็ตมุมมอง">
+                        <i data-lucide="locate-fixed" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Live Numerical Readouts Badge -->
+                <div class="absolute bottom-36 left-2 bg-slate-900/90 backdrop-blur p-2 rounded-lg border border-white/10 text-[10.5px] font-mono text-slate-300 z-20 space-y-1 w-56 shadow-xl pointer-events-none">
+                    <div class="flex justify-between items-center text-rose-400 border-b border-white/10 pb-0.5">
+                        <span class="font-bold">v_rms แก๊ส A ($M_A$):</span>
+                        <span id="readout-vA" class="font-bold text-xs">483 m/s</span>
+                    </div>
+                    <div class="flex justify-between items-center text-cyan-300 border-b border-white/10 pb-0.5">
+                        <span class="font-bold">v_rms แก๊ส B ($M_B$):</span>
+                        <span id="readout-vB" class="font-bold text-xs">1368 m/s</span>
+                    </div>
+                    <div class="flex justify-between items-center text-amber-300">
+                        <span>อัตราส่วนความเร็ว ($v_B / v_A$):</span>
+                        <span id="readout-ratio" class="font-bold">2.83</span>
+                    </div>
+                </div>
+
+                <!-- Mobile & Touch Gesture Instruction Tooltip -->
+                <div class="absolute bottom-36 right-2 bg-slate-900/80 backdrop-blur px-2.5 py-1 rounded text-[10px] text-slate-400 z-20 pointer-events-none">
+                    💡 **การใช้งาน**: ใช้นิ้วเลื่อน/ขยาย Pan & Zoom หรือดึงแผ่นกั้นตรงกลางออกเพื่อเริ่มการแพร่
+                </div>
+            </div>
+        </main>
+
+        <!-- ================= RIGHT PANEL: Calculations & Physics Theory ================= -->
+        <aside class="md:col-span-4 lg:col-span-4 glass-panel rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <!-- Navigation Tabs -->
+            <div class="p-2 border-b border-white/10 bg-slate-900/80">
+                <div class="grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-lg text-[11px] font-semibold text-center">
+                    <button onclick="switchRightTab('calc')" id="tab-calc" class="tab-btn active py-1 rounded transition">การคำนวณ & กฎการแพร่</button>
+                    <button onclick="switchRightTab('theory')" id="tab-theory" class="tab-btn py-1 rounded transition">ทฤษฎีเทอร์โมไดนามิค</button>
+                </div>
+            </div>
+
+            <!-- Scrollable Content Panels -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-3 text-xs">
+
+                <!-- TAB 1: Live Calculation & Formula Breakdown -->
+                <div id="content-calc" class="space-y-3">
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-cyan-400 block border-b border-white/10 pb-1 flex justify-between items-center">
+                            <span>กฎการแพร่ของเกรแฮม (Graham's Law of Diffusion)</span>
+                            <i data-lucide="calculator" class="w-3.5 h-3.5 text-cyan-400"></i>
+                        </span>
+                        <div id="math-formula-graham" class="py-1 text-center text-cyan-200 font-mono text-xs bg-slate-950/60 rounded p-1.5"></div>
+                        <p class="text-[10px] text-slate-300 leading-relaxed">
+                            อัตราการแพร่ของแก๊สเป็นสัดส่วนผกผันกับรากที่สองของมวลโมเลกุล แก๊สที่มีมวลเบาจะเคลื่อนที่แพร่ได้เร็วกว่าแก๊สที่มีมวลหนักที่อุณหภูมิเดียวกัน
+                        </p>
+                    </div>
+
+                    <!-- Step-by-Step Numerical Breakdown -->
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-emerald-400 block border-b border-white/10 pb-1">เปรียบเทียบอัตราการแพร่จริง ($r_B / r_A$)</span>
+                        <div class="space-y-2 font-mono text-[10px] text-slate-300 leading-relaxed">
+                            <div class="bg-slate-950/60 p-2 rounded border border-white/5 space-y-1">
+                                <span class="text-slate-400 block font-sans text-[9.5px]">1. กำหนดมวลโมเลกุล:</span>
+                                <div>• แก๊ส A ($M_A$) = <span id="math-ma-val" class="text-rose-300">32.0</span> g/mol</div>
+                                <div>• แก๊ส B ($M_B$) = <span id="math-mb-val" class="text-cyan-300">4.0</span> g/mol</div>
+                            </div>
+
+                            <div class="bg-slate-950/60 p-2 rounded border border-white/5 space-y-1">
+                                <span class="text-slate-400 block font-sans text-[9.5px]">2. แทนค่าสูตรเกรแฮม:</span>
+                                <div>• $\frac{\text{Rate}_B}{\text{Rate}_A} = \sqrt{\frac{M_A}{M_B}} = \sqrt{\frac{<span id="math-ma-sub">32.0</span>}{<span id="math-mb-sub">4.0</span>}}$</div>
+                            </div>
+
+                            <div class="bg-slate-950/60 p-2 rounded border border-white/5 space-y-1">
+                                <span class="text-slate-400 block font-sans text-[9.5px]">3. ผลลัพธ์อัตราส่วนอัตราการแพร่:</span>
+                                <div id="math-step-final" class="text-emerald-300 font-bold text-xs">\text{Rate}_B = 2.83 \times \text{Rate}_A</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Thermodynamics Physics Theory -->
+                <div id="content-theory" class="space-y-3 hidden">
+                    <div class="p-2.5 border-l-2 border-amber-400 bg-slate-900/60 rounded-r-lg space-y-1">
+                        <h4 class="font-bold text-amber-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="flame" class="w-3.5 h-3.5"></i> ทฤษฎีจลน์ของแก๊ส & พลังงานความร้อน
+                        </h4>
+                        <p class="text-slate-300 text-[10px] leading-relaxed">
+                            • <strong>พลังงานจลน์เฉลี่ย ($E_k$)</strong>: ขึ้นอยู่กับอุณหภูมิสัมบูรณ์ ($T$) เพียงอย่างเดียวตามสมการ $E_k = \frac{3}{2} k_B T$
+                            <br>• <strong>ความเร็ว Root-Mean-Square ($v_{rms}$)</strong>: คำนวณจาก $v_{rms} = \sqrt{\frac{3RT}{M}}$ โมเลกุลแก๊สเปลี่ยนทิศทางจากการชนแบบยืดหยุ่นสมบูรณ์
+                        </p>
+                    </div>
+
+                    <div class="p-2.5 border-l-2 border-cyan-400 bg-slate-900/60 rounded-r-lg space-y-1">
+                        <h4 class="font-bold text-cyan-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="arrow-right-left" class="w-3.5 h-3.5"></i> กฎข้อที่สองของอุณหพลศาสตร์ & เอนโทรปี
+                        </h4>
+                        <p class="text-slate-300 text-[10px] leading-relaxed">
+                            เมื่อดึงแผ่นกั้นออก โมเลกุลแก๊สจะแพร่กระจายผสมกันเองโดยธรรมชาติอย่างไม่ย้อนกลับ (Irreversible Process) ทำให้เอนโทรปีของระบบรวมเพิ่มขึ้น ($\Delta S > 0$) นำไปสู่สภาวะสมดุลความเข้มข้น
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- MAIN SIMULATION & PHYSICS LOGIC SCRIPT -->
+    <script>
+        // Simulation State
+        const state = {
+            temp: 300,        // Temperature in Kelvin
+            massA: 32,        // Molecular mass Gas A (g/mol)
+            numA: 60,         // Particle count Gas A
+            massB: 4,         // Molecular mass Gas B (g/mol)
+            numB: 60,         // Particle count Gas B
+
+            barrierOpen: false, // Central divider state
+
+            // Visual Toggles
+            showVectors: true,
+            showHighlights: true,
+            showSpectrum: true,
+
+            // Viewport Navigation (Pan & Zoom)
+            zoom: 1.0,
+            panX: 0,
+            panY: 0,
+
+            // Particle Collections
+            particlesA: [],
+            particlesB: []
+        };
+
+        // Canvas Context References
+        let canvasPhysics, ctxPhysics;
+        let canvasSpectrum, ctxSpectrum;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initKaTeX();
+            initCanvases();
+            lucide.createIcons();
+            window.addEventListener('resize', onWindowResize);
+
+            setupInteraction();
+            resetParticles();
+            updatePhysics();
+
+            requestAnimationFrame(animateLoop);
+        });
+
+        function initKaTeX() {
+            if (window.katex) {
+                katex.render("\\frac{\\text{Rate}_A}{\\text{Rate}_B} = \\sqrt{\\frac{M_B}{M_A}}", document.getElementById('math-formula-graham'));
+            }
+        }
+
+        function initCanvases() {
+            canvasPhysics = document.getElementById('canvas-physics');
+            ctxPhysics = canvasPhysics.getContext('2d');
+
+            canvasSpectrum = document.getElementById('canvas-spectrum');
+            ctxSpectrum = canvasSpectrum.getContext('2d');
+
+            resizeCanvas();
+        }
+
+        function resizeCanvas() {
+            if (canvasPhysics) {
+                canvasPhysics.width = canvasPhysics.clientWidth * window.devicePixelRatio;
+                canvasPhysics.height = canvasPhysics.clientHeight * window.devicePixelRatio;
+            }
+            if (canvasSpectrum) {
+                canvasSpectrum.width = canvasSpectrum.clientWidth * window.devicePixelRatio;
+                canvasSpectrum.height = canvasSpectrum.clientHeight * window.devicePixelRatio;
+            }
+        }
+
+        // Initialize / Reset Particle Arrays
+        function resetParticles() {
+            state.particlesA = [];
+            state.particlesB = [];
+
+            const w = canvasPhysics ? canvasPhysics.clientWidth : 800;
+            const h = canvasPhysics ? canvasPhysics.clientHeight : 500;
+            const halfW = w / 2;
+
+            // Base speed scaling based on Temperature and Mass
+            const speedScaleA = Math.sqrt(state.temp / state.massA) * 0.4;
+            const speedScaleB = Math.sqrt(state.temp / state.massB) * 0.4;
+
+            // Spawn Particles Gas A (Left Chamber)
+            for (let i = 0; i < state.numA; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = (0.7 + Math.random() * 0.6) * speedScaleA;
+                state.particlesA.push({
+                    x: 30 + Math.random() * (halfW - 60),
+                    y: 30 + Math.random() * (h - 60),
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    radius: Math.max(3, Math.min(7, Math.sqrt(state.massA) * 0.8)),
+                    highlight: i === 0
+                });
+            }
+
+            // Spawn Particles Gas B (Right Chamber)
+            for (let i = 0; i < state.numB; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = (0.7 + Math.random() * 0.6) * speedScaleB;
+                state.particlesB.push({
+                    x: halfW + 30 + Math.random() * (halfW - 60),
+                    y: 30 + Math.random() * (h - 60),
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    radius: Math.max(3, Math.min(7, Math.sqrt(state.massB) * 0.8)),
+                    highlight: i === 0
+                });
+            }
+        }
+
+        function updatePhysics() {
+            const vA_rms = Math.sqrt((3 * 8.314 * state.temp) / (state.massA / 1000));
+            const vB_rms = Math.sqrt((3 * 8.314 * state.temp) / (state.massB / 1000));
+            const ratio = vB_rms / vA_rms;
+
+            // Update UI Numerical Readouts
+            document.getElementById('readout-vA').innerText = `${Math.round(vA_rms)} m/s`;
+            document.getElementById('readout-vB').innerText = `${Math.round(vB_rms)} m/s`;
+            document.getElementById('readout-ratio').innerText = ratio.toFixed(2);
+
+            // Math Breakdown Updates
+            document.getElementById('math-ma-val').innerText = state.massA.toFixed(1);
+            document.getElementById('math-mb-val').innerText = state.massB.toFixed(1);
+
+            document.getElementById('math-ma-sub').innerText = state.massA.toFixed(1);
+            document.getElementById('math-mb-sub').innerText = state.massB.toFixed(1);
+
+            if (window.katex) {
+                katex.render(`\\text{Rate}_B = ${ratio.toFixed(2)} \\times \\text{Rate}_A`, document.getElementById('math-step-final'));
+            }
+        }
+
+        function animateLoop() {
+            updateParticlesPosition();
+            renderPhysicsCanvas();
+            renderSpectrumCanvas();
+
+            requestAnimationFrame(animateLoop);
+        }
+
+        function updateParticlesPosition() {
+            if (!canvasPhysics) return;
+            const w = canvasPhysics.clientWidth;
+            const h = canvasPhysics.clientHeight;
+            const halfW = w / 2;
+
+            const speedScaleA = Math.sqrt(state.temp / state.massA) * 0.4;
+            const speedScaleB = Math.sqrt(state.temp / state.massB) * 0.4;
+
+            // Process Gas A Particles
+            state.particlesA.forEach(p => {
+                // Adjust velocity to match current Temperature
+                const currentSpeed = Math.hypot(p.vx, p.vy);
+                if (currentSpeed > 0) {
+                    const targetSpeed = speedScaleA * (currentSpeed / (currentSpeed || 1));
+                    p.vx = (p.vx * 0.95) + (p.vx / currentSpeed * targetSpeed * 0.05);
+                    p.vy = (p.vy * 0.95) + (p.vy / currentSpeed * targetSpeed * 0.05);
+                }
+
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // Wall Collisions
+                if (p.x - p.radius < 0) { p.x = p.radius; p.vx *= -1; }
+                if (p.x + p.radius > w) { p.x = w - p.radius; p.vx *= -1; }
+                if (p.y - p.radius < 0) { p.y = p.radius; p.vy *= -1; }
+                if (p.y + p.radius > h) { p.y = h - p.radius; p.vy *= -1; }
+
+                // Central Divider Collision (if barrier closed)
+                if (!state.barrierOpen) {
+                    if (p.x + p.radius > halfW - 4 && p.x < halfW) { p.x = halfW - 4 - p.radius; p.vx *= -1; }
+                    if (p.x - p.radius < halfW + 4 && p.x > halfW) { p.x = halfW + 4 + p.radius; p.vx *= -1; }
+                }
+            });
+
+            // Process Gas B Particles
+            state.particlesB.forEach(p => {
+                const currentSpeed = Math.hypot(p.vx, p.vy);
+                if (currentSpeed > 0) {
+                    const targetSpeed = speedScaleB * (currentSpeed / (currentSpeed || 1));
+                    p.vx = (p.vx * 0.95) + (p.vx / currentSpeed * targetSpeed * 0.05);
+                    p.vy = (p.vy * 0.95) + (p.vy / currentSpeed * targetSpeed * 0.05);
+                }
+
+                p.x += p.vx;
+                p.y += p.vy;
+
+                if (p.x - p.radius < 0) { p.x = p.radius; p.vx *= -1; }
+                if (p.x + p.radius > w) { p.x = w - p.radius; p.vx *= -1; }
+                if (p.y - p.radius < 0) { p.y = p.radius; p.vy *= -1; }
+                if (p.y + p.radius > h) { p.y = h - p.radius; p.vy *= -1; }
+
+                if (!state.barrierOpen) {
+                    if (p.x + p.radius > halfW - 4 && p.x < halfW) { p.x = halfW - 4 - p.radius; p.vx *= -1; }
+                    if (p.x - p.radius < halfW + 4 && p.x > halfW) { p.x = halfW + 4 + p.radius; p.vx *= -1; }
+                }
+            });
+        }
+
+        function renderPhysicsCanvas() {
+            if (!canvasPhysics) return;
+            const w = canvasPhysics.clientWidth;
+            const h = canvasPhysics.clientHeight;
+            if (w === 0 || h === 0) return;
+
+            ctxPhysics.save();
+            ctxPhysics.scale(window.devicePixelRatio, window.devicePixelRatio);
+            ctxPhysics.clearRect(0, 0, w, h);
+
+            // Pan and Zoom Transformation
+            ctxPhysics.translate(state.panX, state.panY);
+            ctxPhysics.scale(state.zoom, state.zoom);
+
+            const halfW = w / 2;
+
+            // Draw Central Wall Divider (if closed)
+            if (!state.barrierOpen) {
+                ctxPhysics.fillStyle = '#f59e0b';
+                ctxPhysics.fillRect(halfW - 4, 0, 8, h);
+
+                ctxPhysics.fillStyle = 'rgba(245, 158, 11, 0.3)';
+                ctxPhysics.fillRect(halfW - 12, 0, 24, h);
+            } else {
+                ctxPhysics.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                ctxPhysics.setLineDash([6, 6]);
+                ctxPhysics.beginPath();
+                ctxPhysics.moveTo(halfW, 0);
+                ctxPhysics.lineTo(halfW, h);
+                ctxPhysics.stroke();
+                ctxPhysics.setLineDash([]);
+            }
+
+            // Draw Gas A Particles (Rose Color)
+            state.particlesA.forEach(p => {
+                ctxPhysics.save();
+                if (state.showHighlights && p.highlight) {
+                    ctxPhysics.shadowColor = '#f43f5e';
+                    ctxPhysics.shadowBlur = 15;
+                }
+
+                ctxPhysics.fillStyle = '#f43f5e';
+                ctxPhysics.beginPath();
+                ctxPhysics.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctxPhysics.fill();
+
+                // Draw Speed Vector Arrow
+                if (state.showVectors) {
+                    ctxPhysics.strokeStyle = 'rgba(244, 63, 94, 0.6)';
+                    ctxPhysics.lineWidth = 1.5;
+                    ctxPhysics.beginPath();
+                    ctxPhysics.moveTo(p.x, p.y);
+                    ctxPhysics.lineTo(p.x + p.vx * 6, p.y + p.vy * 6);
+                    ctxPhysics.stroke();
+                }
+                ctxPhysics.restore();
+            });
+
+            // Draw Gas B Particles (Cyan Color)
+            state.particlesB.forEach(p => {
+                ctxPhysics.save();
+                if (state.showHighlights && p.highlight) {
+                    ctxPhysics.shadowColor = '#06b6d4';
+                    ctxPhysics.shadowBlur = 15;
+                }
+
+                ctxPhysics.fillStyle = '#06b6d4';
+                ctxPhysics.beginPath();
+                ctxPhysics.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctxPhysics.fill();
+
+                if (state.showVectors) {
+                    ctxPhysics.strokeStyle = 'rgba(6, 182, 212, 0.6)';
+                    ctxPhysics.lineWidth = 1.5;
+                    ctxPhysics.beginPath();
+                    ctxPhysics.moveTo(p.x, p.y);
+                    ctxPhysics.lineTo(p.x + p.vx * 6, p.y + p.vy * 6);
+                    ctxPhysics.stroke();
+                }
+                ctxPhysics.restore();
+            });
+
+            ctxPhysics.restore();
+        }
+
+        // Render Maxwell-Boltzmann Speed Spectrum Chart
+        function renderSpectrumCanvas() {
+            if (!canvasSpectrum || !state.showSpectrum) return;
+            const w = canvasSpectrum.clientWidth;
+            const h = canvasSpectrum.clientHeight;
+            if (w === 0 || h === 0) return;
+
+            ctxSpectrum.save();
+            ctxSpectrum.scale(window.devicePixelRatio, window.devicePixelRatio);
+            ctxSpectrum.clearRect(0, 0, w, h);
+
+            const speedScaleA = Math.sqrt(state.temp / state.massA);
+            const speedScaleB = Math.sqrt(state.temp / state.massB);
+
+            // Curve Gas A (Rose)
+            ctxSpectrum.strokeStyle = '#f43f5e';
+            ctxSpectrum.lineWidth = 2;
+            ctxSpectrum.beginPath();
+            for (let x = 0; x < w; x++) {
+                const v = x * 0.1;
+                const y = h - 10 - (120 * (v / speedScaleA) * Math.exp(-Math.pow(v / speedScaleA, 2)));
+                if (x === 0) ctxSpectrum.moveTo(x, y);
+                else ctxSpectrum.lineTo(x, y);
+            }
+            ctxSpectrum.stroke();
+
+            // Curve Gas B (Cyan)
+            ctxSpectrum.strokeStyle = '#06b6d4';
+            ctxSpectrum.lineWidth = 2;
+            ctxSpectrum.beginPath();
+            for (let x = 0; x < w; x++) {
+                const v = x * 0.1;
+                const y = h - 10 - (120 * (v / speedScaleB) * Math.exp(-Math.pow(v / speedScaleB, 2)));
+                if (x === 0) ctxSpectrum.moveTo(x, y);
+                else ctxSpectrum.lineTo(x, y);
+            }
+            ctxSpectrum.stroke();
+
+            ctxSpectrum.restore();
+        }
+
+        // Setup Touch Gestures (Pan & Zoom)
+        function setupInteraction() {
+            let isDragging = false;
+            let lastX = 0;
+            let lastY = 0;
+
+            canvasPhysics.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                lastX = e.clientX;
+                lastY = e.clientY;
+            });
+
+            canvasPhysics.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                state.panX += e.clientX - lastX;
+                state.panY += e.clientY - lastY;
+                lastX = e.clientX;
+                lastY = e.clientY;
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+        }
+
+        function onControlChange(param) {
+            state.temp = parseFloat(document.getElementById('slider-temp').value);
+            state.massA = parseFloat(document.getElementById('slider-massA').value);
+            state.numA = parseInt(document.getElementById('slider-numA').value);
+
+            state.massB = parseFloat(document.getElementById('slider-massB').value);
+            state.numB = parseInt(document.getElementById('slider-numB').value);
+
+            state.showVectors = document.getElementById('toggle-vectors').checked;
+            state.showHighlights = document.getElementById('toggle-highlights').checked;
+            state.showSpectrum = document.getElementById('toggle-spectrum').checked;
+
+            if (param === 'numA' || param === 'numB' || param === 'massA' || param === 'massB') {
+                resetParticles();
+            }
+
+            syncLabels();
+            updatePhysics();
+        }
+
+        function onDirectInput(param) {
+            if (param === 'temp') {
+                state.temp = Math.max(100, Math.min(1000, parseFloat(document.getElementById('input-temp').value) || 300));
+                document.getElementById('slider-temp').value = state.temp;
+            } else if (param === 'massA') {
+                state.massA = Math.max(4, Math.min(100, parseFloat(document.getElementById('input-massA').value) || 32));
+                document.getElementById('slider-massA').value = state.massA;
+                resetParticles();
+            } else if (param === 'massB') {
+                state.massB = Math.max(4, Math.min(100, parseFloat(document.getElementById('input-massB').value) || 4));
+                document.getElementById('slider-massB').value = state.massB;
+                resetParticles();
+            }
+            syncLabels();
+            updatePhysics();
+        }
+
+        function syncLabels() {
+            document.getElementById('val-temp-display').innerText = `${state.temp} K`;
+            document.getElementById('txt-temp-val').innerText = `${state.temp} K`;
+            document.getElementById('input-temp').value = state.temp;
+
+            document.getElementById('txt-massA-val').innerText = `${state.massA.toFixed(1)} g/mol`;
+            document.getElementById('input-massA').value = state.massA;
+            document.getElementById('txt-numA-val').innerText = `${state.numA}`;
+
+            document.getElementById('txt-massB-val').innerText = `${state.massB.toFixed(1)} g/mol`;
+            document.getElementById('input-massB').value = state.massB;
+            document.getElementById('txt-numB-val').innerText = `${state.numB}`;
+        }
+
+        function toggleBarrier() {
+            state.barrierOpen = !state.barrierOpen;
+            const label = document.getElementById('label-barrier');
+            const icon = document.getElementById('icon-barrier');
+
+            if (state.barrierOpen) {
+                label.innerText = 'ใส่แผ่นกั้น (Close Barrier)';
+                icon.setAttribute('data-lucide', 'split');
+            } else {
+                label.innerText = 'ดึงแผ่นกั้นออก (Open Barrier)';
+                icon.setAttribute('data-lucide', 'columns');
+                resetParticles();
+            }
+            lucide.createIcons();
+        }
+
+        function applyPreset(presetKey) {
+            if (presetKey === 'graham') {
+                state.massA = 32.0; state.massB = 4.0; state.temp = 300;
+            } else if (presetKey === 'thermal_hot') {
+                state.temp = 800;
+            } else if (presetKey === 'thermal_cold') {
+                state.temp = 120;
+            } else if (presetKey === 'heavy_mix') {
+                state.massA = 80.0; state.massB = 4.0; state.temp = 300;
+            }
+            document.getElementById('slider-temp').value = state.temp;
+            document.getElementById('slider-massA').value = state.massA;
+            document.getElementById('slider-massB').value = state.massB;
+
+            resetParticles();
+            syncLabels();
+            updatePhysics();
+        }
+
+        function adjustZoom(factor) {
+            state.zoom = Math.max(0.5, Math.min(2.5, state.zoom * factor));
+        }
+
+        function resetZoomPan() {
+            state.zoom = 1.0;
+            state.panX = 0;
+            state.panY = 0;
+        }
+
+        function resetSimulation() {
+            state.temp = 300;
+            state.massA = 32;
+            state.numA = 60;
+            state.massB = 4;
+            state.numB = 60;
+            state.barrierOpen = false;
+
+            document.getElementById('slider-temp').value = 300;
+            document.getElementById('slider-massA').value = 32;
+            document.getElementById('slider-numA').value = 60;
+            document.getElementById('slider-massB').value = 4;
+            document.getElementById('slider-numB').value = 60;
+
+            document.getElementById('label-barrier').innerText = 'ดึงแผ่นกั้นออก (Open Barrier)';
+
+            resetZoomPan();
+            resetParticles();
+            syncLabels();
+            updatePhysics();
+        }
+
+        function switchRightTab(tabKey) {
+            ['calc', 'theory'].forEach(k => {
+                document.getElementById(`content-${k}`).classList.add('hidden');
+                document.getElementById(`tab-${k}`).classList.remove('active');
+            });
+
+            document.getElementById(`content-${tabKey}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabKey}`).classList.add('active');
+        }
+
+        function toggleFullscreen() {
+            try {
+                if (!document.fullscreenElement) {
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen().catch(err => console.warn(err));
+                    }
+                } else if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(err => console.warn(err));
+                }
+            } catch (err) {
+                console.warn("Fullscreen restricted:", err);
+            }
+        }
+
+        function onWindowResize() {
+            resizeCanvas();
+        }
+    </script>
+</body>
+</html>

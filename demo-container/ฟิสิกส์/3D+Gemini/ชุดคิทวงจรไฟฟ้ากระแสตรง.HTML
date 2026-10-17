@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แบบจำลองชุดคิทวงจรไฟฟ้าพื้นฐาน (Basic Circuit Kit Model)</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        panelBg: 'rgba(30, 41, 59, 0.85)',
+                        accent: '#38bdf8',
+                        positive: '#ef4444',
+                        negative: '#10b981', // ใช้สีเขียวหรือดำสำหรับขั้วลบ
+                        glow: '#fcd34d'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Sarabun', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- MathJax for Formulas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        .math-display {
+            font-size: 0.9rem;
+            color: #bae6fd;
+        }
+        
+        /* Switch Toggle Animation classes */
+        .switch-active { transform: translateY(2px); box-shadow: none !important; }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 z-20 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/30">
+                <i class="fa-solid fa-lightbulb text-white text-sm"></i>
+            </div>
+            <a href="../physics.html">
+                            <h1 class="text-base font-semibold tracking-wide flex items-center gap-2">
+                แบบจำลองชุดคิทวงจรไฟฟ้า 
+                <span class="text-xs font-normal text-slate-400 bg-slate-800 px-2 py-0.5 rounded">DIY Circuit Model</span>
+            </h1>
+            </a>
+        </div>
+        <div>
+            <button id="btn-reset-cam" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm px-4 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-video text-amber-400"></i> คืนค่ามุมกล้อง
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 relative overflow-hidden">
+        
+        <!-- ThreeJS Canvas -->
+        <div id="canvas-container" class="absolute inset-0 w-full h-full">
+            <canvas id="three-canvas"></canvas>
+        </div>
+
+        <!-- Left HUD: Controls -->
+        <aside class="absolute top-4 left-4 w-80 glass-panel rounded-xl flex flex-col z-10 max-h-[calc(100vh-6rem)] overflow-y-auto">
+            <div class="p-4 border-b border-slate-700/50">
+                <h2 class="text-sm font-semibold text-amber-400 flex items-center gap-2 uppercase tracking-wide">
+                    <i class="fa-solid fa-toolbox"></i> จัดเตรียมอุปกรณ์
+                </h2>
+            </div>
+            
+            <div class="p-4 space-y-4">
+                <!-- Base / Board -->
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1"><i class="fa-solid fa-table-cells"></i> แผ่นฐานรองวงจร</label>
+                    <select id="select-base" class="w-full bg-slate-800/80 border border-slate-600 rounded-md p-2 text-sm focus:outline-none focus:border-amber-500 text-slate-200">
+                        <option value="wood">ไม้อัด / ฟิวเจอร์บอร์ด (Wood Board)</option>
+                        <option value="acrylic">แผ่นอะคริลิกใส (Acrylic)</option>
+                        <option value="breadboard">บอร์ดทดลอง (Breadboard)</option>
+                    </select>
+                </div>
+
+                <!-- Power Source -->
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1"><i class="fa-solid fa-battery-full"></i> แหล่งจ่ายไฟ (DC Power)</label>
+                    <select id="select-power" class="w-full bg-slate-800/80 border border-slate-600 rounded-md p-2 text-sm focus:outline-none focus:border-amber-500 text-slate-200">
+                        <option value="aa_2">ถ่าน AA 2 ก้อน (3.0 V)</option>
+                        <option value="battery_9v">ถ่านสี่เหลี่ยม (9.0 V)</option>
+                    </select>
+                </div>
+
+                <!-- Load -->
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1"><i class="fa-solid fa-plug"></i> โหลด / อุปกรณ์รับพลังงาน</label>
+                    <select id="select-load" class="w-full bg-slate-800/80 border border-slate-600 rounded-md p-2 text-sm focus:outline-none focus:border-amber-500 text-slate-200">
+                        <option value="bulb">หลอดไฟขนาดเล็ก (Light Bulb)</option>
+                        <option value="motor">มอเตอร์ DC พร้อมใบพัด (Motor)</option>
+                        <option value="buzzer">ออดไฟฟ้า (Buzzer)</option>
+                    </select>
+                </div>
+
+                <!-- Main Switch Toggle -->
+                <div class="pt-4 border-t border-slate-700/50">
+                    <button id="btn-toggle-switch" class="w-full bg-slate-700 hover:bg-slate-600 border border-slate-600 text-white text-base py-3 rounded-lg font-bold transition-all shadow-[0_4px_0_rgb(51,65,85)] active:shadow-none active:translate-y-1 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-power-off"></i> สับสวิตช์ใบมีด (ON / OFF)
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right HUD: Real-time Data -->
+        <aside class="absolute top-4 right-4 w-72 glass-panel rounded-xl flex flex-col z-10 pointer-events-none">
+            <div class="p-4 border-b border-slate-700/50">
+                <h2 class="text-sm font-semibold text-emerald-400 flex items-center gap-2 uppercase tracking-wide">
+                    <i class="fa-solid fa-microchip"></i> ข้อมูลวงจรไฟฟ้า
+                </h2>
+            </div>
+            
+            <div class="p-4 space-y-4">
+                <!-- Circuit Status -->
+                <div class="flex items-center justify-between bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                    <div class="text-xs text-slate-400">สถานะวงจร</div>
+                    <div id="status-badge" class="px-2 py-1 rounded text-xs font-bold bg-slate-700 text-slate-400">
+                        วงจรเปิด (OFF)
+                    </div>
+                </div>
+
+                <!-- Voltage & Current -->
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                        <div class="text-[10px] text-slate-400 mb-1">แรงดัน (Voltage)</div>
+                        <div class="text-right font-mono text-lg text-amber-300 font-bold" id="readout-v">
+                            0.0 <span class="text-xs text-slate-400 font-sans">V</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                        <div class="text-[10px] text-slate-400 mb-1">กระแส (Current)</div>
+                        <div class="text-right font-mono text-lg text-emerald-300 font-bold" id="readout-i">
+                            0.0 <span class="text-xs text-slate-400 font-sans">A</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ohm's Law -->
+                <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                    <div class="text-xs text-slate-400 mb-1">กฎของโอห์ม (Ohm's Law)</div>
+                    <div class="math-display mb-1">$$I = \frac{V}{R}$$</div>
+                    <div class="text-[10px] text-slate-500 mt-2" id="desc-load">
+                        *ความต้านทาน (R) เปลี่ยนแปลงตามอุปกรณ์ที่เลือก
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Streaming Particles Legend -->
+        <div class="absolute bottom-6 left-1/2 -translate-x-1/2 glass-panel px-4 py-2 rounded-full flex items-center gap-4 text-xs font-medium text-slate-300 shadow-lg pointer-events-none">
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span> สายบวก (+)
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span> สายลบ (-)
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        // --- Constants & Variables ---
+        const clock = new THREE.Clock();
+        
+        let isCircuitClosed = false;
+        
+        let voltage = 3.0; // Default 3V
+        let resistance = 10.0; // Default Bulb resistance
+        let current = 0.0;
+        
+        // Settings
+        let currentBase = 'wood';
+        let currentPower = 'aa_2';
+        let currentLoad = 'bulb';
+
+        // Three.js Objects
+        let scene, camera, renderer, controls;
+        
+        // Component Groups
+        let baseGroup = new THREE.Group();
+        let powerGroup = new THREE.Group();
+        let switchGroup = new THREE.Group();
+        let loadGroup = new THREE.Group();
+        let wireGroup = new THREE.Group();
+        
+        // Specific animated parts
+        let knifeBlade; 
+        let motorFan;
+        let bulbGlow;
+        let buzzerRings = [];
+        let currentParticles = []; // To animate electron flow
+
+        // DOM Elements
+        const elReadoutV = document.getElementById('readout-v');
+        const elReadoutI = document.getElementById('readout-i');
+        const statusBadge = document.getElementById('status-badge');
+        const descLoad = document.getElementById('desc-load');
+        const btnToggleSwitch = document.getElementById('btn-toggle-switch');
+
+        init();
+        animate();
+
+        function init() {
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color('#0f172a');
+            scene.fog = new THREE.FogExp2('#0f172a', 0.015);
+
+            // Camera looking from top-ish angle
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 15, 20);
+
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three-canvas'), antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 - 0.1; // Don't go below ground
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(10, 20, 10);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            dirLight.shadow.camera.left = -15;
+            dirLight.shadow.camera.right = 15;
+            dirLight.shadow.camera.top = 15;
+            dirLight.shadow.camera.bottom = -15;
+            scene.add(dirLight);
+
+            // Add Groups to Scene
+            scene.add(baseGroup);
+            scene.add(powerGroup);
+            scene.add(switchGroup);
+            scene.add(loadGroup);
+            scene.add(wireGroup);
+
+            // Build Initial Scene
+            buildBase();
+            buildPower();
+            buildSwitch();
+            buildLoad();
+            buildWires();
+
+            // Events
+            setupEvents();
+            
+            // Initial UI Update
+            updatePhysics();
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function buildBase() {
+            // Clear old
+            while(baseGroup.children.length > 0){ 
+                baseGroup.remove(baseGroup.children[0]); 
+            }
+
+            let geo = new THREE.BoxGeometry(16, 0.5, 10);
+            let mat;
+
+            if (currentBase === 'wood') {
+                mat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.9 });
+            } else if (currentBase === 'acrylic') {
+                mat = new THREE.MeshStandardMaterial({ 
+                    color: 0xffffff, 
+                    transparent: true, 
+                    opacity: 0.4,
+                    roughness: 0.1,
+                    metalness: 0.1
+                });
+            } else if (currentBase === 'breadboard') {
+                mat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.7 });
+                // Simplified breadboard look (white box with some lines)
+                geo = new THREE.BoxGeometry(16, 0.5, 6);
+            }
+
+            const baseMesh = new THREE.Mesh(geo, mat);
+            baseMesh.position.y = -0.25;
+            baseMesh.receiveShadow = true;
+            baseGroup.add(baseMesh);
+
+            // Add double sided tape under components as placeholders
+            const tapeGeo = new THREE.BoxGeometry(2, 0.05, 3);
+            const tapeMat = new THREE.MeshBasicMaterial({ color: 0x222222 });
+            const tape1 = new THREE.Mesh(tapeGeo, tapeMat);
+            tape1.position.set(-5, 0.02, 0); // Battery
+            const tape2 = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.05, 2.5), tapeMat);
+            tape2.position.set(0, 0.02, 3); // Switch
+            const tape3 = new THREE.Mesh(new THREE.BoxGeometry(2, 0.05, 2), tapeMat);
+            tape3.position.set(5, 0.02, 0); // Load
+
+            if(currentBase !== 'breadboard') {
+                baseGroup.add(tape1, tape2, tape3);
+            }
+        }
+
+        function buildPower() {
+            while(powerGroup.children.length > 0) powerGroup.remove(powerGroup.children[0]);
+            
+            powerGroup.position.set(-5, 0.1, 0);
+
+            if (currentPower === 'aa_2') {
+                // Battery Holder
+                const holderGeo = new THREE.BoxGeometry(2.5, 1, 3.5);
+                const holderMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+                const holder = new THREE.Mesh(holderGeo, holderMat);
+                holder.position.y = 0.5;
+                holder.castShadow = true;
+
+                // AA Battery 1
+                const batGeo = new THREE.CylinderGeometry(0.4, 0.4, 3, 32);
+                const batMatRed = new THREE.MeshStandardMaterial({ color: 0xcc0000 });
+                const bat1 = new THREE.Mesh(batGeo, batMatRed);
+                bat1.rotation.x = Math.PI / 2;
+                bat1.position.set(-0.5, 1, 0);
+                bat1.castShadow = true;
+
+                // AA Battery 2
+                const bat2 = new THREE.Mesh(batGeo, batMatRed);
+                bat2.rotation.x = Math.PI / 2;
+                bat2.position.set(0.5, 1, 0);
+                bat2.castShadow = true;
+
+                powerGroup.add(holder, bat1, bat2);
+                voltage = 3.0;
+            } else if (currentPower === 'battery_9v') {
+                // 9V Battery
+                const bodyGeo = new THREE.BoxGeometry(1.5, 2.5, 1);
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+                const body = new THREE.Mesh(bodyGeo, bodyMat);
+                body.position.y = 1.25;
+                body.rotation.x = Math.PI / 2;
+                body.position.y = 0.5;
+                body.castShadow = true;
+
+                // Terminals
+                const t1 = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.3), new THREE.MeshStandardMaterial({color: 0xaaaaaa}));
+                t1.position.set(-0.4, 0.5, 1.4);
+                t1.rotation.x = Math.PI / 2;
+                
+                const t2 = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.3), new THREE.MeshStandardMaterial({color: 0xaaaaaa}));
+                t2.position.set(0.4, 0.5, 1.4);
+                t2.rotation.x = Math.PI / 2;
+
+                powerGroup.add(body, t1, t2);
+                voltage = 9.0;
+            }
+        }
+
+        function buildSwitch() {
+            switchGroup.position.set(0, 0, 3);
+            
+            // Base
+            const baseGeo = new THREE.BoxGeometry(1.5, 0.2, 2.5);
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0x1e293b }); // Dark slate
+            const base = new THREE.Mesh(baseGeo, baseMat);
+            base.position.y = 0.1;
+            base.castShadow = true;
+
+            // Contacts
+            const contactGeo = new THREE.BoxGeometry(0.3, 0.6, 0.3);
+            const brassMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.8, roughness: 0.2 }); // Brass
+            
+            const contactLeft = new THREE.Mesh(contactGeo, brassMat);
+            contactLeft.position.set(0, 0.4, -0.8);
+            
+            const contactRight = new THREE.Mesh(contactGeo, brassMat);
+            contactRight.position.set(0, 0.4, 0.8);
+
+            // Knife Blade (Pivot on Right Contact)
+            const bladeGeo = new THREE.BoxGeometry(0.1, 0.3, 1.8);
+            const copperMat = new THREE.MeshStandardMaterial({ color: 0xb87333, metalness: 0.8, roughness: 0.3 }); // Copper
+            knifeBlade = new THREE.Mesh(bladeGeo, copperMat);
+            
+            // Adjust pivot point
+            knifeBlade.position.set(0, 0, -0.8); // Offset half length
+            
+            const bladePivot = new THREE.Group();
+            bladePivot.position.set(0, 0.5, 0.8); // Center of right contact
+            bladePivot.add(knifeBlade);
+            
+            // Handle
+            const handleGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.5);
+            const handleMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+            const handle = new THREE.Mesh(handleGeo, handleMat);
+            handle.rotation.x = Math.PI / 2;
+            handle.position.set(0, 0, -1.8); // End of blade
+            knifeBlade.add(handle);
+
+            // Initial state (Open)
+            bladePivot.rotation.x = -Math.PI / 4; 
+
+            switchGroup.add(base, contactLeft, contactRight, bladePivot);
+        }
+
+        function buildLoad() {
+            while(loadGroup.children.length > 0) loadGroup.remove(loadGroup.children[0]);
+            loadGroup.position.set(5, 0, 0);
+
+            if (currentLoad === 'bulb') {
+                resistance = 15.0; 
+                descLoad.innerHTML = "<b>หลอดไฟ (Light Bulb):</b> เปลี่ยนพลังงานไฟฟ้าเป็นแสงสว่าง <br>R ≈ 15 Ω";
+
+                // Socket
+                const socketGeo = new THREE.CylinderGeometry(0.8, 1, 0.5, 32);
+                const socketMat = new THREE.MeshStandardMaterial({ color: 0xdddddd });
+                const socket = new THREE.Mesh(socketGeo, socketMat);
+                socket.position.y = 0.25;
+
+                // Bulb
+                const bulbGeo = new THREE.SphereGeometry(0.6, 32, 32);
+                const bulbMat = new THREE.MeshStandardMaterial({ 
+                    color: 0xffffff, 
+                    transparent: true, 
+                    opacity: 0.8,
+                    emissive: 0xffaa00,
+                    emissiveIntensity: 0.0 // Off initially
+                });
+                bulbGlow = new THREE.Mesh(bulbGeo, bulbMat);
+                bulbGlow.position.y = 1.0;
+
+                loadGroup.add(socket, bulbGlow);
+
+            } else if (currentLoad === 'motor') {
+                resistance = 10.0;
+                descLoad.innerHTML = "<b>มอเตอร์ DC (DC Motor):</b> เปลี่ยนพลังงานไฟฟ้าเป็นพลังงานกล (หมุน) <br>R ≈ 10 Ω";
+
+                // Motor Body
+                const bodyGeo = new THREE.CylinderGeometry(0.6, 0.6, 1.5, 32);
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: 0.7 });
+                const body = new THREE.Mesh(bodyGeo, bodyMat);
+                body.rotation.x = Math.PI / 2;
+                body.position.y = 0.6;
+
+                // Shaft
+                const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 2), new THREE.MeshStandardMaterial({ color: 0x333333 }));
+                shaft.rotation.x = Math.PI / 2;
+                shaft.position.y = 0.6;
+
+                // Fan Blades
+                motorFan = new THREE.Group();
+                const bladeGeo = new THREE.BoxGeometry(2, 0.05, 0.4);
+                const bladeMat = new THREE.MeshStandardMaterial({ color: 0x0ea5e9 }); // Blue plastic
+                const blade1 = new THREE.Mesh(bladeGeo, bladeMat);
+                const blade2 = new THREE.Mesh(bladeGeo, bladeMat);
+                blade2.rotation.y = Math.PI / 2;
+                motorFan.add(blade1, blade2);
+                motorFan.position.set(0, 0.6, -0.9);
+                motorFan.rotation.z = Math.PI / 2;
+
+                loadGroup.add(body, shaft, motorFan);
+
+            } else if (currentLoad === 'buzzer') {
+                resistance = 30.0;
+                descLoad.innerHTML = "<b>ออดไฟฟ้า (Buzzer):</b> เปลี่ยนพลังงานไฟฟ้าเป็นเสียง <br>R ≈ 30 Ω";
+
+                // Buzzer Body
+                const bodyGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.6, 32);
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+                const body = new THREE.Mesh(bodyGeo, bodyMat);
+                body.position.y = 0.3;
+
+                // Hole
+                const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.61), new THREE.MeshBasicMaterial({ color: 0x000000 }));
+                hole.position.y = 0.3;
+
+                loadGroup.add(body, hole);
+
+                // Prepare rings for animation
+                buzzerRings = [];
+                for(let i=0; i<3; i++) {
+                    const ring = new THREE.Mesh(
+                        new THREE.RingGeometry(0.2, 0.3, 32),
+                        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, side: THREE.DoubleSide })
+                    );
+                    ring.rotation.x = -Math.PI / 2;
+                    ring.position.y = 0.65;
+                    loadGroup.add(ring);
+                    buzzerRings.push({ mesh: ring, scale: 1, age: i * 0.33 }); // Staggered start
+                }
+            }
+        }
+
+        function buildWires() {
+            while(wireGroup.children.length > 0) wireGroup.remove(wireGroup.children[0]);
+            currentParticles = [];
+
+            // Define Connection Points
+            // Power: Pos(red), Neg(black/green)
+            const pPowerPos = new THREE.Vector3(-4, 0.5, 1);
+            const pPowerNeg = new THREE.Vector3(-4, 0.5, -1);
+            
+            // Switch: Left, Right
+            const pSwitchLeft = new THREE.Vector3(-0.5, 0.4, 2.2); // connect to battery pos
+            const pSwitchRight = new THREE.Vector3(0.5, 0.4, 3.8); // connect to load pos
+
+            // Load: Pos, Neg
+            const pLoadPos = new THREE.Vector3(4, 0.5, 1);
+            const pLoadNeg = new THREE.Vector3(4, 0.5, -1);
+
+            // Wire 1: Battery(+) to Switch Left (Red)
+            createWireCurve(pPowerPos, pSwitchLeft, 0xef4444, true);
+            
+            // Wire 2: Switch Right to Load(+) (Red)
+            createWireCurve(pSwitchRight, pLoadPos, 0xef4444, true);
+
+            // Wire 3: Load(-) to Battery(-) (Green/Black)
+            createWireCurve(pLoadNeg, pPowerNeg, 0x10b981, false);
+        }
+
+        function createWireCurve(p1, p2, colorHex, isPositive) {
+            // Create a nice sagging curve
+            const mid = p1.clone().lerp(p2, 0.5);
+            mid.y -= 0.5; // sag down
+            
+            const curve = new THREE.QuadraticBezierCurve3(p1, mid, p2);
+            const points = curve.getPoints(20);
+            
+            const geo = new THREE.BufferGeometry().setFromPoints(points);
+            const mat = new THREE.LineBasicMaterial({ color: colorHex, linewidth: 3 });
+            const line = new THREE.Line(geo, mat);
+            wireGroup.add(line);
+
+            // Create particles along this wire for current flow
+            const particleCount = 5;
+            const particleGeo = new THREE.SphereGeometry(0.1, 8, 8);
+            const particleMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            
+            for(let i=0; i<particleCount; i++) {
+                const p = new THREE.Mesh(particleGeo, particleMat);
+                p.visible = false; // Hide initially
+                wireGroup.add(p);
+                currentParticles.push({
+                    mesh: p,
+                    curve: curve,
+                    progress: i / particleCount, // stagger evenly
+                    speed: 0.5 // adjusted by physics
+                });
+            }
+        }
+
+        function setupEvents() {
+            document.getElementById('select-base').addEventListener('change', (e) => {
+                currentBase = e.target.value;
+                buildBase();
+            });
+
+            document.getElementById('select-power').addEventListener('change', (e) => {
+                currentPower = e.target.value;
+                buildPower();
+                updatePhysics();
+            });
+
+            document.getElementById('select-load').addEventListener('change', (e) => {
+                currentLoad = e.target.value;
+                buildLoad();
+                buildWires(); // Wires might need re-attachment if shapes change wildly, but here it's fine
+                updatePhysics();
+            });
+
+            btnToggleSwitch.addEventListener('click', () => {
+                isCircuitClosed = !isCircuitClosed;
+                
+                // Animate HTML Button
+                if(isCircuitClosed) {
+                    btnToggleSwitch.classList.add('bg-rose-600', 'hover:bg-rose-500', 'border-rose-500', 'switch-active');
+                    btnToggleSwitch.classList.remove('bg-slate-700', 'hover:bg-slate-600', 'border-slate-600');
+                    btnToggleSwitch.innerHTML = '<i class="fa-solid fa-power-off"></i> ตัดวงจร (OFF)';
+                    
+                    statusBadge.textContent = "วงจรปิด (ON) กระแสไหล";
+                    statusBadge.className = "px-2 py-1 rounded text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 animate-pulse";
+                } else {
+                    btnToggleSwitch.classList.remove('bg-rose-600', 'hover:bg-rose-500', 'border-rose-500', 'switch-active');
+                    btnToggleSwitch.classList.add('bg-slate-700', 'hover:bg-slate-600', 'border-slate-600');
+                    btnToggleSwitch.innerHTML = '<i class="fa-solid fa-power-off"></i> สับสวิตช์ใบมีด (ON)';
+
+                    statusBadge.textContent = "วงจรเปิด (OFF)";
+                    statusBadge.className = "px-2 py-1 rounded text-xs font-bold bg-slate-700 text-slate-400";
+                }
+
+                updatePhysics();
+            });
+
+            document.getElementById('btn-reset-cam').addEventListener('click', () => {
+                camera.position.set(0, 15, 20);
+                controls.target.set(0, 0, 0);
+                controls.update();
+            });
+        }
+
+        function updatePhysics() {
+            if (isCircuitClosed) {
+                // I = V / R
+                current = voltage / resistance;
+                
+                // Target Switch angle = 0 (Closed)
+                if(knifeBlade) knifeBlade.parent.rotation.x = 0;
+            } else {
+                current = 0.0;
+                
+                // Target Switch angle = open
+                if(knifeBlade) knifeBlade.parent.rotation.x = -Math.PI / 4;
+            }
+
+            // Update UI
+            elReadoutV.innerHTML = `${voltage.toFixed(1)} <span class="text-xs text-slate-400 font-sans">V</span>`;
+            elReadoutI.innerHTML = `${current.toFixed(2)} <span class="text-xs text-slate-400 font-sans">A</span>`;
+            
+            // Visual Updates based on current
+            if (currentLoad === 'bulb' && bulbGlow) {
+                // Brightness depends on Power (P = IV = V^2 / R)
+                const power = current * voltage; 
+                bulbGlow.material.emissiveIntensity = isCircuitClosed ? Math.min(2.0, power * 0.5) : 0;
+                // If 9V is applied to 15ohm bulb, P = 5.4W -> very bright. 3V -> 0.6W -> dim.
+            }
+            
+            // Reset buzzer rings if off
+            if (!isCircuitClosed && buzzerRings) {
+                buzzerRings.forEach(r => r.mesh.visible = false);
+            }
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            
+            controls.update();
+
+            // Animate Load behaviors
+            if (isCircuitClosed) {
+                if (currentLoad === 'motor' && motorFan) {
+                    // Speed depends on voltage
+                    const speed = voltage * 2.0; 
+                    motorFan.rotation.x -= speed * delta; // Spin!
+                }
+                else if (currentLoad === 'buzzer' && buzzerRings) {
+                    // Sound waves expanding
+                    buzzerRings.forEach(r => {
+                        r.mesh.visible = true;
+                        r.age += delta * 2.0;
+                        if (r.age > 1.0) r.age = 0; // Reset
+                        
+                        const scale = 1.0 + (r.age * 3.0);
+                        r.mesh.scale.set(scale, scale, 1);
+                        r.mesh.material.opacity = 1.0 - r.age; // fade out
+                    });
+                }
+
+                // Animate Electron/Current flow in wires
+                currentParticles.forEach(p => {
+                    p.mesh.visible = true;
+                    // Speed proportional to current
+                    p.progress += (current * 0.5) * delta; 
+                    if (p.progress > 1) p.progress = 0;
+                    
+                    // Get position on curve
+                    const pos = p.curve.getPointAt(p.progress);
+                    p.mesh.position.copy(pos);
+                });
+
+            } else {
+                // Hide particles when circuit open
+                currentParticles.forEach(p => p.mesh.visible = false);
+            }
+
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>

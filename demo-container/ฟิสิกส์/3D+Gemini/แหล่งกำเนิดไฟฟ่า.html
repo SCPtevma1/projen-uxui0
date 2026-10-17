@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แบบจำลองฟิสิกส์ 3D: การเหนี่ยวนำแม่เหล็กไฟฟ้าและกฎของฟาราเดย์</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Sarabun:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- KaTeX for Math Formatting -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #030712;
+            --panel-bg: rgba(15, 23, 42, 0.88);
+            --panel-border: rgba(56, 189, 248, 0.3);
+            --cyan-accent: #38bdf8;
+            --amber-accent: #f59e0b;
+            --red-pole: #ef4444;
+            --blue-pole: #3b82f6;
+            --green-accent: #22c55e;
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: var(--bg-dark);
+            color: #f1f5f9;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        .font-code { font-family: 'Fira Code', monospace; }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); }
+        ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--cyan-accent); }
+
+        /* Glassmorphism Panels */
+        .glass-card {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+        }
+
+        #webgl-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .hud-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: grid;
+            grid-template-columns: 380px 1fr 420px;
+            grid-template-rows: auto 1fr auto;
+            padding: 1rem;
+            gap: 1rem;
+        }
+
+        .pointer-auto { pointer-events: auto; }
+
+        /* Glowing Effects */
+        .glow-text-cyan { text-shadow: 0 0 10px rgba(56, 189, 248, 0.6); }
+        .glow-text-amber { text-shadow: 0 0 10px rgba(245, 158, 11, 0.6); }
+    </style>
+</head>
+<body>
+
+    <!-- 3D WebGL Canvas Container -->
+    <div id="webgl-container"></div>
+
+    <!-- UI Overlay HUD -->
+    <div class="hud-overlay">
+
+        <!-- Top Header Banner -->
+        <header class="glass-card rounded-xl p-4 pointer-auto col-span-2 flex items-center justify-between">
+            <div>
+                <h1 class="font-orbitron font-bold text-xl text-sky-400 glow-text-cyan flex items-center gap-2">
+                    <a href="/demo-container/ฟิสิกส์/physics.html"><i class="fa-solid fa-bolt text-amber-400 animate-pulse"></i> แหล่งกำเนิดไฟฟ้า: การเหนี่ยวนำและกฎของฟาราเดย์</a>
+                </h1>
+                <p class="text-xs text-slate-300 mt-1">
+                    Faraday's Law of Electromagnetic Induction ($\mathcal{E} = -N \frac{d\Phi_B}{dt}$) | กฎของเลนซ์ (Lenz's Law)
+                </p>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="text-right font-code text-xs">
+                    <div class="text-slate-400">แรงเคลื่อนไฟฟ้าเหนี่ยวนำ ($\mathcal{E}$):</div>
+                    <div id="status-emf-val" class="font-bold text-amber-400 text-sm">0.00 V</div>
+                </div>
+                <div id="status-badge" class="px-3 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700 flex items-center gap-2">
+                    <span id="status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+                    <span id="status-text">ไม่มีการเปลี่ยนแปลงฟลักซ์</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Left Interactive Control Sidebar -->
+        <aside class="glass-card rounded-xl p-4 pointer-auto col-start-1 row-start-2 row-span-2 flex flex-col gap-4 overflow-y-auto max-h-[calc(100vh-6rem)]">
+            
+            <!-- Quick Preset Motion Scenarios -->
+            <div>
+                <h2 class="font-orbitron text-xs font-semibold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-play"></i> โหมดการทดลองอัตโนมัติ (Automated Motions)
+                </h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="startAutoMotion('oscillate')" class="px-3 py-2 rounded-lg text-xs bg-slate-800 border border-slate-700 hover:border-sky-400 text-slate-200 text-left transition flex items-center gap-2">
+                        <i class="fa-solid fa-arrows-up-down text-sky-400"></i> ขยับแท่งแม่เหล็กเข้า-ออก
+                    </button>
+                    <button onclick="startAutoMotion('rotate')" class="px-3 py-2 rounded-lg text-xs bg-slate-800 border border-slate-700 hover:border-amber-400 text-slate-200 text-left transition flex items-center gap-2">
+                        <i class="fa-solid fa-rotate-right text-amber-400"></i> หมุนขั้วแม่เหล็ก (AC Generator)
+                    </button>
+                    <button onclick="stopAutoMotion()" class="col-span-2 px-3 py-1.5 rounded-lg text-xs bg-red-950/60 border border-red-800 hover:bg-red-900/80 text-red-300 text-center transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-hand"></i> หยุดการเคลื่อนไหวอัตโนมัติ (ขยับเองด้วยเมาส์)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Physics Sliders -->
+            <div class="border-t border-slate-800 pt-3 space-y-3">
+                <h2 class="font-orbitron text-xs font-semibold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <i class="fa-solid fa-sliders"></i> พารามิเตอร์การเหนี่ยวนำ (Induction Parameters)
+                </h2>
+
+                <!-- Number of Coil Turns (N) -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">จำนวนรอบของขดลวด ($N$):</span>
+                        <span id="val-turns" class="font-code text-sky-300 font-bold">N = 4 รอบ</span>
+                    </div>
+                    <input type="range" id="slider-turns" min="1" max="10" step="1" value="4" class="w-full accent-sky-400 cursor-pointer" oninput="updatePhysicsFromControls()">
+                </div>
+
+                <!-- Magnet Strength (B) -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">ความเข้มสนามแม่เหล็ก ($B$):</span>
+                        <span id="val-strength" class="font-code text-amber-300 font-bold">1.5 Tesla</span>
+                    </div>
+                    <input type="range" id="slider-strength" min="0.5" max="3.0" step="0.1" value="1.5" class="w-full accent-amber-400 cursor-pointer" oninput="updatePhysicsFromControls()">
+                </div>
+
+                <!-- Motion Speed (v) -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">ความเร็วการเคลื่อนที่ ($v$):</span>
+                        <span id="val-speed" class="font-code text-purple-300 font-bold">1.0x</span>
+                    </div>
+                    <input type="range" id="slider-speed" min="0.2" max="3.0" step="0.1" value="1.0" class="w-full accent-purple-400 cursor-pointer" oninput="updatePhysicsFromControls()">
+                </div>
+
+                <!-- Magnet Pole Orientation Toggle -->
+                <div class="flex items-center justify-between bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
+                    <span class="text-xs text-slate-300">ทิศทางขั้วแม่เหล็กเข้าหาขดลวด:</span>
+                    <button id="btn-flip-pole" onclick="flipMagnetPoles()" class="px-2.5 py-1 rounded text-xs font-bold bg-red-600 text-white hover:bg-red-500 transition">
+                        ขั้วเหนือ (N) นำ
+                    </button>
+                </div>
+            </div>
+
+            <!-- Indicator Selector (Lamp vs Voltmeter) -->
+            <div class="border-t border-slate-800 pt-3">
+                <h2 class="font-orbitron text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-gauge"></i> เครื่องมือวัดกระแสเหนี่ยวนำ (Load Indicators)
+                </h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="btn-show-bulb" onclick="setIndicatorMode('bulb')" class="px-3 py-2 rounded-lg text-xs bg-amber-500/20 border border-amber-400 text-amber-300 font-semibold transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-lightbulb"></i> หลอดไฟเรืองแสง
+                    </button>
+                    <button id="btn-show-meter" onclick="setIndicatorMode('meter')" class="px-3 py-2 rounded-lg text-xs bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-gauge-high"></i> โวลต์มิเตอร์ (Voltmeter)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Display Visual Toggles -->
+            <div class="border-t border-slate-800 pt-3">
+                <h2 class="font-orbitron text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                    <i class="fa-solid fa-eye"></i> การแสดงผลเส้นแรงฟิลด์
+                </h2>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <label class="flex items-center gap-2 cursor-pointer bg-slate-900/60 p-2 rounded border border-slate-800 hover:border-slate-700">
+                        <input type="checkbox" id="toggle-fieldlines" checked onchange="toggleVis('fieldlines', this.checked)" class="accent-sky-400">
+                        <span>เส้นสนามแม่เหล็ก ($\vec{B}$)</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer bg-slate-900/60 p-2 rounded border border-slate-800 hover:border-slate-700">
+                        <input type="checkbox" id="toggle-electrons" checked onchange="toggleVis('electrons', this.checked)" class="accent-sky-400">
+                        <span>อิเล็กตรอนวิ่งในขดลวด</span>
+                    </label>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- Right Educational Theory & AI Tutor Panel -->
+        <aside class="glass-card rounded-xl p-4 pointer-auto col-start-3 row-start-1 row-span-3 flex flex-col gap-3 max-h-[calc(100vh-2rem)]">
+            
+            <!-- Tab Navigation Header -->
+            <div class="flex border-b border-slate-700 pb-2 gap-1.5">
+                <button id="tab-btn-theory" onclick="switchRightTab('theory')" class="flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-sky-500/20 text-sky-300 border border-sky-400/50 flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-book-open"></i> ทฤษฎี
+                </button>
+                <button id="tab-btn-compare" onclick="switchRightTab('compare')" class="flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700 flex items-center justify-center gap-1 hover:text-slate-200">
+                    <i class="fa-solid fa-code-compare"></i> เครื่องมือวัด
+                </button>
+                <button id="tab-btn-chat" onclick="switchRightTab('chat')" class="flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700 flex items-center justify-center gap-1 hover:text-slate-200">
+                    <i class="fa-solid fa-robot"></i> AI Tutor
+                </button>
+            </div>
+
+            <!-- Tab 1: Detailed Physics Theory & Faraday's Law Requirements -->
+            <div id="tab-content-theory" class="overflow-y-auto text-xs text-slate-300 space-y-3 leading-relaxed pr-1">
+                <h3 class="text-sky-400 font-bold text-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-graduation-cap"></i> กฎการเหนี่ยวนำของฟาราเดย์ (Faraday's Law)
+                </h3>
+                <p>
+                    ไมเคิล ฟาราเดย์ ค้นพบว่า <b>"เมื่อฟลักซ์แม่เหล็ก ($\Phi_B$) ที่ผ่านขดลวดเกิดการเปลี่ยนแปลงตามเวลา จะทำให้เกิดแรงเคลื่อนไฟฟ้าเหนี่ยวนำ ($\mathcal{E}$) ขึ้นในขดลวดนั้น"</b>
+                </p>
+
+                <div class="bg-black/50 p-2.5 rounded border-l-2 border-sky-400 font-code text-[11px] space-y-1">
+                    <div>\mathcal{E} = -N \frac{d\Phi_B}{dt} = -N \frac{d(B A \cos\theta)}{dt}</div>
+                </div>
+
+                <h4 class="font-bold text-amber-300 mt-2"><i class="fa-solid fa-list-check mr-1"></i> เงื่อนไขสำคัญในการเกิดกระแสเหนี่ยวนำ:</h4>
+                <ul class="list-disc pl-4 space-y-1 text-slate-300">
+                    <li><b>ต้องมีการเปลี่ยนแปลงฟลักซ์ ($\frac{d\Phi}{dt} \neq 0$):</b> แม่เหล็กอยู่นิ่งเทียบกับขดลวดจะไม่เกิดกระแส แม้สนามแม่เหล็กจะเข้มมากก็ตาม!</li>
+                    <li><b>ความเร็วในการขยับ ($v$):</b> ยิ่งขยับแม่เหล็กเร็ว อัตราการเปลี่ยนแปลงฟลักซ์ยิ่งสูง แรงเคลื่อนไฟฟ้ายิ่งมาก</li>
+                    <li><b>ขดลวดวงปิด (Closed Circuit):</b> ต้องต่อครบวงจร กระแสไฟฟ้าเหนี่ยวนำ ($I$) จึงจะไหลผ่านโหลดได้</li>
+                </ul>
+
+                <h4 class="font-bold text-emerald-400 mt-2"><i class="fa-solid fa-compass mr-1"></i> กฎของเลนซ์ (Lenz's Law - เครื่องหมายลบ):</h4>
+                <p>
+                    กระแสไฟฟ้าเหนี่ยวนำจะไหลในทิศทางที่สร้างสนามแม่เหล็กใหม่ขึ้นมา <b>"ต่อต้านการเปลี่ยนแปลงของฟลักซ์เดิมเสมอ"</b> (เช่น แท่งแม่เหล็กขั้ว N พุ่งเข้า ขดลวดจะสร้างขั้ว N ด้านหน้าเพื่อผลักต้านไว้)
+                </p>
+
+                <h4 class="font-bold text-purple-400 mt-2"><i class="fa-solid fa-industry mr-1"></i> การนำไปใช้ประโยชน์ในชีวิตจริง:</h4>
+                <div class="grid grid-cols-2 gap-2 text-[11px]">
+                    <div class="bg-slate-900/80 p-2 rounded border border-slate-800">
+                        <strong class="text-amber-400 block mb-1"><i class="fa-solid fa-bolt mr-1"></i> เครื่องกำเนิดไฟฟ้า (AC Generator):</strong>
+                        หมุนขดลวดในสนามแม่เหล็ก เปลี่ยนพลังงานกลเป็นพลังงานไฟฟ้าในโรงไฟฟ้า
+                    </div>
+                    <div class="bg-slate-900/80 p-2 rounded border border-slate-800">
+                        <strong class="text-sky-400 block mb-1"><i class="fa-solid fa-kitchen-set mr-1"></i> เตาแม่เหล็กไฟฟ้า (Induction Stove):</strong>
+                        ใช้สนามแม่เหล็กเปลี่ยนความถี่สูง เหนี่ยวนำให้เกิดกระแสวน (Eddy Current) ร้อนที่ก้นภาชนะ
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Comparison Tool (Bulb vs Voltmeter) -->
+            <div id="tab-content-compare" class="hidden overflow-y-auto text-xs text-slate-300 space-y-3 leading-relaxed pr-1">
+                <h3 class="text-amber-400 font-bold text-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-scale-balanced"></i> เปรียบเทียบเครื่องมือแสดงผลกระแสเหนี่ยวนำ
+                </h3>
+
+                <div class="space-y-3">
+                    <div class="bg-slate-900/90 p-3 rounded-lg border border-amber-500/30">
+                        <div class="flex items-center gap-2 font-bold text-amber-300 text-xs mb-1">
+                            <i class="fa-solid fa-lightbulb text-amber-400 text-sm"></i> 1. หลอดไฟเรืองแสง (Incandescent Bulb)
+                        </div>
+                        <p class="text-[11px] text-slate-300">
+                            <b>ลักษณะการแสดงผล:</b> สว่างขึ้นตามขนาดของแรงเคลื่อนไฟฟ้า ($\mathcal{E}$) โดยไม่ขึ้นกับทิศทางกระแส
+                        </p>
+                        <ul class="list-disc pl-4 text-[11px] text-slate-400 mt-1 space-y-0.5">
+                            <li><b>ข้อดี:</b> สังเกตปริมาณพลังงานและความเร็วในการดันแม่เหล็กได้ชัดเจนผ่านความสว่าง</li>
+                            <li><b>ข้อจำกัด:</b> ไม่สามารถบอก "ทิศทาง" ของกระแสไฟฟ้า (บวก/ลบ) ได้</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-slate-900/90 p-3 rounded-lg border border-sky-500/30">
+                        <div class="flex items-center gap-2 font-bold text-sky-300 text-xs mb-1">
+                            <i class="fa-solid fa-gauge-high text-sky-400 text-sm"></i> 2. โวลต์มิเตอร์ศูนย์กลาง (Center-Zero Voltmeter)
+                        </div>
+                        <p class="text-[11px] text-slate-300">
+                            <b>ลักษณะการแสดงผล:</b> เข็มเบนไปทางซ้าย (-) หรือขวา (+) ตามทิศทางและขนาดของแรงเคลื่อนไฟฟ้า
+                        </p>
+                        <ul class="list-disc pl-4 text-[11px] text-slate-400 mt-1 space-y-0.5">
+                            <li><b>ข้อดี:</b> พิสูจน์กฎของเลนซ์ได้ชัดเจนเมื่อขยับเข้าเทียบกับขยับออก (เข็มเบนคนละทาง)</li>
+                            <li><b>ข้อจำกัด:</b> แสดงผลเป็นค่าเชิงตัวเลขและทิศทาง ต้องใช้การสังเกตเข็มมิเตอร์</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="bg-black/50 p-2.5 rounded border border-slate-700 text-[11px]">
+                    <strong class="text-emerald-400 block mb-1">ข้อสรุปการใช้งาน:</strong>
+                    ใช้ <b>หลอดไฟ</b> เมื่อต้องการให้เห็นการกำเนิดพลังงานไฟฟ้าอย่างเป็นรูปธรรม และใช้ <b>โวลต์มิเตอร์</b> เมื่อต้องการศึกษาทิศทางตามกฎของเลนซ์และการคำนวณความต่างศักย์เหนี่ยวนำ
+                </div>
+            </div>
+
+            <!-- Tab 3: Gemini AI Physics Chatbot -->
+            <div id="tab-content-chat" class="hidden flex-col h-full gap-2">
+                <div class="text-xs text-slate-400 mb-1 flex items-center gap-1">
+                    <i class="fa-solid fa-sparkles text-sky-400"></i> ถามคำถามฟิสิกส์เกี่ยวกับการเหนี่ยวนำและกฎฟาราเดย์กับ AI
+                </div>
+                <!-- Quick Prompts -->
+                <div class="flex flex-wrap gap-1.5 mb-1">
+                    <button onclick="sendQuickChat('ทำไมตอนวางแท่งแม่เหล็กนิ่งๆ ในขดลวด ถึงไม่มีกระแสไฟฟ้าเกิดขึ้น?')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-sky-300 px-2 py-1 rounded border border-slate-700">
+                        ทำไมวางแม่เหล็กนิ่งๆ ถึงไม่มีกระแส?
+                    </button>
+                    <button onclick="sendQuickChat('อธิบายกฎของเลนซ์และเครื่องหมายลบในสมการฟาราเดย์แบบเข้าใจง่าย')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded border border-slate-700">
+                        เครื่องหมายลบในกฎฟาราเดย์คืออะไร?
+                    </button>
+                </div>
+                <!-- Chat Log -->
+                <div id="chatLog" class="flex-1 overflow-y-auto bg-black/40 border border-slate-800 rounded-lg p-2.5 space-y-2 text-xs">
+                    <div class="bg-slate-800/70 border border-slate-700 rounded-lg p-2 text-slate-200">
+                        สวัสดีครับ! ผมคือ AI ครูสอนฟิสิกส์ สอบถามเกี่ยวกับการเหนี่ยวนำแม่เหล็กไฟฟ้า กฎของฟาราเดย์ กฎของเลนซ์ หรือการคำนวณไดนาโมได้เลยครับ!
+                    </div>
+                </div>
+                <!-- Input Box -->
+                <div class="flex gap-2 mt-1">
+                    <input type="text" id="chatInput" placeholder="พิมพ์คำถามฟิสิกส์..." onkeypress="if(event.key==='Enter') sendChatMessage()" class="flex-1 bg-black/60 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-sky-400">
+                    <button onclick="sendChatMessage()" class="bg-sky-500 hover:bg-sky-400 text-black font-semibold px-3 py-1.5 rounded-lg text-xs transition">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- Bottom Timeline & Interactive Magnet Drag Notice -->
+        <footer class="glass-card rounded-xl px-4 py-2 pointer-auto col-start-2 row-start-3 justify-self-center flex items-center gap-4 text-xs">
+            <span class="text-sky-300 flex items-center gap-1.5 font-semibold">
+                <i class="fa-solid fa-hand-pointer animate-bounce text-amber-400"></i> คลิกและลากแท่งแม่เหล็กในฉาก 3D เพื่อเหนี่ยวนำกระแสด้วยตนเอง
+            </span>
+            <div class="h-4 w-px bg-slate-700"></div>
+            <button onclick="resetMagnetPosition()" class="text-slate-300 hover:text-sky-300 flex items-center gap-1 transition">
+                <i class="fa-solid fa-rotate-left"></i> รีเซ็ตตำแหน่งแม่เหล็ก
+            </button>
+            <button onclick="resetCameraView()" class="text-slate-400 hover:text-sky-300 flex items-center gap-1 transition">
+                <i class="fa-solid fa-camera"></i> รีเซ็ตมุมมอง 3D
+            </button>
+        </footer>
+
+    </div>
+
+    <script>
+        // --- Global Variables & Physics State ---
+        let scene, camera, renderer, controls;
+        let isAutoMoving = false;
+        let autoMotionType = 'none'; // 'oscillate', 'rotate'
+        let autoMotionTime = 0;
+
+        // Induction Parameters
+        let physicsConfig = {
+            turns: 4,            // Coil turns (N)
+            strength: 1.5,       // Magnetic field B (Tesla)
+            speedMult: 1.0,      // Movement speed multiplier
+            northPoleFacing: true,// True if North pole faces coil
+            indicatorMode: 'bulb',// 'bulb' or 'meter'
+            showFieldLines: true,
+            showElectrons: true
+        };
+
+        // Live Computed Quantities
+        let currentMagnetPos = new THREE.Vector3(0, 0, 8);
+        let prevMagnetPos = new THREE.Vector3(0, 0, 8);
+        let magnetVelocity = 0; // Speed dz/dt
+        let computedEMF = 0;   // Induced electromotive force (V)
+
+        // 3D Scene Objects
+        let magnetGroup, nPoleMesh, sPoleMesh;
+        let fieldLinesGroup = new THREE.Group();
+        let coilGroup = new THREE.Group();
+        let coilMeshes = [];
+        let electronsGroup = new THREE.Group();
+        let electronParticles = [];
+
+        // Indicators
+        let bulbMesh, bulbGlowSprite, filamentLight;
+        let voltmeterGroup, voltmeterNeedleMesh;
+
+        // Dragging Control
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+        let isDraggingMagnet = false;
+        let dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+        let planeIntersect = new THREE.Vector3();
+
+        // --- Init Three.js Scene ---
+        function initScene() {
+            const container = document.getElementById('webgl-container');
+
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x030712, 0.012);
+
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(10, 8, 18);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxDistance = 60;
+            controls.minDistance = 5;
+            controls.target.set(0, 0, 0);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+            dirLight.position.set(10, 20, 15);
+            dirLight.castShadow = true;
+            scene.add(dirLight);
+
+            // Environment Grid
+            const gridHelper = new THREE.GridHelper(30, 30, 0x38bdf8, 0x1e293b);
+            gridHelper.position.y = -4;
+            scene.add(gridHelper);
+
+            // Build Scene Components
+            createCoilSystem();
+            createMagnetGroup();
+            createIndicators();
+
+            // Interactivity Events
+            window.addEventListener('resize', onWindowResize);
+            renderer.domElement.addEventListener('pointerdown', onPointerDown);
+            renderer.domElement.addEventListener('pointermove', onPointerMove);
+            renderer.domElement.addEventListener('pointerup', onPointerUp);
+
+            // KaTeX Formula Render
+            if (window.renderMathInElement) {
+                renderMathInElement(document.body, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false}
+                    ]
+                });
+            }
+
+            // Start Animation Loop
+            animate();
+        }
+
+        // --- Create Copper Wire Coil & Circuit ---
+        function createCoilSystem() {
+            scene.add(coilGroup);
+            scene.add(electronsGroup);
+            rebuildCoilGeometry();
+        }
+
+        function rebuildCoilGeometry() {
+            // Clear existing coil loops
+            while (coilGroup.children.length > 0) {
+                coilGroup.remove(coilGroup.children[0]);
+            }
+            while (electronsGroup.children.length > 0) {
+                electronsGroup.remove(electronsGroup.children[0]);
+            }
+            coilMeshes = [];
+            electronParticles = [];
+
+            const N = physicsConfig.turns;
+            const radius = 2.2;
+            const spacing = 0.6;
+            const startZ = -((N - 1) * spacing) / 2;
+
+            const copperMat = new THREE.MeshStandardMaterial({
+                color: 0xb91c1c, // Copper reddish brown
+                metalness: 0.8,
+                roughness: 0.2
+            });
+
+            for (let i = 0; i < N; i++) {
+                const zPos = startZ + i * spacing;
+                const torusGeo = new THREE.TorusGeometry(radius, 0.12, 16, 64);
+                const loopMesh = new THREE.Mesh(torusGeo, copperMat);
+                loopMesh.position.set(0, 0, zPos);
+                coilGroup.add(loopMesh);
+                coilMeshes.push(loopMesh);
+
+                // Add moving electron dots inside wire loop
+                for (let e = 0; e < 12; e++) {
+                    const angle = (e / 12) * Math.PI * 2;
+                    const eGeo = new THREE.SphereGeometry(0.1, 12, 12);
+                    const eMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+                    const eMesh = new THREE.Mesh(eGeo, eMat);
+                    
+                    eMesh.userData = {
+                        baseZ: zPos,
+                        radius: radius,
+                        angle: angle
+                    };
+                    
+                    electronsGroup.add(eMesh);
+                    electronParticles.push(eMesh);
+                }
+            }
+
+            // Connecting Circuit Wires
+            const wireMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.5 });
+            
+            // Left lead
+            const wireGeoLeft = new THREE.CylinderGeometry(0.08, 0.08, 6);
+            const wireLeft = new THREE.Mesh(wireGeoLeft, wireMat);
+            wireLeft.position.set(-radius - 0.2, 3, startZ);
+            coilGroup.add(wireLeft);
+
+            // Right lead
+            const wireRight = new THREE.Mesh(wireGeoLeft, wireMat);
+            wireRight.position.set(radius + 0.2, 3, -startZ);
+            coilGroup.add(wireRight);
+
+            electronsGroup.visible = physicsConfig.showElectrons;
+        }
+
+        // --- Create Bar Magnet & Field Lines ---
+        function createMagnetGroup() {
+            magnetGroup = new THREE.Group();
+
+            const length = 5.0;
+            const width = 1.2;
+            const height = 0.8;
+
+            // North Pole (Red)
+            const nGeo = new THREE.BoxGeometry(width, height, length / 2);
+            const nMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3 });
+            nPoleMesh = new THREE.Mesh(nGeo, nMat);
+            nPoleMesh.position.z = -length / 4;
+            magnetGroup.add(nPoleMesh);
+
+            // South Pole (Blue)
+            const sGeo = new THREE.BoxGeometry(width, height, length / 2);
+            const sMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.3 });
+            sPoleMesh = new THREE.Mesh(sGeo, sMat);
+            sPoleMesh.position.z = length / 4;
+            magnetGroup.add(sPoleMesh);
+
+            // Add Magnetic Field Lines
+            magnetGroup.add(fieldLinesGroup);
+            rebuildFieldLines();
+
+            magnetGroup.position.copy(currentMagnetPos);
+            scene.add(magnetGroup);
+        }
+
+        function rebuildFieldLines() {
+            while (fieldLinesGroup.children.length > 0) {
+                fieldLinesGroup.remove(fieldLinesGroup.children[0]);
+            }
+
+            const B = physicsConfig.strength;
+            const lineCount = Math.floor(B * 10);
+
+            for (let i = 0; i < lineCount; i++) {
+                const angle = (i / lineCount) * Math.PI * 2;
+                const curve = new THREE.EllipseCurve(
+                    0, 0,                  // ax, aY
+                    2.5 + i * 0.2, 4.0 + i * 0.3, // xRadius, yRadius
+                    0, Math.PI,            // aStartAngle, aEndAngle
+                    false, 0               // aClockwise, aRotation
+                );
+
+                const points = curve.getPoints(32);
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const material = new THREE.LineBasicMaterial({
+                    color: 0x38bdf8,
+                    transparent: true,
+                    opacity: 0.4
+                });
+
+                const line = new THREE.Line(geometry, material);
+                line.rotation.x = Math.PI / 2;
+                line.rotation.y = angle;
+                fieldLinesGroup.add(line);
+            }
+
+            fieldLinesGroup.visible = physicsConfig.showFieldLines;
+        }
+
+        // --- Create Load Indicators (Bulb & Voltmeter) ---
+        function createIndicators() {
+            // 1. Incandescent Bulb
+            const bulbGroup = new THREE.Group();
+            
+            // Socket
+            const socketGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.8, 16);
+            const socketMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9 });
+            const socketMesh = new THREE.Mesh(socketGeo, socketMat);
+            socketMesh.position.set(0, 5.5, 0);
+            bulbGroup.add(socketMesh);
+
+            // Glass Sphere
+            const glassGeo = new THREE.SphereGeometry(0.9, 24, 24);
+            const glassMat = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.4,
+                transmission: 0.9,
+                roughness: 0.1
+            });
+            bulbMesh = new THREE.Mesh(glassGeo, glassMat);
+            bulbMesh.position.set(0, 6.8, 0);
+            bulbGroup.add(bulbMesh);
+
+            // Point Light Source inside bulb
+            filamentLight = new THREE.PointLight(0xf59e0b, 0, 15);
+            filamentLight.position.set(0, 6.8, 0);
+            bulbGroup.add(filamentLight);
+
+            // Glow Sprite
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            grad.addColorStop(0, 'rgba(245, 158, 11, 1)');
+            grad.addColorStop(0.4, 'rgba(245, 158, 11, 0.4)');
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 128, 128);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0 });
+            bulbGlowSprite = new THREE.Sprite(spriteMat);
+            bulbGlowSprite.position.set(0, 6.8, 0);
+            bulbGlowSprite.scale.set(4, 4, 1);
+            bulbGroup.add(bulbGlowSprite);
+
+            scene.add(bulbGroup);
+
+            // 2. Center-Zero Voltmeter
+            voltmeterGroup = new THREE.Group();
+            
+            // Casing
+            const caseGeo = new THREE.BoxGeometry(3.5, 2.5, 0.6);
+            const caseMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
+            const caseMesh = new THREE.Mesh(caseGeo, caseMat);
+            caseMesh.position.set(0, 6.5, 0);
+            voltmeterGroup.add(caseMesh);
+
+            // Dial Face Plate
+            const dialGeo = new THREE.PlaneGeometry(3.2, 2.0);
+            const dialMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
+            const dialMesh = new THREE.Mesh(dialGeo, dialMat);
+            dialMesh.position.set(0, 6.6, 0.32);
+            voltmeterGroup.add(dialMesh);
+
+            // Indicator Needle
+            const needleGeo = new THREE.BoxGeometry(0.08, 1.2, 0.05);
+            const needleMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+            voltmeterNeedleMesh = new THREE.Mesh(needleGeo, needleMat);
+            voltmeterNeedleMesh.geometry.translate(0, 0.6, 0); // Pivot at bottom
+            voltmeterNeedleMesh.position.set(0, 6.0, 0.35);
+            voltmeterGroup.add(voltmeterNeedleMesh);
+
+            scene.add(voltmeterGroup);
+
+            // Initial visibility based on mode
+            updateIndicatorVisibility();
+        }
+
+        function updateIndicatorVisibility() {
+            const isBulb = physicsConfig.indicatorMode === 'bulb';
+            bulbMesh.parent.visible = isBulb;
+            voltmeterGroup.visible = !isBulb;
+        }
+
+        // --- Faraday Induction Calculation Loop ---
+        function updateInductionPhysics() {
+            // Auto motion controller
+            if (isAutoMoving) {
+                autoMotionTime += 0.03 * physicsConfig.speedMult;
+
+                if (autoMotionType === 'oscillate') {
+                    currentMagnetPos.z = Math.sin(autoMotionTime * 2) * 6.5;
+                    magnetGroup.position.copy(currentMagnetPos);
+                } else if (autoMotionType === 'rotate') {
+                    magnetGroup.rotation.y += 0.08 * physicsConfig.speedMult;
+                }
+            }
+
+            // Calculate Magnet Velocity (dz/dt)
+            const dz = currentMagnetPos.z - prevMagnetPos.z;
+            magnetVelocity = dz * 60.0; // 60 FPS scale
+            prevMagnetPos.copy(currentMagnetPos);
+
+            // Faraday's Law Calculation: EMF = -N * dPhi/dt
+            // Magnetic flux approximation: Phi = B * A * exp(-z^2 / scale)
+            const z = currentMagnetPos.z;
+            const N = physicsConfig.turns;
+            const B = physicsConfig.strength;
+            
+            // Derivative dPhi/dt with respect to distance z and velocity dz/dt
+            // Clamped and smoothed out at far distances to prevent floating point numerical flicker
+            const fluxScale = 0.12;
+            const fluxGradient = (Math.abs(z) > 14) ? 0 : -2 * z * fluxScale * Math.exp(-fluxScale * z * z);
+            let rawEMF = -N * B * fluxGradient * magnetVelocity;
+
+            // If magnet rotated in generator mode
+            if (isAutoMoving && autoMotionType === 'rotate') {
+                rawEMF = N * B * Math.sin(magnetGroup.rotation.y) * 2.5 * physicsConfig.speedMult;
+            }
+
+            computedEMF = rawEMF;
+
+            // Update UI Status Labels
+            document.getElementById('status-emf-val').innerText = `${computedEMF.toFixed(2)} V`;
+            
+            const badgeText = document.getElementById('status-text');
+            const badgeDot = document.getElementById('status-dot');
+
+            if (Math.abs(computedEMF) < 0.05) {
+                badgeText.innerText = "ไม่มีการเปลี่ยนแปลงฟลักซ์ (อยู่นิ่ง หรืออยู่ไกลมาก)";
+                badgeDot.className = "w-2.5 h-2.5 rounded-full bg-slate-500";
+            } else if (computedEMF > 0) {
+                badgeText.innerText = "เกิดกระแสเหนี่ยวนำ (+) (ฟลักซ์เพิ่ม/ลด)";
+                badgeDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse";
+            } else {
+                badgeText.innerText = "เกิดกระแสเหนี่ยวนำ (-) (ทิศตรงข้าม)";
+                badgeDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse";
+            }
+
+            // Update Indicator Outputs
+            const absEMF = Math.abs(computedEMF);
+
+            // 1. Light Bulb Brightness
+            const brightness = Math.min(absEMF / 5.0, 1.0);
+            filamentLight.intensity = brightness * 3.5;
+            bulbGlowSprite.material.opacity = brightness * 0.9;
+
+            // 2. Voltmeter Needle Angle (Center Zero)
+            const maxAngle = Math.PI / 4; // 45 degrees max swing
+            const targetAngle = -Math.max(-maxAngle, Math.min(maxAngle, (computedEMF / 6.0) * maxAngle));
+            voltmeterNeedleMesh.rotation.z += (targetAngle - voltmeterNeedleMesh.rotation.z) * 0.2; // Smooth damping
+
+            // 3. Animate Electrons Motion in Wire Loop
+            if (physicsConfig.showElectrons) {
+                const electronSpeed = computedEMF * 0.05;
+                electronParticles.forEach(e => {
+                    e.userData.angle += electronSpeed;
+                    const r = e.userData.radius;
+                    e.position.x = Math.cos(e.userData.angle) * r;
+                    e.position.y = Math.sin(e.userData.angle) * r;
+                    e.position.z = e.userData.baseZ;
+                });
+            }
+        }
+
+        // --- Render Frame Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            updateInductionPhysics();
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // --- Pointer Dragging Event Handlers ---
+        function onPointerDown(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(magnetGroup.children);
+
+            if (intersects.length > 0) {
+                isDraggingMagnet = true;
+                controls.enabled = false; // Disable orbit controls while dragging magnet
+                stopAutoMotion();
+
+                // Dynamic Drag Plane oriented towards camera normal for smooth dragging at distance
+                const camDir = new THREE.Vector3();
+                camera.getWorldDirection(camDir);
+                dragPlane.setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), currentMagnetPos);
+            }
+        }
+
+        function onPointerMove(event) {
+            if (!isDraggingMagnet) return;
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            if (raycaster.ray.intersectPlane(dragPlane, planeIntersect)) {
+                // Constrain magnet motion smoothly along Z axis (through coil) with wider clean range
+                currentMagnetPos.z = Math.max(-14, Math.min(14, planeIntersect.z));
+                magnetGroup.position.copy(currentMagnetPos);
+            }
+        }
+
+        function onPointerUp() {
+            isDraggingMagnet = false;
+            controls.enabled = true;
+        }
+
+        // --- UI Event Controller Handlers ---
+        function updatePhysicsFromControls() {
+            physicsConfig.turns = parseInt(document.getElementById('slider-turns').value);
+            physicsConfig.strength = parseFloat(document.getElementById('slider-strength').value);
+            physicsConfig.speedMult = parseFloat(document.getElementById('slider-speed').value);
+
+            document.getElementById('val-turns').innerText = `N = ${physicsConfig.turns} รอบ`;
+            document.getElementById('val-strength').innerText = `${physicsConfig.strength.toFixed(1)} Tesla`;
+            document.getElementById('val-speed').innerText = `${physicsConfig.speedMult.toFixed(1)}x`;
+
+            rebuildCoilGeometry();
+            rebuildFieldLines();
+        }
+
+        function flipMagnetPoles() {
+            physicsConfig.northPoleFacing = !physicsConfig.northPoleFacing;
+            magnetGroup.rotation.y += Math.PI;
+
+            const btn = document.getElementById('btn-flip-pole');
+            if (physicsConfig.northPoleFacing) {
+                btn.className = "px-2.5 py-1 rounded text-xs font-bold bg-red-600 text-white hover:bg-red-500 transition";
+                btn.innerText = "ขั้วเหนือ (N) นำ";
+            } else {
+                btn.className = "px-2.5 py-1 rounded text-xs font-bold bg-blue-600 text-white hover:bg-blue-500 transition";
+                btn.innerText = "ขั้วใต้ (S) นำ";
+            }
+        }
+
+        function startAutoMotion(type) {
+            isAutoMoving = true;
+            autoMotionType = type;
+        }
+
+        function stopAutoMotion() {
+            isAutoMoving = false;
+            autoMotionType = 'none';
+            magnetGroup.rotation.set(0, physicsConfig.northPoleFacing ? 0 : Math.PI, 0);
+        }
+
+        function setIndicatorMode(mode) {
+            physicsConfig.indicatorMode = mode;
+            document.getElementById('btn-show-bulb').className = mode === 'bulb' ?
+                "px-3 py-2 rounded-lg text-xs bg-amber-500/20 border border-amber-400 text-amber-300 font-semibold transition flex items-center justify-center gap-2" :
+                "px-3 py-2 rounded-lg text-xs bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-2";
+
+            document.getElementById('btn-show-meter').className = mode === 'meter' ?
+                "px-3 py-2 rounded-lg text-xs bg-sky-500/20 border border-sky-400 text-sky-300 font-semibold transition flex items-center justify-center gap-2" :
+                "px-3 py-2 rounded-lg text-xs bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-2";
+
+            updateIndicatorVisibility();
+        }
+
+        function toggleVis(key, isChecked) {
+            if (key === 'fieldlines') {
+                physicsConfig.showFieldLines = isChecked;
+                fieldLinesGroup.visible = isChecked;
+            }
+            if (key === 'electrons') {
+                physicsConfig.showElectrons = isChecked;
+                electronsGroup.visible = isChecked;
+            }
+        }
+
+        function resetMagnetPosition() {
+            stopAutoMotion();
+            currentMagnetPos.set(0, 0, 8);
+            prevMagnetPos.set(0, 0, 8);
+            magnetGroup.position.copy(currentMagnetPos);
+        }
+
+        function resetCameraView() {
+            camera.position.set(10, 8, 18);
+            controls.target.set(0, 0, 0);
+        }
+
+        function switchRightTab(tabName) {
+            document.getElementById('tab-content-theory').style.display = tabName === 'theory' ? 'block' : 'none';
+            document.getElementById('tab-content-compare').style.display = tabName === 'compare' ? 'block' : 'none';
+            document.getElementById('tab-content-chat').style.display = tabName === 'chat' ? 'flex' : 'none';
+
+            document.getElementById('tab-btn-theory').className = tabName === 'theory' ?
+                "flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-sky-500/20 text-sky-300 border border-sky-400/50 flex items-center justify-center gap-1" :
+                "flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700 flex items-center justify-center gap-1 hover:text-slate-200";
+
+            document.getElementById('tab-btn-compare').className = tabName === 'compare' ?
+                "flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-400/50 flex items-center justify-center gap-1" :
+                "flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700 flex items-center justify-center gap-1 hover:text-slate-200";
+
+            document.getElementById('tab-btn-chat').className = tabName === 'chat' ?
+                "flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-sky-500/20 text-sky-300 border border-sky-400/50 flex items-center justify-center gap-1" :
+                "flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700 flex items-center justify-center gap-1 hover:text-slate-200";
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        window.onload = initScene;
+
+        // --- GEMINI API INTEGRATION LOGIC ---
+        async function sendChatMessage() {
+            const inputEl = document.getElementById('chatInput');
+            const userMsg = inputEl.value.trim();
+            if (!userMsg) return;
+
+            const chatLog = document.getElementById('chatLog');
+
+            // User Message Bubble
+            const userBubble = document.createElement('div');
+            userBubble.className = "bg-sky-950/80 border border-sky-600/40 rounded-lg p-2 text-sky-100 text-right font-sans";
+            userBubble.textContent = userMsg;
+            chatLog.appendChild(userBubble);
+
+            inputEl.value = '';
+            chatLog.scrollTop = chatLog.scrollHeight;
+
+            // Thinking Indicator Bubble
+            const aiBubble = document.createElement('div');
+            aiBubble.className = "bg-slate-800/80 border border-slate-700 rounded-lg p-2 text-slate-300 font-sans";
+            aiBubble.textContent = "กำลังวิเคราะห์ทฤษฎีการเหนี่ยวนำแม่เหล็กไฟฟ้า...";
+            chatLog.appendChild(aiBubble);
+            chatLog.scrollTop = chatLog.scrollHeight;
+
+            const systemPrompt = "คุณคืออาจารย์ฟิสิกส์ผู้เชี่ยวชาญเรื่องกฎการเหนี่ยวนำของฟาราเดย์ (Faraday's Law) กฎของเลนซ์ (Lenz's Law) และการกำเนิดไฟฟ้า อธิบายเข้าใจง่าย ถูกต้องตามหลักฟิสิกส์ กระชับ";
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userMsg }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] }
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                const aiReply = result.candidates?.[0]?.content?.parts?.[0]?.text || "ขออภัย ไม่สามารถประมวลผลคำตอบได้";
+                aiBubble.innerHTML = aiReply.replace(/\n/g, '<br>');
+            } catch (err) {
+                aiBubble.textContent = "เกิดข้อผิดพลาดในการเชื่อมต่อกับ Gemini API โปรดลองอีกครั้ง";
+            }
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        function sendQuickChat(promptText) {
+            switchRightTab('chat');
+            document.getElementById('chatInput').value = promptText;
+            sendChatMessage();
+        }
+    </script>
+</body>
+</html>

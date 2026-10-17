@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ปฏิบัติการเสมือนจริง: แรงโน้มถ่วงพื้นฐาน & Force Pairs</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        lab: {
+                            bg: '#060913',
+                            panel: '#0f172a',
+                            accent: '#38bdf8',
+                            m1: '#f43f5e',
+                            m2: '#38bdf8',
+                            force: '#10b981',
+                            amber: '#f59e0b'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Sarabun', 'Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- KaTeX for Mathematics & Physics Formulas -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+    <!-- Three.js for 3D Viewport -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #060913;
+            color: #f3f4f6;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            touch-action: none;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        /* Interactive Focus Highlight for Accessibility */
+        .interactive-highlight {
+            outline: 2px solid #38bdf8;
+            outline-offset: 3px;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
+            transition: all 0.2s ease;
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.3);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(56, 189, 248, 0.7);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 4px;
+            height: 6px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+            transition: all 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #7dd3fc;
+        }
+
+        .tab-btn.active {
+            background-color: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            border-bottom: 2px solid #38bdf8;
+            font-weight: 600;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body class="select-none text-slate-100">
+
+    <!-- Header Navigation -->
+    <header class="absolute top-2 left-2 right-2 z-30 flex items-center justify-between glass-panel px-4 py-2 rounded-xl">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-sky-500/20 text-sky-400 rounded-lg border border-sky-500/30">
+                <i data-lucide="orbit" class="w-5 h-5 animate-spin-slow"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-sm md:text-base text-white flex items-center gap-2">
+                    ปฏิบัติการเสมือน: แรงโน้มถ่วงพื้นฐาน & Force Pairs
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">Gravity Force Lab</span>
+                </h1>
+                <p class="text-[11px] text-slate-400 hidden sm:block">กฎความโน้มถ่วงสากลของนิวตัน ($F = G\frac{m_1 m_2}{r^2}$), แรงปฏิกิริยาคู่ $F_{12} = -F_{21}$, และกฎกำลังสองผกผัน</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Accessibility: Sonification Sound Toggle -->
+            <button id="btn-toggle-sound" onclick="toggleSonification()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition border border-white/10 text-xs flex items-center gap-1.5 font-medium" title="เสียงสัญญาณโซนิฟิเคชัน (Sonification)">
+                <i id="icon-sound" data-lucide="volume-x" class="w-4 h-4 text-rose-400"></i>
+                <span class="hidden md:inline">Sonification</span>
+            </button>
+
+            <!-- Accessibility: Speech Voicing Toggle -->
+            <button id="btn-toggle-voicing" onclick="toggleVoicing()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition border border-white/10 text-xs flex items-center gap-1.5 font-medium" title="อ่านเสียงอธิบายเรียลไทม์ (Voicing)">
+                <i id="icon-voicing" data-lucide="mic-off" class="w-4 h-4 text-slate-400"></i>
+                <span class="hidden md:inline">Voicing</span>
+            </button>
+
+            <!-- Mode Switch 2D / 3D -->
+            <div class="bg-slate-900 p-1 rounded-lg border border-white/10 flex gap-1">
+                <button id="btn-mode-2d" onclick="switchDimension('2D')" class="px-3 py-1 text-xs rounded font-medium transition bg-sky-500 text-white">2D Interactive</button>
+                <button id="btn-mode-3d" onclick="switchDimension('3D')" class="px-3 py-1 text-xs rounded font-medium transition text-slate-400 hover:text-white">3D View</button>
+            </div>
+
+            <!-- Reset Button -->
+            <button onclick="resetLab()" class="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-lg transition border border-rose-500/40 text-xs flex items-center gap-1.5 font-medium" title="รีเซ็ตค่าทั้งหมด">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                <span>รีเซ็ต</span>
+            </button>
+
+            <button onclick="toggleFullscreen()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition border border-white/10" title="เต็มจอ">
+                <i data-lucide="maximize" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Grid Container -->
+    <div class="absolute inset-0 pt-14 p-2 pointer-events-none grid grid-cols-1 md:grid-cols-12 gap-2 h-full pb-2">
+
+        <!-- ================= LEFT PANEL: Controls, Mass Sliders, Alternative Inputs ================= -->
+        <aside class="md:col-span-3 lg:col-span-3 glass-panel rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <div class="p-2.5 border-b border-white/10 bg-slate-900/80 flex justify-between items-center">
+                <span class="font-semibold text-xs text-white flex items-center gap-1.5">
+                    <i data-lucide="sliders" class="w-4 h-4 text-sky-400"></i>
+                    ตั้งค่ามวล & ระยะห่าง (Sandbox)
+                </span>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-3 space-y-3 text-xs">
+
+                <!-- MASS 1 CONTROLS -->
+                <div id="card-m1" class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-rose-500">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-rose-400 text-[11px] flex items-center gap-1">
+                            <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> วัตถุที่ 1 ($m_1$)
+                        </span>
+                        <span id="val-m1-display" class="font-mono text-rose-300 font-bold">100 kg</span>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] text-slate-300">
+                            <span>มวล ($m_1$):</span>
+                            <span id="txt-m1-val">100 kg</span>
+                        </div>
+                        <input type="range" id="slider-m1" min="10" max="1000" step="10" value="100" class="w-full" oninput="onControlChange('m1')">
+                    </div>
+
+                    <!-- Alternative Direct Keypad/Input -->
+                    <div class="flex items-center gap-2 pt-1 border-t border-white/5">
+                        <span class="text-[9.5px] text-slate-400">ป้อนค่ามวล $m_1$:</span>
+                        <input type="number" id="input-m1" value="100" min="10" max="1000" class="w-20 bg-slate-900 text-rose-300 border border-white/10 rounded px-1.5 py-0.5 text-[10px] font-mono" onchange="onDirectInput('m1')">
+                        <span class="text-[9.5px] text-slate-400">kg</span>
+                    </div>
+                </div>
+
+                <!-- MASS 2 CONTROLS -->
+                <div id="card-m2" class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-sky-500">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-sky-400 text-[11px] flex items-center gap-1">
+                            <span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span> วัตถุที่ 2 ($m_2$)
+                        </span>
+                        <span id="val-m2-display" class="font-mono text-sky-300 font-bold">400 kg</span>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] text-slate-300">
+                            <span>มวล ($m_2$):</span>
+                            <span id="txt-m2-val">400 kg</span>
+                        </div>
+                        <input type="range" id="slider-m2" min="10" max="1000" step="10" value="400" class="w-full" oninput="onControlChange('m2')">
+                    </div>
+
+                    <!-- Alternative Direct Keypad/Input -->
+                    <div class="flex items-center gap-2 pt-1 border-t border-white/5">
+                        <span class="text-[9.5px] text-slate-400">ป้อนค่ามวล $m_2$:</span>
+                        <input type="number" id="input-m2" value="400" min="10" max="1000" class="w-20 bg-slate-900 text-sky-300 border border-white/10 rounded px-1.5 py-0.5 text-[10px] font-mono" onchange="onDirectInput('m2')">
+                        <span class="text-[9.5px] text-slate-400">kg</span>
+                    </div>
+                </div>
+
+                <!-- DISTANCE (r) CONTROLS -->
+                <div id="card-dist" class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-emerald-500">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-emerald-400 text-[11px] flex items-center gap-1">
+                            <i data-lucide="arrow-left-right" class="w-3.5 h-3.5"></i> ระยะห่างระหว่างวัตถุ ($r$)
+                        </span>
+                        <span id="val-r-display" class="font-mono text-emerald-300 font-bold">4.0 m</span>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] text-slate-300">
+                            <span>ระยะห่าง ($r$):</span>
+                            <span id="txt-r-val">4.0 m</span>
+                        </div>
+                        <input type="range" id="slider-r" min="1.0" max="10.0" step="0.1" value="4.0" class="w-full" oninput="onControlChange('r')">
+                    </div>
+
+                    <!-- Alternative Direct Input -->
+                    <div class="flex items-center gap-2 pt-1 border-t border-white/5">
+                        <span class="text-[9.5px] text-slate-400">ป้อนระยะห่าง $r$:</span>
+                        <input type="number" id="input-r" value="4.0" min="1.0" max="10.0" step="0.1" class="w-20 bg-slate-900 text-emerald-300 border border-white/10 rounded px-1.5 py-0.5 text-[10px] font-mono" onchange="onDirectInput('r')">
+                        <span class="text-[9.5px] text-slate-400">m</span>
+                    </div>
+                </div>
+
+                <!-- VISUAL OVERLAYS & ACCESSIBILITY OPTIONS -->
+                <div class="glass-card p-2.5 rounded-lg space-y-1.5">
+                    <span class="text-[11px] font-bold text-slate-300 block border-b border-white/10 pb-1 flex items-center justify-between">
+                        <span>เครื่องมือ & การแสดงผล</span>
+                        <i data-lucide="eye" class="w-3.5 h-3.5 text-sky-400"></i>
+                    </span>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>แสดงเวกเตอร์แรง ($F_{12}, F_{21}$)</span>
+                        <input type="checkbox" id="toggle-vectors" checked onchange="onControlChange()" class="accent-sky-500 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>แสดงสเกลขนาดแรง (Scale Values)</span>
+                        <input type="checkbox" id="toggle-values" checked onchange="onControlChange()" class="accent-emerald-500 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>แสดงไม้บรรทัดวัดระยะ (Grid Ruler)</span>
+                        <input type="checkbox" id="toggle-ruler" checked onchange="onControlChange()" class="accent-amber-500 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>เน้นจุดโต้ตอบ (Interactive Highlight)</span>
+                        <input type="checkbox" id="toggle-highlight" checked onchange="onControlChange()" class="accent-sky-400 rounded">
+                    </label>
+                </div>
+
+                <!-- PRESETS -->
+                <div class="glass-card p-2.5 rounded-lg space-y-1.5">
+                    <span class="text-[11px] font-bold text-amber-400 block border-b border-white/10 pb-1">การทดลองสำเร็จรูป (Presets)</span>
+                    <div class="grid grid-cols-2 gap-1">
+                        <button onclick="applyPreset('equal')" class="p-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px]">มวลเท่ากัน</button>
+                        <button onclick="applyPreset('heavy')" class="p-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px]">มวลต่างกันมาก</button>
+                        <button onclick="applyPreset('close')" class="p-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px]">ระยะใกล้สุด</button>
+                        <button onclick="applyPreset('far')" class="p-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px]">ระยะไกลสุด</button>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- ================= CENTER: Interactive Viewport (2D Canvas / 3D Three.js) ================= -->
+        <main class="md:col-span-5 lg:col-span-5 glass-panel rounded-xl flex flex-col pointer-events-auto border border-white/10 shadow-2xl relative overflow-hidden">
+            <!-- Viewport Container -->
+            <div id="viewport-container" class="flex-1 bg-slate-950/90 relative cursor-grab active:cursor-grabbing flex flex-col overflow-hidden">
+                <!-- 2D Canvas -->
+                <canvas id="canvas-2d" class="w-full flex-1 z-10 block"></canvas>
+                
+                <!-- 3D Three.js Canvas Container -->
+                <div id="container-3d" class="absolute inset-0 z-10 hidden"></div>
+
+                <!-- Status Overlay & Navigation Badges -->
+                <div class="absolute top-2 left-2 bg-slate-900/90 backdrop-blur px-3 py-1.5 rounded-lg border border-white/10 text-[11px] text-slate-300 flex items-center gap-2 pointer-events-none z-20 font-mono">
+                    <i data-lucide="compass" class="w-3.5 h-3.5 text-sky-400 animate-pulse"></i>
+                    <span id="status-label">โหมด: 2D Gravity Physics Plane</span>
+                </div>
+
+                <!-- Pan & Zoom Control Overlay for Mobile -->
+                <div class="absolute bottom-2 right-2 flex items-center gap-1 z-20 pointer-events-auto">
+                    <button onclick="adjustZoom(1.1)" class="p-2 bg-slate-900/80 hover:bg-slate-800 text-slate-200 rounded-lg border border-white/10" title="ขยาย (Zoom In)">
+                        <i data-lucide="zoom-in" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="adjustZoom(0.9)" class="p-2 bg-slate-900/80 hover:bg-slate-800 text-slate-200 rounded-lg border border-white/10" title="ย่อ (Zoom Out)">
+                        <i data-lucide="zoom-out" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="resetZoomPan()" class="p-2 bg-slate-900/80 hover:bg-slate-800 text-slate-200 rounded-lg border border-white/10" title="รีเซ็ตมุมมอง">
+                        <i data-lucide="locate-fixed" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Live Force Magnitude Readout Overlay -->
+                <div class="absolute top-2 right-2 bg-slate-900/90 backdrop-blur p-2.5 rounded-lg border border-white/10 text-[10.5px] font-mono text-slate-300 z-20 space-y-1 w-52 shadow-xl">
+                    <div class="flex justify-between items-center text-emerald-400 border-b border-white/10 pb-1">
+                        <span class="font-bold">แรงดึงดูด ($F_g$):</span>
+                        <span id="readout-force" class="font-bold text-xs">1.67 × 10⁻⁷ N</span>
+                    </div>
+                    <div class="flex justify-between items-center text-rose-300">
+                        <span>$\vec{F}_{12}$ (ดึง $m_1$ ไป $m_2$):</span>
+                        <span id="readout-f12" class="font-bold">1.67 × 10⁻⁷ N</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sky-300">
+                        <span>$\vec{F}_{21}$ (ดึง $m_2$ ไป $m_1$):</span>
+                        <span id="readout-f21" class="font-bold">1.67 × 10⁻⁷ N</span>
+                    </div>
+                    <div class="flex justify-between items-center text-amber-300 border-t border-white/10 pt-1">
+                        <span>กฎข้อ 3 ของนิวตัน:</span>
+                        <span class="font-bold text-[10px] text-emerald-400">ขนาดเท่ากัน-ทิศตรงข้าม</span>
+                    </div>
+                </div>
+
+                <!-- Mobile Gesture Instruction Tooltip -->
+                <div id="instruction-tooltip" class="absolute bottom-2 left-2 bg-slate-900/80 backdrop-blur px-2.5 py-1 rounded text-[10px] text-slate-400 z-20 pointer-events-none">
+                    💡 **การใช้งาน**: คลิกและลากมวล $m_1$ หรือ $m_2$ เพื่อปรับระยะห่าง $r$ หรือใช้นิ้วซูม/เลื่อนในมือถือ
+                </div>
+            </div>
+        </main>
+
+        <!-- ================= RIGHT PANEL: Mathematical Calculations & Newton Theory ================= -->
+        <aside class="md:col-span-4 lg:col-span-4 glass-panel rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <!-- Navigation Tabs -->
+            <div class="p-2 border-b border-white/10 bg-slate-900/80">
+                <div class="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded-lg text-[11px] font-semibold text-center">
+                    <button onclick="switchRightTab('calc')" id="tab-calc" class="tab-btn active py-1 rounded transition">การคำนวณสด</button>
+                    <button onclick="switchRightTab('theory')" id="tab-theory" class="tab-btn py-1 rounded transition">ทฤษฎีนิวตัน</button>
+                    <button onclick="switchRightTab('access')" id="tab-access" class="tab-btn py-1 rounded transition">การเข้าถึง & เสียง</button>
+                </div>
+            </div>
+
+            <!-- Scrollable Content Panels -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-3 text-xs">
+
+                <!-- TAB 1: Live Step-by-step Formula Breakdown -->
+                <div id="content-calc" class="space-y-3">
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-sky-400 block border-b border-white/10 pb-1 flex justify-between items-center">
+                            <span>สูตรกฎความโน้มถ่วงสากล (Newton's Gravity Law)</span>
+                            <i data-lucide="calculator" class="w-3.5 h-3.5 text-sky-400"></i>
+                        </span>
+                        <div id="math-formula-main" class="py-1 text-center text-sky-200 font-mono text-xs bg-slate-950/60 rounded p-1.5"></div>
+                    </div>
+
+                    <!-- Step-by-Step Numerical Breakdown -->
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-emerald-400 block border-b border-white/10 pb-1">ขั้นตอนการแทนค่าจริง (Step-by-Step Calculation)</span>
+                        <div class="space-y-2 font-mono text-[10px] text-slate-300 leading-relaxed">
+                            <div class="bg-slate-950/60 p-2 rounded border border-white/5 space-y-1">
+                                <span class="text-slate-400 block font-sans text-[9.5px]">1. กำหนดค่าตัวแปร:</span>
+                                <div>• $G = 6.674 \times 10^{-11} \text{ N}\cdot\text{m}^2/\text{kg}^2$</div>
+                                <div>• $m_1 = <span id="math-m1-val" class="text-rose-300">100</span> \text{ kg}$, $m_2 = <span id="math-m2-val" class="text-sky-300">400</span> \text{ kg}$</div>
+                                <div>• $r = <span id="math-r-val" class="text-emerald-300">4.0</span> \text{ m}$</div>
+                            </div>
+
+                            <div class="bg-slate-950/60 p-2 rounded border border-white/5 space-y-1">
+                                <span class="text-slate-400 block font-sans text-[9.5px]">2. คำนวณผลคูณมวลและระยะห่างกำลังสอง ($r^2$):</span>
+                                <div>• $m_1 \times m_2 = <span id="math-m1m2" class="text-amber-300">40,000</span> \text{ kg}^2$</div>
+                                <div>• $r^2 = (<span id="math-r-base">4.0</span>)^2 = <span id="math-r-sq" class="text-emerald-300">16.0</span> \text{ m}^2$</div>
+                            </div>
+
+                            <div class="bg-slate-950/60 p-2 rounded border border-white/5 space-y-1">
+                                <span class="text-slate-400 block font-sans text-[9.5px]">3. คำนวณแรงโน้มถ่วงระหว่างมวล ($F_g$):</span>
+                                <div id="math-step-final" class="text-emerald-300 font-bold text-xs">F_g = 1.6685 × 10⁻⁷ N</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Newton's Third Law & Inverse Square Law Theory -->
+                <div id="content-theory" class="space-y-3 hidden">
+                    <div class="p-2.5 border-l-2 border-emerald-400 bg-slate-900/60 rounded-r-lg space-y-1">
+                        <h4 class="font-bold text-emerald-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="scale" class="w-3.5 h-3.5"></i> กฎข้อที่ 3 ของนิวตัน & Force Pairs
+                        </h4>
+                        <p class="text-slate-300 text-[10px] leading-relaxed">
+                            แรงดึงดูดโน้มถ่วงเกิดเป็น <strong>คู่แรงกิริยา-แรงปฏิกิริยา (Action-Reaction Pair)</strong> เสมอ:
+                        </p>
+                        <div id="math-third-law" class="py-1 text-center text-emerald-200 font-mono text-xs bg-slate-950/60 rounded p-1"></div>
+                        <p class="text-[10px] text-slate-400 leading-relaxed">
+                            แม้ว่า $m_1$ จะมีมวลน้อยกว่า $m_2$ มาก แต่แรง $\vec{F}_{12}$ ที่มวล 1 ถูกดึงดูด จะมีขนาด<strong>เท่ากับ</strong>แรง $\vec{F}_{21}$ ที่มวล 2 ถูกดึงดูดเสมอ แต่ทิศทางตรงกันข้าม
+                        </p>
+                    </div>
+
+                    <div class="p-2.5 border-l-2 border-amber-400 bg-slate-900/60 rounded-r-lg space-y-1">
+                        <h4 class="font-bold text-amber-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i> กฎกำลังสองผกผัน (Inverse Square Law)
+                        </h4>
+                        <p class="text-slate-300 text-[10px] leading-relaxed">
+                            แรงโน้มถ่วงแปรผกผันกับระยะห่างกำลังสอง ($F \propto \frac{1}{r^2}$):
+                            <br>• ถ้าระยะห่างเพิ่มเป็น <strong>2 เท่า</strong> แรงโน้มถ่วงจะลดลงเหลือ <strong>1/4 เท่า</strong>
+                            <br>• ถ้าระยะห่างลดลงเหลือ <strong>ครึ่งหนึ่ง (1/2)</strong> แรงโน้มถ่วงจะเพิ่มขึ้นเป็น <strong>4 เท่า</strong>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- TAB 3: Accessibility, Sonification & Interactive Description -->
+                <div id="content-access" class="space-y-3 hidden">
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-sky-400 block border-b border-white/10 pb-1 flex items-center gap-1">
+                            <i data-lucide="volume-2" class="w-3.5 h-3.5 text-sky-400"></i>
+                            ระบบโซนิฟิเคชัน (Sound Sonification)
+                        </span>
+                        <p class="text-[10px] text-slate-300 leading-relaxed">
+                            แปลงขนาดของแรงดึงดูดโน้มถ่วงเป็นระดับความถี่เสียง (Pitch Height) สดแบบเรียลไทม์:
+                            <br>• แรงโน้มถ่วงสูงขึ้น $\rightarrow$ เสียงความถี่สูงขึ้น (High Pitch)
+                            <br>• แรงโน้มถ่วงลดลง $\rightarrow$ เสียงความถี่ต่ำลง (Low Pitch)
+                        </p>
+                    </div>
+
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-amber-400 block border-b border-white/10 pb-1 flex items-center gap-1">
+                            <i data-lucide="mic" class="w-3.5 h-3.5 text-amber-400"></i>
+                            ระบบอ่านเสียงบรรยาย (Speech Voicing)
+                        </span>
+                        <p class="text-[10px] text-slate-300 leading-relaxed">
+                            เมื่อเปิดระบบ Voicing เบราว์เซอร์จะอ่านบรรยายสถานะของมวล $m_1, m_2$, ระยะห่าง $r$ และขนาดแรง $F_g$ เป็นภาษาไทยเมื่อมีการเปลี่ยนแปลง
+                        </p>
+                        <button onclick="speakDescription(true)" class="w-full py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded text-[10.5px] font-semibold flex items-center justify-center gap-1">
+                            <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+                            ทดลองฟังเสียงบรรยายปัจจุบัน
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- MAIN INTERACTIVE SIMULATION LOGIC SCRIPT -->
+    <script>
+        // Physics & Gravity Simulation State
+        const G = 6.6743e-11; // Universal Gravitational Constant N*m^2/kg^2
+
+        const state = {
+            dimension: '2D',        // '2D' or '3D'
+            m1: 100,                // mass 1 in kg
+            m2: 400,                // mass 2 in kg
+            r: 4.0,                 // distance in meters
+
+            // Visual Toggles
+            showVectors: true,
+            showValues: true,
+            showRuler: true,
+            showHighlight: true,
+
+            // Interactive Dragging & Viewport Pan/Zoom
+            draggedObject: null,    // 'm1' or 'm2'
+            zoom: 1.0,
+            panX: 0,
+            panY: 0,
+
+            // Sonification & Voicing Accessibility
+            sonificationActive: false,
+            voicingActive: false
+        };
+
+        // Canvas & Audio References
+        let canvas2D, ctx2D;
+        let scene3D, camera3D, renderer3D, controls3D;
+        let meshM1_3D, meshM2_3D, arrowF12_3D, arrowF21_3D;
+        
+        let audioCtx = null;
+        let oscillator = null;
+        let gainNode = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initMathKaTeX();
+            init2DCanvas();
+            init3DScene();
+
+            lucide.createIcons();
+            window.addEventListener('resize', onWindowResize);
+
+            setup2DInteraction();
+            updateAllPhysics();
+        });
+
+        function initMathKaTeX() {
+            if (window.katex) {
+                katex.render("F_g = G \\frac{m_1 m_2}{r^2}", document.getElementById('math-formula-main'));
+                katex.render("\\vec{F}_{12} = -\\vec{F}_{21} \\implies |F_{12}| = |F_{21}|", document.getElementById('math-third-law'));
+            }
+        }
+
+        function init2DCanvas() {
+            canvas2D = document.getElementById('canvas-2d');
+            ctx2D = canvas2D.getContext('2d');
+        }
+
+        function init3DScene() {
+            const container = document.getElementById('container-3d');
+            scene3D = new THREE.Scene();
+            scene3D.background = new THREE.Color(0x060913);
+
+            camera3D = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera3D.position.set(0, 5, 12);
+
+            renderer3D = new THREE.WebGLRenderer({ antialias: true });
+            renderer3D.setSize(container.clientWidth, container.clientHeight);
+            renderer3D.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer3D.domElement);
+
+            controls3D = new THREE.OrbitControls(camera3D, renderer3D.domElement);
+            controls3D.enableDamping = true;
+            controls3D.dampingFactor = 0.05;
+
+            // Ambient & Directional Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene3D.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+            dirLight.position.set(10, 20, 15);
+            scene3D.add(dirLight);
+
+            // 3D Grid & Spheres
+            const gridHelper = new THREE.GridHelper(20, 20, 0x38bdf8, 0x1e293b);
+            gridHelper.position.y = -2;
+            scene3D.add(gridHelper);
+
+            // Mass 1 Sphere Mesh (Rose)
+            const geoM1 = new THREE.SphereGeometry(1, 32, 32);
+            const matM1 = new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.3, metalness: 0.2 });
+            meshM1_3D = new THREE.Mesh(geoM1, matM1);
+            scene3D.add(meshM1_3D);
+
+            // Mass 2 Sphere Mesh (Sky)
+            const geoM2 = new THREE.SphereGeometry(1, 32, 32);
+            const matM2 = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.3, metalness: 0.2 });
+            meshM2_3D = new THREE.Mesh(geoM2, matM2);
+            scene3D.add(meshM2_3D);
+
+            animate3D();
+        }
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+            if (state.dimension === '3D') {
+                controls3D.update();
+                renderer3D.render(scene3D, camera3D);
+            }
+        }
+
+        // Calculate Gravitational Force
+        function calculateForce() {
+            const F = (G * state.m1 * state.m2) / (state.r * state.r);
+            return F;
+        }
+
+        function updateAllPhysics() {
+            const Fg = calculateForce();
+
+            // Format force value into scientific notation
+            const forceStr = Fg.toExponential(2) + " N";
+
+            // UI Readouts
+            document.getElementById('readout-force').innerText = forceStr;
+            document.getElementById('readout-f12').innerText = forceStr;
+            document.getElementById('readout-f21').innerText = forceStr;
+
+            // Math Panel Updates
+            document.getElementById('math-m1-val').innerText = state.m1;
+            document.getElementById('math-m2-val').innerText = state.m2;
+            document.getElementById('math-r-val').innerText = state.r.toFixed(1);
+
+            document.getElementById('math-m1m2').innerText = (state.m1 * state.m2).toLocaleString();
+            document.getElementById('math-r-base').innerText = state.r.toFixed(1);
+            document.getElementById('math-r-sq').innerText = (state.r * state.r).toFixed(2);
+
+            document.getElementById('math-step-final').innerText = `F_g = ${Fg.toExponential(4)} N`;
+
+            // Update Sonification pitch if audio enabled
+            updateSonification(Fg);
+
+            if (state.dimension === '2D') {
+                render2DCanvas();
+            } else {
+                render3DScene();
+            }
+        }
+
+        function render2DCanvas() {
+            const w = canvas2D.clientWidth;
+            const h = canvas2D.clientHeight;
+            if (w === 0 || h === 0) return;
+
+            canvas2D.width = w * window.devicePixelRatio;
+            canvas2D.height = h * window.devicePixelRatio;
+            ctx2D.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+            ctx2D.clearRect(0, 0, w, h);
+
+            const originX = w / 2 + state.panX;
+            const originY = h / 2 + state.panY;
+            const scale = 50 * state.zoom; // 1 meter = 50 pixels
+
+            // Radius scaled by mass
+            const radiusM1 = Math.max(16, Math.min(42, Math.cbrt(state.m1) * 6)) * state.zoom;
+            const radiusM2 = Math.max(16, Math.min(42, Math.cbrt(state.m2) * 6)) * state.zoom;
+
+            const posX1 = originX - (state.r / 2) * scale;
+            const posX2 = originX + (state.r / 2) * scale;
+
+            // Draw Ruler Grid
+            if (state.showRuler) {
+                ctx2D.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+                ctx2D.lineWidth = 1;
+
+                const step = scale; // 1m steps
+                for (let x = originX % step; x < w; x += step) {
+                    ctx2D.beginPath();
+                    ctx2D.moveTo(x, 0);
+                    ctx2D.lineTo(x, h);
+                    ctx2D.stroke();
+                }
+
+                // Center Line Ruler
+                ctx2D.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+                ctx2D.lineWidth = 1.5;
+                ctx2D.beginPath();
+                ctx2D.moveTo(posX1, originY + 60);
+                ctx2D.lineTo(posX2, originY + 60);
+                ctx2D.stroke();
+
+                // End ticks
+                ctx2D.beginPath();
+                ctx2D.moveTo(posX1, originY + 50);
+                ctx2D.lineTo(posX1, originY + 70);
+                ctx2D.moveTo(posX2, originY + 50);
+                ctx2D.lineTo(posX2, originY + 70);
+                ctx2D.stroke();
+
+                // Distance text label
+                ctx2D.fillStyle = '#10b981';
+                ctx2D.font = 'bold 12px Fira Code, monospace';
+                ctx2D.textAlign = 'center';
+                ctx2D.fillText(`r = ${state.r.toFixed(1)} m`, (posX1 + posX2) / 2, originY + 80);
+            }
+
+            // Draw Mass 1 (Rose Sphere)
+            ctx2D.save();
+            if (state.showHighlight) {
+                ctx2D.shadowColor = '#f43f5e';
+                ctx2D.shadowBlur = 15;
+            }
+            ctx2D.fillStyle = '#f43f5e';
+            ctx2D.beginPath();
+            ctx2D.arc(posX1, originY, radiusM1, 0, Math.PI * 2);
+            ctx2D.fill();
+            ctx2D.restore();
+
+            // Label M1
+            ctx2D.fillStyle = '#ffffff';
+            ctx2D.font = 'bold 12px Sarabun, sans-serif';
+            ctx2D.textAlign = 'center';
+            ctx2D.fillText(`m₁ (${state.m1} kg)`, posX1, originY - radiusM1 - 10);
+
+            // Draw Mass 2 (Sky Sphere)
+            ctx2D.save();
+            if (state.showHighlight) {
+                ctx2D.shadowColor = '#38bdf8';
+                ctx2D.shadowBlur = 15;
+            }
+            ctx2D.fillStyle = '#38bdf8';
+            ctx2D.beginPath();
+            ctx2D.arc(posX2, originY, radiusM2, 0, Math.PI * 2);
+            ctx2D.fill();
+            ctx2D.restore();
+
+            // Label M2
+            ctx2D.fillStyle = '#ffffff';
+            ctx2D.font = 'bold 12px Sarabun, sans-serif';
+            ctx2D.textAlign = 'center';
+            ctx2D.fillText(`m₂ (${state.m2} kg)`, posX2, originY - radiusM2 - 10);
+
+            // Draw Force Vectors (F12 and F21)
+            if (state.showVectors) {
+                const Fg = calculateForce();
+                const vectorLen = Math.max(30, Math.min(140, Math.log10(Fg * 1e9 + 1) * 35));
+
+                // Force F12 on Mass 1 pointing right towards Mass 2
+                drawArrow2D(ctx2D, posX1, originY, posX1 + vectorLen, originY, '#10b981', 'F₁₂');
+
+                // Force F21 on Mass 2 pointing left towards Mass 1
+                drawArrow2D(ctx2D, posX2, originY, posX2 - vectorLen, originY, '#10b981', 'F₂₁');
+            }
+        }
+
+        function drawArrow2D(ctx, fromX, fromY, toX, toY, color, label) {
+            const headLen = 10;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+
+            // Arrowhead
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLen * Math.cos(angle - Math.PI / 6), toY - headLen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - headLen * Math.cos(angle + Math.PI / 6), toY - headLen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+
+            // Label
+            if (state.showValues) {
+                ctx.fillStyle = color;
+                ctx.font = 'bold 11px Fira Code, monospace';
+                ctx.fillText(label, (fromX + toX) / 2, fromY - 12);
+            }
+        }
+
+        function render3DScene() {
+            const scale3D = 1.0;
+            const posX1 = -(state.r / 2) * scale3D;
+            const posX2 = (state.r / 2) * scale3D;
+
+            const radiusM1 = Math.max(0.4, Math.min(1.2, Math.cbrt(state.m1) * 0.15));
+            const radiusM2 = Math.max(0.4, Math.min(1.2, Math.cbrt(state.m2) * 0.15));
+
+            meshM1_3D.position.set(posX1, 0, 0);
+            meshM1_3D.scale.set(radiusM1, radiusM1, radiusM1);
+
+            meshM2_3D.position.set(posX2, 0, 0);
+            meshM2_3D.scale.set(radiusM2, radiusM2, radiusM2);
+        }
+
+        function setup2DInteraction() {
+            let isDragging = false;
+            let dragTarget = null;
+            let lastMouseX = 0;
+            let lastMouseY = 0;
+
+            canvas2D.addEventListener('mousedown', (e) => {
+                if (state.dimension !== '2D') return;
+
+                const rect = canvas2D.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+
+                const w = canvas2D.clientWidth;
+                const h = canvas2D.clientHeight;
+                const originX = w / 2 + state.panX;
+                const originY = h / 2 + state.panY;
+                const scale = 50 * state.zoom;
+
+                const posX1 = originX - (state.r / 2) * scale;
+                const posX2 = originX + (state.r / 2) * scale;
+
+                // Check hit on M1 or M2
+                if (Math.hypot(mouseX - posX1, mouseY - originY) < 30) {
+                    dragTarget = 'm1';
+                    isDragging = true;
+                } else if (Math.hypot(mouseX - posX2, mouseY - originY) < 30) {
+                    dragTarget = 'm2';
+                    isDragging = true;
+                } else {
+                    dragTarget = 'pan';
+                    isDragging = true;
+                    lastMouseX = e.clientX;
+                    lastMouseY = e.clientY;
+                }
+            });
+
+            canvas2D.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+
+                if (dragTarget === 'm1' || dragTarget === 'm2') {
+                    const rect = canvas2D.getBoundingClientRect();
+                    const mouseX = e.clientX - rect.left;
+                    const w = canvas2D.clientWidth;
+                    const originX = w / 2 + state.panX;
+                    const scale = 50 * state.zoom;
+
+                    let newR = Math.abs(mouseX - originX) * 2 / scale;
+                    newR = Math.max(1.0, Math.min(10.0, newR));
+                    state.r = parseFloat(newR.toFixed(1));
+
+                    syncControlLabels();
+                    updateAllPhysics();
+                } else if (dragTarget === 'pan') {
+                    state.panX += e.clientX - lastMouseX;
+                    state.panY += e.clientY - lastMouseY;
+                    lastMouseX = e.clientX;
+                    lastMouseY = e.clientY;
+                    render2DCanvas();
+                }
+            });
+
+            window.addEventListener('mouseup', () => {
+                if (isDragging && state.voicingActive) {
+                    speakDescription();
+                }
+                isDragging = false;
+                dragTarget = null;
+            });
+        }
+
+        function onControlChange(param) {
+            state.m1 = parseFloat(document.getElementById('slider-m1').value);
+            state.m2 = parseFloat(document.getElementById('slider-m2').value);
+            state.r = parseFloat(document.getElementById('slider-r').value);
+
+            state.showVectors = document.getElementById('toggle-vectors').checked;
+            state.showValues = document.getElementById('toggle-values').checked;
+            state.showRuler = document.getElementById('toggle-ruler').checked;
+            state.showHighlight = document.getElementById('toggle-highlight').checked;
+
+            syncControlLabels();
+            updateAllPhysics();
+        }
+
+        function onDirectInput(param) {
+            if (param === 'm1') {
+                state.m1 = Math.max(10, Math.min(1000, parseFloat(document.getElementById('input-m1').value) || 100));
+                document.getElementById('slider-m1').value = state.m1;
+            } else if (param === 'm2') {
+                state.m2 = Math.max(10, Math.min(1000, parseFloat(document.getElementById('input-m2').value) || 400));
+                document.getElementById('slider-m2').value = state.m2;
+            } else if (param === 'r') {
+                state.r = Math.max(1.0, Math.min(10.0, parseFloat(document.getElementById('input-r').value) || 4.0));
+                document.getElementById('slider-r').value = state.r;
+            }
+            syncControlLabels();
+            updateAllPhysics();
+        }
+
+        function syncControlLabels() {
+            document.getElementById('val-m1-display').innerText = `${state.m1} kg`;
+            document.getElementById('txt-m1-val').innerText = `${state.m1} kg`;
+            document.getElementById('input-m1').value = state.m1;
+
+            document.getElementById('val-m2-display').innerText = `${state.m2} kg`;
+            document.getElementById('txt-m2-val').innerText = `${state.m2} kg`;
+            document.getElementById('input-m2').value = state.m2;
+
+            document.getElementById('val-r-display').innerText = `${state.r.toFixed(1)} m`;
+            document.getElementById('txt-r-val').innerText = `${state.r.toFixed(1)} m`;
+            document.getElementById('input-r').value = state.r.toFixed(1);
+        }
+
+        function applyPreset(presetKey) {
+            if (presetKey === 'equal') {
+                state.m1 = 200; state.m2 = 200; state.r = 4.0;
+            } else if (presetKey === 'heavy') {
+                state.m1 = 50; state.m2 = 1000; state.r = 3.0;
+            } else if (presetKey === 'close') {
+                state.m1 = 300; state.m2 = 500; state.r = 1.2;
+            } else if (presetKey === 'far') {
+                state.m1 = 300; state.m2 = 500; state.r = 9.5;
+            }
+            syncControlLabels();
+            updateAllPhysics();
+            if (state.voicingActive) speakDescription();
+        }
+
+        function toggleSonification() {
+            state.sonificationActive = !state.sonificationActive;
+            const btn = document.getElementById('btn-toggle-sound');
+            const icon = document.getElementById('icon-sound');
+
+            if (state.sonificationActive) {
+                btn.className = 'px-2.5 py-1.5 bg-sky-500/20 text-sky-300 border border-sky-500/40 rounded-lg transition text-xs flex items-center gap-1.5 font-medium';
+                icon.setAttribute('data-lucide', 'volume-2');
+                icon.className = 'w-4 h-4 text-sky-400';
+                initAudioContext();
+            } else {
+                btn.className = 'px-2.5 py-1.5 bg-slate-800 text-slate-300 border border-white/10 rounded-lg transition text-xs flex items-center gap-1.5 font-medium';
+                icon.setAttribute('data-lucide', 'volume-x');
+                icon.className = 'w-4 h-4 text-rose-400';
+                stopAudioContext();
+            }
+            lucide.createIcons();
+        }
+
+        function initAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            oscillator = audioCtx.createOscillator();
+            gainNode = audioCtx.createGain();
+
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 220;
+            gainNode.gain.value = 0.05;
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.start();
+        }
+
+        function updateSonification(Fg) {
+            if (!state.sonificationActive || !oscillator || !audioCtx) return;
+            // Map Force Fg log scale to pitch frequency range (150Hz to 880Hz)
+            const logMin = Math.log10(1e-10);
+            const logMax = Math.log10(1e-5);
+            const logVal = Math.log10(Math.max(1e-10, Fg));
+
+            const norm = Math.max(0, Math.min(1, (logVal - logMin) / (logMax - logMin)));
+            const freq = 150 + norm * 730;
+
+            oscillator.frequency.setTargetAtTime(freq, audioCtx.currentTime, 0.05);
+        }
+
+        function stopAudioContext() {
+            if (oscillator) {
+                oscillator.stop();
+                oscillator.disconnect();
+                oscillator = null;
+            }
+        }
+
+        function toggleVoicing() {
+            state.voicingActive = !state.voicingActive;
+            const btn = document.getElementById('btn-toggle-voicing');
+            const icon = document.getElementById('icon-voicing');
+
+            if (state.voicingActive) {
+                btn.className = 'px-2.5 py-1.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-lg transition text-xs flex items-center gap-1.5 font-medium';
+                icon.setAttribute('data-lucide', 'mic');
+                icon.className = 'w-4 h-4 text-amber-400';
+                speakDescription();
+            } else {
+                btn.className = 'px-2.5 py-1.5 bg-slate-800 text-slate-300 border border-white/10 rounded-lg transition text-xs flex items-center gap-1.5 font-medium';
+                icon.setAttribute('data-lucide', 'mic-off');
+                icon.className = 'w-4 h-4 text-slate-400';
+                window.speechSynthesis?.cancel();
+            }
+            lucide.createIcons();
+        }
+
+        function speakDescription(forceSpeech = false) {
+            if (!state.voicingActive && !forceSpeech) return;
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const Fg = calculateForce();
+                const text = `มวลที่หนึ่ง ${state.m1} กิโลกรัม, มวลที่สอง ${state.m2} กิโลกรัม, ระยะห่าง ${state.r.toFixed(1)} เมตร, แรงดึงดูดโน้มถ่วงเท่ากับ ${Fg.toExponential(2)} นิวตัน`;
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'th-TH';
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function adjustZoom(factor) {
+            state.zoom = Math.max(0.5, Math.min(2.5, state.zoom * factor));
+            render2DCanvas();
+        }
+
+        function resetZoomPan() {
+            state.zoom = 1.0;
+            state.panX = 0;
+            state.panY = 0;
+            render2DCanvas();
+        }
+
+        function switchDimension(dim) {
+            state.dimension = dim;
+            const btn2D = document.getElementById('btn-mode-2d');
+            const btn3D = document.getElementById('btn-mode-3d');
+            const canvas2DElem = document.getElementById('canvas-2d');
+            const container3DElem = document.getElementById('container-3d');
+
+            if (dim === '2D') {
+                btn2D.className = 'px-3 py-1 text-xs rounded font-medium transition bg-sky-500 text-white';
+                btn3D.className = 'px-3 py-1 text-xs rounded font-medium transition text-slate-400 hover:text-white';
+                canvas2DElem.classList.remove('hidden');
+                container3DElem.classList.add('hidden');
+                document.getElementById('status-label').innerText = 'โหมด: 2D Gravity Physics Plane';
+            } else {
+                btn3D.className = 'px-3 py-1 text-xs rounded font-medium transition bg-sky-500 text-white';
+                btn2D.className = 'px-3 py-1 text-xs rounded font-medium transition text-slate-400 hover:text-white';
+                canvas2DElem.classList.add('hidden');
+                container3DElem.classList.remove('hidden');
+                document.getElementById('status-label').innerText = 'โหมด: 3D Spatial Mass Spheres';
+            }
+
+            onWindowResize();
+            updateAllPhysics();
+        }
+
+        function resetLab() {
+            state.m1 = 100;
+            state.m2 = 400;
+            state.r = 4.0;
+            state.zoom = 1.0;
+            state.panX = 0;
+            state.panY = 0;
+
+            syncControlLabels();
+            updateAllPhysics();
+        }
+
+        function switchRightTab(tabKey) {
+            ['calc', 'theory', 'access'].forEach(k => {
+                document.getElementById(`content-${k}`).classList.add('hidden');
+                document.getElementById(`tab-${k}`).classList.remove('active');
+            });
+
+            document.getElementById(`content-${tabKey}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabKey}`).classList.add('active');
+        }
+
+        function toggleFullscreen() {
+            try {
+                if (!document.fullscreenElement) {
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen().catch(err => console.warn(err));
+                    }
+                } else if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(err => console.warn(err));
+                }
+            } catch (err) {
+                console.warn("Fullscreen permission restricted:", err);
+            }
+        }
+
+        function onWindowResize() {
+            if (state.dimension === '2D') {
+                render2DCanvas();
+            } else if (renderer3D && camera3D) {
+                const container = document.getElementById('container-3d');
+                camera3D.aspect = container.clientWidth / container.clientHeight;
+                camera3D.updateProjectionMatrix();
+                renderer3D.setSize(container.clientWidth, container.clientHeight);
+            }
+        }
+    </script>
+</body>
+</html>

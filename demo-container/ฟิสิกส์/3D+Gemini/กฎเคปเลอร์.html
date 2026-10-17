@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Kepler's Laws Simulation - แบบจำลองกฎเคปเลอร์ 3 มิติ</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        space: {
+                            900: '#0B0E14',
+                            800: '#151922',
+                            700: '#1F2430',
+                            accent: '#38BDF8',
+                            sun: '#F59E0B',
+                            planet: '#10B981',
+                            sweep: 'rgba(236, 72, 153, 0.35)'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Sarabun', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- KaTeX for Math formatting -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #0B0E14;
+            color: #F3F4F6;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+        }
+
+        /* Glassmorphism custom styles */
+        .glass-panel {
+            background: rgba(21, 25, 34, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-card {
+            background: rgba(31, 36, 48, 0.5);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(11, 14, 20, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.3);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(56, 189, 248, 0.6);
+        }
+
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            height: 6px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #38BDF8;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+            transition: all 0.2s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            scale: 1.2;
+            background: #7dd3fc;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+
+        .tab-btn.active {
+            background-color: rgba(56, 189, 248, 0.2);
+            color: #38BDF8;
+            border-bottom: 2px solid #38BDF8;
+        }
+    </style>
+</head>
+<body class="select-none">
+
+    <!-- 3D Canvas Viewport -->
+    <div id="canvas-container"></div>
+
+    <!-- UI Overlay Header / Title -->
+    <header class="absolute top-4 left-4 z-10 flex items-center gap-3 glass-panel px-4 py-2.5 rounded-2xl pointer-events-auto">
+        <div class="p-2 bg-sky-500/20 text-sky-400 rounded-xl">
+            <i data-lucide="orbit" class="w-6 h-6 animate-spin-slow"></i>
+        </div>
+        <div>
+            <h1 class="font-bold text-lg leading-tight text-white flex items-center gap-2">
+                กฎเคปเลอร์ 3D <span class="text-xs font-normal px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/30">Interactive Simulator</span>
+            </h1>
+            <p class="text-xs text-gray-400">แบบจำลองปฏิสัมพันธ์การเคลื่อนที่ของดาวเคราะห์</p>
+        </div>
+    </header>
+
+    <!-- Main Floating Layout Container -->
+    <div class="absolute inset-0 pt-20 p-4 pointer-events-none grid grid-cols-1 md:grid-cols-12 gap-4 h-full pb-6">
+
+        <!-- ================= SECTION 1: Educational Panel (Left) ================= -->
+        <aside class="md:col-span-4 lg:col-span-4 glass-panel rounded-2xl flex flex-col pointer-events-auto overflow-hidden max-h-[calc(100vh-6rem)] transition-all duration-300 shadow-2xl">
+            <!-- Panel Header & Navigation Tabs -->
+            <div class="p-4 border-b border-white/10 bg-space-800/80">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="font-semibold text-white flex items-center gap-2">
+                        <i data-lucide="book-open" class="w-5 h-5 text-sky-400"></i>
+                        ส่วนคำอธิบายและทฤษฎี (Theory)
+                    </h2>
+                    <span class="text-xs bg-space-700 text-gray-300 px-2 py-1 rounded-md border border-white/5">ความรู้เคปเลอร์</span>
+                </div>
+                
+                <!-- Law Selection Tabs -->
+                <div class="grid grid-cols-3 gap-1 bg-space-900/60 p-1 rounded-xl text-xs font-medium">
+                    <button onclick="switchTab('law1')" id="tab-law1" class="tab-btn active py-2 rounded-lg transition text-center flex flex-col sm:flex-row items-center justify-center gap-1.5">
+                        <i data-lucide="circle-dot" class="w-3.5 h-3.5"></i> กฎข้อที่ 1
+                    </button>
+                    <button onclick="switchTab('law2')" id="tab-law2" class="tab-btn py-2 rounded-lg transition text-center flex flex-col sm:flex-row items-center justify-center gap-1.5">
+                        <i data-lucide="pie-chart" class="w-3.5 h-3.5"></i> กฎข้อที่ 2
+                    </button>
+                    <button onclick="switchTab('law3')" id="tab-law3" class="tab-btn py-2 rounded-lg transition text-center flex flex-col sm:flex-row items-center justify-center gap-1.5">
+                        <i data-lucide="activity" class="w-3.5 h-3.5"></i> กฎข้อที่ 3
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab Content Area -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-4 text-sm text-gray-300">
+
+                <!-- LAW 1 CONTENT -->
+                <div id="content-law1" class="space-y-4">
+                    <div class="glass-card p-4 rounded-xl border-l-4 border-sky-400">
+                        <h3 class="font-bold text-white text-base mb-1 flex items-center gap-2">
+                            กฎข้อที่ 1: กฎของวงรี (Law of Ellipses)
+                        </h3>
+                        <p class="text-xs text-gray-300 leading-relaxed">
+                            "ดาวเคราะห์ทุกดวงเคลื่อนที่รอบดวงอาทิตย์เป็น **วงรี** โดยมีดวงอาทิตย์อยู่ที่จุดโฟกัสจุดหนึ่งของวงรีนั้น"
+                        </p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <h4 class="text-xs font-semibold uppercase text-sky-400 tracking-wider">แนวคิดสำคัญ (Key Concepts)</h4>
+                        <ul class="space-y-2 text-xs">
+                            <li class="bg-space-800/50 p-2.5 rounded-lg border border-white/5 flex gap-2">
+                                <span class="text-sky-400 font-bold">•</span>
+                                <div><strong class="text-white">ความรี (Eccentricity - e):</strong> ตัววัดระดับความเบี้ยวของวงรี ($0 \le e < 1$) หาก $e=0$ จะเป็นวงกลมสมบูรณ์</div>
+                            </li>
+                            <li class="bg-space-800/50 p-2.5 rounded-lg border border-white/5 flex gap-2">
+                                <span class="text-sky-400 font-bold">•</span>
+                                <div><strong class="text-white">จุดโฟกัส (Focal Points):</strong> วงรีจะมีจุดโฟกัส 2 จุด ดวงอาทิตย์จะอยู่ที่โฟกัสหลัก ($F_1$) ส่วน $F_2$ เป็นจุดโฟกัสจำลองว่างเปล่า</div>
+                            </li>
+                            <li class="bg-space-800/50 p-2.5 rounded-lg border border-white/5 flex gap-2">
+                                <span class="text-sky-400 font-bold">•</span>
+                                <div><strong class="text-white">Perihelion / Aphelion:</strong> จุดใกล้ดวงอาทิตย์ที่สุด ($r_{min}$) และจุดไกลดวงอาทิตย์ที่สุด ($r_{max}$)</div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Live Parameter Monitor for Law 1 -->
+                    <div class="glass-card p-3 rounded-xl space-y-2">
+                        <div class="text-xs font-semibold text-gray-400 border-b border-white/10 pb-1">ค่าจากการทดลองสด (Live Data)</div>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="bg-space-900/60 p-2 rounded-lg">
+                                <span class="text-gray-400 block text-[10px]">ความรี (Eccentricity e)</span>
+                                <span id="monitor-eccentricity" class="font-mono text-sky-400 font-bold text-sm">0.20</span>
+                            </div>
+                            <div class="bg-space-900/60 p-2 rounded-lg">
+                                <span class="text-gray-400 block text-[10px]">ครึ่งแกนเอก (Semi-major a)</span>
+                                <span id="monitor-semimajor" class="font-mono text-emerald-400 font-bold text-sm">10.0 AU</span>
+                            </div>
+                            <div class="bg-space-900/60 p-2 rounded-lg">
+                                <span class="text-gray-400 block text-[10px]">ระยะใกล้สุด (Perihelion)</span>
+                                <span id="monitor-perihelion" class="font-mono text-amber-400 font-bold text-sm">8.0 AU</span>
+                            </div>
+                            <div class="bg-space-900/60 p-2 rounded-lg">
+                                <span class="text-gray-400 block text-[10px]">ระยะไกลสุด (Aphelion)</span>
+                                <span id="monitor-aphelion" class="font-mono text-rose-400 font-bold text-sm">12.0 AU</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LAW 2 CONTENT -->
+                <div id="content-law2" class="space-y-4 hidden">
+                    <div class="glass-card p-4 rounded-xl border-l-4 border-pink-500">
+                        <h3 class="font-bold text-white text-base mb-1 flex items-center gap-2">
+                            กฎข้อที่ 2: กฎของพื้นที่เท่ากัน (Equal Areas Law)
+                        </h3>
+                        <p class="text-xs text-gray-300 leading-relaxed">
+                            "เส้นตรงที่โยงระหว่างดวงอาทิตย์กับดาวเคราะห์ จะกวาดไปได้ **พื้นที่เท่ากันในช่วงเวลาที่เท่ากัน**"
+                        </p>
+                    </div>
+
+                    <div class="space-y-2 text-xs">
+                        <p class="text-gray-300">
+                            ส่งผลให้ความเร็วของดาวเคราะห์ไม่สม่ำเสมอ:
+                        </p>
+                        <div class="grid grid-cols-1 gap-2">
+                            <div class="bg-space-800/60 p-2.5 rounded-lg border border-pink-500/20 flex items-center gap-3">
+                                <div class="p-2 bg-pink-500/20 text-pink-400 rounded-lg font-bold">เร็ว</div>
+                                <div>เมื่ออยู่ใกล้ดวงอาทิตย์ (<strong class="text-white">Perihelion</strong>) แรงดึงดูดสูง ทำให้เคลื่อนที่เร็วกว่า</div>
+                            </div>
+                            <div class="bg-space-800/60 p-2.5 rounded-lg border border-sky-500/20 flex items-center gap-3">
+                                <div class="p-2 bg-sky-500/20 text-sky-400 rounded-lg font-bold">ช้า</div>
+                                <div>เมื่ออยู่ไกลดวงอาทิตย์ (<strong class="text-white">Aphelion</strong>) แรงดึงดูดต่ำ ทำให้เคลื่อนที่ช้าลง</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Sector Monitor -->
+                    <div class="glass-card p-3 rounded-xl space-y-2">
+                        <div class="text-xs font-semibold text-gray-400 border-b border-white/10 pb-1">สถานะการกวาดพื้นที่ (Sweep Sector Live)</div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-gray-400">ความเร็วปัจจุบัน (v):</span>
+                                <span id="monitor-velocity" class="font-mono text-pink-400 font-bold">0.00 km/s</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-gray-400">พื้นที่สามเหลี่ยมโค้ง (A):</span>
+                                <span id="monitor-area" class="font-mono text-amber-400 font-bold">Constant</span>
+                            </div>
+                            <div class="w-full bg-space-900 rounded-full h-2 overflow-hidden border border-white/10">
+                                <div id="sector-progress" class="bg-pink-500 h-full w-0 transition-all duration-100"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LAW 3 CONTENT -->
+                <div id="content-law3" class="space-y-4 hidden">
+                    <div class="glass-card p-4 rounded-xl border-l-4 border-emerald-400">
+                        <h3 class="font-bold text-white text-base mb-1 flex items-center gap-2">
+                            กฎข้อที่ 3: กฎของคาบ (Law of Harmonies)
+                        </h3>
+                        <p class="text-xs text-gray-300 leading-relaxed">
+                            "กำลังสองของคาบการโคจร ($T^2$) แปรผันตรงกับ กำลังสามของครึ่งแกนเอก ($a^3$)"
+                        </p>
+                    </div>
+
+                    <div class="bg-space-900/80 p-3 rounded-xl text-center border border-emerald-500/30">
+                        <div class="text-xs text-gray-400 mb-1">อัตราส่วนคงที่ของเคปเลอร์ (Kepler Ratio)</div>
+                        <div class="text-lg font-mono font-bold text-emerald-400">
+                            $$\frac{T^2}{a^3} \approx 1.00 \text{ (Const)}$$
+                        </div>
+                    </div>
+
+                    <!-- Comparative Table -->
+                    <div class="glass-card p-3 rounded-xl space-y-2">
+                        <div class="text-xs font-semibold text-gray-400 border-b border-white/10 pb-1">ตารางเปรียบเทียบคาบโคจรสด</div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-[11px] font-mono">
+                                <thead>
+                                    <tr class="text-gray-400 border-b border-white/5">
+                                        <th class="pb-1">ดาว</th>
+                                        <th class="pb-1">a (AU)</th>
+                                        <th class="pb-1">T (Year)</th>
+                                        <th class="pb-1 text-emerald-400">T²/a³</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-white/5 text-gray-300">
+                                    <tr id="row-mercury"><td>พุธ</td><td>0.39</td><td>0.24</td><td class="text-emerald-400">1.00</td></tr>
+                                    <tr id="row-earth" class="bg-sky-500/10"><td>โลก</td><td>1.00</td><td>1.00</td><td class="text-emerald-400 font-bold">1.00</td></tr>
+                                    <tr id="row-mars"><td>อังคาร</td><td>1.52</td><td>1.88</td><td class="text-emerald-400">1.00</td></tr>
+                                    <tr id="row-jupiter"><td>พฤหัส</td><td>5.20</td><td>11.86</td><td class="text-emerald-400">1.00</td></tr>
+                                    <tr id="row-custom" class="text-amber-400 font-bold">
+                                        <td>กำหนดเอง</td>
+                                        <td id="table-custom-a">1.00</td>
+                                        <td id="table-custom-t">1.00</td>
+                                        <td id="table-custom-ratio">1.00</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+
+        <!-- Spacer on desktop -->
+        <div class="hidden md:block md:col-span-3 lg:col-span-4"></div>
+
+
+        <!-- ================= SECTION 2: Control Panel / Sandbox (Right) ================= -->
+        <aside class="md:col-span-5 lg:col-span-4 glass-panel rounded-2xl flex flex-col pointer-events-auto overflow-hidden max-h-[calc(100vh-6rem)] transition-all duration-300 shadow-2xl">
+            <!-- Panel Header -->
+            <div class="p-4 border-b border-white/10 bg-space-800/80 flex justify-between items-center">
+                <h2 class="font-semibold text-white flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-5 h-5 text-sky-400"></i>
+                    ส่วนทดลองและตั้งค่า (Control Sandbox)
+                </h2>
+                <button onclick="resetToDefaults()" class="p-1.5 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg transition" title="รีเซ็ตค่าเริ่มต้น">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Controls Content -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-5">
+
+                <!-- Preset Planet Selector -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
+                        <i data-lucide="globe" class="w-3.5 h-3.5 text-sky-400"></i> เลือกระบบดาวเคราะห์เป้าหมาย
+                    </label>
+                    <select id="preset-select" onchange="applyPlanetPreset(this.value)" class="w-full bg-space-900 border border-white/10 text-white rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                        <option value="earth">โลก (Earth) - e = 0.017</option>
+                        <option value="mercury">ดาวพุธ (Mercury) - e = 0.205 (รีมาก)</option>
+                        <option value="mars">ดาวอังคาร (Mars) - e = 0.093</option>
+                        <option value="jupiter">ดาวพฤหัสบดี (Jupiter) - a ใหญ่</option>
+                        <option value="halley">ดาวหางฮัลเลย์ (Halley Comet) - e = 0.967 (สุดขั้ว)</option>
+                        <option value="custom" selected>ดาวเคราะห์ปรับแต่งเอง (Custom)</option>
+                    </select>
+                </div>
+
+                <!-- Interactive Sliders Group -->
+                <div class="glass-card p-3.5 rounded-xl space-y-4">
+                    <div class="text-xs font-bold text-sky-400 border-b border-white/10 pb-1.5 flex items-center justify-between">
+                        <span>ปรับแต่งวงโคจรดาวเคราะห์</span>
+                        <span class="text-[10px] text-gray-400 font-normal">Real-time Adjust</span>
+                    </div>
+
+                    <!-- Eccentricity Slider -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-300">ความรีวงโคจร (Eccentricity e):</span>
+                            <span id="val-eccentricity" class="font-mono text-sky-400 font-bold">0.30</span>
+                        </div>
+                        <input type="range" id="slider-eccentricity" min="0" max="0.85" step="0.01" value="0.30" class="w-full" oninput="updateSimulationParams()">
+                        <div class="flex justify-between text-[10px] text-gray-500 font-mono">
+                            <span>0.00 (วงกลม)</span>
+                            <span>0.85 (วงรีมาก)</span>
+                        </div>
+                    </div>
+
+                    <!-- Semi-Major Axis Slider -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-300">ขนาดครึ่งแกนเอก (Semi-major a):</span>
+                            <span id="val-semimajor" class="font-mono text-emerald-400 font-bold">12.0 AU</span>
+                        </div>
+                        <input type="range" id="slider-semimajor" min="5" max="25" step="0.5" value="12.0" class="w-full" oninput="updateSimulationParams()">
+                        <div class="flex justify-between text-[10px] text-gray-500 font-mono">
+                            <span>5.0 AU</span>
+                            <span>25.0 AU</span>
+                        </div>
+                    </div>
+
+                    <!-- Simulation Speed Slider -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-300">ความเร็วแบบจำลอง (Speed multiplier):</span>
+                            <span id="val-speed" class="font-mono text-amber-400 font-bold">1.0x</span>
+                        </div>
+                        <input type="range" id="slider-speed" min="0" max="3" step="0.1" value="1.0" class="w-full" oninput="updateSimulationParams()">
+                    </div>
+                </div>
+
+                <!-- Visualization Toggles -->
+                <div class="glass-card p-3.5 rounded-xl space-y-2.5">
+                    <div class="text-xs font-bold text-sky-400 border-b border-white/10 pb-1.5">
+                        การแสดงผลช่วยจำลอง (Visual Helpers)
+                    </div>
+
+                    <label class="flex items-center justify-between text-xs text-gray-300 cursor-pointer p-1 hover:bg-white/5 rounded-lg transition">
+                        <span class="flex items-center gap-2">
+                            <i data-lucide="eye" class="w-4 h-4 text-sky-400"></i> แสดงเส้นวงโคจร (Orbit Line)
+                        </span>
+                        <input type="checkbox" id="toggle-orbit" checked onchange="toggleVisuals()" class="accent-sky-500 w-4 h-4 rounded">
+                    </label>
+
+                    <label class="flex items-center justify-between text-xs text-gray-300 cursor-pointer p-1 hover:bg-white/5 rounded-lg transition">
+                        <span class="flex items-center gap-2">
+                            <i data-lucide="pie-chart" class="w-4 h-4 text-pink-400"></i> แสดงพื้นที่กวาด (Equal Area Sectors)
+                        </span>
+                        <input type="checkbox" id="toggle-sweep" checked onchange="toggleVisuals()" class="accent-pink-500 w-4 h-4 rounded">
+                    </label>
+
+                    <label class="flex items-center justify-between text-xs text-gray-300 cursor-pointer p-1 hover:bg-white/5 rounded-lg transition">
+                        <span class="flex items-center gap-2">
+                            <i data-lucide="arrow-up-right" class="w-4 h-4 text-emerald-400"></i> แสดงเวกเตอร์ความเร็ว (Velocity Vector)
+                        </span>
+                        <input type="checkbox" id="toggle-velocity" checked onchange="toggleVisuals()" class="accent-emerald-500 w-4 h-4 rounded">
+                    </label>
+
+                    <label class="flex items-center justify-between text-xs text-gray-300 cursor-pointer p-1 hover:bg-white/5 rounded-lg transition">
+                        <span class="flex items-center gap-2">
+                            <i data-lucide="crosshair" class="w-4 h-4 text-purple-400"></i> แสดงจุดโฟกัสคู่ ($F_1, F_2$)
+                        </span>
+                        <input type="checkbox" id="toggle-foci" checked onchange="toggleVisuals()" class="accent-purple-500 w-4 h-4 rounded">
+                    </label>
+                </div>
+
+                <!-- Camera Angle Selection -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
+                        <i data-lucide="camera" class="w-3.5 h-3.5 text-sky-400"></i> มุมกล้อง (Camera View)
+                    </label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="setCameraView('perspective')" class="py-2 bg-space-800 hover:bg-space-700 text-gray-300 rounded-xl text-xs border border-white/5 transition flex flex-col items-center gap-1">
+                            <i data-lucide="box" class="w-4 h-4 text-sky-400"></i> อิสระ (3D)
+                        </button>
+                        <button onclick="setCameraView('top')" class="py-2 bg-space-800 hover:bg-space-700 text-gray-300 rounded-xl text-xs border border-white/5 transition flex flex-col items-center gap-1">
+                            <i data-lucide="arrow-down" class="w-4 h-4 text-emerald-400"></i> มุมมองบน (Top)
+                        </button>
+                        <button onclick="setCameraView('follow')" class="py-2 bg-space-800 hover:bg-space-700 text-gray-300 rounded-xl text-xs border border-white/5 transition flex flex-col items-center gap-1">
+                            <i data-lucide="navigation" class="w-4 h-4 text-amber-400"></i> ตามดาว (Follow)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Simulation Play Pause -->
+                <div class="pt-2 flex gap-2">
+                    <button id="btn-play" onclick="togglePlayPause()" class="flex-1 py-3 bg-sky-500 hover:bg-sky-400 text-space-900 font-bold rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-sky-500/20">
+                        <i data-lucide="pause" id="icon-play" class="w-4 h-4"></i> <span id="text-play">หยุดชั่วคราว (Pause)</span>
+                    </button>
+                </div>
+
+            </div>
+        </aside>
+    </div>
+
+    <!-- MAIN THREE.JS SIMULATION SCRIPT -->
+    <script>
+        // Global Simulation State Variables
+        const state = {
+            a: 12.0,            // Semi-major axis
+            e: 0.30,            // Eccentricity
+            speedMultiplier: 1.0,
+            isPlaying: true,
+            cameraMode: 'perspective', // perspective, top, follow
+            showOrbit: true,
+            showSweep: true,
+            showVelocity: true,
+            showFoci: true,
+            
+            // Internal Math / Physics State
+            trueAnomaly: 0,     // Current angle theta (radians)
+            orbitalPeriod: 1,  // Calculated period T
+            velocity: 0,
+            
+            // Sweep sector recording
+            sweepSectors: [],
+            lastSectorAngle: 0,
+            sectorAngleInterval: Math.PI / 6 // 30 degrees interval for equal time visualization
+        };
+
+        // Three.js Core Variables
+        let scene, camera, renderer, controls;
+        let sunMesh, planetMesh, orbitLine, velocityArrow, fociGroup, sweepMeshGroup;
+        let starField;
+
+        // Constants
+        const G_MASS = 1000; // Gravitational constant * Sun Mass factor for simulation scaling
+
+        // Initialize Simulation on Load
+        window.addEventListener('DOMContentLoaded', () => {
+            initThreeJS();
+            initMathKaTeX();
+            createSpaceObjects();
+            updateOrbitGeometry();
+            setupEvents();
+            lucide.createIcons();
+            animate();
+        });
+
+        // Initialize KaTeX Math Formats
+        function initMathKaTeX() {
+            if (window.katex) {
+                katex.render("T^2 \\propto a^3", document.querySelector("#tab-law3"));
+            }
+        }
+
+        // Initialize Three.js Scene, Camera, Renderer
+        function initThreeJS() {
+            const container = document.getElementById('canvas-container');
+
+            // Scene
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x0B0E14, 0.005);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 25, 35);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxDistance = 200;
+            controls.minDistance = 5;
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+            scene.add(ambientLight);
+
+            const sunLight = new THREE.PointLight(0xfffaed, 2, 300);
+            sunLight.castShadow = true;
+            scene.add(sunLight);
+        }
+
+        // Create Sun, Planet, Stars Background, and Helper Groups
+        function createSpaceObjects() {
+            // Starfield Background
+            const starsGeo = new THREE.BufferGeometry();
+            const starsCount = 3000;
+            const starPos = new Float32Array(starsCount * 3);
+            for (let i = 0; i < starsCount * 3; i++) {
+                starPos[i] = (Math.random() - 0.5) * 500;
+            }
+            starsGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+            const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.8, transparent: true, opacity: 0.8 });
+            starField = new THREE.Points(starsGeo, starsMat);
+            scene.add(starField);
+
+            // Sun (Placed at Focus F1 = [0, 0, 0])
+            const sunGeo = new THREE.SphereGeometry(1.8, 32, 32);
+            const sunMat = new THREE.MeshBasicMaterial({ color: 0xF59E0B });
+            sunMesh = new THREE.Mesh(sunGeo, sunMat);
+            scene.add(sunMesh);
+
+            // Sun Glow Effect
+            const glowGeo = new THREE.SphereGeometry(2.3, 32, 32);
+            const glowMat = new THREE.MeshBasicMaterial({ color: 0xfcb034, transparent: true, opacity: 0.25 });
+            const sunGlow = new THREE.Mesh(glowGeo, glowMat);
+            sunMesh.add(sunGlow);
+
+            // Planet (Earth-like default)
+            const planetGeo = new THREE.SphereGeometry(0.7, 32, 32);
+            const planetMat = new THREE.MeshStandardMaterial({
+                color: 0x10B981,
+                roughness: 0.4,
+                metalness: 0.2
+            });
+            planetMesh = new THREE.Mesh(planetGeo, planetMat);
+            scene.add(planetMesh);
+
+            // Orbit Line Object
+            const orbitMat = new THREE.LineBasicMaterial({ color: 0x38BDF8, transparent: true, opacity: 0.6 });
+            orbitLine = new THREE.Line(new THREE.BufferGeometry(), orbitMat);
+            scene.add(orbitLine);
+
+            // Velocity Vector Arrow Helper
+            velocityArrow = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(), 3, 0x10B981, 0.8, 0.5);
+            scene.add(velocityArrow);
+
+            // Focal Points Helper Group
+            fociGroup = new THREE.Group();
+            
+            // F1 marker (Sun focus)
+            const f1Geo = new THREE.RingGeometry(2.0, 2.2, 32);
+            const f1Mat = new THREE.MeshBasicMaterial({ color: 0xF59E0B, side: THREE.DoubleSide });
+            const f1Mesh = new THREE.Mesh(f1Geo, f1Mat);
+            f1Mesh.rotation.x = Math.PI / 2;
+            fociGroup.add(f1Mesh);
+
+            // F2 marker (Secondary focus)
+            const f2Geo = new THREE.SphereGeometry(0.3, 16, 16);
+            const f2Mat = new THREE.MeshBasicMaterial({ color: 0xA855F7 });
+            const f2Mesh = new THREE.Mesh(f2Geo, f2Mat);
+            f2Mesh.name = "f2Mesh";
+            fociGroup.add(f2Mesh);
+
+            scene.add(fociGroup);
+
+            // Group for Equal Area Sweep Sectors
+            sweepMeshGroup = new THREE.Group();
+            scene.add(sweepMeshGroup);
+        }
+
+        // Recalculate and Redraw Orbit, Focus F2, and Sweep Geometry
+        function updateOrbitGeometry() {
+            const points = [];
+            const segments = 200;
+
+            // Focal distance c = a * e
+            const c = state.a * state.e;
+            const b = state.a * Math.sqrt(1 - state.e * state.e); // Semi-minor axis
+
+            // Center of ellipse is shifted relative to Sun (which is at (0,0,0))
+            // Orbit equation in polar coordinates around focus F1 (Sun): r = a(1 - e^2) / (1 + e * cos(theta))
+            for (let i = 0; i <= segments; i++) {
+                const theta = (i / segments) * Math.PI * 2;
+                const r = (state.a * (1 - state.e * state.e)) / (1 + state.e * Math.cos(theta));
+                const x = r * Math.cos(theta);
+                const z = r * Math.sin(theta);
+                points.push(new THREE.Vector3(x, 0, z));
+            }
+
+            orbitLine.geometry.dispose();
+            orbitLine.geometry = new THREE.BufferGeometry().setFromPoints(points);
+
+            // Position Secondary Focus F2 at (-2*c, 0, 0) relative to Sun at origin
+            const f2Mesh = fociGroup.getObjectByName("f2Mesh");
+            if (f2Mesh) {
+                f2Mesh.position.set(-2 * c, 0, 0);
+            }
+
+            // Calculate Period T = sqrt(a^3)
+            state.orbitalPeriod = Math.sqrt(Math.pow(state.a, 3));
+
+            // Clear Sweep Sectors on Orbit Shape Change
+            clearSweepSectors();
+
+            // Update Math Monitor Display UI
+            updateUIStats();
+        }
+
+        // Draw an Equal-Area Sector Wedge
+        function addSweepSector(startAngle, endAngle) {
+            const shape = new THREE.Shape();
+            shape.moveTo(0, 0); // Sun origin
+
+            const segments = 20;
+            for (let i = 0; i <= segments; i++) {
+                const theta = startAngle + (i / segments) * (endAngle - startAngle);
+                const r = (state.a * (1 - state.e * state.e)) / (1 + state.e * Math.cos(theta));
+                const x = r * Math.cos(theta);
+                const z = r * Math.sin(theta);
+                shape.lineTo(x, z);
+            }
+            shape.lineTo(0, 0);
+
+            const geometry = new THREE.ShapeGeometry(shape);
+            // Rotate shape geometry to match XZ orbital plane
+            geometry.rotateX(Math.PI / 2);
+
+            // Alternate colors for visually distinct sectors
+            const colors = [0xEC4899, 0x8B5CF6, 0x3B82F6, 0x10B981, 0xF59E0B];
+            const color = colors[sweepMeshGroup.children.length % colors.length];
+
+            const material = new THREE.MeshBasicMaterial({
+                color: color,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.35
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            sweepMeshGroup.add(mesh);
+
+            // Limit active sectors on screen
+            if (sweepMeshGroup.children.length > 8) {
+                const oldest = sweepMeshGroup.children.shift();
+                oldest.geometry.dispose();
+                oldest.material.dispose();
+                scene.remove(oldest);
+            }
+        }
+
+        function clearSweepSectors() {
+            while (sweepMeshGroup.children.length > 0) {
+                const obj = sweepMeshGroup.children.pop();
+                obj.geometry.dispose();
+                obj.material.dispose();
+            }
+            state.lastSectorAngle = state.trueAnomaly;
+        }
+
+        // Main Animation Loop
+        let clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+
+            if (state.isPlaying) {
+                // Calculate current distance r from Sun
+                const r = (state.a * (1 - state.e * state.e)) / (1 + state.e * Math.cos(state.trueAnomaly));
+
+                // Kepler's 2nd Law Differential: d(theta)/dt = L / (m * r^2) = C / r^2
+                // Angular speed is inversely proportional to r^2
+                const angularVelocity = (Math.sqrt(G_MASS * state.a * (1 - state.e * state.e)) / (r * r)) * 0.05 * state.speedMultiplier;
+
+                state.trueAnomaly += angularVelocity;
+
+                // Wrap angle around 2PI
+                if (state.trueAnomaly >= Math.PI * 2) {
+                    state.trueAnomaly -= Math.PI * 2;
+                    state.lastSectorAngle = state.trueAnomaly;
+                }
+
+                // Update Planet Position
+                const x = r * Math.cos(state.trueAnomaly);
+                const z = r * Math.sin(state.trueAnomaly);
+                planetMesh.position.set(x, 0, z);
+
+                // Calculate Orbital Speed v = sqrt( G*M * (2/r - 1/a) )
+                state.velocity = Math.sqrt(G_MASS * (2 / r - 1 / state.a));
+
+                // Update Velocity Vector Helper
+                if (state.showVelocity) {
+                    // Velocity direction is tangent to ellipse
+                    const tangentX = -Math.sin(state.trueAnomaly) - state.e * Math.sin(state.trueAnomaly);
+                    const tangentZ = Math.cos(state.trueAnomaly) + state.e;
+                    const dir = new THREE.Vector3(tangentX, 0, tangentZ).normalize();
+
+                    velocityArrow.position.set(x, 0, z);
+                    velocityArrow.setDirection(dir);
+                    velocityArrow.setLength(Math.min(state.velocity * 0.25, 8));
+                }
+
+                // Equal Area Sweep Logic (Law 2 visualizer)
+                if (state.showSweep) {
+                    const angleDiff = Math.abs(state.trueAnomaly - state.lastSectorAngle);
+                    if (angleDiff >= state.sectorAngleInterval) {
+                        addSweepSector(state.lastSectorAngle, state.trueAnomaly);
+                        state.lastSectorAngle = state.trueAnomaly;
+                    }
+
+                    // Update sector progress bar UI
+                    const progressPercent = Math.min((angleDiff / state.sectorAngleInterval) * 100, 100);
+                    const progressBar = document.getElementById('sector-progress');
+                    if (progressBar) progressBar.style.width = `${progressPercent}%`;
+                }
+
+                // Update Realtime HUD / Monitors
+                updateRealtimeMonitors(r);
+            }
+
+            // Camera View Tracking Logic
+            if (state.cameraMode === 'follow') {
+                camera.position.x = planetMesh.position.x + 8;
+                camera.position.z = planetMesh.position.z + 8;
+                camera.position.y = 6;
+                controls.target.copy(planetMesh.position);
+            } else if (state.cameraMode === 'top') {
+                camera.position.set(0, 40, 0.001);
+                controls.target.set(0, 0, 0);
+            }
+
+            // Rotate Sun slightly
+            sunMesh.rotation.y += 0.002;
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Realtime Data HUD Monitor Updates
+        function updateRealtimeMonitors(currentDistance) {
+            const velEl = document.getElementById('monitor-velocity');
+            if (velEl) velEl.innerText = `${(state.velocity * 3.2).toFixed(2)} km/s`;
+
+            const areaEl = document.getElementById('monitor-area');
+            if (areaEl) areaEl.innerText = `${(state.a * Math.sqrt(1 - state.e * state.e) * 10).toFixed(1)} AU²`;
+        }
+
+        // Update Math & Parameter UI Cards
+        function updateUIStats() {
+            const perihelion = (state.a * (1 - state.e)).toFixed(2);
+            const aphelion = (state.a * (1 + state.e)).toFixed(2);
+
+            document.getElementById('monitor-eccentricity').innerText = state.e.toFixed(2);
+            document.getElementById('monitor-semimajor').innerText = `${state.a.toFixed(1)} AU`;
+            document.getElementById('monitor-perihelion').innerText = `${perihelion} AU`;
+            document.getElementById('monitor-aphelion').innerText = `${aphelion} AU`;
+
+            // Law 3 custom row update
+            const customT = Math.sqrt(Math.pow(state.a, 3));
+            const ratio = (Math.pow(customT, 2) / Math.pow(state.a, 3)).toFixed(2);
+
+            document.getElementById('table-custom-a').innerText = state.a.toFixed(1);
+            document.getElementById('table-custom-t').innerText = customT.toFixed(2);
+            document.getElementById('table-custom-ratio').innerText = ratio;
+        }
+
+        // User Input Handlers
+        function updateSimulationParams() {
+            state.e = parseFloat(document.getElementById('slider-eccentricity').value);
+            state.a = parseFloat(document.getElementById('slider-semimajor').value);
+            state.speedMultiplier = parseFloat(document.getElementById('slider-speed').value);
+
+            // Update Label Text
+            document.getElementById('val-eccentricity').innerText = state.e.toFixed(2);
+            document.getElementById('val-semimajor').innerText = `${state.a.toFixed(1)} AU`;
+            document.getElementById('val-speed').innerText = `${state.speedMultiplier.toFixed(1)}x`;
+
+            // Reset dropdown to custom if modified manually
+            document.getElementById('preset-select').value = 'custom';
+
+            updateOrbitGeometry();
+        }
+
+        // Apply Preset Planet Values
+        function applyPlanetPreset(presetKey) {
+            const presets = {
+                earth: { a: 10.0, e: 0.017 },
+                mercury: { a: 6.0, e: 0.205 },
+                mars: { a: 14.0, e: 0.093 },
+                jupiter: { a: 22.0, e: 0.048 },
+                halley: { a: 18.0, e: 0.85 },
+                custom: { a: state.a, e: state.e }
+            };
+
+            if (presets[presetKey]) {
+                const target = presets[presetKey];
+                state.a = target.a;
+                state.e = target.e;
+
+                document.getElementById('slider-semimajor').value = state.a;
+                document.getElementById('slider-eccentricity').value = state.e;
+                document.getElementById('val-semimajor').innerText = `${state.a.toFixed(1)} AU`;
+                document.getElementById('val-eccentricity').innerText = state.e.toFixed(2);
+
+                updateOrbitGeometry();
+            }
+        }
+
+        // Visual Visibility Toggles
+        function toggleVisuals() {
+            state.showOrbit = document.getElementById('toggle-orbit').checked;
+            state.showSweep = document.getElementById('toggle-sweep').checked;
+            state.showVelocity = document.getElementById('toggle-velocity').checked;
+            state.showFoci = document.getElementById('toggle-foci').checked;
+
+            orbitLine.visible = state.showOrbit;
+            sweepMeshGroup.visible = state.showSweep;
+            velocityArrow.visible = state.showVelocity;
+            fociGroup.visible = state.showFoci;
+        }
+
+        // Camera Switcher
+        function setCameraView(mode) {
+            state.cameraMode = mode;
+            if (mode === 'perspective') {
+                camera.position.set(0, 25, 35);
+                controls.target.set(0, 0, 0);
+            }
+        }
+
+        // Play/Pause Control
+        function togglePlayPause() {
+            state.isPlaying = !state.isPlaying;
+            const btnText = document.getElementById('text-play');
+            const icon = document.getElementById('icon-play');
+
+            if (state.isPlaying) {
+                btnText.innerText = 'หยุดชั่วคราว (Pause)';
+                icon.setAttribute('data-lucide', 'pause');
+            } else {
+                btnText.innerText = 'เล่นต่อ (Play)';
+                icon.setAttribute('data-lucide', 'play');
+            }
+            lucide.createIcons();
+        }
+
+        // Reset Settings
+        function resetToDefaults() {
+            document.getElementById('preset-select').value = 'earth';
+            applyPlanetPreset('earth');
+            setCameraView('perspective');
+            state.isPlaying = true;
+            document.getElementById('text-play').innerText = 'หยุดชั่วคราว (Pause)';
+            lucide.createIcons();
+        }
+
+        // Theory Tabs Switching Function
+        function switchTab(lawKey) {
+            // Hide all contents
+            ['law1', 'law2', 'law3'].forEach(k => {
+                document.getElementById(`content-${k}`).classList.add('hidden');
+                document.getElementById(`tab-${k}`).classList.remove('active');
+            });
+
+            // Show selected content
+            document.getElementById(`content-${lawKey}`).classList.remove('hidden');
+            document.getElementById(`tab-${lawKey}`).classList.add('active');
+        }
+
+        // Resize Listener
+        function setupEvents() {
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+    </script>
+</body>
+</html>

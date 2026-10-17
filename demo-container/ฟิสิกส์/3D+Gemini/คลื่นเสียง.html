@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Sound Wave Simulation & Synthesizer - แบบจำลองคลื่นเสียง 3 มิติ</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        space: {
+                            900: '#0B0E14',
+                            800: '#151922',
+                            700: '#1F2430',
+                            accent: '#38BDF8',
+                            wave: '#06B6D4',
+                            compression: '#EF4444',
+                            rarefaction: '#3B82F6'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Sarabun', 'Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- KaTeX for Physics Math formatting -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #0B0E14;
+            color: #F3F4F6;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+        }
+
+        /* Glassmorphism custom styles */
+        .glass-panel {
+            background: rgba(21, 25, 34, 0.82);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+        }
+
+        .glass-card {
+            background: rgba(31, 36, 48, 0.55);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(11, 14, 20, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.3);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(56, 189, 248, 0.6);
+        }
+
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            height: 6px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #38BDF8;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+            transition: all 0.2s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            scale: 1.2;
+            background: #7dd3fc;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+
+        .tab-btn.active {
+            background-color: rgba(56, 189, 248, 0.2);
+            color: #38BDF8;
+            border-bottom: 2px solid #38BDF8;
+        }
+    </style>
+</head>
+<body class="select-none">
+
+    <!-- 3D WebGL Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- Start Audio Overlay Banner (If AudioContext is suspended) -->
+    <div id="audio-start-overlay" class="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md transition-opacity duration-500">
+        <div class="glass-panel p-8 rounded-3xl text-center max-w-md mx-4 border border-cyan-500/30 shadow-2xl space-y-4">
+            <div class="w-16 h-16 bg-cyan-500/20 text-cyan-400 rounded-full flex items-center justify-center mx-auto border border-cyan-500/40 animate-pulse">
+                <i data-lucide="volume-2" class="w-8 h-8"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-white">เริ่มต้นการทดลองคลื่นเสียง 3D</h2>
+            <p class="text-sm text-gray-300">คลิกเพื่อเปิดใช้งานระบบ Web Audio API สังเคราะห์เสียงจริง และจำลองการเคลื่อนที่ของอนุภาคอากาศแบบ 3 มิติ</p>
+            <button onclick="initAudioContext()" class="w-full py-3.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2">
+                <i data-lucide="play-circle" class="w-5 h-5"></i> เปิดใช้งานระบบเสียงและเริ่มจำลอง
+            </button>
+        </div>
+    </div>
+
+    <!-- UI Overlay Header / Title -->
+    <header class="absolute top-4 left-4 z-10 flex items-center gap-3 glass-panel px-4 py-2.5 rounded-2xl pointer-events-auto">
+        <div class="p-2 bg-cyan-500/20 text-cyan-400 rounded-xl">
+            <i data-lucide="waves" class="w-6 h-6 animate-pulse"></i>
+        </div>
+        <div>
+            <a href="../physics.html"><h1 class="font-bold text-lg leading-tight text-white flex items-center gap-2">
+                คลื่นเสียง 3D <span class="text-xs font-normal px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">Web Audio & 3D Interactive</span>
+            </h1></a>
+            <p class="text-xs text-gray-400">แบบจำลองการแพร่กระจายคลื่นเสียง อนุภาคอากาศ และการสังเคราะห์เสียงจริง</p>
+        </div>
+    </header>
+
+    <!-- Main Floating Layout Container -->
+    <div class="absolute inset-0 pt-20 p-4 pointer-events-none grid grid-cols-1 md:grid-cols-12 gap-4 h-full pb-6">
+
+        <!-- ================= SECTION 1: Theory & Educational Panel (Left Side) ================= -->
+        <aside class="md:col-span-4 lg:col-span-4 glass-panel rounded-2xl flex flex-col pointer-events-auto overflow-hidden max-h-[calc(100vh-6rem)] transition-all duration-300 shadow-2xl">
+            <!-- Panel Header & Navigation Tabs -->
+            <div class="p-4 border-b border-white/10 bg-space-800/80">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="font-semibold text-white flex items-center gap-2">
+                        <i data-lucide="book-open" class="w-5 h-5 text-cyan-400"></i>
+                        คำอธิบายและทฤษฎี (Sound Theory)
+                    </h2>
+                    <span class="text-xs bg-space-700 text-cyan-300 px-2 py-1 rounded-md border border-white/5">Physics 101</span>
+                </div>
+
+                <!-- Law / Mode Tabs -->
+                <div class="grid grid-cols-3 gap-1 bg-space-900/60 p-1 rounded-xl text-xs font-medium">
+                    <button onclick="switchTheoryTab('structure')" id="tab-structure" class="tab-btn active py-2 rounded-lg transition text-center flex flex-col sm:flex-row items-center justify-center gap-1.5">
+                        <i data-lucide="git-commit" class="w-3.5 h-3.5"></i> โครงสร้าง
+                    </button>
+                    <button onclick="switchTheoryTab('formula')" id="tab-formula" class="tab-btn py-2 rounded-lg transition text-center flex flex-col sm:flex-row items-center justify-center gap-1.5">
+                        <i data-lucide="calculator" class="w-3.5 h-3.5"></i> คำนวณสูตร
+                    </button>
+                    <button onclick="switchTheoryTab('oscilloscope')" id="tab-oscilloscope" class="tab-btn py-2 rounded-lg transition text-center flex flex-col sm:flex-row items-center justify-center gap-1.5">
+                        <i data-lucide="activity" class="w-3.5 h-3.5"></i> รูปคลื่นสด
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab Content Area -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-4 text-sm text-gray-300">
+
+                <!-- STRUCTURE TAB -->
+                <div id="content-structure" class="space-y-4">
+                    <div class="glass-card p-4 rounded-xl border-l-4 border-cyan-400">
+                        <h3 class="font-bold text-white text-base mb-1 flex items-center gap-2">
+                            คลื่นเสียงคืออะไร? (What is a Sound Wave?)
+                        </h3>
+                        <p class="text-xs text-gray-300 leading-relaxed">
+                            คลื่นเสียงเป็น **คลื่นตามยาว (Longitudinal Wave)** ที่ต้องอาศัยตัวกลาง (เช่น อากาศ) ในการเคลื่อนที่ โดยเกิดจากการสั่นสะเทือนของแหล่งกำเนิดเสียง ทำให้อณูอากาศเกิดการอัดและขยายตัวสลับกันไป
+                        </p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <h4 class="text-xs font-semibold uppercase text-cyan-400 tracking-wider">องค์ประกอบสำคัญ (Key Components)</h4>
+                        <ul class="space-y-2 text-xs">
+                            <li class="bg-space-800/50 p-2.5 rounded-lg border border-white/5 flex gap-2.5 items-start">
+                                <div class="w-3 h-3 rounded-full bg-red-500 mt-0.5 shrink-0"></div>
+                                <div><strong class="text-white">ส่วนอัด (Compression):</strong> บริเวณที่อนุภาคอากาศถูกดันชิดกัน ความดันอากาศและความหนาแน่นจะ **สูงกว่าปกติ**</div>
+                            </li>
+                            <li class="bg-space-800/50 p-2.5 rounded-lg border border-white/5 flex gap-2.5 items-start">
+                                <div class="w-3 h-3 rounded-full bg-blue-500 mt-0.5 shrink-0"></div>
+                                <div><strong class="text-white">ส่วนขยาย (Rarefaction):</strong> บริเวณที่อนุภาคอากาศขยายตัวห่างจากกัน ความดันอากาศและความหนาแน่นจะ **ต่ำกว่าปกติ**</div>
+                            </li>
+                            <li class="bg-space-800/50 p-2.5 rounded-lg border border-white/5 flex gap-2.5 items-start">
+                                <div class="w-3 h-3 rounded-full bg-emerald-400 mt-0.5 shrink-0"></div>
+                                <div><strong class="text-white">ความยาวคลื่น ($\lambda$):</strong> ระยะห่างระหว่างส่วนอัดถึงส่วนอัดถัดไป หรือส่วนขยายถึงส่วนขยายถัดไป</div>
+                            </li>
+                            <li class="bg-space-800/50 p-2.5 rounded-lg border border-white/5 flex gap-2.5 items-start">
+                                <div class="w-3 h-3 rounded-full bg-amber-400 mt-0.5 shrink-0"></div>
+                                <div><strong class="text-white">แอมพลิจูด (Amplitude):</strong> การกระจัดสูงสุดของอนุภาคจากตำแหน่งสมดุล กำหนด **ความดัง** ของเสียง</div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- FORMULA TAB -->
+                <div id="content-formula" class="space-y-4 hidden">
+                    <div class="glass-card p-4 rounded-xl border-l-4 border-amber-400">
+                        <h3 class="font-bold text-white text-base mb-1 flex items-center gap-2">
+                            สูตรความเร็วคลื่นเสียง (Wave Speed Formula)
+                        </h3>
+                        <div id="math-formula-box" class="py-2 text-center text-lg text-amber-300 font-mono">
+                            $$v = f \cdot \lambda$$
+                        </div>
+                        <p class="text-xs text-gray-300 text-center">
+                            ความเร็ว ($v$) = ความถี่ ($f$) $\times$ ความยาวคลื่น ($\lambda$)
+                        </p>
+                    </div>
+
+                    <!-- Live Physics Calculation Box -->
+                    <div class="glass-card p-3.5 rounded-xl space-y-3">
+                        <div class="text-xs font-semibold text-gray-400 border-b border-white/10 pb-1 flex justify-between items-center">
+                            <span>คำนวณค่าจริงแบบ Real-time</span>
+                            <span class="text-[10px] text-cyan-400 font-mono">In Air (~343 m/s)</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="bg-space-900/70 p-2.5 rounded-lg">
+                                <span class="text-gray-400 block text-[10px]">ความถี่ปัจจุบัน (f)</span>
+                                <span id="calc-freq" class="font-mono text-cyan-400 font-bold text-sm">440 Hz</span>
+                            </div>
+                            <div class="bg-space-900/70 p-2.5 rounded-lg">
+                                <span class="text-gray-400 block text-[10px]">ความยาวคลื่น ($\lambda$)</span>
+                                <span id="calc-lambda" class="font-mono text-emerald-400 font-bold text-sm">0.78 m</span>
+                            </div>
+                            <div class="bg-space-900/70 p-2.5 rounded-lg">
+                                <span class="text-gray-400 block text-[10px]">ความเร็วในอากาศ (v)</span>
+                                <span class="font-mono text-amber-400 font-bold text-sm">343.0 m/s</span>
+                            </div>
+                            <div class="bg-space-900/70 p-2.5 rounded-lg">
+                                <span class="text-gray-400 block text-[10px]">คาบการสั่น (Period T = 1/f)</span>
+                                <span id="calc-period" class="font-mono text-pink-400 font-bold text-sm">2.27 ms</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-xs text-gray-400 bg-space-800/40 p-3 rounded-xl border border-white/5 space-y-1">
+                        <strong class="text-white">ข้อสังเกต:</strong>
+                        <p>เมื่อปรับ **ความถี่ ($f$) เพิ่มขึ้น** ความยาวคลื่น ($\lambda$) จะ **สั้นลง** เพื่อให้ความเร็วคลื่น ($v$) ในตัวกลางเดิมคงที่</p>
+                    </div>
+                </div>
+
+                <!-- OSCILLOSCOPE TAB -->
+                <div id="content-oscilloscope" class="space-y-4 hidden">
+                    <div class="glass-card p-3 rounded-xl space-y-2">
+                        <div class="flex justify-between items-center text-xs border-b border-white/10 pb-1.5">
+                            <span class="font-bold text-cyan-400 flex items-center gap-1.5">
+                                <i data-lucide="activity" class="w-4 h-4"></i> Real-time Audio Oscilloscope
+                            </span>
+                            <span class="text-[10px] text-gray-400 font-mono">Web Audio Analyser</span>
+                        </div>
+                        
+                        <!-- Oscilloscope 2D Canvas -->
+                        <div class="relative bg-space-900 rounded-lg border border-cyan-500/30 overflow-hidden">
+                            <canvas id="oscilloscope-canvas" width="320" height="150" class="w-full h-36 block"></canvas>
+                            <div class="absolute top-1 right-2 text-[9px] font-mono text-cyan-400/70">Time Domain</div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                            <div class="flex justify-between bg-space-900/50 p-1.5 rounded">
+                                <span class="text-gray-400">Wave Form:</span>
+                                <span id="osc-wave-type" class="text-cyan-300 font-bold uppercase">SINE</span>
+                            </div>
+                            <div class="flex justify-between bg-space-900/50 p-1.5 rounded">
+                                <span class="text-gray-400">Peak Volume:</span>
+                                <span id="osc-vol-peak" class="text-emerald-400 font-bold">50%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- Spacer on desktop -->
+        <div class="hidden md:block md:col-span-3 lg:col-span-4"></div>
+
+        <!-- ================= SECTION 2: Control Panel & Sandbox (Right Side) ================= -->
+        <aside class="md:col-span-5 lg:col-span-4 glass-panel rounded-2xl flex flex-col pointer-events-auto overflow-hidden max-h-[calc(100vh-6rem)] transition-all duration-300 shadow-2xl">
+            <!-- Panel Header -->
+            <div class="p-4 border-b border-white/10 bg-space-800/80 flex justify-between items-center">
+                <h2 class="font-semibold text-white flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-5 h-5 text-cyan-400"></i>
+                    ส่วนทดลองและตั้งค่า (Audio Sandbox)
+                </h2>
+                <button onclick="resetAudioDefaults()" class="p-1.5 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg transition" title="รีเซ็ตค่าเริ่มต้น">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Controls Body Content -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+
+                <!-- Audio Mute / Unmute Toggle Button -->
+                <div class="flex gap-2">
+                    <button id="btn-audio-toggle" onclick="toggleAudioMute()" class="flex-1 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20">
+                        <i data-lucide="volume-2" id="icon-audio-mute" class="w-4 h-4"></i>
+                        <span id="text-audio-mute">เปิดเสียงสังเคราะห์ (Audio Playing)</span>
+                    </button>
+                </div>
+
+                <!-- Waveform Generator Selector -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
+                        <i data-lucide="music" class="w-3.5 h-3.5 text-cyan-400"></i> รูปแบบคลื่นสัญญาณเสียง (Waveform)
+                    </label>
+                    <div class="grid grid-cols-4 gap-1.5 bg-space-900/80 p-1 rounded-xl text-xs">
+                        <button onclick="setWaveform('sine')" id="btn-wave-sine" class="wave-btn py-2 rounded-lg bg-cyan-500/20 text-cyan-300 font-semibold border border-cyan-500/40 transition text-center">Sine</button>
+                        <button onclick="setWaveform('square')" id="btn-wave-square" class="wave-btn py-2 rounded-lg text-gray-400 hover:text-white transition text-center">Square</button>
+                        <button onclick="setWaveform('sawtooth')" id="btn-wave-sawtooth" class="wave-btn py-2 rounded-lg text-gray-400 hover:text-white transition text-center">Saw</button>
+                        <button onclick="setWaveform('triangle')" id="btn-wave-triangle" class="wave-btn py-2 rounded-lg text-gray-400 hover:text-white transition text-center">Triangle</button>
+                    </div>
+                </div>
+
+                <!-- Main Audio Sliders -->
+                <div class="glass-card p-3.5 rounded-xl space-y-3.5">
+                    <div class="text-xs font-bold text-cyan-400 border-b border-white/10 pb-1.5 flex items-center justify-between">
+                        <span>พารามิเตอร์คลื่นเสียง (Wave Parameters)</span>
+                        <span class="text-[10px] text-gray-400 font-normal">Real-time Synthesizer</span>
+                    </div>
+
+                    <!-- Frequency Slider -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-300">ความถี่ (Frequency f):</span>
+                            <span id="val-frequency" class="font-mono text-cyan-400 font-bold">440 Hz (Note A4)</span>
+                        </div>
+                        <input type="range" id="slider-frequency" min="100" max="1200" step="10" value="440" class="w-full" oninput="updateAudioParams()">
+                        <div class="flex justify-between text-[10px] text-gray-500 font-mono">
+                            <span>100 Hz (ทุ้ม)</span>
+                            <span>1200 Hz (แหลม)</span>
+                        </div>
+                    </div>
+
+                    <!-- Amplitude / Volume Slider -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-300">ความกว้างคลื่น / ความดัง (Amplitude):</span>
+                            <span id="val-amplitude" class="font-mono text-emerald-400 font-bold">50%</span>
+                        </div>
+                        <input type="range" id="slider-amplitude" min="0" max="100" step="1" value="50" class="w-full" oninput="updateAudioParams()">
+                    </div>
+
+                    <!-- Wave Propagation Speed Slider -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-300">ความเร็วการแผ่คลื่น (Visual Speed):</span>
+                            <span id="val-wavespeed" class="font-mono text-amber-400 font-bold">1.0x</span>
+                        </div>
+                        <input type="range" id="slider-wavespeed" min="0.2" max="3.0" step="0.1" value="1.0" class="w-full" oninput="updateAudioParams()">
+                    </div>
+                </div>
+
+                <!-- Wave Propagation Type / Mode -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
+                        <i data-lucide="compass" class="w-3.5 h-3.5 text-cyan-400"></i> รูปแบบการแสดงผลการแผ่กระจายคลื่น 3D
+                    </label>
+                    <select id="select-wave-mode" onchange="changeWaveMode(this.value)" class="w-full bg-space-900 border border-white/10 text-white rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+                        <option value="longitudinal" selected>คลื่นตามยาว / อัด-ขยาย (Longitudinal / Compression)</option>
+                        <option value="spherical">คลื่นทรงกลม 3 มิติ (Spherical 3D Wavefront)</option>
+                        <option value="transverse">คลื่นตามขวาง 3D (Transverse Wave View)</option>
+                        <option value="doppler">ปรากฏการณ์ดอปเพลอร์ (Doppler Effect Mode)</option>
+                    </select>
+                </div>
+
+                <!-- Visual Element Toggles -->
+                <div class="glass-card p-3.5 rounded-xl space-y-2">
+                    <div class="text-xs font-bold text-cyan-400 border-b border-white/10 pb-1.5">
+                        สวิตช์เปิด/ปิดองค์ประกอบ 3D (Visual Helpers)
+                    </div>
+
+                    <label class="flex items-center justify-between text-xs text-gray-300 cursor-pointer p-1 hover:bg-white/5 rounded-lg transition">
+                        <span class="flex items-center gap-2">
+                            <i data-lucide="sparkles" class="w-4 h-4 text-cyan-400"></i> สนามอนุภาคอากาศ (Air Particles Field)
+                        </span>
+                        <input type="checkbox" id="toggle-particles" checked onchange="toggleVisualElements()" class="accent-cyan-500 w-4 h-4 rounded">
+                    </label>
+
+                    <label class="flex items-center justify-between text-xs text-gray-300 cursor-pointer p-1 hover:bg-white/5 rounded-lg transition">
+                        <span class="flex items-center gap-2">
+                            <i data-lucide="disc" class="w-4 h-4 text-pink-400"></i> วงหน้าคลื่นความดัน (Wavefront Rings)
+                        </span>
+                        <input type="checkbox" id="toggle-rings" checked onchange="toggleVisualElements()" class="accent-pink-500 w-4 h-4 rounded">
+                    </label>
+
+                    <label class="flex items-center justify-between text-xs text-gray-300 cursor-pointer p-1 hover:bg-white/5 rounded-lg transition">
+                        <span class="flex items-center gap-2">
+                            <i data-lucide="grid" class="w-4 h-4 text-indigo-400"></i> ตาข่ายความดัน 3D (Sound Pressure Mesh)
+                        </span>
+                        <input type="checkbox" id="toggle-pressure-mesh" checked onchange="toggleVisualElements()" class="accent-indigo-500 w-4 h-4 rounded">
+                    </label>
+
+                    <label class="flex items-center justify-between text-xs text-gray-300 cursor-pointer p-1 hover:bg-white/5 rounded-lg transition">
+                        <span class="flex items-center gap-2">
+                            <i data-lucide="layout-grid" class="w-4 h-4 text-gray-400"></i> เส้นกริดอ้างอิง (Grid Helper)
+                        </span>
+                        <input type="checkbox" id="toggle-grid" checked onchange="toggleVisualElements()" class="accent-gray-400 w-4 h-4 rounded">
+                    </label>
+                </div>
+
+                <!-- Camera Angle Selection -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
+                        <i data-lucide="camera" class="w-3.5 h-3.5 text-cyan-400"></i> มุมมองกล้อง (Camera Preset)
+                    </label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="setCameraAngle('perspective')" class="py-2 bg-space-800 hover:bg-space-700 text-gray-300 rounded-xl text-xs border border-white/5 transition flex flex-col items-center gap-1">
+                            <i data-lucide="box" class="w-4 h-4 text-cyan-400"></i> 3D Perspective
+                        </button>
+                        <button onclick="setCameraAngle('side')" class="py-2 bg-space-800 hover:bg-space-700 text-gray-300 rounded-xl text-xs border border-white/5 transition flex flex-col items-center gap-1">
+                            <i data-lucide="align-justify" class="w-4 h-4 text-emerald-400"></i> ด้านข้าง (Side)
+                        </button>
+                        <button onclick="setCameraAngle('top')" class="py-2 bg-space-800 hover:bg-space-700 text-gray-300 rounded-xl text-xs border border-white/5 transition flex flex-col items-center gap-1">
+                            <i data-lucide="arrow-down" class="w-4 h-4 text-amber-400"></i> มุมมองบน (Top)
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+    </div>
+
+    <!-- MAIN SOUND SIMULATION SCRIPT -->
+    <script>
+        // Global State
+        const state = {
+            frequency: 440,        // Hz
+            amplitude: 0.5,        // 0.0 - 1.0
+            waveform: 'sine',      // sine, square, sawtooth, triangle
+            waveSpeed: 1.0,        // Simulation animation time scale
+            waveMode: 'longitudinal', // longitudinal, spherical, transverse, doppler
+            isMuted: false,
+            audioInitialized: false,
+
+            // Visual Helpers Visibility
+            showParticles: true,
+            showRings: true,
+            showPressureMesh: true,
+            showGrid: true,
+
+            // Doppler Mode State
+            sourcePositionX: -20,
+            sourceSpeed: 0.35,
+
+            // Wavefront rings memory
+            wavefronts: []
+        };
+
+        // Web Audio API Global Variables
+        let audioCtx, oscillator, gainNode, analyserNode, dataArray;
+
+        // Three.js Core Variables
+        let scene, camera, renderer, controls;
+        let particleSystem, particlePositions, originalParticlePositions;
+        let wavefrontGroup, pressureMesh, soundSourceMesh, gridHelper;
+        let numParticles = 3500;
+        let clock = new THREE.Clock();
+
+        // Canvas Oscilloscope Variable
+        let oscCanvas, oscCtx;
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            initThreeJS();
+            initOscilloscopeCanvas();
+            initMathKaTeX();
+            create3DObjects();
+            lucide.createIcons();
+            animate();
+        });
+
+        // Initialize KaTeX Formulas
+        function initMathKaTeX() {
+            if (window.katex) {
+                katex.render("v = f \\cdot \\lambda", document.getElementById('math-formula-box'));
+            }
+        }
+
+        // Web Audio API Initialization
+        function initAudioContext() {
+            if (state.audioInitialized) return;
+
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+
+            // Oscillator
+            oscillator = audioCtx.createOscillator();
+            oscillator.type = state.waveform;
+            oscillator.frequency.setValueAtTime(state.frequency, audioCtx.currentTime);
+
+            // Gain (Volume)
+            gainNode = audioCtx.createGain();
+            gainNode.gain.setValueAtTime(state.amplitude * 0.3, audioCtx.currentTime); // keep safe volume
+
+            // Analyser for Oscilloscope
+            analyserNode = audioCtx.createAnalyser();
+            analyserNode.fftSize = 2048;
+            dataArray = new Uint8Array(analyserNode.frequencyBinCount);
+
+            // Connect Audio Graph
+            oscillator.connect(gainNode);
+            gainNode.connect(analyserNode);
+            analyserNode.connect(audioCtx.destination);
+
+            oscillator.start();
+            state.audioInitialized = true;
+
+            // Hide overlay
+            document.getElementById('audio-start-overlay').classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                document.getElementById('audio-start-overlay').style.display = 'none';
+            }, 500);
+        }
+
+        // Initialize 2D Canvas Oscilloscope
+        function initOscilloscopeCanvas() {
+            oscCanvas = document.getElementById('oscilloscope-canvas');
+            oscCtx = oscCanvas.getContext('2d');
+        }
+
+        // Draw Oscilloscope Frame
+        function drawOscilloscope() {
+            if (!oscCtx || !oscCanvas) return;
+
+            const width = oscCanvas.width;
+            const height = oscCanvas.height;
+
+            oscCtx.fillStyle = '#0B0E14';
+            oscCtx.fillRect(0, 0, width, height);
+
+            // Grid lines
+            oscCtx.strokeStyle = 'rgba(56, 189, 248, 0.1)';
+            oscCtx.lineWidth = 1;
+            oscCtx.beginPath();
+            oscCtx.moveTo(0, height / 2);
+            oscCtx.lineTo(width, height / 2);
+            oscCtx.stroke();
+
+            if (!analyserNode || state.isMuted) {
+                // Flat line if muted
+                oscCtx.strokeStyle = '#38BDF8';
+                oscCtx.beginPath();
+                oscCtx.moveTo(0, height / 2);
+                oscCtx.lineTo(width, height / 2);
+                oscCtx.stroke();
+                return;
+            }
+
+            analyserNode.getByteTimeDomainData(dataArray);
+
+            oscCtx.lineWidth = 2;
+            oscCtx.strokeStyle = '#38BDF8';
+            oscCtx.beginPath();
+
+            const sliceWidth = width * 1.0 / dataArray.length;
+            let x = 0;
+
+            for (let i = 0; i < dataArray.length; i++) {
+                const v = dataArray[i] / 128.0;
+                const y = v * height / 2;
+
+                if (i === 0) {
+                    oscCtx.moveTo(x, y);
+                } else {
+                    oscCtx.lineTo(x, y);
+                }
+
+                x += sliceWidth;
+            }
+
+            oscCtx.lineTo(width, height / 2);
+            oscCtx.stroke();
+        }
+
+        // Initialize Three.js Scene
+        function initThreeJS() {
+            const container = document.getElementById('canvas-container');
+
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x0B0E14, 0.012);
+
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(25, 20, 35);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            // Ambient Light
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0x38BDF8, 1.2);
+            dirLight.position.set(10, 20, 15);
+            scene.add(dirLight);
+
+            // Grid Helper
+            gridHelper = new THREE.GridHelper(80, 40, 0x38BDF8, 0x1E293B);
+            gridHelper.position.y = -10;
+            scene.add(gridHelper);
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        // Create Air Particles, Sound Source Mesh, and Wave Geometry
+        function create3DObjects() {
+            // Sound Speaker Source Object
+            const sourceGeo = new THREE.SphereGeometry(1.5, 32, 32);
+            const sourceMat = new THREE.MeshStandardMaterial({
+                color: 0x06B6D4,
+                emissive: 0x0284C7,
+                emissiveIntensity: 0.5,
+                roughness: 0.2
+            });
+            soundSourceMesh = new THREE.Mesh(sourceGeo, sourceMat);
+            soundSourceMesh.position.set(-18, 0, 0);
+            scene.add(soundSourceMesh);
+
+            // AIR PARTICLES FIELD
+            const particleGeo = new THREE.BufferGeometry();
+            particlePositions = new Float32Array(numParticles * 3);
+            originalParticlePositions = new Float32Array(numParticles * 3);
+
+            let i = 0;
+            const gridDim = 35;
+            for (let x = -gridDim; x <= gridDim; x += 1.8) {
+                for (let y = -8; y <= 8; y += 1.8) {
+                    for (let z = -8; z <= 8; z += 1.8) {
+                        if (i < numParticles * 3) {
+                            // Add slight random jitter for realistic air molecular distribution
+                            const jitterX = (Math.random() - 0.5) * 0.5;
+                            const jitterY = (Math.random() - 0.5) * 0.5;
+                            const jitterZ = (Math.random() - 0.5) * 0.5;
+
+                            particlePositions[i] = x + jitterX;
+                            particlePositions[i + 1] = y + jitterY;
+                            particlePositions[i + 2] = z + jitterZ;
+
+                            originalParticlePositions[i] = x + jitterX;
+                            originalParticlePositions[i + 1] = y + jitterY;
+                            originalParticlePositions[i + 2] = z + jitterZ;
+
+                            i += 3;
+                        }
+                    }
+                }
+            }
+
+            particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+
+            // Custom Circle Texture for Air Particles
+            const canvas = document.createElement('canvas');
+            canvas.width = 16;
+            canvas.height = 16;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
+            grad.addColorStop(0, 'rgba(56,189,248,1)');
+            grad.addColorStop(1, 'rgba(56,189,248,0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(8, 8, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            const particleTex = new THREE.CanvasTexture(canvas);
+            const particleMat = new THREE.PointsMaterial({
+                color: 0x38BDF8,
+                size: 0.7,
+                map: particleTex,
+                transparent: true,
+                opacity: 0.85,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+
+            particleSystem = new THREE.Points(particleGeo, particleMat);
+            scene.add(particleSystem);
+
+            // Group for Wavefront Rings
+            wavefrontGroup = new THREE.Group();
+            scene.add(wavefrontGroup);
+
+            // Dynamic 3D Pressure Surface Mesh
+            const planeGeo = new THREE.PlaneGeometry(60, 20, 80, 30);
+            const planeMat = new THREE.MeshStandardMaterial({
+                color: 0x06B6D4,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.35,
+                side: THREE.DoubleSide
+            });
+            pressureMesh = new THREE.Mesh(planeGeo, planeMat);
+            pressureMesh.rotation.x = -Math.PI / 2;
+            pressureMesh.position.y = -9;
+            scene.add(pressureMesh);
+        }
+
+        // Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = clock.getElapsedTime() * state.waveSpeed * 8;
+            const waveNumber = (state.frequency / 100) * 0.4; // Spatial frequency k
+
+            // 1. Update Air Particles Movement
+            if (state.showParticles && particleSystem) {
+                const positions = particleSystem.geometry.attributes.position.array;
+
+                for (let i = 0; i < numParticles; i++) {
+                    const idx = i * 3;
+                    const origX = originalParticlePositions[idx];
+                    const origY = originalParticlePositions[idx + 1];
+                    const origZ = originalParticlePositions[idx + 2];
+
+                    if (state.waveMode === 'longitudinal') {
+                        // Sound Compression Wave: Displacement along X axis
+                        const dist = origX - soundSourceMesh.position.x;
+                        if (dist > 0) {
+                            const displacement = Math.sin(dist * waveNumber - time) * (state.amplitude * 2.2);
+                            positions[idx] = origX + displacement;
+                        }
+                        positions[idx + 1] = origY;
+                        positions[idx + 2] = origZ;
+
+                    } else if (state.waveMode === 'transverse') {
+                        // Transverse wave visualization (Displacement along Y axis)
+                        const dist = origX - soundSourceMesh.position.x;
+                        if (dist > 0) {
+                            const displacement = Math.sin(dist * waveNumber - time) * (state.amplitude * 3.0);
+                            positions[idx + 1] = origY + displacement;
+                        }
+                        positions[idx] = origX;
+                        positions[idx + 2] = origZ;
+
+                    } else if (state.waveMode === 'spherical' || state.waveMode === 'doppler') {
+                        // Radial displacement outward from source position
+                        const dx = origX - soundSourceMesh.position.x;
+                        const dy = origY - soundSourceMesh.position.y;
+                        const dz = origZ - soundSourceMesh.position.z;
+                        const r = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+                        if (r > 1) {
+                            const displacement = Math.sin(r * waveNumber - time) * (state.amplitude * 1.5) / (1 + r * 0.05);
+                            positions[idx] = origX + (dx / r) * displacement;
+                            positions[idx + 1] = origY + (dy / r) * displacement;
+                            positions[idx + 2] = origZ + (dz / r) * displacement;
+                        }
+                    }
+                }
+
+                particleSystem.geometry.attributes.position.needsUpdate = true;
+            }
+
+            // 2. Update Sound Wavefront Rings
+            if (state.showRings) {
+                // Spawn new ring wavefront periodically
+                if (Math.floor(time * 3) % 4 === 0) {
+                    spawnWavefrontRing();
+                }
+
+                for (let i = wavefrontGroup.children.length - 1; i >= 0; i--) {
+                    const ring = wavefrontGroup.children[i];
+                    ring.scale.x += 0.15 * state.waveSpeed;
+                    ring.scale.y += 0.15 * state.waveSpeed;
+                    ring.scale.z += 0.15 * state.waveSpeed;
+
+                    ring.material.opacity -= 0.008 * state.waveSpeed;
+
+                    if (ring.material.opacity <= 0 || ring.scale.x > 35) {
+                        wavefrontGroup.remove(ring);
+                        ring.geometry.dispose();
+                        ring.material.dispose();
+                    }
+                }
+            }
+
+            // 3. Update 3D Sound Pressure Mesh Deformation
+            if (state.showPressureMesh && pressureMesh) {
+                const pos = pressureMesh.geometry.attributes.position;
+                for (let i = 0; i < pos.count; i++) {
+                    const x = pos.getX(i);
+                    const y = pos.getY(i);
+                    const dist = Math.sqrt(x * x + y * y);
+                    const z = Math.sin(dist * waveNumber - time) * (state.amplitude * 2.5);
+                    pos.setZ(i, z);
+                }
+                pos.needsUpdate = true;
+            }
+
+            // 4. Doppler Mode Moving Source Logic
+            if (state.waveMode === 'doppler') {
+                state.sourcePositionX += state.sourceSpeed;
+                if (state.sourcePositionX > 25 || state.sourcePositionX < -25) {
+                    state.sourceSpeed *= -1;
+                }
+                soundSourceMesh.position.x = state.sourcePositionX;
+
+                // Adjust audio frequency dynamically based on Doppler velocity shift
+                if (audioCtx && oscillator && !state.isMuted) {
+                    const shift = state.sourceSpeed > 0 ? 40 : -40;
+                    oscillator.frequency.setTargetAtTime(state.frequency + shift, audioCtx.currentTime, 0.1);
+                }
+            }
+
+            // Pulsating Sound Source Speaker Effect
+            const scalePulse = 1.0 + Math.sin(time * 2) * (state.amplitude * 0.15);
+            soundSourceMesh.scale.set(scalePulse, scalePulse, scalePulse);
+
+            // Render Oscilloscope Frame
+            drawOscilloscope();
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Spawn Wavefront Ring Helper
+        function spawnWavefrontRing() {
+            const ringGeo = new THREE.RingGeometry(1.5, 1.8, 32);
+            const ringMat = new THREE.MeshBasicMaterial({
+                color: state.waveMode === 'doppler' ? 0xEF4444 : 0x06B6D4,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.8
+            });
+
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.position.copy(soundSourceMesh.position);
+
+            if (state.waveMode === 'longitudinal') {
+                ring.rotation.y = Math.PI / 2;
+            } else {
+                ring.rotation.x = Math.PI / 2;
+            }
+
+            wavefrontGroup.add(ring);
+        }
+
+        // User Input Controls Functions
+        function updateAudioParams() {
+            state.frequency = parseFloat(document.getElementById('slider-frequency').value);
+            state.amplitude = parseFloat(document.getElementById('slider-amplitude').value) / 100.0;
+            state.waveSpeed = parseFloat(document.getElementById('slider-wavespeed').value);
+
+            // Update Labels
+            document.getElementById('val-frequency').innerText = `${state.frequency} Hz`;
+            document.getElementById('val-amplitude').innerText = `${Math.round(state.amplitude * 100)}%`;
+            document.getElementById('val-wavespeed').innerText = `${state.waveSpeed.toFixed(1)}x`;
+
+            // Update Web Audio API Synthesizer
+            if (audioCtx && oscillator && gainNode) {
+                oscillator.frequency.setTargetAtTime(state.frequency, audioCtx.currentTime, 0.05);
+                gainNode.gain.setTargetAtTime(state.isMuted ? 0 : state.amplitude * 0.3, audioCtx.currentTime, 0.05);
+            }
+
+            // Update Theory Calculations
+            updateTheoryCalculations();
+        }
+
+        // Switch Waveform Generator
+        function setWaveform(type) {
+            state.waveform = type;
+            if (oscillator) oscillator.type = type;
+
+            document.querySelectorAll('.wave-btn').forEach(btn => {
+                btn.className = 'wave-btn py-2 rounded-lg text-gray-400 hover:text-white transition text-center';
+            });
+
+            const activeBtn = document.getElementById(`btn-wave-${type}`);
+            if (activeBtn) {
+                activeBtn.className = 'wave-btn py-2 rounded-lg bg-cyan-500/20 text-cyan-300 font-semibold border border-cyan-500/40 transition text-center';
+            }
+
+            const oscTypeLabel = document.getElementById('osc-wave-type');
+            if (oscTypeLabel) oscTypeLabel.innerText = type.toUpperCase();
+        }
+
+        // Switch Wave Mode
+        function changeWaveMode(mode) {
+            state.waveMode = mode;
+
+            // Reset Source Position for Non-Doppler Modes
+            if (mode !== 'doppler') {
+                soundSourceMesh.position.set(-18, 0, 0);
+            }
+        }
+
+        // Toggle Audio Mute
+        function toggleAudioMute() {
+            if (!state.audioInitialized) {
+                initAudioContext();
+                return;
+            }
+
+            state.isMuted = !state.isMuted;
+            const btnText = document.getElementById('text-audio-mute');
+            const icon = document.getElementById('icon-audio-mute');
+
+            if (state.isMuted) {
+                if (gainNode) gainNode.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05);
+                btnText.innerText = 'ปิดเสียงอยู่ (Muted)';
+                icon.setAttribute('data-lucide', 'volume-x');
+            } else {
+                if (gainNode) gainNode.gain.setTargetAtTime(state.amplitude * 0.3, audioCtx.currentTime, 0.05);
+                btnText.innerText = 'เปิดเสียงสังเคราะห์ (Audio Playing)';
+                icon.setAttribute('data-lucide', 'volume-2');
+            }
+            lucide.createIcons();
+        }
+
+        // Toggle Visual Elements Toggles
+        function toggleVisualElements() {
+            state.showParticles = document.getElementById('toggle-particles').checked;
+            state.showRings = document.getElementById('toggle-rings').checked;
+            state.showPressureMesh = document.getElementById('toggle-pressure-mesh').checked;
+            state.showGrid = document.getElementById('toggle-grid').checked;
+
+            if (particleSystem) particleSystem.visible = state.showParticles;
+            if (wavefrontGroup) wavefrontGroup.visible = state.showRings;
+            if (pressureMesh) pressureMesh.visible = state.showPressureMesh;
+            if (gridHelper) gridHelper.visible = state.showGrid;
+        }
+
+        // Update Physics Theory Calculations Display
+        function updateTheoryCalculations() {
+            const v = 343.0; // Speed of sound in air (m/s)
+            const lambda = v / state.frequency; // Wavelength in meters
+            const periodMs = (1 / state.frequency) * 1000;
+
+            document.getElementById('calc-freq').innerText = `${state.frequency} Hz`;
+            document.getElementById('calc-lambda').innerText = `${lambda.toFixed(2)} m`;
+            document.getElementById('calc-period').innerText = `${periodMs.toFixed(2)} ms`;
+            document.getElementById('osc-vol-peak').innerText = `${Math.round(state.amplitude * 100)}%`;
+        }
+
+        // Set Camera Preset Views
+        function setCameraAngle(mode) {
+            if (mode === 'perspective') {
+                camera.position.set(25, 20, 35);
+                controls.target.set(0, 0, 0);
+            } else if (mode === 'side') {
+                camera.position.set(0, 0, 45);
+                controls.target.set(0, 0, 0);
+            } else if (mode === 'top') {
+                camera.position.set(0, 45, 0.001);
+                controls.target.set(0, 0, 0);
+            }
+        }
+
+        // Reset Sandbox Defaults
+        function resetAudioDefaults() {
+            document.getElementById('slider-frequency').value = 440;
+            document.getElementById('slider-amplitude').value = 50;
+            document.getElementById('slider-wavespeed').value = 1.0;
+            document.getElementById('select-wave-mode').value = 'longitudinal';
+
+            setWaveform('sine');
+            changeWaveMode('longitudinal');
+            updateAudioParams();
+            setCameraAngle('perspective');
+        }
+
+        // Switch Theory Tab
+        function switchTheoryTab(key) {
+            ['structure', 'formula', 'oscilloscope'].forEach(k => {
+                document.getElementById(`content-${k}`).classList.add('hidden');
+                document.getElementById(`tab-${k}`).classList.remove('active');
+            });
+
+            document.getElementById(`content-${key}`).classList.remove('hidden');
+            document.getElementById(`tab-${key}`).classList.add('active');
+        }
+
+        // Window Resize
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+    </script>
+</body>
+</html>

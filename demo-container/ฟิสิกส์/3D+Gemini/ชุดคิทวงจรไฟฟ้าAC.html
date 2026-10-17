@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ชุดคิทวงจรไฟฟ้า: AC, DC, Ohm, Kirchhoff & RLC Simulation</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        phet: {
+                            bg: '#8bb1e8',
+                            darkBg: '#0f172a',
+                            panel: '#e2edfd',
+                            panelDark: '#1e293b',
+                            accent: '#f59e0b',
+                            cyan: '#0284c7',
+                            green: '#10b981'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Sarabun', 'Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- KaTeX for Physics Formula Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #0b1120;
+            color: #f3f4f6;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+        }
+
+        .phet-glass {
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .phet-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.4);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(56, 189, 248, 0.8);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+            height: 6px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+            transition: all 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #7dd3fc;
+        }
+
+        .mode-btn.active {
+            background-color: #38bdf8;
+            color: #0f172a;
+            font-weight: 700;
+        }
+
+        .tab-btn.active {
+            background-color: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            border-bottom: 2px solid #38bdf8;
+        }
+
+        .toolbar-item {
+            transition: all 0.2s ease;
+        }
+        .toolbar-item:hover {
+            transform: translateY(-2px);
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body class="select-none text-slate-100">
+
+    <!-- Top Control Bar -->
+    <header class="absolute top-2 left-2 right-2 z-30 flex items-center justify-between phet-glass px-4 py-2 rounded-xl pointer-events-auto">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-sky-500/20 text-sky-400 rounded-lg border border-sky-500/30">
+                <i data-lucide="zap" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-sm md:text-base text-white flex items-center gap-2">
+                    ชุดคิทวงจรไฟฟ้า (Circuit Construction Kit: AC/DC Lab)
+                    <span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">Ohm, Kirchhoff & RLC Physics</span>
+                </h1>
+                <p class="text-[11px] text-slate-400 hidden sm:block">ทดลองกระแสตรง/สลับ, กฎของโอห์ม, เคอร์ชอฟ และเรโซแนนซ์ RLC</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <!-- 2D / 3D Switcher -->
+            <div class="flex items-center bg-slate-900/80 p-1 rounded-lg border border-white/10 text-xs">
+                <button id="btn-mode-2d" onclick="setRenderMode('2d')" class="mode-btn active px-3 py-1 rounded-md transition flex items-center gap-1.5">
+                    <i data-lucide="cpu" class="w-3.5 h-3.5"></i>
+                    <span>2D Canvas</span>
+                </button>
+                <button id="btn-mode-3d" onclick="setRenderMode('3d')" class="mode-btn px-3 py-1 text-slate-400 hover:text-white rounded-md transition flex items-center gap-1.5">
+                    <i data-lucide="box" class="w-3.5 h-3.5"></i>
+                    <span>3D Board</span>
+                </button>
+            </div>
+
+            <button onclick="resetCircuit()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition border border-white/10" title="รีเซ็ตวงจร">
+                <i data-lucide="rotate-ccw" class="w-4 h-4 text-sky-400"></i>
+            </button>
+            <button onclick="toggleFullscreen()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition border border-white/10" title="เต็มจอ">
+                <i data-lucide="maximize" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <div class="absolute inset-0 pt-14 p-2 pointer-events-none grid grid-cols-1 md:grid-cols-12 gap-2 h-full pb-2">
+
+        <!-- ================= LEFT TOOLBAR: Component Palette (PhET Style) ================= -->
+        <aside class="md:col-span-3 lg:col-span-2 phet-glass rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <div class="p-2.5 border-b border-white/10 bg-slate-900/80 flex justify-between items-center">
+                <span class="font-semibold text-xs text-white flex items-center gap-1.5">
+                    <i data-lucide="package-plus" class="w-4 h-4 text-sky-400"></i>
+                    อุปกรณ์วงจร (Palette)
+                </span>
+                <div class="flex gap-1 text-[10px]">
+                    <button id="btn-view-lifelike" onclick="setStyleMode('lifelike')" class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold border border-sky-500/30">รูปจริง</button>
+                    <button id="btn-view-schematic" onclick="setStyleMode('schematic')" class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 hover:text-white border border-white/5">สัญลักษณ์</button>
+                </div>
+            </div>
+
+            <!-- Component Draggable Palette List -->
+            <div class="flex-1 overflow-y-auto p-2 space-y-2 text-xs">
+                <button onclick="addComponent('wire')" class="toolbar-item w-full p-2 bg-slate-800/80 hover:bg-slate-700 rounded-lg border border-white/10 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-2 bg-amber-600 rounded"></div>
+                        <span>สายไฟ (Wire)</span>
+                    </div>
+                    <i data-lucide="plus" class="w-3.5 h-3.5 text-slate-400"></i>
+                </button>
+
+                <button onclick="addComponent('battery')" class="toolbar-item w-full p-2 bg-slate-800/80 hover:bg-slate-700 rounded-lg border border-white/10 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-3 bg-gradient-to-r from-slate-900 via-amber-500 to-amber-600 rounded flex items-center justify-end px-1 text-[8px] font-bold text-black">+</div>
+                        <span>แบตเตอรี่ (Battery DC)</span>
+                    </div>
+                    <i data-lucide="plus" class="w-3.5 h-3.5 text-slate-400"></i>
+                </button>
+
+                <button onclick="addComponent('ac_source')" class="toolbar-item w-full p-2 bg-slate-800/80 hover:bg-slate-700 rounded-lg border border-white/10 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-6 rounded-full border border-sky-400 flex items-center justify-center text-sky-400 font-bold text-[10px]">~</div>
+                        <span>แหล่งจ่าย AC (AC Source)</span>
+                    </div>
+                    <i data-lucide="plus" class="w-3.5 h-3.5 text-slate-400"></i>
+                </button>
+
+                <button onclick="addComponent('resistor')" class="toolbar-item w-full p-2 bg-slate-800/80 hover:bg-slate-700 rounded-lg border border-white/10 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-3 bg-amber-200 border border-amber-500 rounded flex items-center justify-around px-0.5">
+                            <span class="w-1 h-full bg-black"></span><span class="w-1 h-full bg-red-600"></span><span class="w-1 h-full bg-amber-600"></span>
+                        </div>
+                        <span>ตัวต้านทาน (Resistor)</span>
+                    </div>
+                    <i data-lucide="plus" class="w-3.5 h-3.5 text-slate-400"></i>
+                </button>
+
+                <button onclick="addComponent('capacitor')" class="toolbar-item w-full p-2 bg-slate-800/80 hover:bg-slate-700 rounded-lg border border-white/10 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-4 border-x-2 border-emerald-400 flex items-center justify-center"></div>
+                        <span>ตัวเก็บประจุ (Capacitor)</span>
+                    </div>
+                    <i data-lucide="plus" class="w-3.5 h-3.5 text-slate-400"></i>
+                </button>
+
+                <button onclick="addComponent('inductor')" class="toolbar-item w-full p-2 bg-slate-800/80 hover:bg-slate-700 rounded-lg border border-white/10 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-3 border-b-2 border-purple-400 rounded-full"></div>
+                        <span>ตัวเหนี่ยวนำ (Inductor)</span>
+                    </div>
+                    <i data-lucide="plus" class="w-3.5 h-3.5 text-slate-400"></i>
+                </button>
+
+                <button onclick="addComponent('bulb')" class="toolbar-item w-full p-2 bg-slate-800/80 hover:bg-slate-700 rounded-lg border border-white/10 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-5 h-5 rounded-full border border-amber-400 bg-amber-400/20 flex items-center justify-center text-[9px] text-amber-300">💡</div>
+                        <span>หลอดไฟ (Light Bulb)</span>
+                    </div>
+                    <i data-lucide="plus" class="w-3.5 h-3.5 text-slate-400"></i>
+                </button>
+
+                <button onclick="addComponent('switch')" class="toolbar-item w-full p-2 bg-slate-800/80 hover:bg-slate-700 rounded-lg border border-white/10 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-3 flex items-center justify-between px-0.5"><span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span><span class="w-3 h-0.5 bg-emerald-400 -rotate-45"></span><span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span></div>
+                        <span>สวิตช์ (Switch)</span>
+                    </div>
+                    <i data-lucide="plus" class="w-3.5 h-3.5 text-slate-400"></i>
+                </button>
+            </div>
+
+            <!-- Presets Section -->
+            <div class="p-2 border-t border-white/10 bg-slate-900/60 space-y-1.5 text-[11px]">
+                <div class="font-semibold text-slate-300 flex items-center gap-1">
+                    <i data-lucide="layers" class="w-3.5 h-3.5 text-amber-400"></i> ตัวอย่างวงจร (Presets)
+                </div>
+                <div class="grid grid-cols-2 gap-1 text-[10px]">
+                    <button onclick="loadPreset('rlc')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-sky-300 rounded border border-white/5 text-center">วงจร RLC</button>
+                    <button onclick="loadPreset('kirchhoff')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded border border-white/5 text-center">เคอร์ชอฟ 2 โหนด</button>
+                    <button onclick="loadPreset('ohm')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded border border-white/5 text-center">กฎของโอห์ม</button>
+                    <button onclick="loadPreset('rc')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-purple-300 rounded border border-white/5 text-center">วงจร RC</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ================= CENTER: Interactive Viewport Canvas ================= -->
+        <main class="md:col-span-6 lg:col-span-7 relative rounded-xl overflow-hidden phet-glass flex flex-col pointer-events-auto border border-white/10 shadow-2xl">
+            <div id="viewport-container" class="flex-1 bg-slate-950/60 cursor-crosshair relative">
+                <!-- 2D Canvas Viewport -->
+                <canvas id="canvas-2d" class="absolute inset-0 w-full h-full z-0"></canvas>
+                <!-- 3D Three.js Viewport -->
+                <div id="container-3d" class="absolute inset-0 w-full h-full hidden z-0"></div>
+
+                <!-- Status Overlay Badge -->
+                <div class="absolute top-2 left-2 bg-slate-900/90 backdrop-blur px-3 py-1 rounded-lg border border-white/10 text-[11px] text-slate-300 flex items-center gap-2 pointer-events-none z-10 font-mono">
+                    <i data-lucide="activity" class="w-3.5 h-3.5 text-sky-400 animate-pulse"></i>
+                    <span>สถานะ AC: <strong id="overlay-ac-val" class="text-sky-300">220V @ 50Hz</strong></span>
+                </div>
+
+                <!-- Floating Instruction Note -->
+                <div class="absolute bottom-2 left-2 bg-slate-900/90 backdrop-blur px-3 py-1 rounded-lg border border-white/10 text-[10px] text-slate-400 flex items-center gap-1.5 pointer-events-none z-10">
+                    <i data-lucide="mouse-pointer" class="w-3.5 h-3.5 text-amber-400"></i>
+                    <span>คลิกอุปกรณ์เพื่อปรับค่า / ลากจุดสีส้มเพื่อต่อวงจร</span>
+                </div>
+
+                <!-- FLOATING VOLTMETER INSTRUMENT (PhET Style) -->
+                <div id="floating-voltmeter" class="absolute top-12 right-4 bg-amber-500/90 text-slate-900 p-2.5 rounded-xl border-2 border-amber-300 shadow-2xl z-20 w-44 font-mono pointer-events-auto cursor-move">
+                    <div class="text-[10px] font-bold text-slate-950 flex justify-between items-center border-b border-amber-700/30 pb-1">
+                        <span>VOLTMETER</span>
+                        <i data-lucide="move" class="w-3 h-3 text-slate-800"></i>
+                    </div>
+                    <div class="bg-black/90 my-1.5 p-1.5 rounded-lg text-center border border-amber-300/40">
+                        <span id="voltmeter-readout" class="text-emerald-400 text-base font-bold">0.00 V</span>
+                    </div>
+                    <div class="text-[9px] text-slate-950 font-sans flex justify-between">
+                        <span>🔴 โพรบ +</span>
+                        <span>⚫ โพรบ -</span>
+                    </div>
+                </div>
+
+                <!-- Floating Oscilloscope Charts Panel -->
+                <div id="oscilloscope-panel" class="absolute bottom-2 right-2 bg-slate-900/90 p-2 rounded-xl border border-white/10 shadow-xl z-10 w-64 pointer-events-auto">
+                    <div class="flex justify-between items-center text-[10px] font-bold text-slate-300 border-b border-white/10 pb-1 mb-1">
+                        <span class="flex items-center gap-1"><i data-lucide="line-chart" class="w-3 h-3 text-sky-400"></i> Oscilloscope Real-time</span>
+                        <span class="text-[9px] text-slate-400"><span class="text-sky-400">■ Voltage</span> | <span class="text-amber-400">■ Current</span></span>
+                    </div>
+                    <canvas id="scope-canvas" class="w-full h-20 bg-black/90 rounded border border-white/10"></canvas>
+                </div>
+            </div>
+        </main>
+
+        <!-- ================= RIGHT PANEL: Analysis, Controls & Settings ================= -->
+        <aside class="md:col-span-3 lg:col-span-3 phet-glass rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <!-- Header & Tabs -->
+            <div class="p-2 border-b border-white/10 bg-slate-900/80">
+                <div class="grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-lg text-[11px] font-semibold text-center">
+                    <button onclick="switchRightTab('analysis')" id="tab-analysis" class="tab-btn active py-1 rounded transition">วิเคราะห์คำนวณ</button>
+                    <button onclick="switchRightTab('settings')" id="tab-settings" class="tab-btn py-1 rounded transition">การตั้งค่า</button>
+                </div>
+            </div>
+
+            <!-- Scrollable Content Container -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-3 text-xs">
+
+                <!-- TAB 1: Physics Calculations & Analysis -->
+                <div id="content-analysis" class="space-y-3">
+                    <!-- Status Badge -->
+                    <div class="flex justify-between items-center bg-slate-900/80 p-2 rounded-lg border border-white/10">
+                        <span class="text-slate-400 text-[11px]">สถานะวงจร RLC:</span>
+                        <span id="val-phase-state" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Resonance</span>
+                    </div>
+
+                    <!-- Formula Box -->
+                    <div class="phet-card p-2.5 rounded-lg space-y-1">
+                        <span class="text-[10px] text-slate-400 font-bold block">สมการอิมพีแดนซ์ (Impedance - Z)</span>
+                        <div id="math-impedance" class="py-1 text-center text-sky-300 font-mono text-xs"></div>
+                    </div>
+
+                    <!-- Live Physics Table -->
+                    <div class="bg-slate-900/90 p-2.5 rounded-lg border border-white/10 font-mono space-y-1.5 text-[11px]">
+                        <div class="flex justify-between border-b border-white/10 pb-1">
+                            <span class="text-slate-400 font-sans">ความต้านทาน ($R$):</span>
+                            <span id="val-r-display" class="text-amber-300 font-bold">100.0 Ω</span>
+                        </div>
+                        <div class="flex justify-between border-b border-white/10 pb-1">
+                            <span class="text-slate-400 font-sans">รีแอกแตนซ์ $X_L$:</span>
+                            <span id="val-xl-display" class="text-purple-300 font-bold">157.1 Ω</span>
+                        </div>
+                        <div class="flex justify-between border-b border-white/10 pb-1">
+                            <span class="text-slate-400 font-sans">รีแอกแตนซ์ $X_C$:</span>
+                            <span id="val-xc-display" class="text-emerald-300 font-bold">53.1 Ω</span>
+                        </div>
+                        <div class="flex justify-between border-b border-white/10 pb-1">
+                            <span class="text-slate-400 font-sans">อิมพีแดนซ์รวม ($Z$):</span>
+                            <span id="val-z-display" class="text-sky-300 font-bold">141.4 Ω</span>
+                        </div>
+                        <div class="flex justify-between pt-0.5">
+                            <span class="text-slate-400 font-sans">กระแส RMS ($I_{rms}$):</span>
+                            <span id="val-irms-display" class="text-emerald-400 font-bold">1.56 A</span>
+                        </div>
+                    </div>
+
+                    <!-- Resonant Frequency -->
+                    <div class="phet-card p-2.5 rounded-lg space-y-1">
+                        <span class="text-[10px] text-slate-400 font-bold block">ความถี่เรโซแนนซ์ ($f_0$)</span>
+                        <div id="math-resonance" class="py-0.5 text-center text-emerald-400 font-mono text-xs"></div>
+                        <div class="flex justify-between items-center bg-slate-900 p-1.5 rounded text-[11px] font-mono">
+                            <span class="text-slate-400">คำนวณ $f_0$:</span>
+                            <span id="val-f0-display" class="font-bold text-emerald-400">159.15 Hz</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Visual Options & Advanced Controls (PhET Checkboxes) -->
+                <div id="content-settings" class="space-y-3 hidden">
+                    <!-- PhET Visual Options Checkboxes -->
+                    <div class="phet-card p-3 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-sky-400 block border-b border-white/10 pb-1">ตัวเลือกการแสดงผล (Show Options)</span>
+
+                        <div class="space-y-1.5 text-xs text-slate-300">
+                            <label class="flex items-center justify-between cursor-pointer hover:text-white">
+                                <span>แสดงกระแสไฟฟ้า (Show Current)</span>
+                                <input type="checkbox" id="toggle-show-current" checked onchange="render()" class="accent-sky-500 rounded">
+                            </label>
+
+                            <div class="pl-4 space-y-1 text-[11px] text-slate-400">
+                                <label class="flex items-center gap-2 cursor-pointer hover:text-white">
+                                    <input type="radio" name="current-type" value="electrons" checked onchange="render()" class="accent-sky-500">
+                                    <span>อิเล็กตรอน (Electrons $\ominus$)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer hover:text-white">
+                                    <input type="radio" name="current-type" value="conventional" onchange="render()" class="accent-amber-500">
+                                    <span>กระแสสมมติ (Conventional $\rightarrow$)</span>
+                                </label>
+                            </div>
+
+                            <label class="flex items-center justify-between cursor-pointer hover:text-white pt-1">
+                                <span>ป้ายกำกับอุปกรณ์ (Labels)</span>
+                                <input type="checkbox" id="toggle-labels" checked onchange="render()" class="accent-emerald-500 rounded">
+                            </label>
+
+                            <label class="flex items-center justify-between cursor-pointer hover:text-white">
+                                <span>แสดงค่าตัวเลข (Values)</span>
+                                <input type="checkbox" id="toggle-values" checked onchange="render()" class="accent-emerald-500 rounded">
+                            </label>
+
+                            <label class="flex items-center justify-between cursor-pointer hover:text-white">
+                                <span>แผนภาพเฟสเซอร์ (Phasor Diagram)</span>
+                                <input type="checkbox" id="toggle-phasor" checked onchange="render()" class="accent-amber-500 rounded">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Parameter Sliders -->
+                    <div class="phet-card p-3 rounded-lg space-y-2.5">
+                        <span class="text-[11px] font-bold text-sky-400 block border-b border-white/10 pb-1">ปรับแต่งค่าแหล่งจ่าย & อุปกรณ์</span>
+
+                        <!-- Voltage Slider -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[11px]">
+                                <span class="text-slate-300">แรงดันไฟฟ้า RMS ($V_{rms}$):</span>
+                                <span id="slider-val-vrms" class="font-mono text-amber-400 font-bold">220 V</span>
+                            </div>
+                            <input type="range" id="slider-vrms" min="10" max="350" step="5" value="220" class="w-full" oninput="onSliderChange()">
+                        </div>
+
+                        <!-- Frequency Slider -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[11px]">
+                                <span class="text-slate-300">ความถี่กระแสสลับ ($f$):</span>
+                                <span id="slider-val-freq" class="font-mono text-sky-400 font-bold">50 Hz</span>
+                            </div>
+                            <input type="range" id="slider-freq" min="10" max="300" step="5" value="50" class="w-full" oninput="onSliderChange()">
+                        </div>
+
+                        <!-- Wire Resistivity -->
+                        <div class="space-y-1 border-t border-white/10 pt-2">
+                            <div class="flex justify-between text-[11px]">
+                                <span class="text-slate-300">ความต้านทานสายไฟ (Wire $R$):</span>
+                                <span id="slider-val-wirer" class="font-mono text-slate-400 font-bold">0.0 Ω</span>
+                            </div>
+                            <input type="range" id="slider-wirer" min="0" max="10" step="0.5" value="0" class="w-full" oninput="onSliderChange()">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+    </div>
+
+    <!-- MAIN SIMULATION LOGIC SCRIPT -->
+    <script>
+        // Physics Simulation Global State
+        const state = {
+            renderMode: '2d',           // '2d' or '3d'
+            styleMode: 'lifelike',      // 'lifelike' or 'schematic'
+            
+            // AC Source Controls
+            Vrms: 220,
+            freq: 50,
+            phase: 0,                   // Radians
+            wireR: 0,
+
+            // Circuit Component Parameters
+            R: 100,                     // Ohms
+            L: 0.500,                   // Henry
+            C: 0.000060,                // Farads
+
+            // Live Calculated Physics Values
+            Xl: 0,
+            Xc: 0,
+            Z: 0,
+            Irms: 0,
+            f0: 0,
+            phaseAngle: 0,
+
+            // Visual Options
+            showCurrent: true,
+            currentType: 'electrons',   // 'electrons' or 'conventional'
+            showLabels: true,
+            showValues: true,
+            showPhasor: true,
+
+            // Interactive Drag Handles
+            draggedNode: null,
+            draggedInstrument: null
+        };
+
+        // Circuit Nodes & Elements Array
+        let nodes = [];
+        let components = [];
+
+        // Instrument Probes Positions
+        const voltmeter = {
+            x: 50, y: 50,
+            probeRed: { x: 200, y: 150 },
+            probeBlack: { x: 380, y: 150 }
+        };
+
+        // Handles
+        let canvas2D, ctx2D, scopeCanvas, scopeCtx;
+        let scene3D, camera3D, renderer3D, controls3D;
+        let lastTime = performance.now();
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initKaTeX();
+            init2DCanvas();
+            initScopeCanvas();
+            init3DScene();
+            lucide.createIcons();
+
+            loadPreset('rlc');
+            calculatePhysics();
+            updateUI();
+
+            lastTime = performance.now();
+            requestAnimationFrame(physicsLoop);
+
+            window.addEventListener('resize', onResize);
+        });
+
+        function initKaTeX() {
+            if (window.katex) {
+                katex.render("Z = \\sqrt{R^2 + (X_L - X_C)^2}", document.getElementById('math-impedance'));
+                katex.render("f_0 = \\frac{1}{2\\pi \\sqrt{L C}}", document.getElementById('math-resonance'));
+            }
+        }
+
+        function init2DCanvas() {
+            canvas2D = document.getElementById('canvas-2d');
+            ctx2D = canvas2D.getContext('2d');
+
+            canvas2D.addEventListener('mousedown', onMouseDown2D);
+            canvas2D.addEventListener('mousemove', onMouseMove2D);
+            window.addEventListener('mouseup', onMouseUp2D);
+        }
+
+        function initScopeCanvas() {
+            scopeCanvas = document.getElementById('scope-canvas');
+            scopeCtx = scopeCanvas.getContext('2d');
+        }
+
+        function init3DScene() {
+            const container = document.getElementById('container-3d');
+            scene3D = new THREE.Scene();
+            scene3D.fog = new THREE.FogExp2(0x0f172a, 0.02);
+
+            camera3D = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera3D.position.set(0, 4, 6);
+
+            renderer3D = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer3D.setSize(container.clientWidth, container.clientHeight);
+            renderer3D.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer3D.domElement);
+
+            controls3D = new THREE.OrbitControls(camera3D, renderer3D.domElement);
+            controls3D.enableDamping = true;
+            controls3D.dampingFactor = 0.05;
+
+            const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+            scene3D.add(ambient);
+            const dirLight = new THREE.DirectionalLight(0x38bdf8, 1.2);
+            dirLight.position.set(5, 10, 7);
+            scene3D.add(dirLight);
+
+            // 3D Grid Board
+            const boardGeo = new THREE.BoxGeometry(5.5, 0.15, 4.0);
+            const boardMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.3 });
+            const boardMesh = new THREE.Mesh(boardGeo, boardMat);
+            boardMesh.position.y = -0.075;
+            scene3D.add(boardMesh);
+        }
+
+        function calculatePhysics() {
+            const omega = 2 * Math.PI * state.freq;
+            const netR = state.R + state.wireR;
+
+            state.Xl = omega * state.L;
+            state.Xc = 1 / (omega * state.C);
+            
+            const reactiveDiff = state.Xl - state.Xc;
+            state.Z = Math.sqrt(Math.pow(netR, 2) + Math.pow(reactiveDiff, 2));
+
+            state.f0 = 1 / (2 * Math.PI * Math.sqrt(state.L * state.C));
+            state.phaseAngle = Math.atan2(reactiveDiff, netR);
+
+            if (state.Z > 0) {
+                state.Irms = state.Vrms / state.Z;
+            } else {
+                state.Irms = 0;
+            }
+        }
+
+        function physicsLoop(timestamp) {
+            const dt = Math.min((timestamp - lastTime) / 1000, 0.033);
+            lastTime = timestamp;
+
+            state.phase += 2 * Math.PI * state.freq * dt;
+            if (state.phase > Math.PI * 2) {
+                state.phase -= Math.PI * 2;
+            }
+
+            calculatePhysics();
+            updateUI();
+            render();
+
+            requestAnimationFrame(physicsLoop);
+        }
+
+        function render() {
+            if (state.renderMode === '2d') {
+                render2D();
+            } else if (state.renderMode === '3d') {
+                render3D();
+            }
+            renderOscilloscope();
+        }
+
+        function render2D() {
+            const w = canvas2D.clientWidth;
+            const h = canvas2D.clientHeight;
+            canvas2D.width = w * window.devicePixelRatio;
+            canvas2D.height = h * window.devicePixelRatio;
+            ctx2D.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+            ctx2D.clearRect(0, 0, w, h);
+
+            // Draw Wires & Circuit Loop
+            ctx2D.strokeStyle = state.wireR > 2 ? '#b45309' : '#0284c7';
+            ctx2D.lineWidth = 4;
+            ctx2D.beginPath();
+            const marginX = w * 0.20;
+            const marginY = h * 0.22;
+            ctx2D.strokeRect(marginX, marginY, w - 2 * marginX, h - 2 * marginY);
+
+            // Draw Components
+            components.forEach(comp => {
+                drawComponent2D(comp);
+            });
+
+            // Draw Flowing Current Particles (PhET Style)
+            if (state.showCurrent && state.Irms > 0.01) {
+                drawCurrentParticles2D(w, h);
+            }
+
+            // Draw Voltmeter Probes & Wires
+            drawVoltmeterProbes2D();
+
+            // Draw Phasor Overlay
+            if (state.showPhasor) {
+                drawPhasorDiagram2D(w - 70, 70);
+            }
+        }
+
+        function drawComponent2D(comp) {
+            ctx2D.save();
+            ctx2D.translate(comp.x, comp.y);
+
+            if (comp.type === 'ac_source') {
+                ctx2D.fillStyle = '#0f172a';
+                ctx2D.strokeStyle = '#38bdf8';
+                ctx2D.lineWidth = 2.5;
+                ctx2D.beginPath();
+                ctx2D.arc(0, 0, 20, 0, Math.PI * 2);
+                ctx2D.fill();
+                ctx2D.stroke();
+
+                ctx2D.strokeStyle = '#f59e0b';
+                ctx2D.beginPath();
+                for (let i = -10; i <= 10; i++) {
+                    const sy = Math.sin((i / 10) * Math.PI) * 6;
+                    if (i === -10) ctx2D.moveTo(i, sy);
+                    else ctx2D.lineTo(i, sy);
+                }
+                ctx2D.stroke();
+
+                if (state.showLabels) {
+                    ctx2D.fillStyle = '#7dd3fc';
+                    ctx2D.font = '10px Sarabun, sans-serif';
+                    ctx2D.textAlign = 'center';
+                    ctx2D.fillText(`AC Voltage`, 0, -26);
+                }
+            } else if (comp.type === 'resistor') {
+                ctx2D.fillStyle = '#fef3c7';
+                ctx2D.fillRect(-22, -9, 44, 18);
+                ctx2D.strokeStyle = '#d97706';
+                ctx2D.lineWidth = 2;
+                ctx2D.strokeRect(-22, -9, 44, 18);
+
+                if (state.showValues) {
+                    ctx2D.fillStyle = '#fde047';
+                    ctx2D.font = 'bold 10px Sarabun, sans-serif';
+                    ctx2D.textAlign = 'center';
+                    ctx2D.fillText(`${state.R} Ω`, 0, -14);
+                }
+            } else if (comp.type === 'inductor') {
+                ctx2D.strokeStyle = '#a855f7';
+                ctx2D.lineWidth = 3;
+                ctx2D.beginPath();
+                for (let i = -18; i <= 9; i += 9) {
+                    ctx2D.arc(i + 4.5, 0, 5, Math.PI, 0, false);
+                }
+                ctx2D.stroke();
+
+                if (state.showValues) {
+                    ctx2D.fillStyle = '#c084fc';
+                    ctx2D.font = 'bold 10px Sarabun, sans-serif';
+                    ctx2D.textAlign = 'center';
+                    ctx2D.fillText(`${(state.L * 1000).toFixed(0)} mH`, 0, -14);
+                }
+            } else if (comp.type === 'capacitor') {
+                ctx2D.strokeStyle = '#10b981';
+                ctx2D.lineWidth = 3.5;
+                ctx2D.beginPath();
+                ctx2D.moveTo(-5, -12); ctx2D.lineTo(-5, 12);
+                ctx2D.moveTo(5, -12);  ctx2D.lineTo(5, 12);
+                ctx2D.stroke();
+
+                if (state.showValues) {
+                    ctx2D.fillStyle = '#34d399';
+                    ctx2D.font = 'bold 10px Sarabun, sans-serif';
+                    ctx2D.textAlign = 'center';
+                    ctx2D.fillText(`${(state.C * 1e6).toFixed(0)} µF`, 0, -16);
+                }
+            }
+
+            ctx2D.restore();
+        }
+
+        function drawCurrentParticles2D(w, h) {
+            const marginX = w * 0.20;
+            const marginY = h * 0.22;
+            const loopW = w - 2 * marginX;
+            const loopH = h - 2 * marginY;
+            const perimeter = 2 * (loopW + loopH);
+
+            const isElectrons = state.currentType === 'electrons';
+            const direction = isElectrons ? -1 : 1;
+            
+            ctx2D.fillStyle = isElectrons ? '#38bdf8' : '#f59e0b';
+
+            for (let i = 0; i < 24; i++) {
+                let dist = ((i / 24) * perimeter + direction * state.phase * 18) % perimeter;
+                if (dist < 0) dist += perimeter;
+
+                let px = 0, py = 0;
+                if (dist < loopW) {
+                    px = marginX + dist; py = marginY;
+                } else if (dist < loopW + loopH) {
+                    px = marginX + loopW; py = marginY + (dist - loopW);
+                } else if (dist < 2 * loopW + loopH) {
+                    px = marginX + loopW - (dist - loopW - loopH); py = marginY + loopH;
+                } else {
+                    px = marginX; py = marginY + loopH - (dist - 2 * loopW - loopH);
+                }
+
+                ctx2D.beginPath();
+                ctx2D.arc(px, py, 3.5, 0, Math.PI * 2);
+                ctx2D.fill();
+            }
+        }
+
+        function drawVoltmeterProbes2D() {
+            // Red Probe Wire
+            ctx2D.strokeStyle = '#ef4444';
+            ctx2D.lineWidth = 2;
+            ctx2D.beginPath();
+            ctx2D.moveTo(voltmeter.probeRed.x, voltmeter.probeRed.y);
+            ctx2D.lineTo(voltmeter.probeRed.x + 20, voltmeter.probeRed.y + 40);
+            ctx2D.stroke();
+
+            // Red Probe Point
+            ctx2D.fillStyle = '#ef4444';
+            ctx2D.beginPath();
+            ctx2D.arc(voltmeter.probeRed.x, voltmeter.probeRed.y, 4, 0, Math.PI * 2);
+            ctx2D.fill();
+
+            // Black Probe Point
+            ctx2D.fillStyle = '#334155';
+            ctx2D.beginPath();
+            ctx2D.arc(voltmeter.probeBlack.x, voltmeter.probeBlack.y, 4, 0, Math.PI * 2);
+            ctx2D.fill();
+
+            // Readout voltage calculation based on sine phase
+            const vVal = Math.sin(state.phase) * state.Vrms * 1.414;
+            document.getElementById('voltmeter-readout').innerText = `${vVal.toFixed(2)} V`;
+        }
+
+        function drawPhasorDiagram2D(cx, cy) {
+            ctx2D.save();
+            ctx2D.translate(cx, cy);
+
+            ctx2D.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            ctx2D.beginPath();
+            ctx2D.arc(0, 0, 42, 0, Math.PI * 2);
+            ctx2D.fill();
+            ctx2D.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx2D.stroke();
+
+            // Voltage Phasor Vector (Cyan)
+            ctx2D.strokeStyle = '#38bdf8';
+            ctx2D.lineWidth = 2;
+            ctx2D.beginPath();
+            ctx2D.moveTo(0, 0);
+            ctx2D.lineTo(Math.cos(state.phase) * 32, -Math.sin(state.phase) * 32);
+            ctx2D.stroke();
+
+            // Current Phasor Vector (Amber)
+            const iAngle = state.phase - state.phaseAngle;
+            ctx2D.strokeStyle = '#f59e0b';
+            ctx2D.lineWidth = 2;
+            ctx2D.beginPath();
+            ctx2D.moveTo(0, 0);
+            ctx2D.lineTo(Math.cos(iAngle) * 25, -Math.sin(iAngle) * 25);
+            ctx2D.stroke();
+
+            ctx2D.restore();
+        }
+
+        function renderOscilloscope() {
+            const w = scopeCanvas.clientWidth;
+            const h = scopeCanvas.clientHeight;
+            scopeCanvas.width = w * window.devicePixelRatio;
+            scopeCanvas.height = h * window.devicePixelRatio;
+            scopeCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+            scopeCtx.clearRect(0, 0, w, h);
+
+            // Grid Lines
+            scopeCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            scopeCtx.lineWidth = 1;
+            scopeCtx.beginPath();
+            scopeCtx.moveTo(0, h / 2); scopeCtx.lineTo(w, h / 2);
+            scopeCtx.stroke();
+
+            const midY = h / 2;
+            const ampV = h * 0.38;
+            const ampI = h * 0.30;
+
+            // Voltage Waveform (Cyan)
+            scopeCtx.strokeStyle = '#38bdf8';
+            scopeCtx.lineWidth = 2;
+            scopeCtx.beginPath();
+            for (let x = 0; x < w; x++) {
+                const t = state.phase + (x / w) * Math.PI * 4;
+                const y = midY - Math.sin(t) * ampV;
+                if (x === 0) scopeCtx.moveTo(x, y);
+                else scopeCtx.lineTo(x, y);
+            }
+            scopeCtx.stroke();
+
+            // Current Waveform (Amber)
+            scopeCtx.strokeStyle = '#f59e0b';
+            scopeCtx.lineWidth = 2;
+            scopeCtx.beginPath();
+            for (let x = 0; x < w; x++) {
+                const t = state.phase - state.phaseAngle + (x / w) * Math.PI * 4;
+                const y = midY - Math.sin(t) * ampI;
+                if (x === 0) scopeCtx.moveTo(x, y);
+                else scopeCtx.lineTo(x, y);
+            }
+            scopeCtx.stroke();
+        }
+
+        function render3D() {
+            if (state.renderMode !== '3d') return;
+            controls3D.update();
+            renderer3D.render(scene3D, camera3D);
+        }
+
+        function loadPreset(presetKey) {
+            if (presetKey === 'rlc') {
+                state.R = 100; state.L = 0.500; state.C = 0.000060; state.Vrms = 220; state.freq = 50;
+            } else if (presetKey === 'kirchhoff') {
+                state.R = 50; state.L = 0.100; state.C = 0.000100; state.Vrms = 120; state.freq = 50;
+            } else if (presetKey === 'ohm') {
+                state.R = 100; state.L = 0.001; state.C = 0.001; state.Vrms = 220; state.freq = 50;
+            } else if (presetKey === 'rc') {
+                state.R = 150; state.L = 0.001; state.C = 0.000040; state.Vrms = 110; state.freq = 60;
+            }
+
+            setupPresetComponents();
+            calculatePhysics();
+            updateUI();
+        }
+
+        function setupPresetComponents() {
+            const w = canvas2D.clientWidth || 500;
+            const h = canvas2D.clientHeight || 400;
+            components = [
+                { type: 'ac_source', x: w * 0.20, y: h * 0.5 },
+                { type: 'resistor',  x: w * 0.50, y: h * 0.22 },
+                { type: 'inductor',  x: w * 0.80, y: h * 0.5 },
+                { type: 'capacitor', x: w * 0.50, y: h * 0.78 }
+            ];
+        }
+
+        function addComponent(type) {
+            const w = canvas2D.clientWidth || 500;
+            const h = canvas2D.clientHeight || 400;
+            components.push({ type: type, x: w / 2 + (Math.random() * 40 - 20), y: h / 2 + (Math.random() * 40 - 20) });
+            render();
+        }
+
+        function onSliderChange() {
+            state.Vrms = parseFloat(document.getElementById('slider-vrms').value);
+            state.freq = parseFloat(document.getElementById('slider-freq').value);
+            state.wireR = parseFloat(document.getElementById('slider-wirer').value);
+
+            calculatePhysics();
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('slider-val-vrms').innerText = `${state.Vrms} V`;
+            document.getElementById('slider-val-freq').innerText = `${state.freq} Hz`;
+            document.getElementById('slider-val-wirer').innerText = `${state.wireR.toFixed(1)} Ω`;
+
+            document.getElementById('val-r-display').innerText = `${state.R.toFixed(1)} Ω`;
+            document.getElementById('val-xl-display').innerText = `${state.Xl.toFixed(1)} Ω`;
+            document.getElementById('val-xc-display').innerText = `${state.Xc.toFixed(1)} Ω`;
+            document.getElementById('val-z-display').innerText = `${state.Z.toFixed(1)} Ω`;
+            document.getElementById('val-irms-display').innerText = `${state.Irms.toFixed(2)} A`;
+            document.getElementById('val-f0-display').innerText = `${state.f0.toFixed(2)} Hz`;
+
+            document.getElementById('overlay-ac-val').innerText = `${state.Vrms}V @ ${state.freq}Hz`;
+
+            // Read radio button state
+            const eleRadio = document.querySelector('input[name="current-type"]:checked');
+            if (eleRadio) state.currentType = eleRadio.value;
+
+            // Status State
+            const stateBadge = document.getElementById('val-phase-state');
+            if (Math.abs(state.Xl - state.Xc) < 2.0) {
+                stateBadge.innerText = 'เรโซแนนซ์ (Resonance)';
+                stateBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+            } else if (state.Xl > state.Xc) {
+                stateBadge.innerText = 'Inductive Lagging (L)';
+                stateBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30';
+            } else {
+                stateBadge.innerText = 'Capacitive Leading (C)';
+                stateBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30';
+            }
+        }
+
+        function switchRightTab(tabKey) {
+            ['analysis', 'settings'].forEach(k => {
+                document.getElementById(`content-${k}`).classList.add('hidden');
+                document.getElementById(`tab-${k}`).classList.remove('active');
+            });
+
+            document.getElementById(`content-${tabKey}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabKey}`).classList.add('active');
+        }
+
+        function setRenderMode(mode) {
+            state.renderMode = mode;
+            const btn2D = document.getElementById('btn-mode-2d');
+            const btn3D = document.getElementById('btn-mode-3d');
+            const container2D = document.getElementById('canvas-2d');
+            const container3D = document.getElementById('container-3d');
+
+            if (mode === '2d') {
+                btn2D.className = 'mode-btn active px-3 py-1 rounded-md transition flex items-center gap-1.5';
+                btn3D.className = 'mode-btn px-3 py-1 text-slate-400 hover:text-white rounded-md transition flex items-center gap-1.5';
+                container2D.classList.remove('hidden');
+                container3D.classList.add('hidden');
+            } else {
+                btn3D.className = 'mode-btn active px-3 py-1 rounded-md transition flex items-center gap-1.5';
+                btn2D.className = 'mode-btn px-3 py-1 text-slate-400 hover:text-white rounded-md transition flex items-center gap-1.5';
+                container3D.classList.remove('hidden');
+                container2D.classList.add('hidden');
+                onResize();
+            }
+        }
+
+        function setStyleMode(style) {
+            state.styleMode = style;
+            document.getElementById('btn-view-lifelike').className = style === 'lifelike' ? 'px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold border border-sky-500/30' : 'px-2 py-0.5 rounded bg-slate-800 text-slate-400 hover:text-white border border-white/5';
+            document.getElementById('btn-view-schematic').className = style === 'schematic' ? 'px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold border border-sky-500/30' : 'px-2 py-0.5 rounded bg-slate-800 text-slate-400 hover:text-white border border-white/5';
+            render();
+        }
+
+        function resetCircuit() {
+            loadPreset('rlc');
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else if (document.exitFullscreen) document.exitFullscreen();
+        }
+
+        function onMouseDown2D(e) {
+            const rect = canvas2D.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+
+            components.forEach(comp => {
+                if (Math.hypot(comp.x - mx, comp.y - my) < 25) {
+                    state.draggedNode = comp;
+                }
+            });
+        }
+
+        function onMouseMove2D(e) {
+            if (state.draggedNode) {
+                const rect = canvas2D.getBoundingClientRect();
+                state.draggedNode.x = e.clientX - rect.left;
+                state.draggedNode.y = e.clientY - rect.top;
+            }
+        }
+
+        function onMouseUp2D() {
+            state.draggedNode = null;
+        }
+
+        function onResize() {
+            if (state.renderMode === '3d' && renderer3D && camera3D) {
+                const container = document.getElementById('container-3d');
+                camera3D.aspect = container.clientWidth / container.clientHeight;
+                camera3D.updateProjectionMatrix();
+                renderer3D.setSize(container.clientWidth, container.clientHeight);
+            }
+        }
+    </script>
+</body>
+</html>

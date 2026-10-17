@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แบบจำลองการทดลองตัวเก็บประจุ (DIY Capacitor Simulation)</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        panelBg: 'rgba(30, 41, 59, 0.85)',
+                        accent: '#38bdf8',
+                        positive: '#ef4444',
+                        negative: '#3b82f6',
+                        glow: '#fcd34d'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Sarabun', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- MathJax -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        input[type=range] {
+            accent-color: #38bdf8;
+        }
+        
+        .math-display {
+            font-size: 0.9rem;
+            color: #bae6fd;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 z-20 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                <i class="fa-solid fa-bolt text-white text-sm"></i>
+            </div>
+            <h1 class="text-base font-semibold tracking-wide flex items-center gap-2">
+                แบบจำลองตัวเก็บประจุ <span class="text-xs font-normal text-slate-400 bg-slate-800 px-2 py-0.5 rounded">DIY Capacitor</span>
+            </h1>
+        </div>
+        <div>
+            <button id="btn-camera-toggle" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm px-4 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-cube text-cyan-400"></i> <span id="camera-mode-text">สลับมุมมอง 2D (Side View)</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 relative overflow-hidden">
+        
+        <!-- ThreeJS Canvas -->
+        <div id="canvas-container" class="absolute inset-0 w-full h-full">
+            <canvas id="three-canvas"></canvas>
+        </div>
+
+        <!-- Left HUD: Controls -->
+        <aside class="absolute top-4 left-4 w-80 glass-panel rounded-xl flex flex-col z-10 max-h-[calc(100vh-6rem)] overflow-y-auto">
+            <div class="p-4 border-b border-slate-700/50">
+                <h2 class="text-sm font-semibold text-cyan-400 flex items-center gap-2 uppercase tracking-wide">
+                    <i class="fa-solid fa-sliders"></i> ตั้งค่าการทดลอง
+                </h2>
+            </div>
+            
+            <div class="p-4 space-y-5">
+                <!-- Dielectric -->
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">วัสดุไดอิเล็กทริก / ฉนวน</label>
+                    <select id="select-dielectric" class="w-full bg-slate-800/80 border border-slate-600 rounded-md p-2 text-sm focus:outline-none focus:border-cyan-500 text-slate-200">
+                        <option value="1.0">อากาศ (Air, εr = 1.0)</option>
+                        <option value="2.1">แผ่นพลาสติก (Plastic, εr = 2.1)</option>
+                        <option value="3.7">กระดาษไข (Wax Paper, εr = 3.7)</option>
+                    </select>
+                </div>
+
+                <!-- Plate Area Slider -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">พื้นที่แผ่นฟอยล์ (A)</span>
+                        <span id="val-area" class="font-mono text-cyan-300">0.05 m²</span>
+                    </div>
+                    <input type="range" id="slider-area" min="0.01" max="0.1" step="0.01" value="0.05" class="w-full h-1.5 bg-slate-700 rounded-lg cursor-pointer">
+                    <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                        <span>0.01 m²</span>
+                        <span>0.1 m²</span>
+                    </div>
+                </div>
+
+                <!-- Distance Slider -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">ระยะห่าง (d)</span>
+                        <span id="val-distance" class="font-mono text-cyan-300">0.005 m</span>
+                    </div>
+                    <input type="range" id="slider-distance" min="0.001" max="0.01" step="0.001" value="0.005" class="w-full h-1.5 bg-slate-700 rounded-lg cursor-pointer">
+                    <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                        <span>1 mm</span>
+                        <span>10 mm</span>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="pt-2 grid gap-2">
+                    <button id="btn-charge" class="bg-blue-600 hover:bg-blue-500 text-white text-sm py-2 rounded-lg font-medium transition-all shadow-lg shadow-blue-900/50 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-plug"></i> ชาร์จประจุ (Charge)
+                    </button>
+                    <button id="btn-disconnect" class="bg-slate-700 hover:bg-slate-600 text-white text-sm py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-scissors"></i> ตัดวงจร (Disconnect)
+                    </button>
+                    <button id="btn-discharge" class="bg-rose-600 hover:bg-rose-500 text-white text-sm py-2 rounded-lg font-medium transition-all shadow-lg shadow-rose-900/50 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-lightbulb"></i> คายประจุ (Discharge)
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right HUD: Real-time Data -->
+        <aside class="absolute top-4 right-4 w-72 glass-panel rounded-xl flex flex-col z-10 pointer-events-none">
+            <div class="p-4 border-b border-slate-700/50">
+                <h2 class="text-sm font-semibold text-emerald-400 flex items-center gap-2 uppercase tracking-wide">
+                    <i class="fa-solid fa-chart-line"></i> ข้อมูล & สมการแบบ Real-time
+                </h2>
+            </div>
+            
+            <div class="p-4 space-y-4">
+                <!-- Capacitance -->
+                <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                    <div class="text-xs text-slate-400 mb-1">ค่าความจุไฟฟ้า (Capacitance, C)</div>
+                    <div class="math-display mb-1">$$C = \frac{\varepsilon_0 \varepsilon_r A}{d}$$</div>
+                    <div class="text-right font-mono text-lg text-emerald-300 font-bold" id="readout-c">
+                        0.00 <span class="text-xs text-slate-400 font-sans">pF</span>
+                    </div>
+                </div>
+
+                <!-- Voltage -->
+                <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                    <div class="text-xs text-slate-400 mb-1">แรงดันไฟฟ้า (Voltage, V)</div>
+                    <div class="w-full bg-slate-900 rounded-full h-2 mb-2 border border-slate-700">
+                        <div id="bar-voltage" class="bg-gradient-to-r from-yellow-600 to-yellow-400 h-2 rounded-full transition-all duration-75" style="width: 0%"></div>
+                    </div>
+                    <div class="text-right font-mono text-lg text-yellow-300 font-bold" id="readout-v">
+                        0.00 <span class="text-xs text-slate-400 font-sans">V</span>
+                    </div>
+                </div>
+
+                <!-- Charge -->
+                <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                    <div class="text-xs text-slate-400 mb-1">ประจุที่เก็บได้ (Charge, Q)</div>
+                    <div class="math-display mb-1">$$Q = C \times V$$</div>
+                    <div class="text-right font-mono text-lg text-cyan-300 font-bold" id="readout-q">
+                        0.00 <span class="text-xs text-slate-400 font-sans">nC</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Circuit Status Floating Badge -->
+        <div class="absolute bottom-6 left-1/2 -translate-x-1/2 glass-panel px-6 py-2 rounded-full flex items-center gap-3">
+            <span class="relative flex h-3 w-3">
+              <span id="status-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-400 opacity-75"></span>
+              <span id="status-dot" class="relative inline-flex rounded-full h-3 w-3 bg-slate-500"></span>
+            </span>
+            <span id="status-text" class="text-sm font-medium text-slate-300 tracking-wide uppercase">สถานะ: วงจรเปิด (Idle)</span>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        // --- Constants & Variables ---
+        const EPSILON_0 = 8.854e-12; // F/m
+        const V_SOURCE = 6.0; // Volts
+        
+        let area = 0.05; // m^2
+        let distance = 0.005; // m
+        let epsilon_r = 1.0;
+        
+        let capacitance = 0; // Farads
+        let current_voltage = 0; // Volts
+        let current_charge = 0; // Coulombs
+        
+        // Simulation States: 'IDLE', 'CHARGING', 'DISCONNECTED', 'DISCHARGING'
+        let state = 'IDLE'; 
+
+        // Three.js Objects
+        let scene, camera, renderer, controls;
+        let plateTop, plateBottom, dielectricMesh;
+        let batteryGroup, ledGroup, ledBulb;
+        let chargeParticlesGroup;
+        let wiresCharging, wiresDischarging;
+        
+        let is3DMode = true;
+
+        // UI Elements
+        const elArea = document.getElementById('val-area');
+        const elDistance = document.getElementById('val-distance');
+        const elReadoutC = document.getElementById('readout-c');
+        const elReadoutV = document.getElementById('readout-v');
+        const elReadoutQ = document.getElementById('readout-q');
+        const barVoltage = document.getElementById('bar-voltage');
+        const statusText = document.getElementById('status-text');
+        const statusDot = document.getElementById('status-dot');
+        const statusPing = document.getElementById('status-ping');
+
+        const clock = new THREE.Clock();
+
+        init();
+        animate();
+
+        function init() {
+            // 1. Setup Scene, Camera, Renderer
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color('#0f172a');
+            scene.fog = new THREE.FogExp2('#0f172a', 0.02);
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 10, 25);
+
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three-canvas'), antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            // 2. Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+
+            const spotLight = new THREE.SpotLight(0xffffff, 0.8);
+            spotLight.position.set(10, 20, 10);
+            spotLight.castShadow = true;
+            scene.add(spotLight);
+
+            // 3. Create Objects
+            createCapacitor();
+            createBattery();
+            createLED();
+            createWires();
+            createChargeParticles();
+
+            // 4. Setup Event Listeners
+            setupEvents();
+            
+            // 5. Initial Calculation
+            calculatePhysics();
+            updateGeometry();
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function createCapacitor() {
+            // Plates (Aluminum foil)
+            const plateGeo = new THREE.BoxGeometry(1, 0.1, 1);
+            const foilMat = new THREE.MeshStandardMaterial({ 
+                color: 0xe2e8f0, 
+                metalness: 0.8, 
+                roughness: 0.2 
+            });
+
+            plateTop = new THREE.Mesh(plateGeo, foilMat);
+            plateBottom = new THREE.Mesh(plateGeo, foilMat);
+            
+            plateTop.castShadow = true;
+            plateBottom.receiveShadow = true;
+
+            scene.add(plateTop);
+            scene.add(plateBottom);
+
+            // Dielectric
+            const dieMat = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.0, // Air default
+                depthWrite: false
+            });
+            dielectricMesh = new THREE.Mesh(plateGeo, dieMat);
+            scene.add(dielectricMesh);
+        }
+
+        function createBattery() {
+            batteryGroup = new THREE.Group();
+            batteryGroup.position.set(-10, 0, 0);
+
+            // Battery body
+            const bodyGeo = new THREE.CylinderGeometry(1.5, 1.5, 4, 32);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.5 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            
+            // Top Terminal (+)
+            const topGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.5, 32);
+            const topMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8 });
+            const top = new THREE.Mesh(topGeo, topMat);
+            top.position.y = 2.25;
+
+            // Label wrapper
+            const wrapGeo = new THREE.CylinderGeometry(1.52, 1.52, 2.5, 32);
+            const wrapMat = new THREE.MeshStandardMaterial({ color: 0xeab308 }); // Yellow battery
+            const wrap = new THREE.Mesh(wrapGeo, wrapMat);
+
+            batteryGroup.add(body, top, wrap);
+            scene.add(batteryGroup);
+        }
+
+        function createLED() {
+            ledGroup = new THREE.Group();
+            ledGroup.position.set(10, 1, 0);
+
+            // Legs
+            const legGeo = new THREE.CylinderGeometry(0.05, 0.05, 2, 8);
+            const legMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8 });
+            const leg1 = new THREE.Mesh(legGeo, legMat);
+            leg1.position.set(-0.3, -1, 0);
+            const leg2 = new THREE.Mesh(legGeo, legMat);
+            leg2.position.set(0.3, -1, 0);
+
+            // Base
+            const baseGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.3, 32);
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+            const base = new THREE.Mesh(baseGeo, baseMat);
+            base.position.y = 0.15;
+
+            // Bulb
+            const bulbGeo = new THREE.SphereGeometry(0.8, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2);
+            const bulbMat = new THREE.MeshStandardMaterial({ 
+                color: 0x4a0404, // Dark red when off
+                emissive: 0xff0000,
+                emissiveIntensity: 0.0,
+                transparent: true,
+                opacity: 0.9
+            });
+            ledBulb = new THREE.Mesh(bulbGeo, bulbMat);
+            ledBulb.position.y = 0.3;
+
+            ledGroup.add(leg1, leg2, base, ledBulb);
+            scene.add(ledGroup);
+        }
+
+        function createWires() {
+            // Wires for Charging (Battery to Plates)
+            const matChargePos = new THREE.LineBasicMaterial({ color: 0xef4444, linewidth: 2 });
+            const matChargeNeg = new THREE.LineBasicMaterial({ color: 0x3b82f6, linewidth: 2 });
+
+            const ptsChargePos = [new THREE.Vector3(-10, 2.5, 0), new THREE.Vector3(-6, 4, 0), new THREE.Vector3(-2, 0.5, 0)]; // to top plate roughly
+            const ptsChargeNeg = [new THREE.Vector3(-10, -2, 0), new THREE.Vector3(-6, -3, 0), new THREE.Vector3(-2, -0.5, 0)]; // to bottom plate
+
+            wiresCharging = new THREE.Group();
+            wiresCharging.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(ptsChargePos), matChargePos));
+            wiresCharging.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(ptsChargeNeg), matChargeNeg));
+            wiresCharging.visible = false;
+            scene.add(wiresCharging);
+
+            // Wires for Discharging (Plates to LED)
+            const matDischargePos = new THREE.LineBasicMaterial({ color: 0xef4444 });
+            const matDischargeNeg = new THREE.LineBasicMaterial({ color: 0x3b82f6 });
+
+            const ptsDischargePos = [new THREE.Vector3(2, 0.5, 0), new THREE.Vector3(6, 2, 0), new THREE.Vector3(9.7, 0, 0)]; 
+            const ptsDischargeNeg = [new THREE.Vector3(2, -0.5, 0), new THREE.Vector3(6, -2, 0), new THREE.Vector3(10.3, 0, 0)];
+
+            wiresDischarging = new THREE.Group();
+            wiresDischarging.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(ptsDischargePos), matDischargePos));
+            wiresDischarging.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(ptsDischargeNeg), matDischargeNeg));
+            wiresDischarging.visible = false;
+            scene.add(wiresDischarging);
+        }
+
+        function createChargeParticles() {
+            chargeParticlesGroup = new THREE.Group();
+            const particleCount = 100; // max particles per plate
+            
+            // Textures for + and - using canvas
+            function createLabelTexture(text, colorStr) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 64; canvas.height = 64;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = colorStr;
+                ctx.font = 'bold 48px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, 32, 32);
+                return new THREE.CanvasTexture(canvas);
+            }
+
+            const texPos = createLabelTexture('+', '#ef4444');
+            const texNeg = createLabelTexture('-', '#3b82f6');
+            
+            const matPos = new THREE.SpriteMaterial({ map: texPos, transparent: true, opacity: 0 });
+            const matNeg = new THREE.SpriteMaterial({ map: texNeg, transparent: true, opacity: 0 });
+
+            for (let i = 0; i < particleCount; i++) {
+                // Top plate particles (+)
+                const pTop = new THREE.Sprite(matPos.clone());
+                pTop.scale.set(0.8, 0.8, 1);
+                pTop.userData = { isTop: true, offset: new THREE.Vector3() };
+                
+                // Bottom plate particles (-)
+                const pBottom = new THREE.Sprite(matNeg.clone());
+                pBottom.scale.set(0.8, 0.8, 1);
+                pBottom.userData = { isTop: false, offset: new THREE.Vector3() };
+
+                chargeParticlesGroup.add(pTop);
+                chargeParticlesGroup.add(pBottom);
+            }
+            scene.add(chargeParticlesGroup);
+        }
+
+        // --- Core Logic ---
+
+        function setupEvents() {
+            // Controls
+            document.getElementById('select-dielectric').addEventListener('change', (e) => {
+                epsilon_r = parseFloat(e.target.value);
+                updateDielectricVisuals();
+                calculatePhysics();
+            });
+
+            document.getElementById('slider-area').addEventListener('input', (e) => {
+                area = parseFloat(e.target.value);
+                elArea.textContent = `${area.toFixed(2)} m²`;
+                updateGeometry();
+                calculatePhysics();
+            });
+
+            document.getElementById('slider-distance').addEventListener('input', (e) => {
+                distance = parseFloat(e.target.value);
+                // display in mm
+                elDistance.textContent = `${(distance * 1000).toFixed(1)} mm`;
+                updateGeometry();
+                calculatePhysics();
+            });
+
+            // Buttons
+            document.getElementById('btn-charge').addEventListener('click', () => setCircuitState('CHARGING'));
+            document.getElementById('btn-disconnect').addEventListener('click', () => setCircuitState('DISCONNECTED'));
+            document.getElementById('btn-discharge').addEventListener('click', () => setCircuitState('DISCHARGING'));
+
+            // Camera Toggle
+            document.getElementById('btn-camera-toggle').addEventListener('click', () => {
+                is3DMode = !is3DMode;
+                const btnText = document.getElementById('camera-mode-text');
+                if (is3DMode) {
+                    btnText.textContent = "สลับมุมมอง 2D (Side View)";
+                    // Reset to 3D perspective
+                    camera.position.set(0, 10, 25);
+                    controls.enableRotate = true;
+                } else {
+                    btnText.textContent = "สลับมุมมอง 3D";
+                    // Move to direct side view
+                    camera.position.set(0, 0, 30);
+                    camera.lookAt(0,0,0);
+                    controls.enableRotate = false; // Lock rotation in 2D mode
+                }
+            });
+        }
+
+        function setCircuitState(newState) {
+            state = newState;
+            
+            // Visual Updates based on state
+            wiresCharging.visible = (state === 'CHARGING');
+            wiresDischarging.visible = (state === 'DISCHARGING');
+
+            // Status Badge UI
+            let dotColor, pingColor, textMsg;
+            switch(state) {
+                case 'CHARGING':
+                    dotColor = 'bg-blue-500'; pingColor = 'bg-blue-400'; textMsg = 'สถานะ: กำลังชาร์จ (Charging)';
+                    break;
+                case 'DISCONNECTED':
+                    dotColor = 'bg-yellow-500'; pingColor = 'bg-yellow-400'; textMsg = 'สถานะ: ตัดวงจร / กักเก็บประจุ (Holding)';
+                    break;
+                case 'DISCHARGING':
+                    dotColor = 'bg-rose-500'; pingColor = 'bg-rose-400'; textMsg = 'สถานะ: คายประจุ (Discharging)';
+                    break;
+                default:
+                    dotColor = 'bg-slate-500'; pingColor = 'bg-slate-400'; textMsg = 'สถานะ: วงจรเปิด (Idle)';
+            }
+            statusDot.className = `relative inline-flex rounded-full h-3 w-3 ${dotColor}`;
+            statusPing.className = `animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${pingColor}`;
+            statusText.textContent = textMsg;
+        }
+
+        function calculatePhysics() {
+            // C = (e0 * er * A) / d
+            capacitance = (EPSILON_0 * epsilon_r * area) / distance; // Farads
+            
+            // Update UI (Convert to picoFarads for display: pF = F * 10^12)
+            const c_pF = capacitance * 1e12;
+            elReadoutC.innerHTML = `${c_pF.toFixed(2)} <span class="text-xs text-slate-400 font-sans">pF</span>`;
+            
+            // Update charge max theoretical just for info?
+            updateChargeReadout();
+        }
+
+        function updateGeometry() {
+            // Map physical values to visual sizes
+            // Area: 0.01 to 0.1 m^2 -> side length approx 0.1 to 0.316 m
+            // Visual scale factor: let 1 visual unit = 0.02 m
+            const visualScale = 50; 
+            
+            const sideLength = Math.sqrt(area) * visualScale;
+            
+            // Update Plate sizes
+            plateTop.scale.set(sideLength, 1, sideLength);
+            plateBottom.scale.set(sideLength, 1, sideLength);
+            dielectricMesh.scale.set(sideLength, 1, sideLength);
+
+            // Distance: 0.001 to 0.01 m
+            const visualDistance = distance * 200; // exaggerate distance for visibility
+            
+            plateTop.position.y = visualDistance / 2 + 0.05; // 0.05 is half plate thickness
+            plateBottom.position.y = -visualDistance / 2 - 0.05;
+            
+            // Dielectric spans between
+            dielectricMesh.position.y = 0;
+            dielectricMesh.scale.y = visualDistance * 10; // base geometry is 0.1 thick, so *10 makes it 1 unit thick before scale
+
+            // Update particle positions
+            distributeParticles(sideLength, visualDistance);
+        }
+
+        function updateDielectricVisuals() {
+            const mat = dielectricMesh.material;
+            if (epsilon_r === 1.0) {
+                // Air
+                mat.transparent = true;
+                mat.opacity = 0;
+            } else if (epsilon_r === 2.1) {
+                // Plastic (bluish tint)
+                mat.color.setHex(0x88ccff);
+                mat.transparent = true;
+                mat.opacity = 0.4;
+            } else if (epsilon_r === 3.7) {
+                // Wax Paper (yellowish tint)
+                mat.color.setHex(0xfff0aa);
+                mat.transparent = true;
+                mat.opacity = 0.6;
+            }
+        }
+
+        function distributeParticles(sideLength, visualDistance) {
+            const halfSize = sideLength / 2;
+            
+            // Randomly scatter particle offsets within plate bounds
+            chargeParticlesGroup.children.forEach((p, i) => {
+                if (p.userData.offset.lengthSq() === 0) {
+                    // Initialize random pos if not set
+                    p.userData.offset.set(
+                        (Math.random() - 0.5) * 0.9, // range -0.45 to 0.45 (normalized)
+                        0,
+                        (Math.random() - 0.5) * 0.9
+                    );
+                }
+                
+                // Apply scaled offset
+                p.position.x = p.userData.offset.x * sideLength;
+                p.position.z = p.userData.offset.z * sideLength;
+                
+                // Set height based on plate
+                if (p.userData.isTop) {
+                    p.position.y = (visualDistance / 2) + 0.2;
+                } else {
+                    p.position.y = -(visualDistance / 2) - 0.2;
+                }
+            });
+        }
+
+        function updateChargeReadout() {
+            current_charge = capacitance * current_voltage; // Coulombs
+            
+            // Display Q in nanoCoulombs (nC = F*V * 10^9)
+            const q_nC = current_charge * 1e9;
+            elReadoutQ.innerHTML = `${q_nC.toFixed(4)} <span class="text-xs text-slate-400 font-sans">nC</span>`;
+            
+            // Display V
+            elReadoutV.innerHTML = `${current_voltage.toFixed(2)} <span class="text-xs text-slate-400 font-sans">V</span>`;
+            
+            // Update Voltage Bar
+            const percentV = (current_voltage / V_SOURCE) * 100;
+            barVoltage.style.width = `${Math.min(100, Math.max(0, percentV))}%`;
+
+            // Visual representations of Charge
+            const chargeRatio = current_voltage / V_SOURCE; // 0.0 to 1.0
+
+            // 1. Particle opacity
+            chargeParticlesGroup.children.forEach(p => {
+                p.material.opacity = chargeRatio * 0.9; // max 0.9 opacity
+            });
+
+            // 2. LED intensity (only if discharging)
+            if (state === 'DISCHARGING' && current_voltage > 0.1) {
+                ledBulb.material.emissiveIntensity = chargeRatio * 2.0;
+                ledBulb.material.color.setHex(0xff0000);
+            } else {
+                ledBulb.material.emissiveIntensity = 0;
+                ledBulb.material.color.setHex(0x4a0404);
+            }
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        // --- Animation Loop ---
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const delta = clock.getDelta();
+            
+            controls.update();
+
+            // Circuit Simulation Step
+            if (state === 'CHARGING') {
+                // RC Charging curve approximation (smooth interpolation)
+                const chargeRate = 2.0; // simulated speed
+                if (current_voltage < V_SOURCE) {
+                    current_voltage += (V_SOURCE - current_voltage) * chargeRate * delta;
+                    if (Math.abs(V_SOURCE - current_voltage) < 0.01) current_voltage = V_SOURCE;
+                }
+            } else if (state === 'DISCHARGING') {
+                // RC Discharging curve
+                const dischargeRate = 1.5;
+                if (current_voltage > 0) {
+                    current_voltage -= current_voltage * dischargeRate * delta;
+                    if (current_voltage < 0.01) {
+                        current_voltage = 0;
+                        setCircuitState('IDLE'); // auto idle when empty
+                    }
+                }
+            }
+            // If DISCONNECTED, current_voltage stays exactly the same
+
+            // Update DOM and Visuals based on physical state
+            updateChargeReadout();
+
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>

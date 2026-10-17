@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ปฏิบัติการฟิสิกส์เสมือน: การชน กฎการอนุรักษ์โมเมนตัม และการอนุรักษ์พลังงาน (Collision & Conservation Laws Lab)</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        lab: {
+                            bg: '#080c14',
+                            panel: '#0f172a',
+                            accent: '#38bdf8',
+                            emerald: '#10b981',
+                            amber: '#f59e0b',
+                            rose: '#f43f5e',
+                            purple: '#a855f7'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Sarabun', 'Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- KaTeX for Mathematics & Physics Formulas -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #060911;
+            color: #f3f4f6;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.3);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(56, 189, 248, 0.7);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 4px;
+            height: 5px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 15px;
+            width: 15px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+            transition: all 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #7dd3fc;
+        }
+
+        .tab-btn.active {
+            background-color: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            border-bottom: 2px solid #38bdf8;
+            font-weight: 600;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body class="select-none text-slate-100">
+
+    <!-- Top Header Navigation -->
+    <header class="absolute top-2 left-2 right-2 z-30 flex items-center justify-between glass-panel px-4 py-2 rounded-xl">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-sky-500/20 text-sky-400 rounded-lg border border-sky-500/30">
+                <i data-lucide="orbit" class="w-5 h-5"></i>
+            </div>
+            <div>
+<a href="../physics.html">
+                    <h1 class="font-bold text-sm md:text-base text-white flex items-center gap-2">
+                    ปฏิบัติการฟิสิกส์เสมือน: การชน และ กฎการอนุรักษ์โมเมนตัม & พลังงาน
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Elastic & Inelastic Collisions</span>
+                </h1>
+</a>
+                <p class="text-[11px] text-slate-400 hidden sm:block">วิเคราะห์ภาพก่อน-หลังการชน เวกเตอร์โมเมนตัม $\vec{p} = m\vec{v}$ และการเปลี่ยนแปลงพลังงานกล $\Delta E_k$</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Play / Pause Simulation Control -->
+            <button id="btn-play-pause" onclick="togglePlayPause()" class="px-3 py-1.5 bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 rounded-lg transition border border-sky-500/40 text-xs flex items-center gap-1.5 font-medium">
+                <i data-lucide="pause" id="icon-play-pause" class="w-4 h-4"></i>
+                <span id="txt-play-pause">หยุดชั่วคราว</span>
+            </button>
+
+            <!-- Reset Simulation Button -->
+            <button onclick="resetSimulation()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition border border-white/10" title="เริ่มทดลองใหม่">
+                <i data-lucide="rotate-ccw" class="w-4 h-4 text-sky-400"></i>
+            </button>
+            <button onclick="toggleFullscreen()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition border border-white/10" title="เต็มจอ">
+                <i data-lucide="maximize" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Layout Grid -->
+    <div class="absolute inset-0 pt-14 p-2 pointer-events-none grid grid-cols-1 md:grid-cols-12 gap-2 h-full pb-2">
+
+        <!-- ================= LEFT PANEL: Controls, Object Properties & Presets ================= -->
+        <aside class="md:col-span-3 lg:col-span-3 glass-panel rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <div class="p-2.5 border-b border-white/10 bg-slate-900/80 flex justify-between items-center">
+                <span class="font-semibold text-xs text-white flex items-center gap-1.5">
+                    <i data-lucide="sliders" class="w-4 h-4 text-sky-400"></i>
+                    ตั้งค่ามวล ความเร็ว & ชนิดการชน
+                </span>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-3 space-y-3 text-xs">
+
+                <!-- Collision Presets -->
+                <div class="glass-card p-2.5 rounded-lg space-y-2">
+                    <span class="text-[11px] font-bold text-sky-400 block border-b border-white/10 pb-1">แม่แบบการทดลอง (Presets)</span>
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <button onclick="applyPreset('elastic-equal')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-sky-300 rounded border border-white/10 text-center font-medium">ยืดหยุ่น มวลเท่ากัน</button>
+                        <button onclick="applyPreset('elastic-unequal')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-purple-300 rounded border border-white/10 text-center font-medium">ยืดหยุ่น มวลไม่เท่า</button>
+                        <button onclick="applyPreset('inelastic-sticky')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded border border-white/10 text-center font-medium">ไม่ยืดหยุ่นสมบูรณ์ (ติดกัน)</button>
+                        <button onclick="applyPreset('explosion')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded border border-white/10 text-center font-medium">การแยกตัว/การระเบิด</button>
+                    </div>
+                </div>
+
+                <!-- Restitution Coefficient (e) -->
+                <div class="glass-card p-2.5 rounded-lg space-y-1.5">
+                    <div class="flex justify-between items-center text-[11px]">
+                        <span class="text-slate-300 font-semibold">สัมประสิทธิ์การคืนตัว ($e$):</span>
+                        <span id="val-restitution" class="font-mono text-amber-300 font-bold">1.00 (ยืดหยุ่น)</span>
+                    </div>
+                    <input type="range" id="slider-restitution" min="0.0" max="1.0" step="0.05" value="1.0" class="w-full" oninput="onControlChange()">
+                    <div class="flex justify-between text-[9px] text-slate-400">
+                        <span>0.0 (ไม่ยืดหยุ่นสมบูรณ์)</span>
+                        <span>1.0 (ยืดหยุ่นสมบูรณ์)</span>
+                    </div>
+                </div>
+
+                <!-- Object 1 Properties (Red Sphere/Block) -->
+                <div class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-rose-500">
+                    <span class="text-[11px] font-bold text-rose-400 block border-b border-white/10 pb-1">วัตถุชิ้นที่ 1 (มวลสีแดง $m_1$)</span>
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between items-center text-[10px]">
+                            <span class="text-slate-300">มวล ($m_1$):</span>
+                            <span id="val-m1" class="font-mono text-rose-300 font-bold">2.00 kg</span>
+                        </div>
+                        <input type="range" id="slider-m1" min="0.5" max="10.0" step="0.5" value="2.0" class="w-full" oninput="onControlChange()">
+
+                        <div class="flex justify-between items-center text-[10px] pt-1">
+                            <span class="text-slate-300">ความเร็วเริ่มต้น ($u_1$):</span>
+                            <span id="val-u1" class="font-mono text-rose-300 font-bold">+3.00 m/s</span>
+                        </div>
+                        <input type="range" id="slider-u1" min="-10.0" max="10.0" step="0.5" value="3.0" class="w-full" oninput="onControlChange()">
+                    </div>
+                </div>
+
+                <!-- Object 2 Properties (Blue Sphere/Block) -->
+                <div class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-sky-500">
+                    <span class="text-[11px] font-bold text-sky-400 block border-b border-white/10 pb-1">วัตถุชิ้นที่ 2 (มวลสีฟ้า $m_2$)</span>
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between items-center text-[10px]">
+                            <span class="text-slate-300">มวล ($m_2$):</span>
+                            <span id="val-m2" class="font-mono text-sky-300 font-bold">2.00 kg</span>
+                        </div>
+                        <input type="range" id="slider-m2" min="0.5" max="10.0" step="0.5" value="2.0" class="w-full" oninput="onControlChange()">
+
+                        <div class="flex justify-between items-center text-[10px] pt-1">
+                            <span class="text-slate-300">ความเร็วเริ่มต้น ($u_2$):</span>
+                            <span id="val-u2" class="font-mono text-sky-300 font-bold">-1.00 m/s</span>
+                        </div>
+                        <input type="range" id="slider-u2" min="-10.0" max="10.0" step="0.5" value="-1.0" class="w-full" oninput="onControlChange()">
+                    </div>
+                </div>
+
+                <!-- Visual Overlay Options -->
+                <div class="glass-card p-2.5 rounded-lg space-y-1.5">
+                    <span class="text-[11px] font-bold text-slate-300 block border-b border-white/10 pb-1">แสดงผลเพิ่มเติม (Visual Aids)</span>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>เวกเตอร์โมเมนตัม ($\vec{p} = m\vec{v}$)</span>
+                        <input type="checkbox" id="toggle-vectors" checked onchange="onControlChange()" class="accent-sky-500 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>แสดงค่าตัวเลขตัวแปร ($v, p, E_k$)</span>
+                        <input type="checkbox" id="toggle-values" checked onchange="onControlChange()" class="accent-sky-500 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>แสดงภาพเปรียบเทียบ "ก่อน & หลัง" การชน</span>
+                        <input type="checkbox" id="toggle-snapshots" checked onchange="onControlChange()" class="accent-purple-500 rounded">
+                    </label>
+                </div>
+
+                <!-- Simulation Speed -->
+                <div class="glass-card p-2.5 rounded-lg space-y-1.5">
+                    <div class="flex justify-between items-center text-[11px]">
+                        <span class="text-slate-300 font-semibold">ความเร็วจำลอง (Time Speed):</span>
+                        <span id="val-sim-speed" class="font-mono text-sky-300 font-bold">1.0x</span>
+                    </div>
+                    <input type="range" id="slider-sim-speed" min="0.1" max="2.0" step="0.1" value="1.0" class="w-full" oninput="onControlChange()">
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- ================= CENTER: Interactive Canvas Viewport & Snapshots ================= -->
+        <main class="md:col-span-5 lg:col-span-5 glass-panel rounded-xl flex flex-col pointer-events-auto border border-white/10 shadow-2xl relative overflow-hidden">
+            <!-- Viewport Main Canvas Container -->
+            <div id="viewport-container" class="flex-1 bg-slate-950/80 relative cursor-crosshair flex flex-col">
+                <canvas id="canvas-main" class="w-full flex-1 z-10"></canvas>
+
+                <!-- Dynamic Status Badge Overlay -->
+                <div class="absolute top-2 left-2 bg-slate-900/90 backdrop-blur px-3 py-1.5 rounded-lg border border-white/10 text-[11px] text-slate-300 flex items-center gap-2 pointer-events-none z-20 font-mono">
+                    <i data-lucide="activity" class="w-3.5 h-3.5 text-sky-400 animate-pulse"></i>
+                    <span id="status-collision-label">สถานะ: กำลังเคลื่อนที่เข้าหากัน (Before Collision)</span>
+                </div>
+
+                <!-- Live Energy & Momentum Summary Overlay -->
+                <div class="absolute bottom-2 left-2 right-2 bg-slate-900/90 backdrop-blur p-2.5 rounded-lg border border-white/10 text-[10px] font-mono text-slate-300 z-20 grid grid-cols-2 gap-2">
+                    <div class="space-y-1">
+                        <div class="flex justify-between border-b border-white/10 pb-0.5">
+                            <span class="text-slate-400">โมเมนตัมรวมก่อนชน ($\sum p_i$):</span>
+                            <span id="readout-pi" class="text-emerald-400 font-bold">+4.00 kg·m/s</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">โมเมนตัมรวมหลังชน ($\sum p_f$):</span>
+                            <span id="readout-pf" class="text-emerald-400 font-bold">+4.00 kg·m/s</span>
+                        </div>
+                    </div>
+                    <div class="space-y-1 border-l border-white/10 pl-2">
+                        <div class="flex justify-between border-b border-white/10 pb-0.5">
+                            <span class="text-slate-400">พลังงานจลน์รวมก่อนชน ($E_{k,i}$):</span>
+                            <span id="readout-eki" class="text-amber-400 font-bold">10.00 J</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">พลังงานจลน์รวมหลังชน ($E_{k,f}$):</span>
+                            <span id="readout-ekf" class="text-amber-400 font-bold">10.00 J</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Before & After Snapshot Diagram Viewport (Bottom Half) -->
+            <div id="snapshot-container" class="h-44 bg-slate-900/90 border-t border-white/10 p-2 flex flex-col">
+                <span class="text-[10px] font-bold text-purple-300 flex items-center gap-1 mb-1">
+                    <i data-lucide="camera" class="w-3.5 h-3.5 text-purple-400"></i>
+                    แผนภาพเปรียบเทียบ "ก่อน" และ "หลัง" การชน (Before & After Collision Diagrams)
+                </span>
+                <canvas id="canvas-snapshot" class="w-full flex-1 bg-slate-950/70 rounded border border-white/10"></canvas>
+            </div>
+        </main>
+
+        <!-- ================= RIGHT PANEL: Theory, Math Formulas & Step-by-Step Solver ================= -->
+        <aside class="md:col-span-4 lg:col-span-4 glass-panel rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <!-- Navigation Tabs -->
+            <div class="p-2 border-b border-white/10 bg-slate-900/80">
+                <div class="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded-lg text-[11px] font-semibold text-center">
+                    <button onclick="switchRightTab('calc')" id="tab-calc" class="tab-btn active py-1 rounded transition">คำนวณสด & ขั้นตอน</button>
+                    <button onclick="switchRightTab('theory')" id="tab-theory" class="tab-btn py-1 rounded transition">ทฤษฎี & พลังงาน</button>
+                    <button onclick="switchRightTab('vectors')" id="tab-vectors" class="tab-btn py-1 rounded transition">เวกเตอร์โมเมนตัม</button>
+                </div>
+            </div>
+
+            <!-- Scrollable Content Panels -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-3 text-xs">
+
+                <!-- TAB 1: Real-time Step-by-Step Mathematical Solver -->
+                <div id="content-calc" class="space-y-3">
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-sky-400 block border-b border-white/10 pb-1">สมการการชนทั่วไป (General Collision Formula)</span>
+                        <div id="math-collision-formula" class="py-1 text-center text-sky-200 font-mono text-xs bg-slate-950/60 rounded p-2"></div>
+                        <div id="math-restitution-formula" class="py-1 text-center text-amber-200 font-mono text-xs bg-slate-950/60 rounded p-2"></div>
+                    </div>
+
+                    <!-- Step-by-Step Solution Breakdown -->
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-emerald-400 block border-b border-white/10 pb-1 flex justify-between items-center">
+                            <span>ขั้นตอนการแก้ปัญหาคำนวณความเร็วหลังชน</span>
+                            <i data-lucide="calculator" class="w-3.5 h-3.5 text-emerald-400"></i>
+                        </span>
+                        
+                        <div class="space-y-2 text-[10.5px] font-mono leading-relaxed text-slate-300">
+                            <div class="bg-slate-950/60 p-2 rounded border border-white/5 space-y-1">
+                                <span class="text-slate-400 font-sans font-semibold block text-[10px]">1. หาความเร็วหลังชน $v_1$ และ $v_2$:</span>
+                                <div id="step-calc-v1" class="text-rose-300">v1 = ...</div>
+                                <div id="step-calc-v2" class="text-sky-300">v2 = ...</div>
+                            </div>
+
+                            <div class="bg-slate-950/60 p-2 rounded border border-white/5 space-y-1">
+                                <span class="text-slate-400 font-sans font-semibold block text-[10px]">2. ตรวจสอบกฎการอนุรักษ์โมเมนตัม:</span>
+                                <div id="step-calc-p-check" class="text-emerald-300">pi = pf = ...</div>
+                            </div>
+
+                            <div class="bg-slate-950/60 p-2 rounded border border-white/5 space-y-1">
+                                <span class="text-slate-400 font-sans font-semibold block text-[10px]">3. วิเคราะห์การสูญเสียพลังงานจลน์ ($\Delta E_k$):</span>
+                                <div id="step-calc-ek-loss" class="text-amber-300">ΔEk = ...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Theory & Mechanical Energy Analysis -->
+                <div id="content-theory" class="space-y-3 hidden">
+                    <div class="p-2.5 border-l-2 border-sky-400 bg-slate-900/60 rounded-r-lg space-y-1">
+                        <h4 class="font-bold text-sky-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> 1. กฎการอนุรักษ์โมเมนตัม (Conservation of Momentum)
+                        </h4>
+                        <p class="text-slate-300 text-[10px] leading-relaxed">
+                            ในการชนกันของระบบปิดที่ไม่มีแรงภายนอกมาเกี่ยวข้อง (เช่น แรงเสียดทานภายนอก) <strong>ผลรวมโมเมนตัมทั้งหมดก่อนการชนจะเท่ากับผลรวมโมเมนตัมทั้งหมดหลังการชนเสมอ</strong> ($\sum \vec{p}_i = \sum \vec{p}_f$) ไม่ว่าการชนนั้นจะเป็นแบบยืดหยุ่นหรือไม่ก็ตาม
+                        </p>
+                    </div>
+
+                    <div class="p-2.5 border-l-2 border-emerald-400 bg-slate-900/60 rounded-r-lg space-y-1">
+                        <h4 class="font-bold text-emerald-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="zap" class="w-3.5 h-3.5"></i> 2. การชนแบบยืดหยุ่น (Elastic Collision)
+                        </h4>
+                        <p class="text-slate-300 text-[10px] leading-relaxed">
+                            การชนที่ <strong>ทั้งโมเมนตัมและพลังงานจลน์รวมอนุรักษ์ไว้เท่าเดิม</strong> ($E_{k,i} = E_{k,f}$) สัมประสิทธิ์การคืนตัว $e = 1.0$ ไม่มีการสูญเสียพลังงานกลไปเป็นพลังงานความร้อนหรือพลังงานเสียง
+                        </p>
+                    </div>
+
+                    <div class="p-2.5 border-l-2 border-amber-400 bg-slate-900/60 rounded-r-lg space-y-1">
+                        <h4 class="font-bold text-amber-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="flame" class="w-3.5 h-3.5"></i> 3. เหตุผลของการไม่คงที่ของพลังงานกล (Energy Loss in Inelastic Collisions)
+                        </h4>
+                        <p class="text-slate-300 text-[10px] leading-relaxed">
+                            ในการชนแบบไม่ยืดหยุ่น ($e < 1.0$) พลังงานจลน์บางส่วน ($\Delta E_k$) จะถูกเปลี่ยนรูปไปเป็น:
+                        </p>
+                        <ul class="list-disc list-inside text-[10px] text-slate-300 space-y-0.5 pt-1 font-mono">
+                            <li>งานในการบิดเบี้ยวหรือการเปลี่ยนรูปทรงอย่างถาวรของวัตถุ (Deformation)</li>
+                            <li>พลังงานความร้อนจากแรงต้านและการยุบตัว (Heat)</li>
+                            <li>คลื่นเสียงที่เกิดขึ้นขณะปะทะกัน (Acoustic Sound)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- TAB 3: Momentum Vector Mechanics -->
+                <div id="content-vectors" class="space-y-3 hidden">
+                    <div class="p-2.5 border-l-2 border-purple-400 bg-slate-900/60 rounded-r-lg space-y-1">
+                        <h4 class="font-bold text-purple-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="arrow-right-left" class="w-3.5 h-3.5"></i> เวกเตอร์โมเมนตัม ($\vec{p} = m\vec{v}$)
+                        </h4>
+                        <p class="text-slate-300 text-[10px] leading-relaxed">
+                            โมเมนตัมเป็น <strong>ปริมาณเวกเตอร์</strong> มีทั้งขนาดและทิศทาง โดยทิศทางของโมเมนตัมจะไปทางเดียวกับทิศทางของความเร็ว ($\vec{v}$) เสมอ การรวมโมเมนตัมจึงต้องคำนึงถึงเครื่องหมายบวก (+) และลบ (-) ตามแกนพิกัด
+                        </p>
+                    </div>
+
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-purple-400 block border-b border-white/10 pb-1">สมการขนาดเวกเตอร์โมเมนตัม</span>
+                        <div id="math-vector-formula" class="py-1 text-center text-purple-200 font-mono text-xs bg-slate-950/60 rounded p-2"></div>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- MAIN INTERACTIVE SIMULATION LOGIC SCRIPT -->
+    <script>
+        // Global Simulation Physics State
+        const state = {
+            // Object 1 (Red)
+            m1: 2.0,            // kg
+            u1: 3.0,            // m/s (Initial)
+            v1: 0.0,            // m/s (Final calculated)
+            x1: 150,            // px on screen
+            
+            // Object 2 (Blue)
+            m2: 2.0,            // kg
+            u2: -1.0,           // m/s (Initial)
+            v2: 0.0,            // m/s (Final calculated)
+            x2: 550,            // px on screen
+
+            restitution: 1.0,   // e (0.0 to 1.0)
+            simSpeed: 1.0,
+
+            // Visual Toggles
+            showVectors: true,
+            showValues: true,
+            showSnapshots: true,
+
+            // Simulation Status
+            hasCollided: false,
+            isPlaying: true,
+            time: 0,
+            collisionX: 0,      // Position where collision took place
+
+            // Snapshot frozen data
+            snapshotBefore: null,
+            snapshotAfter: null
+        };
+
+        // DOM References & Canvases
+        let mainCanvas, mainCtx, snapshotCanvas, snapshotCtx;
+        let lastTimestamp = performance.now();
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initMathKaTeX();
+            initCanvases();
+            calculateCollisionPhysics();
+            captureBeforeSnapshot();
+            
+            lucide.createIcons();
+
+            updateUIReadouts();
+            
+            lastTimestamp = performance.now();
+            requestAnimationFrame(simulationLoop);
+
+            window.addEventListener('resize', onResize);
+        });
+
+        function initMathKaTeX() {
+            if (window.katex) {
+                katex.render("m_1 u_1 + m_2 u_2 = m_1 v_1 + m_2 v_2", document.getElementById('math-collision-formula'));
+                katex.render("e = \\frac{v_2 - v_1}{u_1 - u_2} \\implies (v_2 - v_1) = e(u_1 - u_2)", document.getElementById('math-restitution-formula'));
+                katex.render("\\vec{p}_{total} = m_1 \\vec{v}_1 + m_2 \\vec{v}_2", document.getElementById('math-vector-formula'));
+            }
+        }
+
+        function initCanvases() {
+            mainCanvas = document.getElementById('canvas-main');
+            mainCtx = mainCanvas.getContext('2d');
+
+            snapshotCanvas = document.getElementById('canvas-snapshot');
+            snapshotCtx = snapshotCanvas.getContext('2d');
+        }
+
+        function calculateCollisionPhysics() {
+            const { m1, m2, u1, u2, restitution: e } = state;
+
+            // Using 1D Elastic/Inelastic Collision Equations with Restitution Coefficient e:
+            // v1 = [ (m1 - e*m2)*u1 + m2*(1 + e)*u2 ] / (m1 + m2)
+            // v2 = [ m1*(1 + e)*u1 + (m2 - e*m1)*u2 ] / (m1 + m2)
+
+            state.v1 = ((m1 - e * m2) * u1 + m2 * (1 + e) * u2) / (m1 + m2);
+            state.v2 = (m1 * (1 + e) * u1 + (m2 - e * m1) * u2) / (m1 + m2);
+
+            updateStepByStepSolution();
+        }
+
+        function updateStepByStepSolution() {
+            const { m1, m2, u1, u2, v1, v2, restitution: e } = state;
+
+            const pi = m1 * u1 + m2 * u2;
+            const pf = m1 * v1 + m2 * v2;
+
+            const eki = 0.5 * m1 * u1 * u1 + 0.5 * m2 * u2 * u2;
+            const ekf = 0.5 * m1 * v1 * v1 + 0.5 * m2 * v2 * v2;
+            const deltaEk = ekf - eki;
+
+            document.getElementById('step-calc-v1').innerText = `v1 = [(${m1} - ${e}×${m2})(${u1}) + ${m2}(1+${e})(${u2})] / (${m1}+${m2}) = ${v1.toFixed(2)} m/s`;
+            document.getElementById('step-calc-v2').innerText = `v2 = [${m1}(1+${e})(${u1}) + (${m2} - ${e}×${m1})(${u2})] / (${m1}+${m2}) = ${v2.toFixed(2)} m/s`;
+            
+            document.getElementById('step-calc-p-check').innerText = `∑pi = (${m1}×${u1}) + (${m2}×${u2}) = ${pi.toFixed(2)} kg·m/s\n∑pf = (${m1}×${v1.toFixed(2)}) + (${m2}×${v2.toFixed(2)}) = ${pf.toFixed(2)} kg·m/s`;
+            
+            document.getElementById('step-calc-ek-loss').innerText = `E_k,i = ${eki.toFixed(2)} J,  E_k,f = ${ekf.toFixed(2)} J\nสูญเสียพลังงาน ΔEk = ${deltaEk.toFixed(2)} J (${Math.abs((deltaEk/eki)*100).toFixed(1)}%)`;
+
+            // Update bottom readout overlays
+            document.getElementById('readout-pi').innerText = `${pi >= 0 ? '+' : ''}${pi.toFixed(2)} kg·m/s`;
+            document.getElementById('readout-pf').innerText = `${pf >= 0 ? '+' : ''}${pf.toFixed(2)} kg·m/s`;
+            document.getElementById('readout-eki').innerText = `${eki.toFixed(2)} J`;
+            document.getElementById('readout-ekf').innerText = `${ekf.toFixed(2)} J`;
+        }
+
+        function captureBeforeSnapshot() {
+            state.snapshotBefore = {
+                m1: state.m1, u1: state.u1,
+                m2: state.m2, u2: state.u2,
+                p1: state.m1 * state.u1,
+                p2: state.m2 * state.u2,
+                pTotal: state.m1 * state.u1 + state.m2 * state.u2,
+                ekTotal: 0.5 * state.m1 * state.u1 * state.u1 + 0.5 * state.m2 * state.u2 * state.u2
+            };
+            renderSnapshotCanvas();
+        }
+
+        function captureAfterSnapshot() {
+            state.snapshotAfter = {
+                m1: state.m1, v1: state.v1,
+                m2: state.m2, v2: state.v2,
+                p1: state.m1 * state.v1,
+                p2: state.m2 * state.v2,
+                pTotal: state.m1 * state.v1 + state.m2 * state.v2,
+                ekTotal: 0.5 * state.m1 * state.v1 * state.v1 + 0.5 * state.m2 * state.v2 * state.v2
+            };
+            renderSnapshotCanvas();
+        }
+
+        function simulationLoop(timestamp) {
+            const dt = Math.min((timestamp - lastTimestamp) / 1000, 0.033) * state.simSpeed;
+            lastTimestamp = timestamp;
+
+            if (state.isPlaying) {
+                updatePhysics(dt);
+            }
+
+            renderMainCanvas();
+            renderSnapshotCanvas();
+
+            requestAnimationFrame(simulationLoop);
+        }
+
+        function updatePhysics(dt) {
+            const r1 = getRadius(state.m1);
+            const r2 = getRadius(state.m2);
+
+            if (!state.hasCollided) {
+                // Moving before collision
+                state.x1 += state.u1 * 35.0 * dt;
+                state.x2 += state.u2 * 35.0 * dt;
+
+                // Check collision condition
+                if (state.x1 + r1 >= state.x2 - r2) {
+                    state.hasCollided = true;
+                    state.collisionX = (state.x1 + state.x2) / 2;
+                    
+                    // Separate slightly to prevent overlap sticking
+                    const overlap = (state.x1 + r1) - (state.x2 - r2);
+                    state.x1 -= overlap / 2;
+                    state.x2 += overlap / 2;
+
+                    captureAfterSnapshot();
+
+                    // Status update
+                    document.getElementById('status-collision-label').innerText = 'สถานะ: เกิดการชนแล้วกำลังเคลื่อนที่ออกจากกัน (After Collision)';
+                }
+            } else {
+                // Moving after collision
+                state.x1 += state.v1 * 35.0 * dt;
+                state.x2 += state.v2 * 35.0 * dt;
+            }
+        }
+
+        function getRadius(mass) {
+            return 18 + Math.sqrt(mass) * 8;
+        }
+
+        function renderMainCanvas() {
+            const w = mainCanvas.clientWidth;
+            const h = mainCanvas.clientHeight;
+            if (w === 0 || h === 0) return;
+
+            mainCanvas.width = w * window.devicePixelRatio;
+            mainCanvas.height = h * window.devicePixelRatio;
+            mainCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+            mainCtx.clearRect(0, 0, w, h);
+
+            const centerY = h * 0.55;
+
+            // Draw Track Ground
+            mainCtx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            mainCtx.lineWidth = 2;
+            mainCtx.beginPath();
+            mainCtx.moveTo(20, centerY + 30);
+            mainCtx.lineTo(w - 20, centerY + 30);
+            mainCtx.stroke();
+
+            // Track Tick Marks
+            for (let x = 40; x < w - 20; x += 40) {
+                mainCtx.beginPath();
+                mainCtx.moveTo(x, centerY + 30);
+                mainCtx.lineTo(x, centerY + 36);
+                mainCtx.stroke();
+            }
+
+            const r1 = getRadius(state.m1);
+            const r2 = getRadius(state.m2);
+
+            // Draw Collision Marker if collided
+            if (state.hasCollided) {
+                mainCtx.strokeStyle = 'rgba(244, 63, 94, 0.4)';
+                mainCtx.setLineDash([4, 4]);
+                mainCtx.beginPath();
+                mainCtx.moveTo(state.collisionX, centerY - 80);
+                mainCtx.lineTo(state.collisionX, centerY + 30);
+                mainCtx.stroke();
+                mainCtx.setLineDash([]);
+
+                mainCtx.fillStyle = '#f43f5e';
+                mainCtx.font = '10px Sarabun, sans-serif';
+                mainCtx.fillText('จุดชน (Impact Point)', state.collisionX - 45, centerY - 85);
+            }
+
+            // Draw Object 1 (Red)
+            drawObject(mainCtx, state.x1, centerY, r1, '#f43f5e', '#fda4af', `m1 = ${state.m1}kg`);
+
+            // Draw Object 2 (Blue)
+            drawObject(mainCtx, state.x2, centerY, r2, '#0284c7', '#38bdf8', `m2 = ${state.m2}kg`);
+
+            // Draw Velocity / Momentum Vectors
+            if (state.showVectors) {
+                const vel1 = state.hasCollided ? state.v1 : state.u1;
+                const vel2 = state.hasCollided ? state.v2 : state.u2;
+
+                drawVector(mainCtx, state.x1, centerY - r1 - 10, vel1 * state.m1 * 6, '#f43f5e', `p1 = ${(vel1 * state.m1).toFixed(1)}`);
+                drawVector(mainCtx, state.x2, centerY - r2 - 10, vel2 * state.m2 * 6, '#38bdf8', `p2 = ${(vel2 * state.m2).toFixed(1)}`);
+            }
+
+            // Draw Dynamic Values Text
+            if (state.showValues) {
+                const vel1 = state.hasCollided ? state.v1 : state.u1;
+                const vel2 = state.hasCollided ? state.v2 : state.u2;
+
+                mainCtx.fillStyle = '#f87171';
+                mainCtx.font = '11px Fira Code, monospace';
+                mainCtx.textAlign = 'center';
+                mainCtx.fillText(`v1 = ${vel1.toFixed(2)} m/s`, state.x1, centerY + r1 + 18);
+
+                mainCtx.fillStyle = '#38bdf8';
+                mainCtx.fillText(`v2 = ${vel2.toFixed(2)} m/s`, state.x2, centerY + r2 + 18);
+            }
+        }
+
+        function drawObject(ctx, x, y, r, colorPrimary, colorGlow, label) {
+            // Shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.beginPath();
+            ctx.ellipse(x, y + r - 2, r * 0.9, 6, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Sphere Gradient Body
+            const grad = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
+            grad.addColorStop(0, colorGlow);
+            grad.addColorStop(1, colorPrimary);
+
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Label Inside Sphere
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 10px Sarabun, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, x, y);
+        }
+
+        function drawVector(ctx, x, y, lengthPx, color, label) {
+            if (Math.abs(lengthPx) < 1) return;
+
+            const endX = x + lengthPx;
+            const arrowHeadSize = 6;
+            const dir = Math.sign(lengthPx);
+
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = 2.5;
+
+            // Vector shaft line
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(endX, y);
+            ctx.stroke();
+
+            // Arrow tip
+            ctx.beginPath();
+            ctx.moveTo(endX, y);
+            ctx.lineTo(endX - dir * arrowHeadSize, y - arrowHeadSize);
+            ctx.lineTo(endX - dir * arrowHeadSize, y + arrowHeadSize);
+            ctx.closePath();
+            ctx.fill();
+
+            // Label
+            ctx.font = '10px Fira Code, monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(label, x + lengthPx / 2, y - 8);
+        }
+
+        function renderSnapshotCanvas() {
+            if (!state.showSnapshots) return;
+
+            const w = snapshotCanvas.clientWidth;
+            const h = snapshotCanvas.clientHeight;
+            if (w === 0 || h === 0) return;
+
+            snapshotCanvas.width = w * window.devicePixelRatio;
+            snapshotCanvas.height = h * window.devicePixelRatio;
+            snapshotCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+            snapshotCtx.clearRect(0, 0, w, h);
+
+            const midX = w / 2;
+
+            // Divider Line
+            snapshotCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            snapshotCtx.beginPath();
+            snapshotCtx.moveTo(midX, 5); snapshotCtx.lineTo(midX, h - 5);
+            snapshotCtx.stroke();
+
+            // Draw "BEFORE" Snapshot (Left Half)
+            if (state.snapshotBefore) {
+                const sb = state.snapshotBefore;
+                snapshotCtx.fillStyle = '#38bdf8';
+                snapshotCtx.font = 'bold 11px Sarabun, sans-serif';
+                snapshotCtx.fillText('ก่อนเกิดการชน (BEFORE)', 10, 18);
+
+                const yCenter = h * 0.55;
+                const r1 = getRadius(sb.m1) * 0.65;
+                const r2 = getRadius(sb.m2) * 0.65;
+
+                drawObject(snapshotCtx, midX * 0.3, yCenter, r1, '#f43f5e', '#fda4af', `${sb.m1}kg`);
+                drawObject(snapshotCtx, midX * 0.7, yCenter, r2, '#0284c7', '#38bdf8', `${sb.m2}kg`);
+
+                drawVector(snapshotCtx, midX * 0.3, yCenter - r1 - 8, sb.u1 * 4, '#f43f5e', `u1=${sb.u1}m/s`);
+                drawVector(snapshotCtx, midX * 0.7, yCenter - r2 - 8, sb.u2 * 4, '#38bdf8', `u2=${sb.u2}m/s`);
+
+                snapshotCtx.fillStyle = '#94a3b8';
+                snapshotCtx.font = '9px Fira Code, monospace';
+                snapshotCtx.fillText(`∑p_i = ${sb.pTotal.toFixed(2)} kg·m/s`, 10, h - 8);
+                snapshotCtx.fillText(`Ek_i = ${sb.ekTotal.toFixed(2)} J`, midX * 0.5, h - 8);
+            }
+
+            // Draw "AFTER" Snapshot (Right Half)
+            if (state.snapshotAfter) {
+                const sa = state.snapshotAfter;
+                snapshotCtx.fillStyle = '#a855f7';
+                snapshotCtx.font = 'bold 11px Sarabun, sans-serif';
+                snapshotCtx.fillText('หลังเกิดการชน (AFTER)', midX + 10, 18);
+
+                const yCenter = h * 0.55;
+                const r1 = getRadius(sa.m1) * 0.65;
+                const r2 = getRadius(sa.m2) * 0.65;
+
+                drawObject(snapshotCtx, midX + (w - midX) * 0.3, yCenter, r1, '#f43f5e', '#fda4af', `${sa.m1}kg`);
+                drawObject(snapshotCtx, midX + (w - midX) * 0.7, yCenter, r2, '#0284c7', '#38bdf8', `${sa.m2}kg`);
+
+                drawVector(snapshotCtx, midX + (w - midX) * 0.3, yCenter - r1 - 8, sa.v1 * 4, '#f43f5e', `v1=${sa.v1.toFixed(1)}`);
+                drawVector(snapshotCtx, midX + (w - midX) * 0.7, yCenter - r2 - 8, sa.v2 * 4, '#38bdf8', `v2=${sa.v2.toFixed(1)}`);
+
+                snapshotCtx.fillStyle = '#94a3b8';
+                snapshotCtx.font = '9px Fira Code, monospace';
+                snapshotCtx.fillText(`∑p_f = ${sa.pTotal.toFixed(2)} kg·m/s`, midX + 10, h - 8);
+                snapshotCtx.fillText(`Ek_f = ${sa.ekTotal.toFixed(2)} J`, midX + (w - midX) * 0.5, h - 8);
+            }
+        }
+
+        function applyPreset(type) {
+            if (type === 'elastic-equal') {
+                state.m1 = 2.0; state.m2 = 2.0;
+                state.u1 = 3.0; state.u2 = -1.0;
+                state.restitution = 1.0;
+            } else if (type === 'elastic-unequal') {
+                state.m1 = 4.0; state.m2 = 1.0;
+                state.u1 = 3.0; state.u2 = 0.0;
+                state.restitution = 1.0;
+            } else if (type === 'inelastic-sticky') {
+                state.m1 = 3.0; state.m2 = 2.0;
+                state.u1 = 4.0; state.u2 = 0.0;
+                state.restitution = 0.0;
+            } else if (type === 'explosion') {
+                state.m1 = 2.0; state.m2 = 2.0;
+                state.u1 = 0.0; state.u2 = 0.0;
+                state.restitution = 1.0;
+            }
+
+            syncControlsToState();
+            resetSimulation();
+        }
+
+        function syncControlsToState() {
+            document.getElementById('slider-m1').value = state.m1;
+            document.getElementById('slider-m2').value = state.m2;
+            document.getElementById('slider-u1').value = state.u1;
+            document.getElementById('slider-u2').value = state.u2;
+            document.getElementById('slider-restitution').value = state.restitution;
+
+            updateUIReadouts();
+        }
+
+        function onControlChange() {
+            state.m1 = parseFloat(document.getElementById('slider-m1').value);
+            state.m2 = parseFloat(document.getElementById('slider-m2').value);
+            state.u1 = parseFloat(document.getElementById('slider-u1').value);
+            state.u2 = parseFloat(document.getElementById('slider-u2').value);
+            state.restitution = parseFloat(document.getElementById('slider-restitution').value);
+            state.simSpeed = parseFloat(document.getElementById('slider-sim-speed').value);
+
+            state.showVectors = document.getElementById('toggle-vectors').checked;
+            state.showValues = document.getElementById('toggle-values').checked;
+            state.showSnapshots = document.getElementById('toggle-snapshots').checked;
+
+            const snapContainer = document.getElementById('snapshot-container');
+            if (state.showSnapshots) {
+                snapContainer.classList.remove('hidden');
+            } else {
+                snapContainer.classList.add('hidden');
+            }
+
+            updateUIReadouts();
+            calculateCollisionPhysics();
+            captureBeforeSnapshot();
+        }
+
+        function updateUIReadouts() {
+            document.getElementById('val-m1').innerText = `${state.m1.toFixed(2)} kg`;
+            document.getElementById('val-m2').innerText = `${state.m2.toFixed(2)} kg`;
+            document.getElementById('val-u1').innerText = `${state.u1 >= 0 ? '+' : ''}${state.u1.toFixed(2)} m/s`;
+            document.getElementById('val-u2').innerText = `${state.u2 >= 0 ? '+' : ''}${state.u2.toFixed(2)} m/s`;
+            
+            const e = state.restitution;
+            document.getElementById('val-restitution').innerText = `${e.toFixed(2)} ${e === 1.0 ? '(ยืดหยุ่น)' : e === 0.0 ? '(ไม่ยืดหยุ่นสมบูรณ์)' : '(ไม่ยืดหยุ่น)'}`;
+            document.getElementById('val-sim-speed').innerText = `${state.simSpeed.toFixed(1)}x`;
+        }
+
+        function togglePlayPause() {
+            state.isPlaying = !state.isPlaying;
+            const btn = document.getElementById('btn-play-pause');
+            const icon = document.getElementById('icon-play-pause');
+            const txt = document.getElementById('txt-play-pause');
+
+            if (state.isPlaying) {
+                btn.className = 'px-3 py-1.5 bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 rounded-lg transition border border-sky-500/40 text-xs flex items-center gap-1.5 font-medium';
+                icon.setAttribute('data-lucide', 'pause');
+                txt.innerText = 'หยุดชั่วคราว';
+            } else {
+                btn.className = 'px-3 py-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 rounded-lg transition border border-emerald-500/40 text-xs flex items-center gap-1.5 font-medium';
+                icon.setAttribute('data-lucide', 'play');
+                txt.innerText = 'เล่นต่อ';
+            }
+            lucide.createIcons();
+        }
+
+        function resetSimulation() {
+            state.hasCollided = false;
+            state.x1 = 150;
+            state.x2 = 550;
+            state.isPlaying = true;
+
+            document.getElementById('status-collision-label').innerText = 'สถานะ: กำลังเคลื่อนที่เข้าหากัน (Before Collision)';
+
+            calculateCollisionPhysics();
+            captureBeforeSnapshot();
+            
+            const btn = document.getElementById('btn-play-pause');
+            btn.className = 'px-3 py-1.5 bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 rounded-lg transition border border-sky-500/40 text-xs flex items-center gap-1.5 font-medium';
+            document.getElementById('txt-play-pause').innerText = 'หยุดชั่วคราว';
+        }
+
+        function switchRightTab(tabKey) {
+            ['calc', 'theory', 'vectors'].forEach(k => {
+                document.getElementById(`content-${k}`).classList.add('hidden');
+                document.getElementById(`tab-${k}`).classList.remove('active');
+            });
+
+            document.getElementById(`content-${tabKey}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabKey}`).classList.active = true;
+            document.getElementById(`tab-${tabKey}`).classList.add('active');
+        }
+
+        function toggleFullscreen() {
+            try {
+                if (!document.fullscreenElement) {
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen().catch(err => console.warn(err));
+                    }
+                } else if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(err => console.warn(err));
+                }
+            } catch (err) {
+                console.warn("Fullscreen policy restricted:", err);
+            }
+        }
+
+        function onResize() {
+            renderMainCanvas();
+            renderSnapshotCanvas();
+        }
+    </script>
+</body>
+</html>

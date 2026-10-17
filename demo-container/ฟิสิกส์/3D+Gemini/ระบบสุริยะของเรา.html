@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แบบจำลองระบบสุริยะและกลศาสตร์วงโคจร 3D (Solar System Gravity & Orbit Physics)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        space: {
+                            900: '#07090E',
+                            800: '#0F141C',
+                            700: '#19202D',
+                            600: '#263145',
+                            cyan: '#38BDF8',
+                            amber: '#F59E0B',
+                            emerald: '#10B981',
+                            rose: '#F43F5E'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Sarabun', 'Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- KaTeX for Physics Math rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #07090E;
+            color: #F3F4F6;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+        }
+
+        .glass-panel {
+            background: rgba(15, 20, 28, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.6);
+        }
+
+        .glass-card {
+            background: rgba(25, 32, 45, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(7, 9, 14, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.3);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(56, 189, 248, 0.6);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            height: 5px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 15px;
+            width: 15px;
+            border-radius: 50%;
+            background: #38BDF8;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+            transition: all 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.25);
+            background: #7dd3fc;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+
+        .tab-btn.active {
+            background-color: rgba(56, 189, 248, 0.2);
+            color: #38BDF8;
+            border-bottom: 2px solid #38BDF8;
+        }
+
+        .status-badge {
+            animation: pulse-glow 2s infinite;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="select-none">
+
+    <!-- 3D WebGL Canvas Viewport -->
+    <div id="canvas-container"></div>
+
+    <!-- UI Header Bar -->
+    <header class="absolute top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between glass-panel px-4 py-2.5 rounded-2xl pointer-events-auto">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-amber-500/20 text-amber-400 rounded-xl border border-amber-500/30">
+                <i data-lucide="globe-2" class="w-6 h-6 animate-spin-slow"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-base md:text-lg text-white flex items-center gap-2">
+                    แบบจำลองแรงโน้มถ่วงและวงโคจร 3D
+                    <span class="text-[10px] font-normal px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Physics & Kepler's Laws</span>
+                </h1>
+                <p class="text-xs text-gray-400 hidden sm:block">การทดลองมวล ความเร็ว ระยะทาง และกฎแรงโน้มถ่วงสากลของนิวตัน</p>
+            </div>
+        </div>
+
+        <!-- Header Action Controls -->
+        <div class="flex items-center gap-2 text-xs">
+            <button id="btn-play-pause" onclick="togglePlayPause()" class="px-3.5 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold rounded-xl transition flex items-center gap-1.5 shadow-lg shadow-cyan-500/20">
+                <i data-lucide="pause" id="icon-play-pause" class="w-4 h-4"></i>
+                <span id="text-play-pause">หยุดชั่วคราว</span>
+            </button>
+            <button onclick="resetSimulation()" class="px-3 py-2 bg-space-700 hover:bg-space-600 text-gray-200 rounded-xl transition flex items-center gap-1.5 border border-white/5">
+                <i data-lucide="rotate-ccw" class="w-4 h-4 text-cyan-400"></i>
+                <span class="hidden md:inline">รีเซ็ต</span>
+            </button>
+            <button onclick="toggleFullscreen()" class="p-2 bg-space-700 hover:bg-space-600 text-gray-300 rounded-xl transition border border-white/5" title="เต็มจอ">
+                <i data-lucide="maximize" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="absolute inset-0 pt-16 p-3 pointer-events-none grid grid-cols-1 md:grid-cols-12 gap-3 h-full pb-4">
+
+        <!-- ================= SECTION 1: Educational Theory & Prediction Panel (Left Side) ================= -->
+        <aside class="md:col-span-5 lg:col-span-4 glass-panel rounded-2xl flex flex-col pointer-events-auto overflow-hidden max-h-[calc(100vh-5rem)] shadow-2xl">
+            <!-- Header & Tabs -->
+            <div class="p-3 border-b border-white/10 bg-space-800/80">
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="font-semibold text-white text-sm flex items-center gap-2">
+                        <i data-lucide="book-open" class="w-4 h-4 text-cyan-400"></i>
+                        คำถามทำนาย & ทฤษฎี (Physics Q&A)
+                    </h2>
+                    <span class="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full border border-cyan-500/30">Newton & Kepler</span>
+                </div>
+
+                <!-- Q&A Tabs -->
+                <div class="grid grid-cols-4 gap-1 bg-space-900/80 p-1 rounded-xl text-[11px] font-medium text-center">
+                    <button onclick="switchTab('formulas')" id="tab-formulas" class="tab-btn active py-1.5 rounded-lg transition">สมการ</button>
+                    <button onclick="switchTab('q1')" id="tab-q1" class="tab-btn py-1.5 rounded-lg transition">มวลโลก</button>
+                    <button onclick="switchTab('q2')" id="tab-q2" class="tab-btn py-1.5 rounded-lg transition">ความเร็ว</button>
+                    <button onclick="switchTab('q3')" id="tab-q3" class="tab-btn py-1.5 rounded-lg transition">ระยะทาง</button>
+                </div>
+            </div>
+
+            <!-- Scrollable Content Body -->
+            <div class="flex-1 overflow-y-auto p-3.5 space-y-3.5 text-xs text-gray-300">
+
+                <!-- TAB 0: Formulas & Theory -->
+                <div id="content-formulas" class="space-y-3">
+                    <div class="glass-card p-3 rounded-xl border-l-4 border-amber-400 space-y-1">
+                        <h3 class="font-bold text-white text-sm">กฎแรงโน้มถ่วงสากล (Newton's Law)</h3>
+                        <div id="math-gravity" class="py-1 text-center text-amber-300 font-mono text-sm"></div>
+                        <p class="text-[11px] text-gray-400">แรง ($F$) แปรผันตรงตามผลคูณมวล ($M \cdot m$) และแปรผกผันกับกำลังสองของระยะทาง ($r^2$)</p>
+                    </div>
+
+                    <div class="glass-card p-3 rounded-xl border-l-4 border-cyan-400 space-y-1">
+                        <h3 class="font-bold text-white text-sm">ความเร็วในวงโคจรวงกลม (Orbital Velocity)</h3>
+                        <div id="math-velocity" class="py-1 text-center text-cyan-300 font-mono text-sm"></div>
+                        <p class="text-[11px] text-gray-400">
+                            <strong class="text-cyan-300">ข้อสังเกตสำคัญ:</strong> มวลของโลก ($m$) ถูกตัดทอนออกจากสมการความเร็ว! ความเร็วสมดุลขึ้นกับมวลของดวงอาทิตย์ ($M$) และระยะทาง ($r$) เท่านั้น
+                        </p>
+                    </div>
+
+                    <div class="glass-card p-3 rounded-xl border-l-4 border-emerald-400 space-y-1">
+                        <h3 class="font-bold text-white text-sm">คาบการโคจร (Kepler's 3rd Law)</h3>
+                        <div id="math-kepler" class="py-1 text-center text-emerald-300 font-mono text-sm"></div>
+                        <p class="text-[11px] text-gray-400">$T^2 \propto r^3$ ยิ่งอยู่ไกลดวงอาทิตย์ คาบเวลา 1 ปี ยิ่งยาวนานขึ้นแบบทวีคูณ</p>
+                    </div>
+                </div>
+
+                <!-- TAB 1: Change Earth Mass -->
+                <div id="content-q1" class="space-y-3 hidden">
+                    <div class="glass-card p-3 rounded-xl border-l-4 border-cyan-400 space-y-2">
+                        <h3 class="font-bold text-white text-sm flex items-center gap-1.5">
+                            <i data-lucide="help-circle" class="w-4 h-4 text-cyan-400"></i>
+                            คำถามที่ 1: เปลี่ยนมวลของโลก ($M_e$)
+                        </h3>
+                        <p class="text-gray-300 leading-relaxed">
+                            จะเกิดอะไรขึ้นเมื่อคุณเพิ่มหรือลดมวลของโลก แต่รักษาค่าคงที่อย่างอื่นไว้เหมือนเดิม? คุณเห็นด้วยกับการทำนายหรือไม่?
+                        </p>
+                    </div>
+
+                    <div class="bg-space-800/80 p-3 rounded-xl border border-white/5 space-y-2">
+                        <h4 class="font-bold text-emerald-400 flex items-center gap-1">
+                            <i data-lucide="check-circle-2" class="w-4 h-4"></i> คำอธิบายและการวิเคราะห์:
+                        </h4>
+                        <ul class="space-y-2 text-[11px]">
+                            <li class="bg-space-900/60 p-2 rounded-lg">
+                                • <strong class="text-white">วงโคจรไม่เปลี่ยนแปลง:</strong> รูปทรงวงโคจร ระยะทาง และความเร็วในการโคจรรอบดวงอาทิตย์ <span class="text-amber-300 font-bold">จะคงเดิมทุกประการ!</span>
+                            </li>
+                            <li class="bg-space-900/60 p-2 rounded-lg">
+                                • <strong class="text-white">พิสูจน์ทางฟิสิกส์:</strong> จาก $F = G \frac{M m}{r^2}$ และ $F = m a$ จะได้ความเร่งของโลกคือ $a = \frac{G M}{r^2}$ ซึ่งไม่มีมวลของโลก ($m$) อยู่ในสมการความเร่งเลย!
+                            </li>
+                            <li class="bg-space-900/60 p-2 rounded-lg">
+                                • <strong class="text-white">สิ่งที่เปลี่ยนคือ:</strong> แรงโน้มถ่วงรวม ($F$) จะเพิ่มขึ้นตามมวลโลก (ลองทดลองเพิ่มมวลโลก x100 ในเมนูขวา แล้วสังเกตค่า $F$)
+                            </li>
+                        </ul>
+                    </div>
+
+                    <button onclick="applyPreset('mass100')" class="w-full py-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-semibold rounded-xl border border-cyan-500/40 transition flex items-center justify-center gap-1.5">
+                        <i data-lucide="flask-conical" class="w-4 h-4"></i> ทดลอง: เพิ่มมวลโลก x100 เพื่อพิสูจน์
+                    </button>
+                </div>
+
+                <!-- TAB 2: Change Earth Velocity -->
+                <div id="content-q2" class="space-y-3 hidden">
+                    <div class="glass-card p-3 rounded-xl border-l-4 border-amber-400 space-y-2">
+                        <h3 class="font-bold text-white text-sm flex items-center gap-1.5">
+                            <i data-lucide="help-circle" class="w-4 h-4 text-amber-400"></i>
+                            คำถามที่ 2: เปลี่ยนความเร็วต้นของโลก ($v$)
+                        </h3>
+                        <p class="text-gray-300 leading-relaxed">
+                            จะเกิดอะไรขึ้นกับการหมุนและวงโคจรของโลกเมื่อเพิ่มและลดความเร็วของโลก แต่รักษาค่าอื่นๆ ไว้เหมือนเดิม?
+                        </p>
+                    </div>
+
+                    <div class="bg-space-800/80 p-3 rounded-xl border border-white/5 space-y-2 text-[11px]">
+                        <h4 class="font-bold text-amber-400 flex items-center gap-1">
+                            <i data-lucide="arrow-right-left" class="w-4 h-4"></i> ผลลัพธ์จากการเปลี่ยนแปลง:
+                        </h4>
+
+                        <div class="bg-space-900/60 p-2.5 rounded-lg space-y-1">
+                            <strong class="text-emerald-300 block">1. เมื่อเพิ่มความเร็ว ($v > v_{circular}$):</strong>
+                            <p>พลังงานจลน์สูงขึ้น โลกจะถูกเหวี่ยงออกไปไกลขึ้น วงโคจรจะกลายเป็น **วงรี (Ellipse)** ที่กว้างขึ้น และหากความเร็วถึง **ความเร็วพุดพ้น ($v_{escape} = \sqrt{2} v_c \approx 141\%$)** โลกจะหลุดออกจากระบบสุริยะไปเลย!</p>
+                        </div>
+
+                        <div class="bg-space-900/60 p-2.5 rounded-lg space-y-1">
+                            <strong class="text-rose-400 block">2. เมื่อลดความเร็ว ($v < v_{circular}$):</strong>
+                            <p>แรงโน้มถ่วงจะชนะแรงเหวี่ยง โลกจะสูญเสียพลังงานและถูกดึงตกเข้าหาดวงอาทิตย์ วงโคจรเล็กลง และหากความเร็วต่ำเกินไป โลกจะ **พุ่งชนดวงอาทิตย์**</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="applyPreset('highVelocity')" class="py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-medium rounded-xl border border-emerald-500/30 transition text-center">
+                            ทดลอง: เพิ่มความเร็ว (130%)
+                        </button>
+                        <button onclick="applyPreset('lowVelocity')" class="py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-medium rounded-xl border border-rose-500/30 transition text-center">
+                            ทดลอง: ลดความเร็ว (60%)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TAB 3: Change Initial Distance -->
+                <div id="content-q3" class="space-y-3 hidden">
+                    <div class="glass-card p-3 rounded-xl border-l-4 border-rose-400 space-y-2">
+                        <h3 class="font-bold text-white text-sm flex items-center gap-1.5">
+                            <i data-lucide="help-circle" class="w-4 h-4 text-rose-400"></i>
+                            คำถามที่ 3: เปลี่ยนระยะทางตั้งต้น ($r$)
+                        </h3>
+                        <p class="text-gray-300 leading-relaxed">
+                            จะเกิดอะไรขึ้นเมื่อเพิ่มหรือลดระยะทางตั้งต้นระหว่างโลกกับดวงอาทิตย์?
+                        </p>
+                    </div>
+
+                    <div class="bg-space-800/80 p-3 rounded-xl border border-white/5 space-y-2 text-[11px]">
+                        <h4 class="font-bold text-rose-400 flex items-center gap-1">
+                            <i data-lucide="ruler" class="w-4 h-4"></i> ผลของระยะทางต่อวงโคจร:
+                        </h4>
+
+                        <div class="bg-space-900/60 p-2.5 rounded-lg space-y-1">
+                            <strong class="text-cyan-300 block">1. เมื่อเพิ่มระยะทาง ($r$ เพิ่มขึ้น):</strong>
+                            <p>แรงโน้มถ่วงลดลงอย่างรวดเร็วตาม $1/r^2$ โลกใช้ความเร็วสมดุลน้อยลง และระยะทางรอบดวงอาทิตย์ยาวขึ้น ส่งผลให้ **1 ปี (คาบเวลา $T$) ยาวนานขึ้นมาก**</p>
+                        </div>
+
+                        <div class="bg-space-900/60 p-2.5 rounded-lg space-y-1">
+                            <strong class="text-amber-300 block">2. เมื่อลดระยะทาง ($r$ ลดลง - เข้าใกล้ดวงอาทิตย์):</strong>
+                            <p>แรงโน้มถ่วงมหาศาล โลกต้องเคลื่อนที่เร็วขึ้นมากเพื่อสร้างแรงเหวี่ยงหนีศูนย์กลางให้สมดุล ทำให้ **1 ปีสั้นลงมาก**</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="applyPreset('closer')" class="py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-medium rounded-xl border border-amber-500/30 transition text-center">
+                            ทดลอง: เข้าใกล้ (0.5 AU)
+                        </button>
+                        <button onclick="applyPreset('farther')" class="py-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-medium rounded-xl border border-cyan-500/30 transition text-center">
+                            ทดลอง: ออกห่าง (2.0 AU)
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- Middle Spacer on Desktop -->
+        <div class="hidden md:block md:col-span-2 lg:col-span-4"></div>
+
+        <!-- ================= SECTION 2: Controls & Physics Telemetry Panel (Right Side) ================= -->
+        <aside class="md:col-span-5 lg:col-span-4 glass-panel rounded-2xl flex flex-col pointer-events-auto overflow-hidden max-h-[calc(100vh-5rem)] shadow-2xl">
+            <!-- Panel Header -->
+            <div class="p-3 border-b border-white/10 bg-space-800/80 flex justify-between items-center">
+                <h2 class="font-semibold text-white text-sm flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-4 h-4 text-cyan-400"></i>
+                    ส่วนทดลองและตั้งค่า (Control Sandbox)
+                </h2>
+                <span id="telemetry-status" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Stable Orbit</span>
+            </div>
+
+            <!-- Scrollable Content Body -->
+            <div class="flex-1 overflow-y-auto p-3.5 space-y-3.5">
+
+                <!-- Preset Quick Buttons -->
+                <div class="space-y-1.5">
+                    <label class="text-[11px] font-semibold text-gray-300 flex items-center gap-1">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i> ค่าสำเร็จรูป (Presets)
+                    </label>
+                    <div class="grid grid-cols-3 gap-1.5 text-[11px]">
+                        <button onclick="applyPreset('real')" class="py-1.5 bg-space-800 hover:bg-space-700 text-cyan-300 rounded-lg border border-white/10 transition text-center">ระบบสุริยะจริง</button>
+                        <button onclick="applyPreset('mass100')" class="py-1.5 bg-space-800 hover:bg-space-700 text-gray-300 rounded-lg border border-white/10 transition text-center">มวลโลก x100</button>
+                        <button onclick="applyPreset('elliptical')" class="py-1.5 bg-space-800 hover:bg-space-700 text-amber-300 rounded-lg border border-white/10 transition text-center">วงรีจัด</button>
+                    </div>
+                </div>
+
+                <!-- Live Physics Parameters Sliders -->
+                <div class="glass-card p-3 rounded-xl space-y-3">
+                    <div class="text-[11px] font-bold text-cyan-400 border-b border-white/10 pb-1 flex justify-between items-center">
+                        <span>พารามิเตอร์ระบบ (Parameters)</span>
+                        <span class="text-[10px] text-gray-400 font-normal">Real-time Simulation</span>
+                    </div>
+
+                    <!-- Earth Mass Slider -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-300">มวลของโลก ($M_e$):</span>
+                            <span id="val-mass-earth" class="font-mono text-cyan-400 font-bold">1.0 x โลก</span>
+                        </div>
+                        <input type="range" id="slider-mass-earth" min="0.1" max="500" step="0.5" value="1" class="w-full" oninput="updatePhysicsFromControls()">
+                    </div>
+
+                    <!-- Initial Speed Slider -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-300">ความเร็วโคจรต้น ($v$):</span>
+                            <span id="val-velocity" class="font-mono text-emerald-400 font-bold">100% (29.78 km/s)</span>
+                        </div>
+                        <input type="range" id="slider-velocity" min="0" max="220" step="1" value="100" class="w-full" oninput="updatePhysicsFromControls()">
+                    </div>
+
+                    <!-- Distance Slider -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-300">ระยะห่างตั้งต้น ($r$):</span>
+                            <span id="val-distance" class="font-mono text-amber-400 font-bold">1.00 AU</span>
+                        </div>
+                        <input type="range" id="slider-distance" min="0.3" max="3.0" step="0.05" value="1.0" class="w-full" oninput="updatePhysicsFromControls()">
+                    </div>
+
+                    <!-- Sun Mass Slider -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-300">มวลของดวงอาทิตย์ ($M_s$):</span>
+                            <span id="val-mass-sun" class="font-mono text-rose-400 font-bold">1.0 x ดวงอาทิตย์</span>
+                        </div>
+                        <input type="range" id="slider-mass-sun" min="0.2" max="5.0" step="0.1" value="1.0" class="w-full" oninput="updatePhysicsFromControls()">
+                    </div>
+
+                    <!-- Speed of Time Slider -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-300">ความเร็วเวลา (Time Scale):</span>
+                            <span id="val-timescale" class="font-mono text-purple-400 font-bold">1.0x</span>
+                        </div>
+                        <input type="range" id="slider-timescale" min="0.1" max="4.0" step="0.1" value="1.0" class="w-full" oninput="updatePhysicsFromControls()">
+                    </div>
+                </div>
+
+                <!-- Visual Vectors & Helpers Toggles -->
+                <div class="glass-card p-3 rounded-xl space-y-1.5">
+                    <div class="text-[11px] font-bold text-cyan-400 border-b border-white/10 pb-1">
+                        ตัวช่วยแสดงผล 3D (Visual Helpers)
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-xs text-gray-300 pt-1">
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-white">
+                            <input type="checkbox" id="toggle-vectors" checked onchange="toggleHelpers()" class="accent-rose-500 rounded">
+                            <span class="flex items-center gap-1"><i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-rose-400"></i> ลูกศรแรงโน้มถ่วง</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-white">
+                            <input type="checkbox" id="toggle-velocity-vector" checked onchange="toggleHelpers()" class="accent-emerald-500 rounded">
+                            <span class="flex items-center gap-1"><i data-lucide="move-right" class="w-3.5 h-3.5 text-emerald-400"></i> ลูกศรความเร็ว</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-white">
+                            <input type="checkbox" id="toggle-trail" checked onchange="toggleHelpers()" class="accent-cyan-500 rounded">
+                            <span class="flex items-center gap-1"><i data-lucide="route" class="w-3.5 h-3.5 text-cyan-400"></i> เส้นทางโคจร</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-white">
+                            <input type="checkbox" id="toggle-grid" checked onchange="toggleHelpers()" class="accent-gray-400 rounded">
+                            <span class="flex items-center gap-1"><i data-lucide="grid" class="w-3.5 h-3.5 text-gray-400"></i> ระนาบพิกัด Grid</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Telemetry Live Gauges -->
+                <div class="bg-space-900/90 p-3 rounded-xl border border-white/10 space-y-2 text-xs font-mono">
+                    <div class="text-[11px] font-bold text-gray-400 font-sans border-b border-white/10 pb-1 flex justify-between">
+                        <span>ข้อมูลฟิสิกส์แบบเรียลไทม์ (Live Telemetry)</span>
+                        <span id="telemetry-time" class="text-cyan-400">Day 0</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-[11px]">
+                        <div class="bg-space-800/60 p-2 rounded-lg">
+                            <span class="text-gray-400 text-[9px] block font-sans">ระยะห่างปัจจุบัน ($r$)</span>
+                            <span id="telemetry-r" class="text-amber-300 font-bold">1.000 AU</span>
+                        </div>
+                        <div class="bg-space-800/60 p-2 rounded-lg">
+                            <span class="text-gray-400 text-[9px] block font-sans">ความเร็วปัจจุบัน ($v$)</span>
+                            <span id="telemetry-v" class="text-emerald-400 font-bold">29.78 km/s</span>
+                        </div>
+                        <div class="bg-space-800/60 p-2 rounded-lg">
+                            <span class="text-gray-400 text-[9px] block font-sans">แรงโน้มถ่วงรวม ($F$)</span>
+                            <span id="telemetry-f" class="text-rose-400 font-bold">3.54 × 10²² N</span>
+                        </div>
+                        <div class="bg-space-800/60 p-2 rounded-lg">
+                            <span class="text-gray-400 text-[9px] block font-sans">คาบโคจรโดยประมาณ ($T$)</span>
+                            <span id="telemetry-t" class="text-purple-300 font-bold">365.25 วัน</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+    </div>
+
+    <!-- MAIN SIMULATION SCRIPT -->
+    <script>
+        // Physical Constants (Normalized for 3D Graphic Scale)
+        const G = 1.0;                  // Gravitational Constant (Sim unit)
+        const AU_TO_3D = 18.0;           // 1 AU = 18 Three.js units
+        const BASE_EARTH_VELOCITY = 1.0; // Circular orbit speed at 1 AU with M_sun = 1.0
+
+        // Physics State Variables
+        let state = {
+            mEarth: 1.0,          // Earth Mass relative
+            mSun: 1.0,            // Sun Mass relative
+            rInit: 1.0,           // Initial distance AU
+            vPercent: 100,        // Speed percentage relative to circular velocity
+            timeScale: 1.0,       // Simulation speed multiplier
+            isPlaying: true,
+
+            // Helpers Visibility
+            showGravityVector: true,
+            showVelocityVector: true,
+            showTrail: true,
+            showGrid: true,
+
+            // Dynamical State (Position, Velocity in Simulation space)
+            pos: new THREE.Vector3(1.0 * AU_TO_3D, 0, 0),
+            vel: new THREE.Vector3(0, 0, -BASE_EARTH_VELOCITY),
+            timeDays: 0,
+            trailPoints: []
+        };
+
+        // Three.js Graphics Core
+        let scene, camera, renderer, controls;
+        let sunMesh, earthMesh, moonMesh, sunGlowMesh;
+        let gravityArrow, velocityArrow, orbitTrailLine, gridHelper;
+
+        // Initialize Application
+        window.addEventListener('DOMContentLoaded', () => {
+            initMathKaTeX();
+            initThreeJS();
+            createCelestialBodies();
+            createVisualHelpers();
+            lucide.createIcons();
+
+            resetSimulation();
+            animate();
+        });
+
+        // Initialize KaTeX Math Display
+        function initMathKaTeX() {
+            if (window.katex) {
+                katex.render("F = G \\frac{M_{Sun} \\cdot M_{Earth}}{r^2}", document.getElementById('math-gravity'));
+                katex.render("v = \\sqrt{\\frac{G \\cdot M_{Sun}}{r}}", document.getElementById('math-velocity'));
+                katex.render("T = 2\\pi \\sqrt{\\frac{r^3}{G \\cdot M_{Sun}}}", document.getElementById('math-kepler'));
+            }
+        }
+
+        // Initialize Three.js Scene & Viewport
+        function initThreeJS() {
+            const container = document.getElementById('canvas-container');
+
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x07090E, 0.003);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(25, 28, 42);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxDistance = 250;
+            controls.minDistance = 5;
+
+            // Ambient & Point Lighting (Sun Light Source)
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.25);
+            scene.add(ambientLight);
+
+            const sunLight = new THREE.PointLight(0xfffaed, 2.5, 300);
+            sunLight.castShadow = true;
+            scene.add(sunLight);
+
+            // Background Starfield
+            createStarfield();
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        // Create Starfield Background
+        function createStarfield() {
+            const count = 2500;
+            const geo = new THREE.BufferGeometry();
+            const pos = new Float32Array(count * 3);
+
+            for (let i = 0; i < count * 3; i += 3) {
+                pos[i] = (Math.random() - 0.5) * 400;
+                pos[i + 1] = (Math.random() - 0.5) * 400;
+                pos[i + 2] = (Math.random() - 0.5) * 400;
+            }
+
+            geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+            const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.6, transparent: true, opacity: 0.7 });
+            const stars = new THREE.Points(geo, mat);
+            scene.add(stars);
+        }
+
+        // Create Sun, Earth, Moon Meshes
+        function createCelestialBodies() {
+            // SUN
+            const sunGeo = new THREE.SphereGeometry(3.5, 32, 32);
+            const sunMat = new THREE.MeshBasicMaterial({ color: 0xFBBF24 });
+            sunMesh = new THREE.Mesh(sunGeo, sunMat);
+            scene.add(sunMesh);
+
+            // Sun Outer Glow Shader Effect
+            const glowGeo = new THREE.SphereGeometry(4.2, 32, 32);
+            const glowMat = new THREE.MeshBasicMaterial({
+                color: 0xF59E0B,
+                transparent: true,
+                opacity: 0.25,
+                side: THREE.BackSide
+            });
+            sunGlowMesh = new THREE.Mesh(glowGeo, glowMat);
+            scene.add(sunGlowMesh);
+
+            // EARTH
+            const earthGeo = new THREE.SphereGeometry(1.0, 32, 32);
+            // Procedural Canvas Texture for Earth
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#1D4ED8';
+            ctx.fillRect(0, 0, 128, 64);
+            ctx.fillStyle = '#10B981';
+            ctx.beginPath();
+            ctx.arc(30, 25, 18, 0, Math.PI * 2);
+            ctx.arc(80, 40, 22, 0, Math.PI * 2);
+            ctx.fill();
+
+            const earthTex = new THREE.CanvasTexture(canvas);
+            const earthMat = new THREE.MeshStandardMaterial({
+                map: earthTex,
+                roughness: 0.6,
+                metalness: 0.1
+            });
+            earthMesh = new THREE.Mesh(earthGeo, earthMat);
+            earthMesh.castShadow = true;
+            earthMesh.receiveShadow = true;
+            scene.add(earthMesh);
+
+            // MOON
+            const moonGeo = new THREE.SphereGeometry(0.28, 16, 16);
+            const moonMat = new THREE.MeshStandardMaterial({ color: 0x9CA3AF, roughness: 0.8 });
+            moonMesh = new THREE.Mesh(moonGeo, moonMat);
+            moonMesh.castShadow = true;
+            moonMesh.receiveShadow = true;
+            scene.add(moonMesh);
+        }
+
+        // Create Vector Arrows, Orbit Trail Line & Coordinate Grid
+        function createVisualHelpers() {
+            // Gravitational Force Arrow Vector (Red/Rose)
+            gravityArrow = new THREE.ArrowHelper(
+                new THREE.Vector3(-1, 0, 0),
+                new THREE.Vector3(0, 0, 0),
+                4.0,
+                0xF43F5E,
+                1.0,
+                0.8
+            );
+            scene.add(gravityArrow);
+
+            // Velocity Arrow Vector (Green/Emerald)
+            velocityArrow = new THREE.ArrowHelper(
+                new THREE.Vector3(0, 0, -1),
+                new THREE.Vector3(0, 0, 0),
+                4.0,
+                0x10B981,
+                1.0,
+                0.8
+            );
+            scene.add(velocityArrow);
+
+            // Dynamic Orbit Trail Line
+            const maxPoints = 1200;
+            const trailGeo = new THREE.BufferGeometry();
+            const positions = new Float32Array(maxPoints * 3);
+            trailGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+            const trailMat = new THREE.LineBasicMaterial({
+                color: 0x38BDF8,
+                transparent: true,
+                opacity: 0.75
+            });
+            orbitTrailLine = new THREE.Line(trailGeo, trailMat);
+            scene.add(orbitTrailLine);
+
+            // Grid Plane
+            gridHelper = new THREE.GridHelper(100, 50, 0x38BDF8, 0x1F293D);
+            gridHelper.position.y = -0.1;
+            scene.add(gridHelper);
+        }
+
+        // Main Simulation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (state.isPlaying) {
+                // Perform Physics Numerical Integration Steps
+                const subSteps = 10;
+                const dt = (0.015 * state.timeScale) / subSteps;
+
+                for (let i = 0; i < subSteps; i++) {
+                    stepPhysics(dt);
+                }
+
+                state.timeDays += 0.5 * state.timeScale;
+            }
+
+            // Update 3D Positions & Rotation Effects
+            earthMesh.position.copy(state.pos);
+            earthMesh.rotation.y += 0.015;
+
+            // Moon orbits around Earth
+            const moonDist = 2.2;
+            const moonAngle = Date.now() * 0.003;
+            moonMesh.position.set(
+                state.pos.x + Math.cos(moonAngle) * moonDist,
+                state.pos.y,
+                state.pos.z + Math.sin(moonAngle) * moonDist
+            );
+
+            // Sun Pulsating Glow
+            sunGlowMesh.scale.setScalar(1.0 + Math.sin(Date.now() * 0.002) * 0.03);
+
+            // Update Visual Vectors & Trail Line
+            updateVisualHelpers();
+
+            // Update Telemetry UI Text
+            updateTelemetryUI();
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Physics Integration Step (Verlet / Euler Gravity Engine)
+        function stepPhysics(dt) {
+            const rVec = new THREE.Vector3().subVectors(new THREE.Vector3(0, 0, 0), state.pos);
+            const rMag = rVec.length();
+
+            // Check Collision with Sun
+            if (rMag < 3.5) {
+                document.getElementById('telemetry-status').innerText = 'CRASHED INTO SUN!';
+                document.getElementById('telemetry-status').className = 'text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 status-badge';
+                state.isPlaying = false;
+                document.getElementById('text-play-pause').innerText = 'เริ่ม';
+                document.getElementById('icon-play-pause').setAttribute('data-lucide', 'play');
+                lucide.createIcons();
+                return;
+            }
+
+            // Check Escape Velocity / Lost in Space
+            if (rMag > 120) {
+                document.getElementById('telemetry-status').innerText = 'ESCAPED SYSTEM!';
+                document.getElementById('telemetry-status').className = 'text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 status-badge';
+            } else {
+                document.getElementById('telemetry-status').innerText = 'Stable Orbit';
+                document.getElementById('telemetry-status').className = 'text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+            }
+
+            // Gravitational Acceleration: a = G * M_sun / r^2 in direction of Sun
+            const accMag = (G * state.mSun * 350.0) / (rMag * rMag);
+            const acc = rVec.clone().normalize().multiplyScalar(accMag);
+
+            // Update Velocity & Position
+            state.vel.addScaledVector(acc, dt);
+            state.pos.addScaledVector(state.vel, dt);
+
+            // Record Trail Points
+            if (Math.random() < 0.4) {
+                state.trailPoints.push(state.pos.clone());
+                if (state.trailPoints.length > 800) state.trailPoints.shift();
+            }
+        }
+
+        // Update Arrow Helpers and Trail Geometry
+        function updateVisualHelpers() {
+            // Gravity Vector Arrow (Points towards Sun)
+            const sunDir = new THREE.Vector3(0, 0, 0).sub(state.pos).normalize();
+            gravityArrow.position.copy(state.pos);
+            gravityArrow.setDirection(sunDir);
+            const rMag = state.pos.length();
+            const gravityForceMag = (state.mSun * state.mEarth * 50) / (rMag * rMag);
+            gravityArrow.setLength(Math.min(Math.max(gravityForceMag * 0.8, 2.5), 15.0));
+            gravityArrow.visible = state.showGravityVector;
+
+            // Velocity Vector Arrow (Tangential)
+            velocityArrow.position.copy(state.pos);
+            const velDir = state.vel.clone().normalize();
+            velocityArrow.setDirection(velDir);
+            velocityArrow.setLength(Math.min(Math.max(state.vel.length() * 3.5, 2.5), 15.0));
+            velocityArrow.visible = state.showVelocityVector;
+
+            // Update Orbit Trail Line Buffer
+            if (state.showTrail) {
+                const positions = orbitTrailLine.geometry.attributes.position.array;
+                for (let i = 0; i < state.trailPoints.length; i++) {
+                    positions[i * 3] = state.trailPoints[i].x;
+                    positions[i * 3 + 1] = state.trailPoints[i].y;
+                    positions[i * 3 + 2] = state.trailPoints[i].z;
+                }
+                orbitTrailLine.geometry.setDrawRange(0, state.trailPoints.length);
+                orbitTrailLine.geometry.attributes.position.needsUpdate = true;
+                orbitTrailLine.visible = true;
+            } else {
+                orbitTrailLine.visible = false;
+            }
+
+            gridHelper.visible = state.showGrid;
+        }
+
+        // Update Physics Controls Sliders Input
+        function updatePhysicsFromControls() {
+            state.mEarth = parseFloat(document.getElementById('slider-mass-earth').value);
+            state.mSun = parseFloat(document.getElementById('slider-mass-sun').value);
+            state.rInit = parseFloat(document.getElementById('slider-distance').value);
+            state.vPercent = parseFloat(document.getElementById('slider-velocity').value);
+            state.timeScale = parseFloat(document.getElementById('slider-timescale').value);
+
+            // Update Labels
+            document.getElementById('val-mass-earth').innerText = `${state.mEarth.toFixed(1)} x โลก`;
+            document.getElementById('val-mass-sun').innerText = `${state.mSun.toFixed(1)} x ดวงอาทิตย์`;
+            document.getElementById('val-distance').innerText = `${state.rInit.toFixed(2)} AU`;
+
+            const velKmSec = (29.78 * (state.vPercent / 100) * Math.sqrt(state.mSun / state.rInit)).toFixed(2);
+            document.getElementById('val-velocity').innerText = `${state.vPercent}% (${velKmSec} km/s)`;
+            document.getElementById('val-timescale').innerText = `${state.timeScale.toFixed(1)}x`;
+        }
+
+        // Apply Preset Configurations
+        function applyPreset(presetKey) {
+            if (presetKey === 'real') {
+                document.getElementById('slider-mass-earth').value = 1.0;
+                document.getElementById('slider-mass-sun').value = 1.0;
+                document.getElementById('slider-distance').value = 1.0;
+                document.getElementById('slider-velocity').value = 100;
+            } else if (presetKey === 'mass100') {
+                document.getElementById('slider-mass-earth').value = 100.0;
+                document.getElementById('slider-mass-sun').value = 1.0;
+                document.getElementById('slider-distance').value = 1.0;
+                document.getElementById('slider-velocity').value = 100;
+            } else if (presetKey === 'highVelocity') {
+                document.getElementById('slider-velocity').value = 130;
+            } else if (presetKey === 'lowVelocity') {
+                document.getElementById('slider-velocity').value = 60;
+            } else if (presetKey === 'closer') {
+                document.getElementById('slider-distance').value = 0.5;
+                document.getElementById('slider-velocity').value = 100;
+            } else if (presetKey === 'farther') {
+                document.getElementById('slider-distance').value = 2.0;
+                document.getElementById('slider-velocity').value = 100;
+            } else if (presetKey === 'elliptical') {
+                document.getElementById('slider-distance').value = 1.2;
+                document.getElementById('slider-velocity').value = 135;
+            }
+
+            updatePhysicsFromControls();
+            resetSimulation();
+        }
+
+        // Reset Simulation State
+        function resetSimulation() {
+            updatePhysicsFromControls();
+
+            // Set Position based on initial distance rInit
+            const startDist3D = state.rInit * AU_TO_3D;
+            state.pos.set(startDist3D, 0, 0);
+
+            // Circular Speed Formula: v_c = sqrt(G * M_sun / r)
+            const circularSpeed = Math.sqrt((G * state.mSun * 350.0) / startDist3D);
+            const actualSpeed = circularSpeed * (state.vPercent / 100.0);
+
+            // Tangential initial velocity direction along -Z
+            state.vel.set(0, 0, -actualSpeed);
+
+            state.trailPoints = [];
+            state.timeDays = 0;
+            state.isPlaying = true;
+
+            document.getElementById('text-play-pause').innerText = 'หยุดชั่วคราว';
+            document.getElementById('icon-play-pause').setAttribute('data-lucide', 'pause');
+            lucide.createIcons();
+        }
+
+        // Toggle Helpers Options
+        function toggleHelpers() {
+            state.showGravityVector = document.getElementById('toggle-vectors').checked;
+            state.showVelocityVector = document.getElementById('toggle-velocity-vector').checked;
+            state.showTrail = document.getElementById('toggle-trail').checked;
+            state.showGrid = document.getElementById('toggle-grid').checked;
+        }
+
+        // Toggle Simulation Play/Pause
+        function togglePlayPause() {
+            state.isPlaying = !state.isPlaying;
+            const btnText = document.getElementById('text-play-pause');
+            const icon = document.getElementById('icon-play-pause');
+
+            if (state.isPlaying) {
+                btnText.innerText = 'หยุดชั่วคราว';
+                icon.setAttribute('data-lucide', 'pause');
+            } else {
+                btnText.innerText = 'เล่นต่อ';
+                icon.setAttribute('data-lucide', 'play');
+            }
+            lucide.createIcons();
+        }
+
+        // Toggle Fullscreen View
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        // Update Live Telemetry Info Panel
+        function updateTelemetryUI() {
+            const currentDistAU = state.pos.length() / AU_TO_3D;
+            const currentVelKmS = (state.vel.length() * 29.78 / BASE_EARTH_VELOCITY).toFixed(2);
+
+            // Gravitational Force F = G * M1 * M2 / r^2
+            const forceVal = (3.54 * state.mEarth * state.mSun / (currentDistAU * currentDistAU)).toFixed(2);
+
+            // Orbital Period T = r^(1.5) / sqrt(M_sun) in years -> converted to days
+            const periodDays = (365.25 * Math.pow(currentDistAU, 1.5) / Math.sqrt(state.mSun)).toFixed(1);
+
+            document.getElementById('telemetry-r').innerText = `${currentDistAU.toFixed(3)} AU`;
+            document.getElementById('telemetry-v').innerText = `${currentVelKmS} km/s`;
+            document.getElementById('telemetry-f').innerText = `${forceVal} × 10²² N`;
+            document.getElementById('telemetry-t').innerText = `${periodDays} วัน`;
+            document.getElementById('telemetry-time').innerText = `Day ${Math.floor(state.timeDays)}`;
+        }
+
+        // Switch Educational Q&A Tabs
+        function switchTab(tabKey) {
+            ['formulas', 'q1', 'q2', 'q3'].forEach(k => {
+                document.getElementById(`content-${k}`).classList.add('hidden');
+                document.getElementById(`tab-${k}`).classList.remove('active');
+            });
+
+            document.getElementById(`content-${tabKey}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabKey}`).classList.add('active');
+        }
+
+        // Resize Window Handler
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+    </script>
+</body>
+</html>

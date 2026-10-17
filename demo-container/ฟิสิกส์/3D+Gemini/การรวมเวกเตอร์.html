@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แบบจำลองเสมือนจริง: การรวมเวกเตอร์ & องค์ประกอบเวกเตอร์ 2D/3D</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        lab: {
+                            bg: '#060913',
+                            panel: '#0f172a',
+                            accent: '#38bdf8',
+                            vecA: '#f43f5e',
+                            vecB: '#38bdf8',
+                            vecC: '#a855f7',
+                            vecR: '#10b981',
+                            amber: '#f59e0b'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Sarabun', 'Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- KaTeX for Mathematics & Vector Formulas -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+    <!-- Three.js for 3D Vector Rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #060913;
+            color: #f3f4f6;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.3);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(56, 189, 248, 0.7);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 4px;
+            height: 5px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 15px;
+            width: 15px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+            transition: all 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #7dd3fc;
+        }
+
+        .tab-btn.active {
+            background-color: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            border-bottom: 2px solid #38bdf8;
+            font-weight: 600;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body class="select-none text-slate-100">
+
+    <!-- Header Navigation -->
+    <header class="absolute top-2 left-2 right-2 z-30 flex items-center justify-between glass-panel px-4 py-2 rounded-xl">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-sky-500/20 text-sky-400 rounded-lg border border-sky-500/30">
+                <i data-lucide="arrow-up-right" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <a href="../physics.html">
+                    <h1 class="font-bold text-sm md:text-base text-white flex items-center gap-2">
+                    ปฏิบัติการเสมือน: การรวมเวกเตอร์ & องค์ประกอบย่อย 2D/3D
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">Vector Physics Lab</span>
+                </h1>
+                </a>
+                <p class="text-[11px] text-slate-400 hidden sm:block">วิเคราะห์องค์ประกอบเวกเตอร์ ($A_x, A_y, A_z$), เวกเตอร์ลัพธ์ ($\vec{R}$), การปรับมุม และการรวมเวกเตอร์แบบ 2D & 3D</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Mode Switch 2D / 3D -->
+            <div class="bg-slate-900 p-1 rounded-lg border border-white/10 flex gap-1">
+                <button id="btn-mode-2d" onclick="switchDimension('2D')" class="px-3 py-1 text-xs rounded font-medium transition bg-sky-500 text-white">2D Precision</button>
+                <button id="btn-mode-3d" onclick="switchDimension('3D')" class="px-3 py-1 text-xs rounded font-medium transition text-slate-400 hover:text-white">3D Space</button>
+            </div>
+
+            <!-- Reset Vectors Button -->
+            <button onclick="resetVectors()" class="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-lg transition border border-rose-500/40 text-xs flex items-center gap-1.5 font-medium" title="รีเซ็ตค่าเวกเตอร์ทั้งหมด">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                <span>รีเซ็ต</span>
+            </button>
+
+            <button onclick="toggleFullscreen()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition border border-white/10" title="เต็มจอ">
+                <i data-lucide="maximize" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Grid Container -->
+    <div class="absolute inset-0 pt-14 p-2 pointer-events-none grid grid-cols-1 md:grid-cols-12 gap-2 h-full pb-2">
+
+        <!-- ================= LEFT PANEL: Controls, Vector Inputs, Angles, Options ================= -->
+        <aside class="md:col-span-3 lg:col-span-3 glass-panel rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <div class="p-2.5 border-b border-white/10 bg-slate-900/80 flex justify-between items-center">
+                <span class="font-semibold text-xs text-white flex items-center gap-1.5">
+                    <i data-lucide="sliders" class="w-4 h-4 text-sky-400"></i>
+                    ตั้งค่าเวกเตอร์ & องค์ประกอบย่อย
+                </span>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-3 space-y-3 text-xs">
+
+                <!-- Vector Angle System Mode -->
+                <div class="glass-card p-2.5 rounded-lg space-y-2">
+                    <span class="text-[11px] font-bold text-sky-400 block border-b border-white/10 pb-1">รูปแบบการแสดงมุม (Angle System)</span>
+                    <div class="grid grid-cols-3 gap-1">
+                        <button onclick="setAngleSystem('deg')" id="btn-ang-deg" class="p-1 bg-sky-500/30 text-sky-300 border border-sky-500/40 rounded text-center font-medium">องศา (°)</button>
+                        <button onclick="setAngleSystem('rad')" id="btn-ang-rad" class="p-1 bg-slate-800 text-slate-300 border border-white/10 rounded text-center font-medium">เรเดียน (rad)</button>
+                        <button onclick="setAngleSystem('nav')" id="btn-ang-nav" class="p-1 bg-slate-800 text-slate-300 border border-white/10 rounded text-center font-medium">ทิศทาง (N,E,S,W)</button>
+                    </div>
+                </div>
+
+                <!-- Addition Method (2D Mode) -->
+                <div class="glass-card p-2.5 rounded-lg space-y-2">
+                    <span class="text-[11px] font-bold text-emerald-400 block border-b border-white/10 pb-1">วิธีรวมเวกเตอร์ (Addition Method)</span>
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <button onclick="setAdditionMethod('tail-to-head')" id="btn-method-tail" class="p-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded text-center font-medium">หัวต่อหาง (Tip-to-Tail)</button>
+                        <button onclick="setAdditionMethod('parallelogram')" id="btn-method-para" class="p-1.5 bg-slate-800 text-slate-300 border border-white/10 rounded text-center font-medium">สี่เหลี่ยมด้านขนาน</button>
+                    </div>
+                </div>
+
+                <!-- VECTOR A CONTROLS -->
+                <div class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-rose-500">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-rose-400 text-[11px] flex items-center gap-1">
+                            <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> เวกเตอร์ $\vec{A}$
+                        </span>
+                        <span id="val-vecA-mag" class="font-mono text-rose-300 font-bold">|A| = 5.0</span>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] text-slate-300">
+                            <span>ขนาด ($|A|$):</span>
+                            <span id="txt-vecA-len">5.0</span>
+                        </div>
+                        <input type="range" id="slider-A-mag" min="0" max="15" step="0.1" value="5" class="w-full" oninput="onVectorControlChange()">
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] text-slate-300">
+                            <span>มุม ($\theta_A$):</span>
+                            <span id="txt-vecA-ang">36.9°</span>
+                        </div>
+                        <input type="range" id="slider-A-ang" min="0" max="360" step="1" value="37" class="w-full" oninput="onVectorControlChange()">
+                    </div>
+
+                    <!-- 3D Elevation Angle Phi for Vector A -->
+                    <div id="wrapper-A-phi" class="space-y-1 hidden">
+                        <div class="flex justify-between text-[10px] text-purple-300">
+                            <span>มุมยก 3D ($\phi_A$):</span>
+                            <span id="txt-vecA-phi">30.0°</span>
+                        </div>
+                        <input type="range" id="slider-A-phi" min="-90" max="90" step="1" value="30" class="w-full" oninput="onVectorControlChange()">
+                    </div>
+                </div>
+
+                <!-- VECTOR B CONTROLS -->
+                <div class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-sky-500">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-sky-400 text-[11px] flex items-center gap-1">
+                            <span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span> เวกเตอร์ $\vec{B}$
+                        </span>
+                        <span id="val-vecB-mag" class="font-mono text-sky-300 font-bold">|B| = 4.0</span>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] text-slate-300">
+                            <span>ขนาด ($|B|$):</span>
+                            <span id="txt-vecB-len">4.0</span>
+                        </div>
+                        <input type="range" id="slider-B-mag" min="0" max="15" step="0.1" value="4" class="w-full" oninput="onVectorControlChange()">
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] text-slate-300">
+                            <span>มุม ($\theta_B$):</span>
+                            <span id="txt-vecB-ang">120.0°</span>
+                        </div>
+                        <input type="range" id="slider-B-ang" min="0" max="360" step="1" value="120" class="w-full" oninput="onVectorControlChange()">
+                    </div>
+
+                    <!-- 3D Elevation Angle Phi for Vector B -->
+                    <div id="wrapper-B-phi" class="space-y-1 hidden">
+                        <div class="flex justify-between text-[10px] text-purple-300">
+                            <span>มุมยก 3D ($\phi_B$):</span>
+                            <span id="txt-vecB-phi">0.0°</span>
+                        </div>
+                        <input type="range" id="slider-B-phi" min="-90" max="90" step="1" value="0" class="w-full" oninput="onVectorControlChange()">
+                    </div>
+                </div>
+
+                <!-- VECTOR C TOGGLE & CONTROLS -->
+                <div class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-purple-500">
+                    <div class="flex justify-between items-center">
+                        <label class="flex items-center gap-1.5 cursor-pointer font-bold text-purple-400 text-[11px]">
+                            <input type="checkbox" id="toggle-vecC" onchange="onVectorControlChange()" class="accent-purple-500 rounded">
+                            <span>เปิดใช้งานเวกเตอร์ $\vec{C}$</span>
+                        </label>
+                        <span id="val-vecC-mag" class="font-mono text-purple-300 font-bold">|C| = 3.0</span>
+                    </div>
+
+                    <div id="wrapper-vecC-controls" class="space-y-2 opacity-50 pointer-events-none">
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[10px] text-slate-300">
+                                <span>ขนาด ($|C|$):</span>
+                                <span id="txt-vecC-len">3.0</span>
+                            </div>
+                            <input type="range" id="slider-C-mag" min="0" max="15" step="0.1" value="3" class="w-full" oninput="onVectorControlChange()">
+                        </div>
+
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[10px] text-slate-300">
+                                <span>มุม ($\theta_C$):</span>
+                                <span id="txt-vecC-ang">225.0°</span>
+                            </div>
+                            <input type="range" id="slider-C-ang" min="0" max="360" step="1" value="225" class="w-full" oninput="onVectorControlChange()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VISUAL OVERLAYS TOGGLE -->
+                <div class="glass-card p-2.5 rounded-lg space-y-1.5">
+                    <span class="text-[11px] font-bold text-slate-300 block border-b border-white/10 pb-1">การแสดงผลเส้นช่วย (Visual Overlays)</span>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>แสดงองค์ประกอบย่อย ($A_x, A_y, A_z$)</span>
+                        <input type="checkbox" id="toggle-components" checked onchange="onVectorControlChange()" class="accent-sky-500 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>แสดงเวกเตอร์ลัพธ์ ($\vec{R} = \vec{A}+\vec{B}+\vec{C}$)</span>
+                        <input type="checkbox" id="toggle-resultant" checked onchange="onVectorControlChange()" class="accent-emerald-500 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>แสดงมุมอ้างอิง ($\theta$)</span>
+                        <input type="checkbox" id="toggle-angles" checked onchange="onVectorControlChange()" class="accent-amber-500 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>แสดงเส้นตารางอ้างอิง (Grid)</span>
+                        <input type="checkbox" id="toggle-grid" checked onchange="onVectorControlChange()" class="accent-slate-400 rounded">
+                    </label>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- ================= CENTER: Interactive Canvas Viewport (2D Canvas / 3D Three.js) ================= -->
+        <main class="md:col-span-5 lg:col-span-5 glass-panel rounded-xl flex flex-col pointer-events-auto border border-white/10 shadow-2xl relative overflow-hidden">
+            <!-- Viewport Container -->
+            <div id="viewport-container" class="flex-1 bg-slate-950/80 relative cursor-crosshair flex flex-col overflow-hidden">
+                <!-- 2D Canvas -->
+                <canvas id="canvas-2d" class="w-full flex-1 z-10 block"></canvas>
+                
+                <!-- 3D Three.js Canvas Container -->
+                <div id="container-3d" class="absolute inset-0 z-10 hidden"></div>
+
+                <!-- Status Badge Overlay -->
+                <div class="absolute top-2 left-2 bg-slate-900/90 backdrop-blur px-3 py-1.5 rounded-lg border border-white/10 text-[11px] text-slate-300 flex items-center gap-2 pointer-events-none z-20 font-mono">
+                    <i data-lucide="compass" class="w-3.5 h-3.5 text-sky-400 animate-pulse"></i>
+                    <span id="status-label">โหมด: 2D Plane Coordinate Grid</span>
+                </div>
+
+                <!-- Floating Live Resultant Vector Readout Overlay -->
+                <div class="absolute top-2 right-2 bg-slate-900/90 backdrop-blur p-2.5 rounded-lg border border-white/10 text-[10px] font-mono text-slate-300 z-20 space-y-1 w-48 shadow-xl">
+                    <div class="flex justify-between items-center text-emerald-400 border-b border-white/10 pb-1">
+                        <span class="font-bold">เวกเตอร์ลัพธ์ ($\vec{R}$):</span>
+                        <span id="readout-R-mag" class="font-bold text-xs">|R| = 0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center text-rose-300">
+                        <span>$\sum R_x$:</span>
+                        <span id="readout-Rx" class="font-bold">0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sky-300">
+                        <span>$\sum R_y$:</span>
+                        <span id="readout-Ry" class="font-bold">0.00</span>
+                    </div>
+                    <div id="row-readout-Rz" class="flex justify-between items-center text-purple-300 hidden">
+                        <span>$\sum R_z$:</span>
+                        <span id="readout-Rz" class="font-bold">0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center text-amber-300 border-t border-white/10 pt-1">
+                        <span>มุมทิศทาง ($\theta_R$):</span>
+                        <span id="readout-R-ang" class="font-bold">0.0°</span>
+                    </div>
+                </div>
+
+                <!-- Instruction Tooltip -->
+                <div id="instruction-tooltip" class="absolute bottom-2 left-2 bg-slate-900/80 backdrop-blur px-2.5 py-1 rounded text-[10px] text-slate-400 z-20 pointer-events-none">
+                    💡 **โหมด 2D**: คลิกและลากหัวเวกเตอร์บนผืนผ้าใบเพื่อปรับขนาดและทิศทางแบบเรียลไทม์
+                </div>
+            </div>
+        </main>
+
+        <!-- ================= RIGHT PANEL: Mathematical Decomposition, Formulas, Theory ================= -->
+        <aside class="md:col-span-4 lg:col-span-4 glass-panel rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <!-- Navigation Tabs -->
+            <div class="p-2 border-b border-white/10 bg-slate-900/80">
+                <div class="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded-lg text-[11px] font-semibold text-center">
+                    <button onclick="switchRightTab('calc')" id="tab-calc" class="tab-btn active py-1 rounded transition">ตารางองค์ประกอบ</button>
+                    <button onclick="switchRightTab('theory')" id="tab-theory" class="tab-btn py-1 rounded transition">หลักการทั่วไป</button>
+                    <button onclick="switchRightTab('formulas')" id="tab-formulas" class="tab-btn py-1 rounded transition">สูตร & เวกเตอร์ 3D</button>
+                </div>
+            </div>
+
+            <!-- Scrollable Content Panels -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-3 text-xs">
+
+                <!-- TAB 1: Live Mathematical Component Table -->
+                <div id="content-calc" class="space-y-3">
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-sky-400 block border-b border-white/10 pb-1 flex justify-between items-center">
+                            <span>ตารางการย่อยองค์ประกอบเวกเตอร์ (Component Table)</span>
+                            <i data-lucide="table" class="w-3.5 h-3.5 text-sky-400"></i>
+                        </span>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-[10px] font-mono">
+                                <thead>
+                                    <tr class="border-b border-white/10 text-slate-400 bg-slate-950/60">
+                                        <th class="p-1.5">เวกเตอร์</th>
+                                        <th class="p-1.5">ขนาด</th>
+                                        <th class="p-1.5">มุม ($\theta$)</th>
+                                        <th class="p-1.5 text-rose-300">Component X</th>
+                                        <th class="p-1.5 text-sky-300">Component Y</th>
+                                        <th id="th-comp-z" class="p-1.5 text-purple-300 hidden">Component Z</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-white/5 text-slate-200">
+                                    <tr>
+                                        <td class="p-1.5 font-bold text-rose-400">$\vec{A}$</td>
+                                        <td id="tbl-A-mag" class="p-1.5">5.00</td>
+                                        <td id="tbl-A-ang" class="p-1.5">37.0°</td>
+                                        <td id="tbl-Ax" class="p-1.5 text-rose-300">4.00</td>
+                                        <td id="tbl-Ay" class="p-1.5 text-sky-300">3.00</td>
+                                        <td id="tbl-Az" class="p-1.5 text-purple-300 hidden">2.50</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-1.5 font-bold text-sky-400">$\vec{B}$</td>
+                                        <td id="tbl-B-mag" class="p-1.5">4.00</td>
+                                        <td id="tbl-B-ang" class="p-1.5">120.0°</td>
+                                        <td id="tbl-Bx" class="p-1.5 text-rose-300">-2.00</td>
+                                        <td id="tbl-By" class="p-1.5 text-sky-300">3.46</td>
+                                        <td id="tbl-Bz" class="p-1.5 text-purple-300 hidden">0.00</td>
+                                    </tr>
+                                    <tr id="tbl-row-C" class="hidden">
+                                        <td class="p-1.5 font-bold text-purple-400">$\vec{C}$</td>
+                                        <td id="tbl-C-mag" class="p-1.5">3.00</td>
+                                        <td id="tbl-C-ang" class="p-1.5">225.0°</td>
+                                        <td id="tbl-Cx" class="p-1.5 text-rose-300">-2.12</td>
+                                        <td id="tbl-Cy" class="p-1.5 text-sky-300">-2.12</td>
+                                        <td id="tbl-Cz" class="p-1.5 text-purple-300 hidden">0.00</td>
+                                    </tr>
+                                    <tr class="bg-emerald-950/40 font-bold border-t border-emerald-500/40 text-emerald-300">
+                                        <td class="p-1.5">$\vec{R}$ (รวม)</td>
+                                        <td id="tbl-R-mag" class="p-1.5">6.48</td>
+                                        <td id="tbl-R-ang" class="p-1.5">72.1°</td>
+                                        <td id="tbl-Rx" class="p-1.5">2.00</td>
+                                        <td id="tbl-Ry" class="p-1.5">6.46</td>
+                                        <td id="tbl-Rz" class="p-1.5 hidden">2.50</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Step-by-Step Mathematical Calculation -->
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-emerald-400 block border-b border-white/10 pb-1">การคำนวณสรุปขั้นตอน (Mathematical Steps)</span>
+                        <div class="space-y-1.5 font-mono text-[10px] text-slate-300 leading-relaxed">
+                            <div class="bg-slate-950/60 p-2 rounded border border-white/5">
+                                <span class="text-slate-400 block font-sans text-[9.5px]">1. ผลรวมแกน X ($\sum R_x$):</span>
+                                <div id="math-step-rx" class="text-rose-300">Rx = Ax + Bx = 4.00 + (-2.00) = 2.00</div>
+                            </div>
+                            <div class="bg-slate-950/60 p-2 rounded border border-white/5">
+                                <span class="text-slate-400 block font-sans text-[9.5px]">2. ผลรวมแกน Y ($\sum R_y$):</span>
+                                <div id="math-step-ry" class="text-sky-300">Ry = Ay + By = 3.00 + 3.46 = 6.46</div>
+                            </div>
+                            <div id="box-step-rz" class="bg-slate-950/60 p-2 rounded border border-white/5 hidden">
+                                <span class="text-slate-400 block font-sans text-[9.5px]">3. ผลรวมแกน Z ($\sum R_z$):</span>
+                                <div id="math-step-rz" class="text-purple-300">Rz = Az + Bz = 2.50 + 0.00 = 2.50</div>
+                            </div>
+                            <div class="bg-slate-950/60 p-2 rounded border border-white/5">
+                                <span class="text-slate-400 block font-sans text-[9.5px]">4. ขนาดเวกเตอร์ลัพธ์ ($|\vec{R}|$):</span>
+                                <div id="math-step-rmag" class="text-emerald-300 font-bold">|R| = √(Rx² + Ry²) = √(2.00² + 6.46²) = 6.76</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: General Vector Physics Theory -->
+                <div id="content-theory" class="space-y-3 hidden">
+                    <div class="p-2.5 border-l-2 border-sky-400 bg-slate-900/60 rounded-r-lg space-y-1">
+                        <h4 class="font-bold text-sky-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="info" class="w-3.5 h-3.5"></i> เวกเตอร์คืออะไร? (General Concept of Vectors)
+                        </h4>
+                        <p class="text-slate-300 text-[10px] leading-relaxed">
+                            ปริมาณในทางฟิสิกส์แบ่งออกเป็น <strong>สเกลาร์ (Scalar)</strong> ที่มีเฉพาะขนาด และ <strong>เวกเตอร์ (Vector)</strong> ซึ่งมีทั้ง <strong>ขนาด (Magnitude)</strong> และ <strong>ทิศทาง (Direction)</strong> เช่น แรง ($\vec{F}$), ความเร็ว ($\vec{v}$), การขจัด ($\vec{d}$), และสนามไฟฟ้า ($\vec{E}$)
+                        </p>
+                    </div>
+
+                    <div class="p-2.5 border-l-2 border-emerald-400 bg-slate-900/60 rounded-r-lg space-y-1">
+                        <h4 class="font-bold text-emerald-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="layers" class="w-3.5 h-3.5"></i> การแยกองค์ประกอบย่อย (Vector Components)
+                        </h4>
+                        <p class="text-slate-300 text-[10px] leading-relaxed">
+                            เวกเตอร์ใดๆ สามารถแตกเข้าสู่แกนอ้างอิงฉาก ($x, y, z$) ได้โดยใช้อัตราส่วนตรีโกณมิติ:
+                            <br>- แกนราบ ($x$): $A_x = |A| \cos\theta$
+                            <br>- แกนตั้ง ($y$): $A_y = |A| \sin\theta$
+                        </p>
+                    </div>
+
+                    <div class="p-2.5 border-l-2 border-amber-400 bg-slate-900/60 rounded-r-lg space-y-1">
+                        <h4 class="font-bold text-amber-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="grid" class="w-3.5 h-3.5"></i> เวกเตอร์หนึ่งหน่วย (Unit Vectors)
+                        </h4>
+                        <p class="text-slate-300 text-[10px] leading-relaxed">
+                            เรานิยมเขียนเวกเตอร์ในรูปเวกเตอร์หนึ่งหน่วย $\hat{i}, \hat{j}, \hat{k}$ ตามแนวแกน $x, y, z$:
+                        </p>
+                        <div id="math-unit-vector" class="py-1 text-center text-amber-200 font-mono text-xs bg-slate-950/60 rounded p-1"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: Formulas & 3D Vectors -->
+                <div id="content-formulas" class="space-y-3 hidden">
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-purple-400 block border-b border-white/10 pb-1">สมการเวกเตอร์ใน 3 มิติ (3D Spatial Vectors)</span>
+                        <div id="math-3d-formula" class="py-1 text-center text-purple-200 font-mono text-xs bg-slate-950/60 rounded p-1.5"></div>
+                        <p class="text-[10px] text-slate-300 leading-relaxed">
+                            ใน 3 มิติ เวกเตอร์ถูกกำหนดโดยมุมเงย $\phi$ (Elevation Angle) และมุมราบ $\theta$ (Azimuth Angle):
+                        </p>
+                        <div id="math-3d-comp" class="py-1 text-center text-sky-200 font-mono text-[10.5px] bg-slate-950/60 rounded p-1.5 space-y-1"></div>
+                    </div>
+
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-emerald-400 block border-b border-white/10 pb-1">ผลคูณทางเวกเตอร์ (Dot & Cross Product)</span>
+                        <div id="math-dot-product" class="py-1 text-center text-emerald-200 font-mono text-xs bg-slate-950/60 rounded p-1.5"></div>
+                        <div id="math-cross-product" class="py-1 text-center text-rose-200 font-mono text-xs bg-slate-950/60 rounded p-1.5"></div>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- MAIN INTERACTIVE SIMULATION LOGIC SCRIPT -->
+    <script>
+        // Physics & Vector Simulation State
+        const state = {
+            dimension: '2D',        // '2D' or '3D'
+            angleSystem: 'deg',     // 'deg', 'rad', 'nav'
+            additionMethod: 'tail-to-head', // 'tail-to-head' or 'parallelogram'
+
+            // Vectors Data
+            vecA: { mag: 5.0, ang: 37.0, phi: 30.0, color: '#f43f5e', label: 'A' },
+            vecB: { mag: 4.0, ang: 120.0, phi: 0.0, color: '#38bdf8', label: 'B' },
+            vecC: { mag: 3.0, ang: 225.0, phi: 0.0, color: '#a855f7', label: 'C', active: false },
+
+            // Visual Toggles
+            showComponents: true,
+            showResultant: true,
+            showAngles: true,
+            showGrid: true,
+
+            // Interactive Dragging
+            draggedVector: null
+        };
+
+        // DOM References & Canvases
+        let canvas2D, ctx2D;
+        let scene3D, camera3D, renderer3D, controls3D;
+        let vector3DGroup;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initMathKaTeX();
+            init2DCanvas();
+            init3DScene();
+
+            lucide.createIcons();
+            window.addEventListener('resize', onWindowResize);
+
+            setup2DInteraction();
+            updateAllPhysics();
+        });
+
+        function initMathKaTeX() {
+            if (window.katex) {
+                katex.render("\\vec{A} = A_x \\hat{i} + A_y \\hat{j} + A_z \\hat{k}", document.getElementById('math-unit-vector'));
+                katex.render("\\vec{R} = \\sum R_x \\hat{i} + \\sum R_y \\hat{j} + \\sum R_z \\hat{k}", document.getElementById('math-3d-formula'));
+                katex.render("A_x = |A|\\cos\\phi \\cos\\theta, \\; A_y = |A|\\cos\\phi \\sin\\theta, \\; A_z = |A|\\sin\\phi", document.getElementById('math-3d-comp'));
+                katex.render("\\vec{A} \\cdot \\vec{B} = |A||B|\\cos\\theta = A_x B_x + A_y B_y + A_z B_z", document.getElementById('math-dot-product'));
+                katex.render("|\\vec{A} \\times \\vec{B}| = |A||B|\\sin\\theta", document.getElementById('math-cross-product'));
+            }
+        }
+
+        function init2DCanvas() {
+            canvas2D = document.getElementById('canvas-2d');
+            ctx2D = canvas2D.getContext('2d');
+        }
+
+        function init3DScene() {
+            const container = document.getElementById('container-3d');
+            scene3D = new THREE.Scene();
+            scene3D.background = new THREE.Color(0x060913);
+
+            camera3D = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera3D.position.set(15, 12, 18);
+
+            renderer3D = new THREE.WebGLRenderer({ antialias: true });
+            renderer3D.setSize(container.clientWidth, container.clientHeight);
+            renderer3D.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer3D.domElement);
+
+            controls3D = new THREE.OrbitControls(camera3D, renderer3D.domElement);
+            controls3D.enableDamping = true;
+            controls3D.dampingFactor = 0.05;
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene3D.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(10, 20, 15);
+            scene3D.add(dirLight);
+
+            // 3D Grid & Axes
+            const gridHelper = new THREE.GridHelper(30, 30, 0x38bdf8, 0x1e293b);
+            scene3D.add(gridHelper);
+
+            // Axes Arrows (X: Red, Y: Green, Z: Blue)
+            const axesHelper = new THREE.AxesHelper(10);
+            scene3D.add(axesHelper);
+
+            vector3DGroup = new THREE.Group();
+            scene3D.add(vector3DGroup);
+
+            animate3D();
+        }
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+            if (state.dimension === '3D') {
+                controls3D.update();
+                renderer3D.render(scene3D, camera3D);
+            }
+        }
+
+        // Calculate Vector Components ($x, y, z$)
+        function getComponents(vec) {
+            const radAng = (vec.ang * Math.PI) / 180;
+            const radPhi = (vec.phi * Math.PI) / 180;
+
+            if (state.dimension === '2D') {
+                return {
+                    x: vec.mag * Math.cos(radAng),
+                    y: vec.mag * Math.sin(radAng),
+                    z: 0
+                };
+            } else {
+                // 3D Spherical System
+                const xyMag = vec.mag * Math.cos(radPhi);
+                return {
+                    x: xyMag * Math.cos(radAng),
+                    y: vec.mag * Math.sin(radPhi),
+                    z: xyMag * Math.sin(radAng)
+                };
+            }
+        }
+
+        function updateAllPhysics() {
+            const compA = getComponents(state.vecA);
+            const compB = getComponents(state.vecB);
+            const compC = state.vecC.active ? getComponents(state.vecC) : { x: 0, y: 0, z: 0 };
+
+            const Rx = compA.x + compB.x + compC.x;
+            const Ry = compA.y + compB.y + compC.y;
+            const Rz = compA.z + compB.z + compC.z;
+
+            const Rmag = Math.sqrt(Rx * Rx + Ry * Ry + Rz * Rz);
+            let RangDeg = (Math.atan2(Ry, Rx) * 180) / Math.PI;
+            if (RangDeg < 0) RangDeg += 360;
+
+            // UI Readouts
+            document.getElementById('readout-R-mag').innerText = `|R| = ${Rmag.toFixed(2)}`;
+            document.getElementById('readout-Rx').innerText = Rx.toFixed(2);
+            document.getElementById('readout-Ry').innerText = Ry.toFixed(2);
+            document.getElementById('readout-Rz').innerText = Rz.toFixed(2);
+            document.getElementById('readout-R-ang').innerText = formatAngle(RangDeg);
+
+            // Table Entries
+            document.getElementById('tbl-A-mag').innerText = state.vecA.mag.toFixed(2);
+            document.getElementById('tbl-A-ang').innerText = formatAngle(state.vecA.ang);
+            document.getElementById('tbl-Ax').innerText = compA.x.toFixed(2);
+            document.getElementById('tbl-Ay').innerText = compA.y.toFixed(2);
+            document.getElementById('tbl-Az').innerText = compA.z.toFixed(2);
+
+            document.getElementById('tbl-B-mag').innerText = state.vecB.mag.toFixed(2);
+            document.getElementById('tbl-B-ang').innerText = formatAngle(state.vecB.ang);
+            document.getElementById('tbl-Bx').innerText = compB.x.toFixed(2);
+            document.getElementById('tbl-By').innerText = compB.y.toFixed(2);
+            document.getElementById('tbl-Bz').innerText = compB.z.toFixed(2);
+
+            if (state.vecC.active) {
+                document.getElementById('tbl-row-C').classList.remove('hidden');
+                document.getElementById('tbl-C-mag').innerText = state.vecC.mag.toFixed(2);
+                document.getElementById('tbl-C-ang').innerText = formatAngle(state.vecC.ang);
+                document.getElementById('tbl-Cx').innerText = compC.x.toFixed(2);
+                document.getElementById('tbl-Cy').innerText = compC.y.toFixed(2);
+                document.getElementById('tbl-Cz').innerText = compC.z.toFixed(2);
+            } else {
+                document.getElementById('tbl-row-C').classList.add('hidden');
+            }
+
+            document.getElementById('tbl-R-mag').innerText = Rmag.toFixed(2);
+            document.getElementById('tbl-R-ang').innerText = formatAngle(RangDeg);
+            document.getElementById('tbl-Rx').innerText = Rx.toFixed(2);
+            document.getElementById('tbl-Ry').innerText = Ry.toFixed(2);
+            document.getElementById('tbl-Rz').innerText = Rz.toFixed(2);
+
+            // Math Steps Breakdown
+            document.getElementById('math-step-rx').innerText = `Rx = Ax + Bx${state.vecC.active ? ' + Cx' : ''} = ${compA.x.toFixed(2)} + ${compB.x.toFixed(2)}${state.vecC.active ? ' + ' + compC.x.toFixed(2) : ''} = ${Rx.toFixed(2)}`;
+            document.getElementById('math-step-ry').innerText = `Ry = Ay + By${state.vecC.active ? ' + Cy' : ''} = ${compA.y.toFixed(2)} + ${compB.y.toFixed(2)}${state.vecC.active ? ' + ' + compC.y.toFixed(2) : ''} = ${Ry.toFixed(2)}`;
+            document.getElementById('math-step-rz').innerText = `Rz = Az + Bz${state.vecC.active ? ' + Cz' : ''} = ${compA.z.toFixed(2)} + ${compB.z.toFixed(2)}${state.vecC.active ? ' + ' + compC.z.toFixed(2) : ''} = ${Rz.toFixed(2)}`;
+            
+            if (state.dimension === '2D') {
+                document.getElementById('math-step-rmag').innerText = `|R| = √(Rx² + Ry²) = √(${Rx.toFixed(2)}² + ${Ry.toFixed(2)}²) = ${Rmag.toFixed(2)}`;
+            } else {
+                document.getElementById('math-step-rmag').innerText = `|R| = √(Rx² + Ry² + Rz²) = √(${Rx.toFixed(2)}² + ${Ry.toFixed(2)}² + ${Rz.toFixed(2)}²) = ${Rmag.toFixed(2)}`;
+            }
+
+            if (state.dimension === '2D') {
+                render2DCanvas();
+            } else {
+                render3DScene();
+            }
+        }
+
+        function formatAngle(deg) {
+            if (state.angleSystem === 'rad') {
+                return `${((deg * Math.PI) / 180).toFixed(2)} rad`;
+            } else if (state.angleSystem === 'nav') {
+                const directions = ['E', 'NE', 'N', 'NW', 'W', 'SW', 'S', 'SE'];
+                const idx = Math.round(deg / 45) % 8;
+                return `${deg.toFixed(1)}° (${directions[idx]})`;
+            }
+            return `${deg.toFixed(1)}°`;
+        }
+
+        function render2DCanvas() {
+            const w = canvas2D.clientWidth;
+            const h = canvas2D.clientHeight;
+            if (w === 0 || h === 0) return;
+
+            canvas2D.width = w * window.devicePixelRatio;
+            canvas2D.height = h * window.devicePixelRatio;
+            ctx2D.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+            ctx2D.clearRect(0, 0, w, h);
+
+            const scale = 25; // 1 unit = 25 pixels
+            const originX = w / 2;
+            const originY = h / 2;
+
+            function toScreenX(x) { return originX + x * scale; }
+            function toScreenY(y) { return originY - y * scale; }
+
+            // Draw Cartesian Grid
+            if (state.showGrid) {
+                ctx2D.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+                ctx2D.lineWidth = 1;
+
+                for (let x = -20; x <= 20; x++) {
+                    ctx2D.beginPath();
+                    ctx2D.moveTo(toScreenX(x), 0);
+                    ctx2D.lineTo(toScreenX(x), h);
+                    ctx2D.stroke();
+                }
+
+                for (let y = -20; y <= 20; y++) {
+                    ctx2D.beginPath();
+                    ctx2D.moveTo(0, toScreenY(y));
+                    ctx2D.lineTo(w, toScreenY(y));
+                    ctx2D.stroke();
+                }
+
+                // Axes Lines
+                ctx2D.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx2D.lineWidth = 1.5;
+
+                ctx2D.beginPath();
+                ctx2D.moveTo(0, originY);
+                ctx2D.lineTo(w, originY);
+                ctx2D.moveTo(originX, 0);
+                ctx2D.lineTo(originX, h);
+                ctx2D.stroke();
+
+                ctx2D.fillStyle = '#94a3b8';
+                ctx2D.font = '10px Fira Code, monospace';
+                ctx2D.fillText('X', w - 15, originY - 6);
+                ctx2D.fillText('Y', originX + 6, 15);
+            }
+
+            const compA = getComponents(state.vecA);
+            const compB = getComponents(state.vecB);
+            const compC = state.vecC.active ? getComponents(state.vecC) : { x: 0, y: 0 };
+
+            // Determine Start Positions depending on Method
+            let startA = { x: 0, y: 0 };
+            let startB = { x: 0, y: 0 };
+            let startC = { x: 0, y: 0 };
+
+            if (state.additionMethod === 'tail-to-head') {
+                startB = { x: compA.x, y: compA.y };
+                startC = { x: compA.x + compB.x, y: compA.y + compB.y };
+            }
+
+            // Draw Parallelogram Guides if selected
+            if (state.additionMethod === 'parallelogram') {
+                ctx2D.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                ctx2D.lineWidth = 1;
+                ctx2D.setLineDash([4, 4]);
+
+                // Parallelogram top for A + B
+                ctx2D.beginPath();
+                ctx2D.moveTo(toScreenX(compA.x), toScreenY(compA.y));
+                ctx2D.lineTo(toScreenX(compA.x + compB.x), toScreenY(compA.y + compB.y));
+                ctx2D.lineTo(toScreenX(compB.x), toScreenY(compB.y));
+                ctx2D.stroke();
+                ctx2D.setLineDash([]);
+            }
+
+            // Draw Vector A
+            drawArrow2D(ctx2D, toScreenX(startA.x), toScreenY(startA.y), toScreenX(startA.x + compA.x), toScreenY(startA.y + compA.y), state.vecA.color, 'A', state.showComponents, compA);
+
+            // Draw Vector B
+            drawArrow2D(ctx2D, toScreenX(startB.x), toScreenY(startB.y), toScreenX(startB.x + compB.x), toScreenY(startB.y + compB.y), state.vecB.color, 'B', state.showComponents, compB);
+
+            // Draw Vector C if active
+            if (state.vecC.active) {
+                drawArrow2D(ctx2D, toScreenX(startC.x), toScreenY(startC.y), toScreenX(startC.x + compC.x), toScreenY(startC.y + compC.y), state.vecC.color, 'C', state.showComponents, compC);
+            }
+
+            // Draw Resultant Vector R
+            if (state.showResultant) {
+                const Rx = compA.x + compB.x + compC.x;
+                const Ry = compA.y + compB.y + compC.y;
+                drawArrow2D(ctx2D, toScreenX(0), toScreenY(0), toScreenX(Rx), toScreenY(Ry), '#10b981', 'R', false, null, true);
+            }
+        }
+
+        function drawArrow2D(ctx, fromX, fromY, toX, toY, color, label, showComp, comp, isResultant = false) {
+            const headLen = 10;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+
+            // Draw Components ($Ax, Ay$)
+            if (showComp && comp) {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1;
+                ctx.setLineDash([3, 3]);
+
+                // X Component
+                ctx.beginPath();
+                ctx.moveTo(fromX, fromY);
+                ctx.lineTo(toX, fromY);
+                ctx.stroke();
+
+                // Y Component
+                ctx.beginPath();
+                ctx.moveTo(toX, fromY);
+                ctx.lineTo(toX, toY);
+                ctx.stroke();
+
+                ctx.setLineDash([]);
+            }
+
+            // Vector Body Line
+            ctx.strokeStyle = color;
+            ctx.lineWidth = isResultant ? 3.5 : 2.5;
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+
+            // Arrowhead
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLen * Math.cos(angle - Math.PI / 6), toY - headLen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - headLen * Math.cos(angle + Math.PI / 6), toY - headLen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+
+            // Label Text
+            ctx.fillStyle = color;
+            ctx.font = 'bold 12px Sarabun, sans-serif';
+            ctx.fillText(label, toX + 8 * Math.cos(angle), toY + 8 * Math.sin(angle));
+        }
+
+        function render3DScene() {
+            // Clear previous 3D vector meshes
+            while (vector3DGroup.children.length > 0) {
+                const obj = vector3DGroup.children[0];
+                vector3DGroup.remove(obj);
+            }
+
+            const compA = getComponents(state.vecA);
+            const compB = getComponents(state.vecB);
+            const compC = state.vecC.active ? getComponents(state.vecC) : { x: 0, y: 0, z: 0 };
+
+            // Add Vector A Arrow 3D
+            addArrow3D(new THREE.Vector3(0, 0, 0), new THREE.Vector3(compA.x, compA.y, compA.z), 0xf43f5e);
+
+            // Add Vector B Arrow 3D
+            addArrow3D(new THREE.Vector3(0, 0, 0), new THREE.Vector3(compB.x, compB.y, compB.z), 0x38bdf8);
+
+            // Add Vector C Arrow 3D
+            if (state.vecC.active) {
+                addArrow3D(new THREE.Vector3(0, 0, 0), new THREE.Vector3(compC.x, compC.y, compC.z), 0xa855f7);
+            }
+
+            // Add Resultant Vector R Arrow 3D
+            if (state.showResultant) {
+                const Rx = compA.x + compB.x + compC.x;
+                const Ry = compA.y + compB.y + compC.y;
+                const Rz = compA.z + compB.z + compC.z;
+                addArrow3D(new THREE.Vector3(0, 0, 0), new THREE.Vector3(Rx, Ry, Rz), 0x10b981, 0.2);
+            }
+        }
+
+        function addArrow3D(origin, target, hexColor, headScale = 0.3) {
+            const dir = new THREE.Vector3().subVectors(target, origin);
+            const len = dir.length();
+            if (len < 0.01) return;
+
+            dir.normalize();
+            const arrowHelper = new THREE.ArrowHelper(dir, origin, len, hexColor, len * 0.2, len * 0.1);
+            vector3DGroup.add(arrowHelper);
+        }
+
+        function setup2DInteraction() {
+            let isDragging = false;
+
+            canvas2D.addEventListener('mousedown', (e) => {
+                if (state.dimension !== '2D') return;
+
+                const rect = canvas2D.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+
+                const w = canvas2D.clientWidth;
+                const h = canvas2D.clientHeight;
+                const scale = 25;
+                const originX = w / 2;
+                const originY = h / 2;
+
+                // Check distance to Vector A tip
+                const compA = getComponents(state.vecA);
+                const tipAx = originX + compA.x * scale;
+                const tipAy = originY - compA.y * scale;
+
+                if (Math.hypot(mouseX - tipAx, mouseY - tipAy) < 15) {
+                    state.draggedVector = 'A';
+                    isDragging = true;
+                    return;
+                }
+
+                // Check distance to Vector B tip
+                const compB = getComponents(state.vecB);
+                let startBx = 0, startBy = 0;
+                if (state.additionMethod === 'tail-to-head') {
+                    startBx = compA.x;
+                    startBy = compA.y;
+                }
+                const tipBx = originX + (startBx + compB.x) * scale;
+                const tipBy = originY - (startBy + compB.y) * scale;
+
+                if (Math.hypot(mouseX - tipBx, mouseY - tipBy) < 15) {
+                    state.draggedVector = 'B';
+                    isDragging = true;
+                    return;
+                }
+            });
+
+            canvas2D.addEventListener('mousemove', (e) => {
+                if (!isDragging || !state.draggedVector) return;
+
+                const rect = canvas2D.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+
+                const w = canvas2D.clientWidth;
+                const h = canvas2D.clientHeight;
+                const scale = 25;
+                const originX = w / 2;
+                const originY = h / 2;
+
+                const vx = (mouseX - originX) / scale;
+                const vy = (originY - mouseY) / scale;
+
+                const mag = Math.hypot(vx, vy);
+                let ang = (Math.atan2(vy, vx) * 180) / Math.PI;
+                if (ang < 0) ang += 360;
+
+                if (state.draggedVector === 'A') {
+                    state.vecA.mag = Math.min(15, mag);
+                    state.vecA.ang = ang;
+                    document.getElementById('slider-A-mag').value = state.vecA.mag;
+                    document.getElementById('slider-A-ang').value = ang;
+                } else if (state.draggedVector === 'B') {
+                    state.vecB.mag = Math.min(15, mag);
+                    state.vecB.ang = ang;
+                    document.getElementById('slider-B-mag').value = state.vecB.mag;
+                    document.getElementById('slider-B-ang').value = ang;
+                }
+
+                syncControlLabels();
+                updateAllPhysics();
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+                state.draggedVector = null;
+            });
+        }
+
+        function onVectorControlChange() {
+            state.vecA.mag = parseFloat(document.getElementById('slider-A-mag').value);
+            state.vecA.ang = parseFloat(document.getElementById('slider-A-ang').value);
+            state.vecA.phi = parseFloat(document.getElementById('slider-A-phi').value);
+
+            state.vecB.mag = parseFloat(document.getElementById('slider-B-mag').value);
+            state.vecB.ang = parseFloat(document.getElementById('slider-B-ang').value);
+            state.vecB.phi = parseFloat(document.getElementById('slider-B-phi').value);
+
+            state.vecC.active = document.getElementById('toggle-vecC').checked;
+            state.vecC.mag = parseFloat(document.getElementById('slider-C-mag').value);
+            state.vecC.ang = parseFloat(document.getElementById('slider-C-ang').value);
+
+            const vecCWrapper = document.getElementById('wrapper-vecC-controls');
+            if (state.vecC.active) {
+                vecCWrapper.classList.remove('opacity-50', 'pointer-events-none');
+            } else {
+                vecCWrapper.classList.add('opacity-50', 'pointer-events-none');
+            }
+
+            state.showComponents = document.getElementById('toggle-components').checked;
+            state.showResultant = document.getElementById('toggle-resultant').checked;
+            state.showAngles = document.getElementById('toggle-angles').checked;
+            state.showGrid = document.getElementById('toggle-grid').checked;
+
+            syncControlLabels();
+            updateAllPhysics();
+        }
+
+        function syncControlLabels() {
+            document.getElementById('val-vecA-mag').innerText = `|A| = ${state.vecA.mag.toFixed(1)}`;
+            document.getElementById('txt-vecA-len').innerText = state.vecA.mag.toFixed(1);
+            document.getElementById('txt-vecA-ang').innerText = formatAngle(state.vecA.ang);
+            document.getElementById('txt-vecA-phi').innerText = `${state.vecA.phi.toFixed(1)}°`;
+
+            document.getElementById('val-vecB-mag').innerText = `|B| = ${state.vecB.mag.toFixed(1)}`;
+            document.getElementById('txt-vecB-len').innerText = state.vecB.mag.toFixed(1);
+            document.getElementById('txt-vecB-ang').innerText = formatAngle(state.vecB.ang);
+            document.getElementById('txt-vecB-phi').innerText = `${state.vecB.phi.toFixed(1)}°`;
+
+            document.getElementById('val-vecC-mag').innerText = `|C| = ${state.vecC.mag.toFixed(1)}`;
+            document.getElementById('txt-vecC-len').innerText = state.vecC.mag.toFixed(1);
+            document.getElementById('txt-vecC-ang').innerText = formatAngle(state.vecC.ang);
+        }
+
+        function setAngleSystem(sys) {
+            state.angleSystem = sys;
+            ['deg', 'rad', 'nav'].forEach(s => {
+                const btn = document.getElementById(`btn-ang-${s}`);
+                if (s === sys) {
+                    btn.className = 'p-1 bg-sky-500/30 text-sky-300 border border-sky-500/40 rounded text-center font-medium';
+                } else {
+                    btn.className = 'p-1 bg-slate-800 text-slate-300 border border-white/10 rounded text-center font-medium';
+                }
+            });
+            syncControlLabels();
+            updateAllPhysics();
+        }
+
+        function setAdditionMethod(method) {
+            state.additionMethod = method;
+            document.getElementById('btn-method-tail').className = method === 'tail-to-head' ? 'p-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded text-center font-medium' : 'p-1.5 bg-slate-800 text-slate-300 border border-white/10 rounded text-center font-medium';
+            document.getElementById('btn-method-para').className = method === 'parallelogram' ? 'p-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded text-center font-medium' : 'p-1.5 bg-slate-800 text-slate-300 border border-white/10 rounded text-center font-medium';
+            updateAllPhysics();
+        }
+
+        function switchDimension(dim) {
+            state.dimension = dim;
+            const btn2D = document.getElementById('btn-mode-2d');
+            const btn3D = document.getElementById('btn-mode-3d');
+            const canvas2DElem = document.getElementById('canvas-2d');
+            const container3DElem = document.getElementById('container-3d');
+            const wrapperAPhi = document.getElementById('wrapper-A-phi');
+            const wrapperBPhi = document.getElementById('wrapper-B-phi');
+
+            if (dim === '2D') {
+                btn2D.className = 'px-3 py-1 text-xs rounded font-medium transition bg-sky-500 text-white';
+                btn3D.className = 'px-3 py-1 text-xs rounded font-medium transition text-slate-400 hover:text-white';
+                canvas2DElem.classList.remove('hidden');
+                container3DElem.classList.add('hidden');
+                wrapperAPhi.classList.add('hidden');
+                wrapperBPhi.classList.add('hidden');
+
+                document.getElementById('th-comp-z').classList.add('hidden');
+                document.getElementById('tbl-Az').classList.add('hidden');
+                document.getElementById('tbl-Bz').classList.add('hidden');
+                document.getElementById('tbl-Cz').classList.add('hidden');
+                document.getElementById('tbl-Rz').classList.add('hidden');
+                document.getElementById('row-readout-Rz').classList.add('hidden');
+                document.getElementById('box-step-rz').classList.add('hidden');
+
+                document.getElementById('status-label').innerText = 'โหมด: 2D Plane Coordinate Grid';
+            } else {
+                btn3D.className = 'px-3 py-1 text-xs rounded font-medium transition bg-sky-500 text-white';
+                btn2D.className = 'px-3 py-1 text-xs rounded font-medium transition text-slate-400 hover:text-white';
+                canvas2DElem.classList.add('hidden');
+                container3DElem.classList.remove('hidden');
+                wrapperAPhi.classList.remove('hidden');
+                wrapperBPhi.classList.remove('hidden');
+
+                document.getElementById('th-comp-z').classList.remove('hidden');
+                document.getElementById('tbl-Az').classList.remove('hidden');
+                document.getElementById('tbl-Bz').classList.remove('hidden');
+                document.getElementById('tbl-Cz').classList.remove('hidden');
+                document.getElementById('tbl-Rz').classList.remove('hidden');
+                document.getElementById('row-readout-Rz').classList.remove('hidden');
+                document.getElementById('box-step-rz').classList.remove('hidden');
+
+                document.getElementById('status-label').innerText = 'โหมด: 3D Spatial Vector Coordinates';
+            }
+
+            onWindowResize();
+            updateAllPhysics();
+        }
+
+        function resetVectors() {
+            state.vecA = { mag: 5.0, ang: 37.0, phi: 30.0, color: '#f43f5e', label: 'A' };
+            state.vecB = { mag: 4.0, ang: 120.0, phi: 0.0, color: '#38bdf8', label: 'B' };
+            state.vecC = { mag: 3.0, ang: 225.0, phi: 0.0, color: '#a855f7', label: 'C', active: false };
+
+            document.getElementById('slider-A-mag').value = 5;
+            document.getElementById('slider-A-ang').value = 37;
+            document.getElementById('slider-A-phi').value = 30;
+
+            document.getElementById('slider-B-mag').value = 4;
+            document.getElementById('slider-B-ang').value = 120;
+            document.getElementById('slider-B-phi').value = 0;
+
+            document.getElementById('toggle-vecC').checked = false;
+            document.getElementById('slider-C-mag').value = 3;
+            document.getElementById('slider-C-ang').value = 225;
+
+            onVectorControlChange();
+        }
+
+        function switchRightTab(tabKey) {
+            ['calc', 'theory', 'formulas'].forEach(k => {
+                document.getElementById(`content-${k}`).classList.add('hidden');
+                document.getElementById(`tab-${k}`).classList.remove('active');
+            });
+
+            document.getElementById(`content-${tabKey}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabKey}`).classList.add('active');
+        }
+
+        function toggleFullscreen() {
+            try {
+                if (!document.fullscreenElement) {
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen().catch(err => console.warn(err));
+                    }
+                } else if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(err => console.warn(err));
+                }
+            } catch (err) {
+                console.warn("Fullscreen permission restricted:", err);
+            }
+        }
+
+        function onWindowResize() {
+            if (state.dimension === '2D') {
+                render2DCanvas();
+            } else if (renderer3D && camera3D) {
+                const container = document.getElementById('container-3d');
+                camera3D.aspect = container.clientWidth / container.clientHeight;
+                camera3D.updateProjectionMatrix();
+                renderer3D.setSize(container.clientWidth, container.clientHeight);
+            }
+        }
+    </script>
+</body>
+</html>

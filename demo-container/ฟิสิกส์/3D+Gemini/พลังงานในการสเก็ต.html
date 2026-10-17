@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>พลังงานในการสเก็ต & กฎการอนุรักษ์พลังงาน (Energy Skate Park Lab)</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        lab: {
+                            bg: '#060913',
+                            panel: '#0f172a',
+                            accent: '#38bdf8',
+                            emerald: '#10b981',
+                            amber: '#f59e0b',
+                            rose: '#f43f5e',
+                            purple: '#a855f7'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Sarabun', 'Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- KaTeX for Mathematics & Physics Formulas -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #060913;
+            color: #f3f4f6;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.3);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(56, 189, 248, 0.7);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 4px;
+            height: 5px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 15px;
+            width: 15px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+            transition: all 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #7dd3fc;
+        }
+
+        .tab-btn.active {
+            background-color: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            border-bottom: 2px solid #38bdf8;
+            font-weight: 600;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body class="select-none text-slate-100">
+
+    <!-- Header Navigation -->
+    <header class="absolute top-2 left-2 right-2 z-30 flex items-center justify-between glass-panel px-4 py-2 rounded-xl">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-amber-500/20 text-amber-400 rounded-lg border border-amber-500/30">
+                <i data-lucide="zap" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-sm md:text-base text-white flex items-center gap-2">
+                    ปฏิบัติการฟิสิกส์เสมือน: พลังงานในการสเก็ต & กฎการอนุรักษ์พลังงาน
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">Energy Skate Park</span>
+                </h1>
+                <p class="text-[11px] text-slate-400 hidden sm:block">วิเคราะห์พลังงานจลน์ ($E_k$), พลังงานศักย์โน้มถ่วง ($E_p$), ความต้านทาน/แรงเสียดทาน และพลังงานความร้อน ($E_{thermal}$)</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Play / Pause Control -->
+            <button id="btn-play-pause" onclick="togglePlayPause()" class="px-3 py-1.5 bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 rounded-lg transition border border-sky-500/40 text-xs flex items-center gap-1.5 font-medium">
+                <i data-lucide="pause" id="icon-play-pause" class="w-4 h-4"></i>
+                <span id="txt-play-pause">หยุดชั่วคราว</span>
+            </button>
+
+            <!-- Reset Skater Position -->
+            <button onclick="resetSkater()" class="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-lg transition border border-amber-500/40 text-xs flex items-center gap-1.5 font-medium" title="วางนักสเก็ตกลับจุดเริ่มต้น">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                <span>รีเซ็ตนักสเก็ต</span>
+            </button>
+
+            <!-- Clear Thermal Energy -->
+            <button onclick="clearThermalEnergy()" class="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-lg transition border border-rose-500/40 text-xs flex items-center gap-1.5 font-medium" title="ล้างค่าพลังงานความร้อนที่สะสม">
+                <i data-lucide="flame-off" class="w-4 h-4"></i>
+                <span>ล้างความร้อน</span>
+            </button>
+
+            <!-- Add Custom Track Point -->
+            <button onclick="addControlPoint()" class="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 rounded-lg transition border border-emerald-500/40 text-xs flex items-center gap-1.5 font-medium" title="เพิ่มจุดปรับเส้นทางราง">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                <span>เพิ่มจุดดัดราง</span>
+            </button>
+
+            <button onclick="toggleFullscreen()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition border border-white/10" title="เต็มจอ">
+                <i data-lucide="maximize" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Grid Container -->
+    <div class="absolute inset-0 pt-14 p-2 pointer-events-none grid grid-cols-1 md:grid-cols-12 gap-2 h-full pb-2">
+
+        <!-- ================= LEFT PANEL: Controls, Mass, Friction, Track Selection ================= -->
+        <aside class="md:col-span-3 lg:col-span-3 glass-panel rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <div class="p-2.5 border-b border-white/10 bg-slate-900/80 flex justify-between items-center">
+                <span class="font-semibold text-xs text-white flex items-center gap-1.5">
+                    <i data-lucide="sliders" class="w-4 h-4 text-sky-400"></i>
+                    การตั้งค่าระบบสเก็ต & แรงเสียดทาน
+                </span>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-3 space-y-3 text-xs">
+
+                <!-- Track Presets -->
+                <div class="glass-card p-2.5 rounded-lg space-y-2">
+                    <span class="text-[11px] font-bold text-sky-400 block border-b border-white/10 pb-1">เลือกรูปแบบราง (Track Presets)</span>
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <button onclick="selectTrack('u-ramp')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-sky-300 rounded border border-white/10 text-center font-medium">รางโค้ง U-Ramp</button>
+                        <button onclick="selectTrack('loop')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-purple-300 rounded border border-white/10 text-center font-medium">รางตีลังกา Loop</button>
+                        <button onclick="selectTrack('double-bump')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded border border-white/10 text-center font-medium">รางสองลอน</button>
+                        <button onclick="selectTrack('flat-ramp')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded border border-white/10 text-center font-medium">รางพื้นเอียง Flat</button>
+                    </div>
+                </div>
+
+                <!-- Skater Mass ($m$) -->
+                <div class="glass-card p-2.5 rounded-lg space-y-1.5 border-l-2 border-emerald-500">
+                    <div class="flex justify-between items-center text-[11px]">
+                        <span class="text-slate-300 font-semibold">มวลของนักสเก็ต ($m$):</span>
+                        <span id="val-mass" class="font-mono text-emerald-300 font-bold">60 kg</span>
+                    </div>
+                    <input type="range" id="slider-mass" min="10" max="120" step="5" value="60" class="w-full" oninput="onControlChange()">
+                </div>
+
+                <!-- Friction Coefficient ($\mu$) / Resistance -->
+                <div class="glass-card p-2.5 rounded-lg space-y-1.5 border-l-2 border-rose-500">
+                    <div class="flex justify-between items-center text-[11px]">
+                        <span class="text-slate-300 font-semibold">ความต้านทาน / แรงเสียดทาน ($\mu$):</span>
+                        <span id="val-friction" class="font-mono text-rose-300 font-bold">0.05 (ปานกลาง)</span>
+                    </div>
+                    <input type="range" id="slider-friction" min="0.00" max="0.30" step="0.01" value="0.05" class="w-full" oninput="onControlChange()">
+                    <div class="flex justify-between text-[9px] text-slate-400">
+                        <span>ไม่มีแรงเสียดทาน (0.0)</span>
+                        <span>แรงเสียดทานสูง (0.3)</span>
+                    </div>
+                </div>
+
+                <!-- Gravity Environment ($g$) -->
+                <div class="glass-card p-2.5 rounded-lg space-y-1.5 border-l-2 border-amber-500">
+                    <div class="flex justify-between items-center text-[11px]">
+                        <span class="text-slate-300 font-semibold">ความเร่งเนื่องจากแรงโน้มถ่วง ($g$):</span>
+                        <span id="val-gravity" class="font-mono text-amber-300 font-bold">9.81 m/s² (โลก)</span>
+                    </div>
+                    <input type="range" id="slider-gravity" min="0.0" max="25.0" step="0.5" value="9.8" class="w-full" oninput="onControlChange()">
+                    <div class="grid grid-cols-4 gap-1 pt-1 text-[9px]">
+                        <button onclick="setGravity(0)" class="p-1 bg-slate-800 hover:bg-slate-700 rounded text-center text-slate-300">ไร้ถ่วง (0)</button>
+                        <button onclick="setGravity(1.62)" class="p-1 bg-slate-800 hover:bg-slate-700 rounded text-center text-slate-300">ดวงจันทร์</button>
+                        <button onclick="setGravity(9.81)" class="p-1 bg-slate-800 hover:bg-slate-700 rounded text-center text-amber-300 font-bold">โลก</button>
+                        <button onclick="setGravity(24.79)" class="p-1 bg-slate-800 hover:bg-slate-700 rounded text-center text-slate-300">ดาวพฤหัส</button>
+                    </div>
+                </div>
+
+                <!-- Visual Helpers Overlay Toggle -->
+                <div class="glass-card p-2.5 rounded-lg space-y-1.5">
+                    <span class="text-[11px] font-bold text-slate-300 block border-b border-white/10 pb-1">แสดงผลเพิ่มเติม (Visual Overlays)</span>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>แผนภูมิแท่งพลังงาน (Bar Chart)</span>
+                        <input type="checkbox" id="toggle-barchart" checked onchange="onControlChange()" class="accent-sky-500 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>วงกลมแสดงสัดส่วนพลังงาน (Pie Chart)</span>
+                        <input type="checkbox" id="toggle-piechart" checked onchange="onControlChange()" class="accent-purple-500 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>เวกเตอร์ความเร็ว ($\vec{v}$)</span>
+                        <input type="checkbox" id="toggle-speed-vector" checked onchange="onControlChange()" class="accent-emerald-500 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[11px] text-slate-300 hover:text-white">
+                        <span>เส้นอ้างอิงความสูง ($h = 0$)</span>
+                        <input type="checkbox" id="toggle-grid" checked onchange="onControlChange()" class="accent-amber-500 rounded">
+                    </label>
+                </div>
+
+                <!-- Simulation Speed -->
+                <div class="glass-card p-2.5 rounded-lg space-y-1.5">
+                    <div class="flex justify-between items-center text-[11px]">
+                        <span class="text-slate-300 font-semibold">ความเร็วจำลอง (Time Speed):</span>
+                        <span id="val-sim-speed" class="font-mono text-sky-300 font-bold">1.0x</span>
+                    </div>
+                    <input type="range" id="slider-sim-speed" min="0.1" max="2.0" step="0.1" value="1.0" class="w-full" oninput="onControlChange()">
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- ================= CENTER: Interactive Canvas Viewport & Real-time Plots ================= -->
+        <main class="md:col-span-5 lg:col-span-5 glass-panel rounded-xl flex flex-col pointer-events-auto border border-white/10 shadow-2xl relative overflow-hidden">
+            <!-- Viewport Canvas Container -->
+            <div id="viewport-container" class="flex-1 bg-slate-950/80 relative cursor-crosshair flex flex-col">
+                <canvas id="canvas-main" class="w-full flex-1 z-10"></canvas>
+
+                <!-- Status Badge Overlay -->
+                <div class="absolute top-2 left-2 bg-slate-900/90 backdrop-blur px-3 py-1.5 rounded-lg border border-white/10 text-[11px] text-slate-300 flex items-center gap-2 pointer-events-none z-20 font-mono">
+                    <i data-lucide="activity" class="w-3.5 h-3.5 text-amber-400 animate-pulse"></i>
+                    <span id="status-label">สถานะ: เคลื่อนที่อิสระภายใต้แรงโน้มถ่วง</span>
+                </div>
+
+                <!-- Floating Live Energy Readout Overlay -->
+                <div class="absolute top-2 right-2 bg-slate-900/90 backdrop-blur p-2 rounded-lg border border-white/10 text-[10px] font-mono text-slate-300 z-20 space-y-1 w-44">
+                    <div class="flex justify-between items-center text-emerald-400">
+                        <span>พลังงานจลน์ ($E_k$):</span>
+                        <span id="readout-ek" class="font-bold">0.0 J</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sky-400">
+                        <span>พลังงานศักย์ ($E_p$):</span>
+                        <span id="readout-ep" class="font-bold">0.0 J</span>
+                    </div>
+                    <div class="flex justify-between items-center text-rose-400">
+                        <span>พลังงานความร้อน ($E_{th}$):</span>
+                        <span id="readout-eth" class="font-bold">0.0 J</span>
+                    </div>
+                    <div class="flex justify-between items-center text-amber-300 border-t border-white/10 pt-1">
+                        <span>พลังงานรวม ($E_{tot}$):</span>
+                        <span id="readout-etot" class="font-bold">0.0 J</span>
+                    </div>
+                </div>
+
+                <!-- Instruction Tooltip -->
+                <div class="absolute bottom-2 left-2 bg-slate-900/80 backdrop-blur px-2.5 py-1 rounded text-[10px] text-slate-400 z-20 pointer-events-none">
+                    💡 **การปรับเส้นทาง**: ลากจุดบนรางเพื่อปรับความสูง | **ดับเบิลคลิกที่จุด** เพื่อลบจุดออก | **กดปุ่มเพิ่มจุดดัดราง** เพื่อเพิ่มโค้งใหม่
+                </div>
+            </div>
+
+            <!-- Real-Time Energy vs Time Graph (Bottom Canvas) -->
+            <div id="graph-container" class="h-40 bg-slate-900/90 border-t border-white/10 p-2 flex flex-col">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-[10px] font-bold text-amber-300 flex items-center gap-1">
+                        <i data-lucide="line-chart" class="w-3.5 h-3.5 text-amber-400"></i>
+                        กราฟการเปลี่ยนแปลงพลังงานตามเวลา (Real-time Energy vs Time Plot)
+                    </span>
+                    <div class="flex gap-2 text-[9px] font-mono">
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> Ek</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-sky-400"></span> Ep</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-400"></span> Eth</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span> Etot</span>
+                    </div>
+                </div>
+                <canvas id="canvas-graph" class="w-full flex-1 bg-slate-950/70 rounded border border-white/10"></canvas>
+            </div>
+        </main>
+
+        <!-- ================= RIGHT PANEL: Calculations, Theory & Principles ================= -->
+        <aside class="md:col-span-4 lg:col-span-4 glass-panel rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <!-- Navigation Tabs -->
+            <div class="p-2 border-b border-white/10 bg-slate-900/80">
+                <div class="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded-lg text-[11px] font-semibold text-center">
+                    <button onclick="switchRightTab('calc')" id="tab-calc" class="tab-btn active py-1 rounded transition">คำนวณสด & สมการ</button>
+                    <button onclick="switchRightTab('theory')" id="tab-theory" class="tab-btn py-1 rounded transition">อนุรักษ์พลังงาน</button>
+                    <button onclick="switchRightTab('friction')" id="tab-friction" class="tab-friction tab-btn py-1 rounded transition">ความร้อน & แรงต้าน</button>
+                </div>
+            </div>
+
+            <!-- Scrollable Content Panels -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-3 text-xs">
+
+                <!-- TAB 1: Live Math Calculations -->
+                <div id="content-calc" class="space-y-3">
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-sky-400 block border-b border-white/10 pb-1">สมการพลังงานในระบบสเก็ต</span>
+                        <div id="math-ek-formula" class="py-1 text-center text-emerald-200 font-mono text-xs bg-slate-950/60 rounded p-1.5"></div>
+                        <div id="math-ep-formula" class="py-1 text-center text-sky-200 font-mono text-xs bg-slate-950/60 rounded p-1.5"></div>
+                        <div id="math-etot-formula" class="py-1 text-center text-amber-200 font-mono text-xs bg-slate-950/60 rounded p-1.5"></div>
+                    </div>
+
+                    <!-- Step-by-Step Live Values Breakdown -->
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-emerald-400 block border-b border-white/10 pb-1 flex justify-between items-center">
+                            <span>สถานะพลังงานขณะนี้ (Live Calculations)</span>
+                            <i data-lucide="calculator" class="w-3.5 h-3.5 text-emerald-400"></i>
+                        </span>
+                        
+                        <div class="space-y-2 text-[10.5px] font-mono leading-relaxed text-slate-300">
+                            <div class="bg-slate-950/60 p-2 rounded border border-white/5 space-y-1">
+                                <span class="text-slate-400 font-sans font-semibold block text-[10px]">1. ตำแหน่งและความเร็ว:</span>
+                                <div id="calc-h" class="text-sky-300">ความสูง h = 0.00 m</div>
+                                <div id="calc-v" class="text-emerald-300">ความเร็ว v = 0.00 m/s</div>
+                            </div>
+
+                            <div class="bg-slate-950/60 p-2 rounded border border-white/5 space-y-1">
+                                <span class="text-slate-400 font-sans font-semibold block text-[10px]">2. การแปลงพลังงานกล:</span>
+                                <div id="calc-ek-val" class="text-emerald-300">Ek = 1/2 × m × v² = 0 J</div>
+                                <div id="calc-ep-val" class="text-sky-300">Ep = m × g × h = 0 J</div>
+                            </div>
+
+                            <div class="bg-slate-950/60 p-2 rounded border border-white/5 space-y-1">
+                                <span class="text-slate-400 font-sans font-semibold block text-[10px]">3. พลังงานสูญเสียจากแรงเสียดทาน (Heat):</span>
+                                <div id="calc-eth-val" class="text-rose-300">Eth = ∫ f_k ds = 0 J</div>
+                                <div id="calc-etot-val" class="text-amber-300 font-bold">Etotal = Ek + Ep + Eth = 0 J</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Conservation of Mechanical Energy Theory -->
+                <div id="content-theory" class="space-y-3 hidden">
+                    <div class="p-2.5 border-l-2 border-sky-400 bg-slate-900/60 rounded-r-lg space-y-1">
+                        <h4 class="font-bold text-sky-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> 1. กฎการอนุรักษ์พลังงานกล (Law of Conservation of Mechanical Energy)
+                        </h4>
+                        <p class="text-slate-300 text-[10px] leading-relaxed">
+                            เมื่อไม่มีแรงภายนอกที่ไม่อนุรักษ์ (เช่น แรงเสียดทาน หรือ แรงต้านอากาศ) มากระทำต่อระบบ <strong>ผลรวมของพลังงานกลทั้งหมด ($E_k + E_p$) จะมีค่าคงที่เสมอ</strong> 
+                        </p>
+                    </div>
+
+                    <div class="p-2.5 border-l-2 border-emerald-400 bg-slate-900/60 rounded-r-lg space-y-1">
+                        <h4 class="font-bold text-emerald-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="zap" class="w-3.5 h-3.5"></i> 2. การถ่ายโอนระหว่าง $E_k$ และ $E_p$
+                        </h4>
+                        <p class="text-slate-300 text-[10px] leading-relaxed">
+                            - <strong>จุดสูงสุดของราง</strong>: นักสเก็ตมีความสูง $h$ มากที่สุด ทำให้พลังงานศักย์ ($E_p$) สูงสุด ขณะที่ความเร็ว $v = 0$ ($E_k = 0$)<br>
+                            - <strong>จุดต่ำสุดของราง</strong>: พลังงานศักย์เปลี่ยนรูปไปเป็นพลังงานจลน์ ($E_k$) ทั้งหมด ทำให้นักสเก็ตมีความเร็วสูงสุด $v_{max} = \sqrt{2gh}$
+                        </p>
+                    </div>
+                </div>
+
+                <!-- TAB 3: Friction & Thermal Energy -->
+                <div id="content-friction" class="space-y-3 hidden">
+                    <div class="p-2.5 border-l-2 border-rose-400 bg-slate-900/60 rounded-r-lg space-y-1">
+                        <h4 class="font-bold text-rose-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="flame" class="w-3.5 h-3.5"></i> แรงเสียดทานและการเกิดพลังงานความร้อน ($E_{thermal}$)
+                        </h4>
+                        <p class="text-slate-300 text-[10px] leading-relaxed">
+                            เมื่อมีแรงเสียดทานระหว่างล้อสเก็ตกับพื้นราง ($f_k = \mu N$) งานจากแรงเสียดทาน ($W_{friction}$) จะเปลี่ยนพลังงานกล ($E_k + E_p$) ไปเป็น <strong>พลังงานความร้อน (Thermal Energy)</strong> สะสมในล้อและราง
+                        </p>
+                    </div>
+
+                    <div class="glass-card p-2.5 rounded-lg space-y-2">
+                        <span class="text-[11px] font-bold text-rose-400 block border-b border-white/10 pb-1">กฎการอนุรักษ์พลังงานรวม</span>
+                        <p class="text-[10px] text-slate-300 leading-relaxed">
+                            แม้พลังงานกลลดลง แต่อนุรักษ์พลังงานรวมยังคงสมบูรณ์:
+                        </p>
+                        <div id="math-thermal-formula" class="py-1 text-center text-rose-200 font-mono text-xs bg-slate-950/60 rounded p-1.5"></div>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- MAIN INTERACTIVE SIMULATION LOGIC SCRIPT -->
+    <script>
+        // Physics Simulation State
+        const state = {
+            mass: 60,            // kg
+            friction: 0.05,      // mu
+            gravity: 9.81,       // m/s^2
+            simSpeed: 1.0,
+
+            // Skater Position on Track Spline
+            s: 0.1,              // Arc parameter along curve (0.0 to 1.0)
+            v: 0.0,              // Tangential velocity along track (m/s)
+
+            // Energy States
+            Ek: 0,               // Joules
+            Ep: 0,               // Joules
+            Ethermal: 0,         // Joules
+            Etotal: 0,           // Joules
+
+            // Track Geometry Points (X, Y in meter coordinates)
+            trackPreset: 'u-ramp',
+            controlPoints: [],
+
+            // Overlays
+            showBarChart: true,
+            showPieChart: true,
+            showSpeedVector: true,
+            showGrid: true,
+
+            // Interaction State
+            isPlaying: true,
+            isDraggingSkater: false,
+            draggedPointIndex: -1,
+
+            // Graph Data
+            history: []          // { time, Ek, Ep, Eth, Etot }
+        };
+
+        // DOM References & Canvases
+        let mainCanvas, mainCtx, graphCanvas, graphCtx;
+        let lastTimestamp = performance.now();
+        let simTime = 0;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initMathKaTeX();
+            initCanvases();
+            selectTrack('u-ramp');
+            
+            lucide.createIcons();
+
+            window.addEventListener('resize', onResize);
+
+            // Mouse & Touch Interaction Handlers
+            setupInteractionListeners();
+
+            lastTimestamp = performance.now();
+            requestAnimationFrame(simulationLoop);
+        });
+
+        function initMathKaTeX() {
+            if (window.katex) {
+                katex.render("E_k = \\frac{1}{2} m v^2", document.getElementById('math-ek-formula'));
+                katex.render("E_p = m g h", document.getElementById('math-ep-formula'));
+                katex.render("E_{total} = E_k + E_p + E_{thermal} = \\text{คงที่}", document.getElementById('math-etot-formula'));
+                katex.render("\\Delta E_{mechanical} + \\Delta E_{thermal} = 0", document.getElementById('math-thermal-formula'));
+            }
+        }
+
+        function initCanvases() {
+            mainCanvas = document.getElementById('canvas-main');
+            mainCtx = mainCanvas.getContext('2d');
+
+            graphCanvas = document.getElementById('canvas-graph');
+            graphCtx = graphCanvas.getContext('2d');
+        }
+
+        function selectTrack(preset) {
+            state.trackPreset = preset;
+            state.s = 0.1;
+            state.v = 0;
+            state.Ethermal = 0;
+            state.history = [];
+
+            if (preset === 'u-ramp') {
+                state.controlPoints = [
+                    { x: 2, y: 7 },
+                    { x: 4, y: 3 },
+                    { x: 10, y: 1 },
+                    { x: 16, y: 3 },
+                    { x: 18, y: 7 }
+                ];
+            } else if (preset === 'loop') {
+                state.controlPoints = [
+                    { x: 2, y: 8 },
+                    { x: 6, y: 1.5 },
+                    { x: 9, y: 5 },
+                    { x: 10, y: 7 },
+                    { x: 11, y: 5 },
+                    { x: 14, y: 1.5 },
+                    { x: 18, y: 5 }
+                ];
+            } else if (preset === 'double-bump') {
+                state.controlPoints = [
+                    { x: 2, y: 7 },
+                    { x: 6, y: 1 },
+                    { x: 10, y: 5 },
+                    { x: 14, y: 2 },
+                    { x: 18, y: 6 }
+                ];
+            } else if (preset === 'flat-ramp') {
+                state.controlPoints = [
+                    { x: 2, y: 7 },
+                    { x: 8, y: 4 },
+                    { x: 14, y: 1 },
+                    { x: 18, y: 1 }
+                ];
+            }
+
+            // Calculate Initial Total Energy
+            const pos = getTrackPos(state.s);
+            state.Ep = state.mass * state.gravity * pos.y;
+            state.Ek = 0;
+            state.Etotal = state.Ep;
+
+            updateUIReadouts();
+        }
+
+        // Add & Delete Control Points Logic for Dynamic Tracks
+        function addControlPoint() {
+            const pts = state.controlPoints;
+            if (pts.length >= 10) return; // Cap maximum points to prevent excessive wiggles
+            
+            // Insert new point in the middle or end
+            const lastPt = pts[pts.length - 1];
+            const prevPt = pts[pts.length - 2];
+            const newX = (lastPt.x + prevPt.x) / 2;
+            const newY = (lastPt.y + prevPt.y) / 2 + 1.5; // Slight bump up
+            
+            // Insert before last point
+            pts.splice(pts.length - 1, 0, { x: newX, y: Math.min(9, newY) });
+            // Sort points by X coordinate to ensure progressive track path
+            pts.sort((a, b) => a.x - b.x);
+            
+            updateUIReadouts();
+        }
+
+        function removeControlPoint(index) {
+            // Keep at least 3 control points to form a valid spline curve
+            if (state.controlPoints.length <= 3) return;
+            state.controlPoints.splice(index, 1);
+            state.draggedPointIndex = -1;
+            updateUIReadouts();
+        }
+
+        // Catmull-Rom Spline Interpolation for Smooth Tracks
+        function getTrackPos(s) {
+            const pts = state.controlPoints;
+            const n = pts.length - 1;
+            const scaledS = Math.max(0, Math.min(1, s)) * n;
+            const idx = Math.min(Math.floor(scaledS), n - 1);
+            const t = scaledS - idx;
+
+            const p0 = pts[Math.max(0, idx - 1)];
+            const p1 = pts[idx];
+            const p2 = pts[Math.min(n, idx + 1)];
+            const p3 = pts[Math.min(n, idx + 2)];
+
+            // Catmull-Rom spline formula
+            const t2 = t * t;
+            const t3 = t2 * t;
+
+            const x = 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3);
+            const y = 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3);
+
+            // Derivative for tangent & slope angle
+            const dx = 0.5 * ((-p0.x + p2.x) + 2 * (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t + 3 * (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t2);
+            const dy = 0.5 * ((-p0.y + p2.y) + 2 * (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t + 3 * (-p0.y + 3 * p1.y - 3 * p2.y + p3.x) * t2);
+
+            const angle = Math.atan2(dy, dx);
+            return { x, y, dx, dy, angle };
+        }
+
+        function simulationLoop(timestamp) {
+            const dt = Math.min((timestamp - lastTimestamp) / 1000, 0.033) * state.simSpeed;
+            lastTimestamp = timestamp;
+
+            if (state.isPlaying && !state.isDraggingSkater && state.draggedPointIndex === -1) {
+                updatePhysics(dt);
+            }
+
+            renderMainCanvas();
+            renderGraphCanvas();
+
+            requestAnimationFrame(simulationLoop);
+        }
+
+        function updatePhysics(dt) {
+            simTime += dt;
+
+            const pos = getTrackPos(state.s);
+            const sinTheta = Math.sin(pos.angle);
+            const cosTheta = Math.cos(pos.angle);
+
+            // Tangential Acceleration along track
+            // a_t = -g * sin(theta) - friction * g * cos(theta) * sign(v)
+            const frictionForce = state.friction * state.gravity * Math.abs(cosTheta) * Math.sign(state.v);
+            const gravityAccel = -state.gravity * sinTheta;
+            
+            const a_t = gravityAccel - frictionForce;
+
+            state.v += a_t * dt;
+
+            // Approximate Track Length (~ 20 meters)
+            const ds = (state.v * dt) / 20.0;
+            state.s += ds;
+
+            // Bounce off Track Boundaries
+            if (state.s <= 0.01) {
+                state.s = 0.01;
+                state.v = -state.v * 0.8; // Minor energy loss on boundary impact
+            } else if (state.s >= 0.99) {
+                state.s = 0.99;
+                state.v = -state.v * 0.8;
+            }
+
+            // Energy Calculations
+            const currPos = getTrackPos(state.s);
+            state.Ep = Math.max(0, state.mass * state.gravity * currPos.y);
+            state.Ek = 0.5 * state.mass * state.v * state.v;
+
+            // Thermal Work done by friction
+            const dWorkFriction = Math.abs(state.friction * state.mass * state.gravity * cosTheta * (state.v * dt));
+            state.Ethermal += dWorkFriction;
+
+            // Conservation Total
+            state.Etotal = state.Ek + state.Ep + state.Ethermal;
+
+            // History for Graph Plot
+            if (state.history.length > 200) state.history.shift();
+            state.history.push({
+                time: simTime,
+                Ek: state.Ek,
+                Ep: state.Ep,
+                Eth: state.Ethermal,
+                Etot: state.Etotal
+            });
+
+            updateUIReadouts();
+        }
+
+        function updateUIReadouts() {
+            const pos = getTrackPos(state.s);
+            document.getElementById('readout-ek').innerText = `${state.Ek.toFixed(1)} J`;
+            document.getElementById('readout-ep').innerText = `${state.Ep.toFixed(1)} J`;
+            document.getElementById('readout-eth').innerText = `${state.Ethermal.toFixed(1)} J`;
+            document.getElementById('readout-etot').innerText = `${state.Etotal.toFixed(1)} J`;
+
+            document.getElementById('calc-h').innerText = `ความสูง h = ${pos.y.toFixed(2)} m`;
+            document.getElementById('calc-v').innerText = `ความเร็ว v = ${Math.abs(state.v).toFixed(2)} m/s`;
+
+            document.getElementById('calc-ek-val').innerText = `Ek = 1/2 × ${state.mass} × ${state.v.toFixed(1)}² = ${state.Ek.toFixed(1)} J`;
+            document.getElementById('calc-ep-val').innerText = `Ep = ${state.mass} × ${state.gravity} × ${pos.y.toFixed(1)} = ${state.Ep.toFixed(1)} J`;
+            document.getElementById('calc-eth-val').innerText = `Eth = ∫ f_k ds = ${state.Ethermal.toFixed(1)} J`;
+            document.getElementById('calc-etot-val').innerText = `Etotal = ${state.Etotal.toFixed(1)} J`;
+        }
+
+        // Render Main Viewport & Skater
+        function renderMainCanvas() {
+            const w = mainCanvas.clientWidth;
+            const h = mainCanvas.clientHeight;
+            if (w === 0 || h === 0) return;
+
+            mainCanvas.width = w * window.devicePixelRatio;
+            mainCanvas.height = h * window.devicePixelRatio;
+            mainCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+            mainCtx.clearRect(0, 0, w, h);
+
+            // World to Screen Coordinate Mapping (Meter to Pixels)
+            const margin = 40;
+            const meterToPxX = (w - margin * 2) / 20;
+            const meterToPxY = (h - margin * 2) / 10;
+
+            function toScreenX(xm) { return margin + xm * meterToPxX; }
+            function toScreenY(ym) { return h - margin - ym * meterToPxY; }
+
+            // Draw Height Grid Reference ($h = 0$)
+            if (state.showGrid) {
+                mainCtx.strokeStyle = 'rgba(245, 158, 11, 0.3)';
+                mainCtx.lineWidth = 1.5;
+                mainCtx.setLineDash([6, 4]);
+                mainCtx.beginPath();
+                mainCtx.moveTo(margin, toScreenY(0));
+                mainCtx.lineTo(w - margin, toScreenY(0));
+                mainCtx.stroke();
+                mainCtx.setLineDash([]);
+
+                mainCtx.fillStyle = '#f59e0b';
+                mainCtx.font = '10px Sarabun, sans-serif';
+                mainCtx.fillText('ระดับอ้างอิงความสูง h = 0 m', margin + 5, toScreenY(0) + 14);
+            }
+
+            // Draw Track Mesh/Curve
+            mainCtx.strokeStyle = '#38bdf8';
+            mainCtx.lineWidth = 6;
+            mainCtx.lineCap = 'round';
+            mainCtx.beginPath();
+
+            for (let s = 0; s <= 1.0; s += 0.005) {
+                const pos = getTrackPos(s);
+                const sx = toScreenX(pos.x);
+                const sy = toScreenY(pos.y);
+                if (s === 0) mainCtx.moveTo(sx, sy);
+                else mainCtx.lineTo(sx, sy);
+            }
+            mainCtx.stroke();
+
+            // Draw Interactive Control Points on Track
+            state.controlPoints.forEach((pt, idx) => {
+                const sx = toScreenX(pt.x);
+                const sy = toScreenY(pt.y);
+
+                const isSelected = idx === state.draggedPointIndex;
+                mainCtx.fillStyle = isSelected ? '#f43f5e' : '#38bdf8';
+                mainCtx.beginPath();
+                mainCtx.arc(sx, sy, isSelected ? 9 : 7, 0, Math.PI * 2);
+                mainCtx.fill();
+
+                mainCtx.strokeStyle = '#ffffff';
+                mainCtx.lineWidth = 1.5;
+                mainCtx.stroke();
+
+                // Height badge above point when dragging
+                if (isSelected) {
+                    mainCtx.fillStyle = '#f8fafc';
+                    mainCtx.font = '10px Fira Code, monospace';
+                    mainCtx.fillText(`h=${pt.y.toFixed(1)}m`, sx - 15, sy - 14);
+                }
+            });
+
+            // Draw Skater Figure
+            const skaterPos = getTrackPos(state.s);
+            const skaterSx = toScreenX(skaterPos.x);
+            const skaterSy = toScreenY(skaterPos.y);
+
+            mainCtx.save();
+            mainCtx.translate(skaterSx, skaterSy);
+            mainCtx.rotate(-skaterPos.angle);
+
+            // Skater Body & Wheel Thermal Glow Effect
+            const glowOpacity = Math.min(1.0, state.Ethermal / 1000.0);
+            if (glowOpacity > 0.05) {
+                mainCtx.fillStyle = `rgba(244, 63, 94, ${glowOpacity * 0.6})`;
+                mainCtx.beginPath();
+                mainCtx.arc(0, -12, 22, 0, Math.PI * 2);
+                mainCtx.fill();
+            }
+
+            // Skateboard Deck
+            mainCtx.fillStyle = '#f59e0b';
+            mainCtx.fillRect(-18, -4, 36, 6);
+
+            // Wheels
+            mainCtx.fillStyle = glowOpacity > 0.3 ? '#f43f5e' : '#e2e8f0';
+            mainCtx.beginPath();
+            mainCtx.arc(-12, 2, 4, 0, Math.PI * 2);
+            mainCtx.arc(12, 2, 4, 0, Math.PI * 2);
+            mainCtx.fill();
+
+            // Skater Person (Stick Figure Style)
+            mainCtx.strokeStyle = '#f8fafc';
+            mainCtx.lineWidth = 3;
+            mainCtx.beginPath();
+            // Body
+            mainCtx.moveTo(0, -4);
+            mainCtx.lineTo(0, -25);
+            // Head
+            mainCtx.arc(0, -32, 6, 0, Math.PI * 2);
+            // Arms
+            mainCtx.moveTo(-10, -18);
+            mainCtx.lineTo(10, -18);
+            // Legs
+            mainCtx.moveTo(0, -10);
+            mainCtx.lineTo(-8, -4);
+            mainCtx.moveTo(0, -10);
+            mainCtx.lineTo(8, -4);
+            mainCtx.stroke();
+
+            mainCtx.restore();
+
+            // Speed Vector Arrow ($\vec{v}$)
+            if (state.showSpeedVector && Math.abs(state.v) > 0.1) {
+                const vecLen = state.v * 5;
+                const endSx = skaterSx + vecLen * Math.cos(skaterPos.angle);
+                const endSy = skaterSy - vecLen * Math.sin(skaterPos.angle);
+
+                mainCtx.strokeStyle = '#10b981';
+                mainCtx.lineWidth = 2.5;
+                mainCtx.beginPath();
+                mainCtx.moveTo(skaterSx, skaterSy - 15);
+                mainCtx.lineTo(endSx, endSy - 15);
+                mainCtx.stroke();
+
+                mainCtx.fillStyle = '#10b981';
+                mainCtx.font = '10px Fira Code, monospace';
+                mainCtx.fillText(`v = ${Math.abs(state.v).toFixed(1)} m/s`, endSx + 5, endSy - 15);
+            }
+
+            // Draw Floating Pie Chart on Skater
+            if (state.showPieChart && state.Etotal > 0) {
+                drawPieChart(mainCtx, skaterSx, skaterSy - 55, 18, state.Ek, state.Ep, state.Ethermal, state.Etotal);
+            }
+
+            // Draw Bar Chart Overlay (Top Left inside canvas)
+            if (state.showBarChart) {
+                drawBarChart(mainCtx, 20, 20, 110, 130, state.Ek, state.Ep, state.Ethermal, state.Etotal);
+            }
+        }
+
+        function drawPieChart(ctx, cx, cy, radius, Ek, Ep, Eth, Etot) {
+            if (Etot <= 0) return;
+
+            let startAngle = -Math.PI / 2;
+
+            // Ek Slice (Green)
+            const sliceEk = (Ek / Etot) * Math.PI * 2;
+            ctx.fillStyle = '#10b981';
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, radius, startAngle, startAngle + sliceEk);
+            ctx.closePath();
+            ctx.fill();
+            startAngle += sliceEk;
+
+            // Ep Slice (Blue)
+            const sliceEp = (Ep / Etot) * Math.PI * 2;
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, radius, startAngle, startAngle + sliceEp);
+            ctx.closePath();
+            ctx.fill();
+            startAngle += sliceEp;
+
+            // Thermal Slice (Red)
+            const sliceEth = (Eth / Etot) * Math.PI * 2;
+            ctx.fillStyle = '#f43f5e';
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, radius, startAngle, startAngle + sliceEth);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        function drawBarChart(ctx, x, y, width, height, Ek, Ep, Eth, Etot) {
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            ctx.fillRect(x, y, width, height);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.strokeRect(x, y, width, height);
+
+            const maxVal = Math.max(100, Etot * 1.1);
+            const barWidth = 16;
+            const barGap = 8;
+            const chartBottom = y + height - 20;
+            const maxBarHeight = height - 40;
+
+            const bars = [
+                { label: 'Ek', val: Ek, color: '#10b981' },
+                { label: 'Ep', val: Ep, color: '#38bdf8' },
+                { label: 'Eth', val: Eth, color: '#f43f5e' },
+                { label: 'Tot', val: Etot, color: '#f59e0b' }
+            ];
+
+            bars.forEach((b, i) => {
+                const bx = x + 12 + i * (barWidth + barGap);
+                const barH = (b.val / maxVal) * maxBarHeight;
+                const by = chartBottom - barH;
+
+                ctx.fillStyle = b.color;
+                ctx.fillRect(bx, by, barWidth, barH);
+
+                ctx.fillStyle = '#cbd5e1';
+                ctx.font = '9px Fira Code, monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(b.label, bx + barWidth / 2, chartBottom + 12);
+            });
+        }
+
+        // Render Time-Series Graph Canvas
+        function renderGraphCanvas() {
+            const w = graphCanvas.clientWidth;
+            const h = graphCanvas.clientHeight;
+            if (w === 0 || h === 0) return;
+
+            graphCanvas.width = w * window.devicePixelRatio;
+            graphCanvas.height = h * window.devicePixelRatio;
+            graphCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+            graphCtx.clearRect(0, 0, w, h);
+
+            if (state.history.length < 2) return;
+
+            const margin = 20;
+            const graphW = w - margin * 2;
+            const graphH = h - margin * 2;
+
+            const maxEnergy = Math.max(500, ...state.history.map(d => d.Etot));
+
+            function plotLine(key, color) {
+                graphCtx.strokeStyle = color;
+                graphCtx.lineWidth = 1.8;
+                graphCtx.beginPath();
+
+                state.history.forEach((d, idx) => {
+                    const x = margin + (idx / (state.history.length - 1)) * graphW;
+                    const y = h - margin - (d[key] / maxEnergy) * graphH;
+                    if (idx === 0) graphCtx.moveTo(x, y);
+                    else graphCtx.lineTo(x, y);
+                });
+                graphCtx.stroke();
+            }
+
+            plotLine('Ek', '#10b981');
+            plotLine('Ep', '#38bdf8');
+            plotLine('Eth', '#f43f5e');
+            plotLine('Etot', '#f59e0b');
+        }
+
+        // Event Handlers & Control Callbacks
+        function setupInteractionListeners() {
+            let isPointerDown = false;
+            let lastClickTime = 0;
+
+            mainCanvas.addEventListener('mousedown', (e) => {
+                const rect = mainCanvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+
+                const w = mainCanvas.clientWidth;
+                const h = mainCanvas.clientHeight;
+                const margin = 40;
+                const meterToPxX = (w - margin * 2) / 20;
+                const meterToPxY = (h - margin * 2) / 10;
+
+                const now = Date.now();
+                const isDoubleClick = (now - lastClickTime) < 300;
+                lastClickTime = now;
+
+                // Check Control Point Dragging or Deletion
+                state.controlPoints.forEach((pt, idx) => {
+                    const sx = margin + pt.x * meterToPxX;
+                    const sy = h - margin - pt.y * meterToPxY;
+                    const dist = Math.hypot(mouseX - sx, mouseY - sy);
+                    
+                    if (dist < 14) {
+                        if (isDoubleClick) {
+                            removeControlPoint(idx);
+                        } else {
+                            state.draggedPointIndex = idx;
+                            isPointerDown = true;
+                        }
+                    }
+                });
+
+                // Check Skater Dragging
+                if (state.draggedPointIndex === -1 && !isDoubleClick) {
+                    const skaterPos = getTrackPos(state.s);
+                    const skaterSx = margin + skaterPos.x * meterToPxX;
+                    const skaterSy = h - margin - skaterPos.y * meterToPxY;
+                    if (Math.hypot(mouseX - skaterSx, mouseY - skaterSy) < 25) {
+                        state.isDraggingSkater = true;
+                        isPointerDown = true;
+                    }
+                }
+            });
+
+            mainCanvas.addEventListener('mousemove', (e) => {
+                if (!isPointerDown) return;
+
+                const rect = mainCanvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+
+                const w = mainCanvas.clientWidth;
+                const h = mainCanvas.clientHeight;
+                const margin = 40;
+                const meterToPxX = (w - margin * 2) / 20;
+                const meterToPxY = (h - margin * 2) / 10;
+
+                if (state.draggedPointIndex !== -1) {
+                    const newX = Math.max(1, Math.min(19, (mouseX - margin) / meterToPxX));
+                    const newY = Math.max(0.2, Math.min(9.5, (h - margin - mouseY) / meterToPxY));
+                    state.controlPoints[state.draggedPointIndex] = { x: newX, y: newY };
+                    
+                    // Keep control points sorted horizontally to maintain a functional curve
+                    state.controlPoints.sort((a, b) => a.x - b.x);
+                } else if (state.isDraggingSkater) {
+                    const targetX = (mouseX - margin) / meterToPxX;
+                    // Find closest s parameter
+                    let bestS = 0;
+                    let minDist = Infinity;
+                    for (let s = 0; s <= 1.0; s += 0.005) {
+                        const p = getTrackPos(s);
+                        const d = Math.abs(p.x - targetX);
+                        if (d < minDist) {
+                            minDist = d;
+                            bestS = s;
+                        }
+                    }
+                    state.s = bestS;
+                    state.v = 0; // Reset velocity when dragged
+                }
+            });
+
+            window.addEventListener('mouseup', () => {
+                isPointerDown = false;
+                state.draggedPointIndex = -1;
+                state.isDraggingSkater = false;
+            });
+        }
+
+        function onControlChange() {
+            state.mass = parseFloat(document.getElementById('slider-mass').value);
+            state.friction = parseFloat(document.getElementById('slider-friction').value);
+            state.gravity = parseFloat(document.getElementById('slider-gravity').value);
+            state.simSpeed = parseFloat(document.getElementById('slider-sim-speed').value);
+
+            state.showBarChart = document.getElementById('toggle-barchart').checked;
+            state.showPieChart = document.getElementById('toggle-piechart').checked;
+            state.showSpeedVector = document.getElementById('toggle-speed-vector').checked;
+            state.showGrid = document.getElementById('toggle-grid').checked;
+
+            document.getElementById('val-mass').innerText = `${state.mass} kg`;
+            document.getElementById('val-friction').innerText = `${state.friction.toFixed(2)} ${state.friction === 0 ? '(ไม่มีแรงเสียดทาน)' : ''}`;
+            document.getElementById('val-gravity').innerText = `${state.gravity.toFixed(2)} m/s²`;
+            document.getElementById('val-sim-speed').innerText = `${state.simSpeed.toFixed(1)}x`;
+
+            updateUIReadouts();
+        }
+
+        function setGravity(g) {
+            document.getElementById('slider-gravity').value = g;
+            onControlChange();
+        }
+
+        function togglePlayPause() {
+            state.isPlaying = !state.isPlaying;
+            const btn = document.getElementById('btn-play-pause');
+            const icon = document.getElementById('icon-play-pause');
+            const txt = document.getElementById('txt-play-pause');
+
+            if (state.isPlaying) {
+                btn.className = 'px-3 py-1.5 bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 rounded-lg transition border border-sky-500/40 text-xs flex items-center gap-1.5 font-medium';
+                icon.setAttribute('data-lucide', 'pause');
+                txt.innerText = 'หยุดชั่วคราว';
+            } else {
+                btn.className = 'px-3 py-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 rounded-lg transition border border-emerald-500/40 text-xs flex items-center gap-1.5 font-medium';
+                icon.setAttribute('data-lucide', 'play');
+                txt.innerText = 'เล่นต่อ';
+            }
+            lucide.createIcons();
+        }
+
+        function resetSkater() {
+            state.s = 0.1;
+            state.v = 0;
+            state.Ethermal = 0;
+            state.history = [];
+            updateUIReadouts();
+        }
+
+        function clearThermalEnergy() {
+            state.Ethermal = 0;
+            updateUIReadouts();
+        }
+
+        function switchRightTab(tabKey) {
+            ['calc', 'theory', 'friction'].forEach(k => {
+                document.getElementById(`content-${k}`).classList.add('hidden');
+                document.getElementById(`tab-${k}`).classList.remove('active');
+            });
+
+            document.getElementById(`content-${tabKey}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabKey}`).classList.add('active');
+        }
+
+        function toggleFullscreen() {
+            try {
+                if (!document.fullscreenElement) {
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen().catch(err => console.warn(err));
+                    }
+                } else if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(err => console.warn(err));
+                }
+            } catch (err) {
+                console.warn("Fullscreen permission restricted:", err);
+            }
+        }
+
+        function onResize() {
+            renderMainCanvas();
+            renderGraphCanvas();
+        }
+    </script>
+</body>
+</html>

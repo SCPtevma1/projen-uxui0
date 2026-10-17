@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แบบจำลองความหนาแน่น 2D/3D (Density Simulation)</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        physics: {
+                            900: '#0B0F17',
+                            800: '#111827',
+                            700: '#1F2937',
+                            600: '#374151',
+                            cyan: '#06B6D4',
+                            amber: '#F59E0B',
+                            emerald: '#10B981',
+                            rose: '#F43F5E',
+                            purple: '#A855F7',
+                            blue: '#3B82F6'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Sarabun', 'Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- KaTeX for Physics Formula Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #0B0F17;
+            color: #F3F4F6;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+        }
+
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.6);
+        }
+
+        .glass-card {
+            background: rgba(31, 41, 55, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(11, 15, 23, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(6, 182, 212, 0.3);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(6, 182, 212, 0.6);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            height: 5px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 15px;
+            width: 15px;
+            border-radius: 50%;
+            background: #06B6D4;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.6);
+            transition: all 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.25);
+            background: #67e8f9;
+        }
+
+        .tab-btn.active {
+            background-color: rgba(6, 182, 212, 0.2);
+            color: #06B6D4;
+            border-bottom: 2px solid #06B6D4;
+        }
+
+        .mode-btn.active {
+            background-color: #06B6D4;
+            color: #000;
+            font-weight: 600;
+        }
+
+        #viewport-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .badge-float {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .badge-sink {
+            background: rgba(244, 63, 94, 0.2);
+            color: #fb7185;
+            border: 1px solid rgba(244, 63, 94, 0.3);
+        }
+
+        .badge-neutral {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+    </style>
+</head>
+<body class="select-none">
+
+    <!-- Header Bar -->
+    <header class="absolute top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between glass-panel px-4 py-2.5 rounded-2xl pointer-events-auto">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-blue-500/20 text-blue-400 rounded-xl border border-blue-500/30">
+                <i data-lucide="waves" class="w-6 h-6"></i>
+            </div>
+            <div>
+               <a href="../physics.html">
+                 <h1 class="font-bold text-base md:text-lg text-white flex items-center gap-2">
+                    แบบจำลองความหนาแน่น 2D/3D
+                    <span class="text-[10px] font-normal px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Density & Buoyancy Physics</span>
+                </h1>
+               </a>
+                <p class="text-xs text-gray-400 hidden sm:block">การจม การลอย และแรงพยุงตามหลักของอาร์คิมีดิส (Archimedes' Principle)</p>
+            </div>
+        </div>
+
+        <!-- Mode Switcher & Tools -->
+        <div class="flex items-center gap-3">
+            <!-- 2D / 3D Switch -->
+            <div class="flex items-center bg-physics-900/90 p-1 rounded-xl border border-white/10 text-xs">
+                <button id="btn-mode-2d" onclick="setRenderMode('2d')" class="mode-btn active px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+                    <i data-lucide="square" class="w-3.5 h-3.5"></i>
+                    <span>2D Precision</span>
+                </button>
+                <button id="btn-mode-3d" onclick="setRenderMode('3d')" class="mode-btn px-3 py-1.5 text-gray-400 hover:text-white rounded-lg transition flex items-center gap-1">
+                    <i data-lucide="box" class="w-3.5 h-3.5"></i>
+                    <span>3D Scene</span>
+                </button>
+            </div>
+
+            <!-- Compare Mode Toggle -->
+            <button id="btn-compare-mode" onclick="toggleCompareMode()" class="px-3 py-1.5 bg-physics-800 hover:bg-physics-700 text-gray-200 text-xs rounded-xl transition border border-white/10 flex items-center gap-1.5" title="เปรียบเทียบวัตถุ 2 ชิ้น">
+                <i data-lucide="columns" class="w-3.5 h-3.5 text-amber-400"></i>
+                <span id="compare-mode-text">โหมดเปรียบเทียบ 2 วัตถุ</span>
+            </button>
+
+            <button onclick="resetToDefaults()" class="p-2 bg-physics-700 hover:bg-physics-600 text-gray-200 rounded-xl transition border border-white/5" title="รีเซ็ตค่า">
+                <i data-lucide="rotate-ccw" class="w-4 h-4 text-cyan-400"></i>
+            </button>
+            <button onclick="toggleFullscreen()" class="p-2 bg-physics-700 hover:bg-physics-600 text-gray-300 rounded-xl transition border border-white/5" title="เต็มจอ">
+                <i data-lucide="maximize" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Grid Container Layout -->
+    <div class="absolute inset-0 pt-16 p-3 pointer-events-none grid grid-cols-1 md:grid-cols-12 gap-3 h-full pb-3">
+
+        <!-- ================= SECTION 1: Left Panel - Theory & Calculation ================= -->
+        <aside class="md:col-span-4 lg:col-span-3 glass-panel rounded-2xl flex flex-col pointer-events-auto overflow-hidden max-h-[calc(100vh-5rem)] shadow-2xl z-10">
+            <!-- Header & Tabs -->
+            <div class="p-3 border-b border-white/10 bg-physics-800/80">
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="font-semibold text-white text-sm flex items-center gap-2">
+                        <i data-lucide="calculator" class="w-4 h-4 text-cyan-400"></i>
+                        คำนวณ & ทฤษฎี (Analysis)
+                    </h2>
+                    <span id="status-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full badge-float">ลอยน้ำ (Floating)</span>
+                </div>
+
+                <div class="grid grid-cols-3 gap-1 bg-physics-900/80 p-1 rounded-xl text-[11px] font-medium text-center">
+                    <button onclick="switchTab('calc')" id="tab-calc" class="tab-btn active py-1.5 rounded-lg transition">คำนวณสด</button>
+                    <button onclick="switchTab('archimedes')" id="tab-archimedes" class="tab-btn py-1.5 rounded-lg transition">แรงพยุง</button>
+                    <button onclick="switchTab('theory')" id="tab-theory" class="tab-btn py-1.5 rounded-lg transition">หลักการ</button>
+                </div>
+            </div>
+
+            <!-- Scrollable Content -->
+            <div class="flex-1 overflow-y-auto p-3.5 space-y-3.5 text-xs text-gray-300">
+
+                <!-- TAB 1: Live Calculations -->
+                <div id="content-calc" class="space-y-3">
+                    <!-- Formula Display -->
+                    <div class="glass-card p-3 rounded-xl border-l-4 border-cyan-400 space-y-1">
+                        <h3 class="font-bold text-white text-xs">สูตรความหนาแน่น (Density)</h3>
+                        <div id="math-density" class="py-1 text-center text-cyan-300 font-mono text-sm"></div>
+                        <p class="text-[10px] text-gray-400">$\rho$ = ความหนาแน่น, $m$ = มวล, $V$ = ปริมาตร</p>
+                    </div>
+
+                    <!-- Live Physics Readout -->
+                    <div class="bg-physics-900/90 p-3 rounded-xl border border-white/10 space-y-2 font-mono">
+                        <div class="text-[11px] font-bold text-gray-400 font-sans border-b border-white/10 pb-1 flex justify-between">
+                            <span>วัตถุ A (Object A)</span>
+                            <span id="readout-material-a" class="text-amber-400">ไม้ (Wood)</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-[11px]">
+                            <div class="bg-physics-800/60 p-2 rounded-lg">
+                                <span class="text-gray-400 text-[9px] block font-sans">มวล ($m$)</span>
+                                <span id="val-mass-a-display" class="text-amber-300 font-bold">2.00 kg</span>
+                            </div>
+                            <div class="bg-physics-800/60 p-2 rounded-lg">
+                                <span class="text-gray-400 text-[9px] block font-sans">ปริมาตร ($V$)</span>
+                                <span id="val-vol-a-display" class="text-cyan-300 font-bold">5.00 L</span>
+                            </div>
+                            <div class="bg-physics-800/60 p-2 rounded-lg col-span-2 border border-cyan-500/30">
+                                <span class="text-gray-400 text-[9px] block font-sans">ความหนาแน่นวัตถุ ($\rho_{obj}$)</span>
+                                <span id="val-density-a-display" class="text-emerald-300 font-bold text-sm">400.00 kg/m³</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Forces Readout -->
+                    <div class="glass-card p-3 rounded-xl space-y-2 text-[11px]">
+                        <h4 class="font-bold text-white flex items-center justify-between">
+                            <span>สมดุลของแรง (Force Balance)</span>
+                            <span class="text-[10px] text-gray-400 font-mono">$g = 9.81 m/s²$</span>
+                        </h4>
+
+                        <div class="space-y-1.5 font-mono">
+                            <div class="flex justify-between items-center bg-physics-900/60 p-2 rounded-lg">
+                                <span class="text-rose-400 font-sans">แรงโน้มถ่วง ($F_g = m \cdot g$):</span>
+                                <span id="val-fg-display" class="font-bold text-rose-400">19.62 N</span>
+                            </div>
+                            <div class="flex justify-between items-center bg-physics-900/60 p-2 rounded-lg">
+                                <span class="text-emerald-400 font-sans">แรงพยุง ($F_b = \rho_f \cdot V_{sub} \cdot g$):</span>
+                                <span id="val-fb-display" class="font-bold text-emerald-400">19.62 N</span>
+                            </div>
+                            <div class="flex justify-between items-center bg-physics-900/60 p-2 rounded-lg border-t border-white/10">
+                                <span class="text-gray-300 font-sans">แรงสุทธิ ($F_{net}$):</span>
+                                <span id="val-fnet-display" class="font-bold text-purple-300">0.00 N</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Displaced Volume Info -->
+                    <div class="bg-physics-900/90 p-3 rounded-xl border border-white/10 space-y-1 text-[11px]">
+                        <div class="flex justify-between text-gray-300">
+                            <span>ปริมาตรส่วนที่จม ($V_{submerged}$):</span>
+                            <span id="val-vsub-display" class="font-bold text-cyan-300 font-mono">2.00 L (40.0%)</span>
+                        </div>
+                        <div class="flex justify-between text-gray-300">
+                            <span>น้ำหนักของเหลวที่ถูกแทนที่:</span>
+                            <span id="val-displaced-weight" class="font-bold text-emerald-300 font-mono">19.62 N</span>
+                        </div>
+                    </div>
+
+                    <!-- Object B Readout (Only visible in Compare Mode) -->
+                    <div id="compare-readout-b" class="hidden bg-physics-900/90 p-3 rounded-xl border border-amber-500/30 space-y-2 font-mono">
+                        <div class="text-[11px] font-bold text-amber-400 font-sans border-b border-white/10 pb-1 flex justify-between">
+                            <span>วัตถุ B (Object B)</span>
+                            <span id="readout-material-b" class="text-purple-400">อิฐ (Brick)</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-[11px]">
+                            <div class="bg-physics-800/60 p-2 rounded-lg">
+                                <span class="text-gray-400 text-[9px] block font-sans font-normal">มวล ($m_B$)</span>
+                                <span id="val-mass-b-display" class="text-amber-300 font-bold">5.00 kg</span>
+                            </div>
+                            <div class="bg-physics-800/60 p-2 rounded-lg">
+                                <span class="text-gray-400 text-[9px] block font-sans font-normal">ความหนาแน่น ($\rho_B$)</span>
+                                <span id="val-density-b-display" class="text-purple-300 font-bold">2000.00 kg/m³</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Archimedes Principle -->
+                <div id="content-archimedes" class="space-y-3 hidden">
+                    <div class="glass-card p-3 rounded-xl border-l-4 border-emerald-400 space-y-1">
+                        <h3 class="font-bold text-white text-xs">แรงพยุงของอาร์คิมีดิส (Buoyant Force)</h3>
+                        <div id="math-buoyancy" class="py-1 text-center text-emerald-300 font-mono text-sm"></div>
+                        <p class="text-[10px] text-gray-400">"ขนาดของแรงพยุงมีค่าเท่ากับน้ำหนักของของเหลวที่ถูกวัตถุนั้นแทนที่"</p>
+                    </div>
+
+                    <div class="space-y-2 text-[11px]">
+                        <div class="bg-physics-800/80 p-2.5 rounded-xl border border-white/5 space-y-1">
+                            <span class="font-bold text-emerald-400 flex items-center gap-1">
+                                <i data-lucide="arrow-up" class="w-3.5 h-3.5"></i> 1. วัตถุลอยน้ำ ($\rho_{obj} < \rho_{fluid}$)
+                            </span>
+                            <p class="text-gray-300 leading-relaxed">
+                                เมื่อความหนาแน่นวัตถุน้อยกว่าของเหลว วัตถุจะจมเพียงบางส่วน โดย $F_b = F_g$ สัดส่วนส่วนที่จม $= \frac{\rho_{obj}}{\rho_{fluid}}$
+                            </p>
+                        </div>
+
+                        <div class="bg-physics-800/80 p-2.5 rounded-xl border border-white/5 space-y-1">
+                            <span class="font-bold text-amber-400 flex items-center gap-1">
+                                <i data-lucide="minus" class="w-3.5 h-3.5"></i> 2. ลอยกึ่งจม ($\rho_{obj} = \rho_{fluid}$)
+                            </span>
+                            <p class="text-gray-300 leading-relaxed">
+                                วัตถุจะลอยนิ่งอยู่ ณ ตำแหน่งใดก็ได้ในของเหลว ปริมาตรส่วนที่จมเท่ากับ 100% พอดี
+                            </p>
+                        </div>
+
+                        <div class="bg-physics-800/80 p-2.5 rounded-xl border border-white/5 space-y-1">
+                            <span class="font-bold text-rose-400 flex items-center gap-1">
+                                <i data-lucide="arrow-down" class="w-3.5 h-3.5"></i> 3. วัตถุจมดิ่ง ($\rho_{obj} > \rho_{fluid}$)
+                            </span>
+                            <p class="text-gray-300 leading-relaxed">
+                                แรงพยุงสูงสุด ($F_{b,max}$) ยังคงน้อยกว่าน้ำหนัก ($F_g$) วัตถุจึงตกถึงก้นภาชนะ น้ำหนักที่อ่านได้บนตาชั่งจะลดลงเท่ากับ $F_b$
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: Theory Summary -->
+                <div id="content-theory" class="space-y-3 hidden">
+                    <div class="glass-card p-3 rounded-xl border-l-4 border-purple-400 space-y-2">
+                        <h3 class="font-bold text-white text-xs flex items-center gap-1.5">
+                            <i data-lucide="book-open" class="w-4 h-4 text-purple-400"></i>
+                            ความหนาแน่นคืออะไร? (What is Density?)
+                        </h3>
+                        <p class="text-[11px] text-gray-300 leading-relaxed">
+                            ความหนาแน่นเป็นสมบัติเฉพาะตัวของสาร แสดงถึงอัตราส่วนระหว่างมวลต่อหนึ่งหน่วยปริมาตร สารที่มีความหนาแน่นสูงจะมีอนุภาคอัดแน่นกันมากกว่า
+                        </p>
+                    </div>
+
+                    <div class="bg-physics-800/80 p-3 rounded-xl border border-white/5 space-y-2 text-[11px]">
+                        <h4 class="font-bold text-cyan-400">ตัวอย่างความหนาแน่นของสารทั่วไป ($kg/m³$):</h4>
+                        <ul class="space-y-1 font-mono text-[10px]">
+                            <li class="flex justify-between border-b border-white/5 pb-0.5">
+                                <span>โฟม (Styrofoam):</span> <span class="text-amber-300">150 kg/m³</span>
+                            </li>
+                            <li class="flex justify-between border-b border-white/5 pb-0.5">
+                                <span>ไม้ (Wood):</span> <span class="text-amber-300">400 - 700 kg/m³</span>
+                            </li>
+                            <li class="flex justify-between border-b border-white/5 pb-0.5">
+                                <span>น้ำแข็ง (Ice):</span> <span class="text-cyan-300">917 kg/m³</span>
+                            </li>
+                            <li class="flex justify-between border-b border-white/5 pb-0.5">
+                                <span>น้ำบริสุทธิ์ (Water):</span> <span class="text-blue-400 font-bold">1,000 kg/m³</span>
+                            </li>
+                            <li class="flex justify-between border-b border-white/5 pb-0.5">
+                                <span>อิฐ (Brick):</span> <span class="text-rose-300">2,000 kg/m³</span>
+                            </li>
+                            <li class="flex justify-between border-b border-white/5 pb-0.5">
+                                <span>อลูมิเนียม (Aluminum):</span> <span class="text-gray-300">2,700 kg/m³</span>
+                            </li>
+                            <li class="flex justify-between">
+                                <span>ทองคำ (Gold):</span> <span class="text-yellow-400">19,300 kg/m³</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- ================= SECTION 2: Center Interactive Viewport ================= -->
+        <main class="md:col-span-8 lg:col-span-6 relative rounded-2xl overflow-hidden glass-panel flex flex-col pointer-events-auto border border-white/10 shadow-2xl">
+            <div id="viewport-container" class="flex-1 bg-black/40 cursor-crosshair">
+                <!-- 2D Canvas -->
+                <canvas id="canvas-2d" class="absolute inset-0 w-full h-full z-0"></canvas>
+                <!-- 3D Three.js Container -->
+                <div id="container-3d" class="absolute inset-0 w-full h-full hidden z-0"></div>
+
+                <!-- On-Screen Fluid Level & Scale Overlay -->
+                <div class="absolute top-3 left-3 bg-physics-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 text-[11px] text-gray-300 flex items-center gap-2 pointer-events-none z-10 font-mono">
+                    <i data-lucide="droplet" class="w-4 h-4 text-cyan-400"></i>
+                    <span>ระดับของเหลว: <strong id="overlay-fluid-vol" class="text-cyan-300">100.0 L</strong> (เดิม 100.0 L)</span>
+                </div>
+
+                <!-- On-Screen Drag Guide Tooltip -->
+                <div id="drag-tooltip" class="absolute bottom-3 left-3 bg-physics-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 text-[11px] text-gray-300 flex items-center gap-2 pointer-events-none z-10">
+                    <i data-lucide="hand" class="w-4 h-4 text-amber-400 animate-bounce"></i>
+                    <span>คลิกและลาก <strong class="text-amber-400">วัตถุในน้ำ</strong> เพื่อทดลองกดหรือยกวัตถุได้โดยตรง</span>
+                </div>
+            </div>
+        </main>
+
+        <!-- ================= SECTION 3: Right Panel - Controls & Sandbox ================= -->
+        <aside class="md:col-span-12 lg:col-span-3 glass-panel rounded-2xl flex flex-col pointer-events-auto overflow-hidden max-h-[calc(100vh-5rem)] shadow-2xl z-10">
+            <div class="p-3 border-b border-white/10 bg-physics-800/80 flex justify-between items-center">
+                <h2 class="font-semibold text-white text-sm flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-4 h-4 text-cyan-400"></i>
+                    ตั้งค่าจำลอง (Sandbox Controls)
+                </h2>
+            </div>
+
+            <!-- Scrollable Controls Body -->
+            <div class="flex-1 overflow-y-auto p-3.5 space-y-3.5 text-xs">
+
+                <!-- Material Selector Presets -->
+                <div class="space-y-1.5">
+                    <label class="text-[11px] font-semibold text-gray-300 flex items-center gap-1">
+                        <i data-lucide="box" class="w-3.5 h-3.5 text-amber-400"></i> วัสดุวัตถุ A (Material A)
+                    </label>
+                    <div class="grid grid-cols-3 gap-1 text-[10px]">
+                        <button onclick="setMaterialPreset('wood')" id="btn-mat-wood" class="mat-btn p-1.5 bg-cyan-500/20 text-cyan-300 rounded-lg border border-cyan-500/40 text-center font-medium transition">🪵 ไม้</button>
+                        <button onclick="setMaterialPreset('ice')" id="btn-mat-ice" class="mat-btn p-1.5 bg-physics-800 hover:bg-physics-700 text-gray-300 rounded-lg border border-white/10 text-center font-medium transition">🧊 น้ำแข็ง</button>
+                        <button onclick="setMaterialPreset('brick')" id="btn-mat-brick" class="mat-btn p-1.5 bg-physics-800 hover:bg-physics-700 text-gray-300 rounded-lg border border-white/10 text-center font-medium transition">🧱 อิฐ</button>
+                        <button onclick="setMaterialPreset('aluminum')" id="btn-mat-aluminum" class="mat-btn p-1.5 bg-physics-800 hover:bg-physics-700 text-gray-300 rounded-lg border border-white/10 text-center font-medium transition">⚙️ อลูมิเนียม</button>
+                        <button onclick="setMaterialPreset('styrofoam')" id="btn-mat-styrofoam" class="mat-btn p-1.5 bg-physics-800 hover:bg-physics-700 text-gray-300 rounded-lg border border-white/10 text-center font-medium transition">☁️ โฟม</button>
+                        <button onclick="setMaterialPreset('custom')" id="btn-mat-custom" class="mat-btn p-1.5 bg-physics-800 hover:bg-physics-700 text-gray-300 rounded-lg border border-white/10 text-center font-medium transition">🛠️ กำหนดเอง</button>
+                    </div>
+                </div>
+
+                <!-- Sliders for Object A (Mass & Volume) -->
+                <div class="glass-card p-3 rounded-xl space-y-3">
+                    <div class="text-[11px] font-bold text-cyan-400 border-b border-white/10 pb-1">
+                        พารามิเตอร์วัตถุ A (Object A Parameters)
+                    </div>
+
+                    <!-- Mass Slider -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-300">มวล ($m_A$):</span>
+                            <span id="slider-val-mass-a" class="font-mono text-amber-400 font-bold">2.00 kg</span>
+                        </div>
+                        <input type="range" id="slider-mass-a" min="0.1" max="25.0" step="0.1" value="2.0" class="w-full" oninput="onSliderInput()">
+                    </div>
+
+                    <!-- Volume Slider -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-300">ปริมาตร ($V_A$):</span>
+                            <span id="slider-val-vol-a" class="font-mono text-cyan-400 font-bold">5.00 L</span>
+                        </div>
+                        <input type="range" id="slider-vol-a" min="0.5" max="15.0" step="0.25" value="5.0" class="w-full" oninput="onSliderInput()">
+                    </div>
+                </div>
+
+                <!-- Fluid Presets & Selector -->
+                <div class="space-y-1.5">
+                    <label class="text-[11px] font-semibold text-gray-300 flex items-center gap-1">
+                        <i data-lucide="droplet" class="w-3.5 h-3.5 text-blue-400"></i> ชนิดของเหลว (Fluid Environment)
+                    </label>
+                    <select id="select-fluid" onchange="onFluidSelectChange()" class="w-full bg-physics-900 border border-white/10 rounded-xl p-2 text-xs text-gray-200 font-medium focus:border-cyan-500 focus:outline-none">
+                        <option value="1000">💧 น้ำบริสุทธิ์ (Water - 1,000 kg/m³)</option>
+                        <option value="680">⛽ น้ำมันเบนซิน (Gasoline - 680 kg/m³)</option>
+                        <option value="1420">🍯 น้ำผึ้ง (Honey - 1,420 kg/m³)</option>
+                        <option value="13600">🌡️ ปรอท (Mercury - 13,600 kg/m³)</option>
+                        <option value="custom">🛠️ กำหนดความหนาแน่นของเหลวเอง...</option>
+                    </select>
+
+                    <div id="custom-fluid-container" class="hidden pt-1">
+                        <div class="flex justify-between text-[10px] text-gray-300 mb-0.5">
+                            <span>ความหนาแน่นของเหลว ($\rho_{fluid}$):</span>
+                            <span id="slider-val-fluid-density" class="font-mono text-cyan-300 font-bold">1000 kg/m³</span>
+                        </div>
+                        <input type="range" id="slider-fluid-density" min="200" max="3000" step="20" value="1000" class="w-full" oninput="onSliderInput()">
+                    </div>
+                </div>
+
+                <!-- Simulation Settings & Gravity -->
+                <div class="glass-card p-3 rounded-xl space-y-2.5">
+                    <div class="text-[11px] font-bold text-cyan-400 border-b border-white/10 pb-1">
+                        การจำลองและสภาวะแวดล้อม (Environment)
+                    </div>
+
+                    <!-- Gravity Slider -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-300">แรงโน้มถ่วง ($g$):</span>
+                            <span id="slider-val-gravity" class="font-mono text-purple-400 font-bold">9.81 m/s²</span>
+                        </div>
+                        <input type="range" id="slider-gravity" min="0.0" max="25.0" step="0.5" value="9.81" class="w-full" oninput="onSliderInput()">
+                    </div>
+
+                    <!-- Visual Overlays Checkboxes -->
+                    <div class="grid grid-cols-2 gap-2 text-xs text-gray-300 pt-1">
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-white">
+                            <input type="checkbox" id="toggle-vectors" checked onchange="render()" class="accent-rose-500 rounded">
+                            <span>ลูกศรแรง ($F_g, F_b$)</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-white">
+                            <input type="checkbox" id="toggle-grid" checked onchange="render()" class="accent-cyan-500 rounded">
+                            <span>สเกลระดับน้ำ</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-white">
+                            <input type="checkbox" id="toggle-density-particles" checked onchange="render()" class="accent-purple-500 rounded">
+                            <span>ความอัดแน่นอนุภาค</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Object B Controls (Only visible in Compare Mode) -->
+                <div id="compare-controls-b" class="hidden glass-card p-3 rounded-xl space-y-2.5 border border-amber-500/30">
+                    <div class="text-[11px] font-bold text-amber-400 border-b border-white/10 pb-1 flex justify-between">
+                        <span>วัตถุ B (Object B)</span>
+                        <span class="text-[10px] text-gray-400">เปรียบเทียบ</span>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-300">มวล ($m_B$):</span>
+                            <span id="slider-val-mass-b" class="font-mono text-amber-400 font-bold">5.00 kg</span>
+                        </div>
+                        <input type="range" id="slider-mass-b" min="0.5" max="20.0" step="0.5" value="5.0" class="w-full" oninput="onSliderInput()">
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-300">ปริมาตร ($V_B$):</span>
+                            <span id="slider-val-vol-b" class="font-mono text-purple-400 font-bold">2.50 L</span>
+                        </div>
+                        <input type="range" id="slider-vol-b" min="0.5" max="10.0" step="0.25" value="2.5" class="w-full" oninput="onSliderInput()">
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+    </div>
+
+    <!-- MAIN SIMULATION LOGIC SCRIPT -->
+    <script>
+        // Simulation Global State
+        const state = {
+            renderMode: '2d',           // '2d' or '3d'
+            compareMode: false,         // Dual object comparison toggle
+            
+            // Object A Properties
+            materialA: 'wood',
+            massA: 2.0,                 // kg
+            volA: 5.0,                  // Liters (1 L = 0.001 m^3)
+            densityA: 400,              // kg/m^3
+            yA: 0.0,                    // Vertical position in tank (m)
+            vyA: 0.0,                   // Vertical velocity
+            isDraggingA: false,
+
+            // Object B Properties
+            materialB: 'brick',
+            massB: 5.0,                 // kg
+            volB: 2.5,                  // Liters
+            densityB: 2000,             // kg/m^3
+            yB: 0.0,
+            vyB: 0.0,
+            isDraggingB: false,
+
+            // Fluid & Environment
+            fluidDensity: 1000,         // kg/m^3 (Water)
+            fluidBaseVolume: 100.0,     // Liters
+            gravity: 9.81,              // m/s^2
+            tankHeight: 2.0,            // meters
+            tankWidth: 2.5,             // meters
+            liquidHeight: 1.2,          // meters
+
+            // Visual Helpers
+            showVectors: true,
+            showGrid: true,
+            showParticles: true,
+
+            // Interactive Drag Handles
+            dragOffsetY: 0
+        };
+
+        // Canvas & Physics Loop Handles
+        let canvas2D, ctx2D;
+        let scene3D, camera3D, renderer3D, controls3D;
+        let meshContainer3D, meshObjA3D, meshObjB3D, fluidMesh3D, vectorsGroup3D;
+        let animationFrameId;
+        let lastTime = performance.now();
+
+        // Preset Definitions
+        const MATERIAL_PRESETS = {
+            wood: { name: 'ไม้ (Wood)', density: 400, color: '#D97706' },
+            ice: { name: 'น้ำแข็ง (Ice)', density: 917, color: '#38BDF8' },
+            brick: { name: 'อิฐ (Brick)', density: 2000, color: '#EF4444' },
+            aluminum: { name: 'อลูมิเนียม (Aluminum)', density: 2700, color: '#9CA3AF' },
+            styrofoam: { name: 'โฟม (Styrofoam)', density: 150, color: '#F3F4F6' },
+            custom: { name: 'กำหนดเอง (Custom)', density: 500, color: '#A855F7' }
+        };
+
+        // App Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            initKaTeX();
+            init2DCanvas();
+            init3DScene();
+            lucide.createIcons();
+
+            calculatePhysics();
+            updateUI();
+            
+            // Start Animation Physics Loop
+            lastTime = performance.now();
+            requestAnimationFrame(physicsLoop);
+
+            window.addEventListener('resize', onResize);
+        });
+
+        function initKaTeX() {
+            if (window.katex) {
+                katex.render("\\rho = \\frac{m}{V}", document.getElementById('math-density'));
+                katex.render("F_b = \\rho_{fluid} \\cdot V_{submerged} \\cdot g", document.getElementById('math-buoyancy'));
+            }
+        }
+
+        function init2DCanvas() {
+            canvas2D = document.getElementById('canvas-2d');
+            ctx2D = canvas2D.getContext('2d');
+
+            canvas2D.addEventListener('mousedown', onMouseDown2D);
+            canvas2D.addEventListener('mousemove', onMouseMove2D);
+            window.addEventListener('mouseup', onMouseUp2D);
+
+            // Touch Support for mobile view
+            canvas2D.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    const rect = canvas2D.getBoundingClientRect();
+                    handleDragStart(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top);
+                }
+            });
+            canvas2D.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1) {
+                    const rect = canvas2D.getBoundingClientRect();
+                    handleDragMove(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top);
+                }
+            });
+            canvas2D.addEventListener('touchend', () => {
+                state.isDraggingA = false;
+                state.isDraggingB = false;
+            });
+        }
+
+        function init3DScene() {
+            const container = document.getElementById('container-3d');
+
+            scene3D = new THREE.Scene();
+            scene3D.fog = new THREE.FogExp2(0x0B0F17, 0.015);
+
+            camera3D = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera3D.position.set(0, 1.5, 4.5);
+
+            renderer3D = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer3D.setSize(container.clientWidth, container.clientHeight);
+            renderer3D.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer3D.domElement);
+
+            controls3D = new THREE.OrbitControls(camera3D, renderer3D.domElement);
+            controls3D.enableDamping = true;
+            controls3D.dampingFactor = 0.05;
+
+            // Lights
+            const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+            scene3D.add(ambient);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 10, 7);
+            scene3D.add(dirLight);
+
+            // Container Water Tank 3D Mesh
+            meshContainer3D = new THREE.Group();
+            scene3D.add(meshContainer3D);
+
+            // Tank Glass Wireframe / Transparent Box
+            const tankGeo = new THREE.BoxGeometry(state.tankWidth, state.tankHeight, 1.2);
+            const tankMat = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.15,
+                roughness: 0.1,
+                transmission: 0.9,
+                depthWrite: false
+            });
+            const tankMesh = new THREE.Mesh(tankGeo, tankMat);
+            tankMesh.position.y = state.tankHeight / 2;
+            meshContainer3D.add(tankMesh);
+
+            // Fluid Mesh 3D (Transparent Blue Box)
+            const fluidGeo = new THREE.BoxGeometry(state.tankWidth - 0.02, 1.0, 1.18);
+            const fluidMat = new THREE.MeshStandardMaterial({
+                color: 0x06B6D4,
+                transparent: true,
+                opacity: 0.5,
+                roughness: 0.1
+            });
+            fluidMesh3D = new THREE.Mesh(fluidGeo, fluidMat);
+            meshContainer3D.add(fluidMesh3D);
+
+            // Object A 3D Mesh
+            const objAGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+            const objAMat = new THREE.MeshStandardMaterial({ color: 0xD97706, roughness: 0.4 });
+            meshObjA3D = new THREE.Mesh(objAGeo, objAMat);
+            meshContainer3D.add(meshObjA3D);
+
+            // Object B 3D Mesh
+            const objBMat = new THREE.MeshStandardMaterial({ color: 0xEF4444, roughness: 0.4 });
+            meshObjB3D = new THREE.Mesh(objAGeo, objBMat);
+            meshContainer3D.add(meshObjB3D);
+            meshObjB3D.visible = false;
+
+            // Vectors Group
+            vectorsGroup3D = new THREE.Group();
+            scene3D.add(vectorsGroup3D);
+        }
+
+        // ================= PHYSICS COMPUTATION & ANIMATION LOOP =================
+        function calculatePhysics() {
+            // Density = Mass (kg) / Volume (m^3)
+            // Note: 1 Liter = 0.001 m^3
+            state.densityA = state.massA / (state.volA * 0.001);
+            state.densityB = state.massB / (state.volB * 0.001);
+
+            // Dynamic Fluid Level Displacement
+            // Total displaced volume = Submerged volume of objects
+            let submergedVolA = getSubmergedVolume('A');
+            let submergedVolB = state.compareMode ? getSubmergedVolume('B') : 0;
+
+            const totalDisplacedLiters = submergedVolA + submergedVolB;
+            // Base fluid volume 100L -> Height maps linearly
+            state.liquidHeight = 0.8 + (state.fluidBaseVolume + totalDisplacedLiters - 100) * 0.005;
+        }
+
+        function getSubmergedVolume(objKey) {
+            const mass = objKey === 'A' ? state.massA : state.massB;
+            const volL = objKey === 'A' ? state.volA : state.volB;
+            const density = objKey === 'A' ? state.densityA : state.densityB;
+            const y = objKey === 'A' ? state.yA : state.yB;
+
+            // Object side length assuming cube
+            const sideLength = Math.cbrt(volL * 0.001); // meters
+            const bottomY = y - sideLength / 2;
+            const topY = y + sideLength / 2;
+
+            if (topY <= state.liquidHeight) {
+                // Fully submerged
+                return volL;
+            } else if (bottomY >= state.liquidHeight) {
+                // Out of water
+                return 0;
+            } else {
+                // Partially submerged
+                const submergedHeight = state.liquidHeight - bottomY;
+                const ratio = Math.max(0, Math.min(1, submergedHeight / sideLength));
+                return volL * ratio;
+            }
+        }
+
+        function physicsLoop(timestamp) {
+            const dt = Math.min((timestamp - lastTime) / 1000, 0.033); // Cap dt
+            lastTime = timestamp;
+
+            // Simulate Physics Step for Object A
+            if (!state.isDraggingA) {
+                updateObjectPhysics('A', dt);
+            }
+            if (state.compareMode && !state.isDraggingB) {
+                updateObjectPhysics('B', dt);
+            }
+
+            calculatePhysics();
+            updateUI();
+            render();
+
+            animationFrameId = requestAnimationFrame(physicsLoop);
+        }
+
+        // Master Render Function
+        function render() {
+            if (state.renderMode === '2d') {
+                render2D();
+            } else if (state.renderMode === '3d') {
+                render3D();
+            }
+        }
+
+        function updateObjectPhysics(objKey, dt) {
+            const mass = objKey === 'A' ? state.massA : state.massB;
+            const volL = objKey === 'A' ? state.volA : state.volB;
+            const y = objKey === 'A' ? state.yA : state.yB;
+            let vy = objKey === 'A' ? state.vyA : state.vyB;
+
+            const volM3 = volL * 0.001;
+            const sideLength = Math.cbrt(volM3);
+
+            // Gravity Force (Downward -)
+            const Fg = mass * state.gravity;
+
+            // Buoyant Force (Upward +) = rho_fluid * V_submerged * g
+            const submergedVolL = getSubmergedVolume(objKey);
+            const Fb = state.fluidDensity * (submergedVolL * 0.001) * state.gravity;
+
+            // Fluid Drag / Damping
+            const subRatio = submergedVolL / volL;
+            const dragCoeff = 8.0 * subRatio + 0.2;
+            const Fdrag = -dragCoeff * vy;
+
+            // Net Force
+            const Fnet = Fb - Fg + Fdrag;
+            const ay = Fnet / mass;
+
+            // Integration
+            vy += ay * dt;
+            let newY = y + vy * dt;
+
+            // Boundaries: Tank Bottom & Surface Equilibrium
+            const minY = sideLength / 2;
+            const maxY = state.tankHeight + 0.3;
+
+            if (newY < minY) {
+                newY = minY;
+                vy = -vy * 0.2; // Floor bounce damping
+            } else if (newY > maxY) {
+                newY = maxY;
+                vy = 0;
+            }
+
+            if (objKey === 'A') {
+                state.yA = newY;
+                state.vyA = vy;
+            } else {
+                state.yB = newY;
+                state.vyB = vy;
+            }
+        }
+
+        // ================= 2D CANVAS RENDERER =================
+        function render2D() {
+            const w = canvas2D.clientWidth;
+            const h = canvas2D.clientHeight;
+            canvas2D.width = w * window.devicePixelRatio;
+            canvas2D.height = h * window.devicePixelRatio;
+            ctx2D.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+            ctx2D.clearRect(0, 0, w, h);
+
+            // Scale calculations (Meters to Canvas Pixels)
+            const scale = h / (state.tankHeight + 0.6);
+            const ox = w / 2;
+            const oy = h - 40; // Tank bottom screen position
+
+            // 1. Draw Glass Tank Container
+            const tankWidthPx = state.tankWidth * scale;
+            const tankHeightPx = state.tankHeight * scale;
+            const tankLeft = ox - tankWidthPx / 2;
+            const tankTop = oy - tankHeightPx;
+
+            ctx2D.fillStyle = 'rgba(15, 23, 42, 0.6)';
+            ctx2D.fillRect(tankLeft, tankTop, tankWidthPx, tankHeightPx);
+            ctx2D.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx2D.lineWidth = 3;
+            ctx2D.strokeRect(tankLeft, tankTop, tankWidthPx, tankHeightPx);
+
+            // 2. Draw Liquid
+            const liquidHeightPx = state.liquidHeight * scale;
+            const liquidTop = oy - liquidHeightPx;
+
+            // Liquid Color gradient based on fluid density
+            const liquidGrad = ctx2D.createLinearGradient(0, liquidTop, 0, oy);
+            if (state.fluidDensity < 800) {
+                liquidGrad.addColorStop(0, 'rgba(245, 158, 11, 0.5)'); // Gasoline amber
+                liquidGrad.addColorStop(1, 'rgba(217, 119, 6, 0.7)');
+            } else if (state.fluidDensity > 5000) {
+                liquidGrad.addColorStop(0, 'rgba(156, 163, 175, 0.8)'); // Mercury grey
+                liquidGrad.addColorStop(1, 'rgba(75, 85, 99, 0.9)');
+            } else {
+                liquidGrad.addColorStop(0, 'rgba(6, 182, 212, 0.45)'); // Water cyan
+                liquidGrad.addColorStop(1, 'rgba(30, 58, 138, 0.7)');
+            }
+
+            ctx2D.fillStyle = liquidGrad;
+            ctx2D.fillRect(tankLeft + 2, liquidTop, tankWidthPx - 4, liquidHeightPx);
+
+            // Animated Water Surface Wave Line
+            ctx2D.strokeStyle = 'rgba(103, 232, 249, 0.8)';
+            ctx2D.lineWidth = 2;
+            ctx2D.beginPath();
+            ctx2D.moveTo(tankLeft + 2, liquidTop);
+            ctx2D.lineTo(tankLeft + tankWidthPx - 2, liquidTop);
+            ctx2D.stroke();
+
+            // 3. Draw Ruler Grid & Level Markers
+            if (state.showGrid) {
+                ctx2D.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                ctx2D.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx2D.font = '10px Sarabun, sans-serif';
+
+                for (let levelM = 0; levelM <= state.tankHeight; levelM += 0.5) {
+                    const yPx = oy - levelM * scale;
+                    ctx2D.beginPath();
+                    ctx2D.moveTo(tankLeft - 8, yPx);
+                    ctx2D.lineTo(tankLeft, yPx);
+                    ctx2D.stroke();
+                    ctx2D.fillText(`${levelM.toFixed(1)}m`, tankLeft - 32, yPx + 3);
+                }
+            }
+
+            // 4. Draw Object A
+            const posXA = state.compareMode ? ox - tankWidthPx * 0.22 : ox;
+            drawObject2D('A', posXA, oy, scale);
+
+            // 5. Draw Object B (If Compare Mode Active)
+            if (state.compareMode) {
+                const posXB = ox + tankWidthPx * 0.22;
+                drawObject2D('B', posXB, oy, scale);
+            }
+        }
+
+        function drawObject2D(objKey, screenX, oy, scale) {
+            const mass = objKey === 'A' ? state.massA : state.massB;
+            const volL = objKey === 'A' ? state.volA : state.volB;
+            const density = objKey === 'A' ? state.densityA : state.densityB;
+            const y = objKey === 'A' ? state.yA : state.yB;
+            const matKey = objKey === 'A' ? state.materialA : state.materialB;
+
+            const sideM = Math.cbrt(volL * 0.001);
+            const sidePx = sideM * scale;
+            const screenY = oy - y * scale - sidePx / 2;
+
+            // Box Fill
+            const color = MATERIAL_PRESETS[matKey] ? MATERIAL_PRESETS[matKey].color : '#A855F7';
+            ctx2D.fillStyle = color;
+            ctx2D.fillRect(screenX - sidePx / 2, screenY, sidePx, sidePx);
+
+            ctx2D.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx2D.lineWidth = 2;
+            ctx2D.strokeRect(screenX - sidePx / 2, screenY, sidePx, sidePx);
+
+            // Density Particles Representation inside Object
+            if (state.showParticles) {
+                ctx2D.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                const particleCount = Math.min(30, Math.max(4, Math.round(density / 100)));
+                const step = sidePx / (Math.sqrt(particleCount) + 1);
+
+                for (let px = screenX - sidePx / 2 + step; px < screenX + sidePx / 2; px += step) {
+                    for (let py = screenY + step; py < screenY + sidePx; py += step) {
+                        ctx2D.beginPath();
+                        ctx2D.arc(px, py, 1.5, 0, Math.PI * 2);
+                        ctx2D.fill();
+                    }
+                }
+            }
+
+            // Labels
+            ctx2D.fillStyle = '#ffffff';
+            ctx2D.font = 'bold 11px Sarabun, sans-serif';
+            ctx2D.textAlign = 'center';
+            ctx2D.fillText(`${objKey}`, screenX, screenY + sidePx / 2 + 4);
+
+            // 6. Draw Force Vectors (Fg & Fb)
+            if (state.showVectors) {
+                const Fg = mass * state.gravity;
+                const submergedVolL = getSubmergedVolume(objKey);
+                const Fb = state.fluidDensity * (submergedVolL * 0.001) * state.gravity;
+
+                const vectorScale = 1.2; // Pixel length per Newton
+
+                // Downward Gravity Vector (Red)
+                drawVector2D(screenX, screenY + sidePx / 2, screenX, screenY + sidePx / 2 + Fg * vectorScale, '#F43F5E', 'Fg');
+
+                // Upward Buoyant Vector (Green)
+                if (Fb > 0.1) {
+                    drawVector2D(screenX, screenY + sidePx / 2, screenX, screenY + sidePx / 2 - Fb * vectorScale, '#10B981', 'Fb');
+                }
+            }
+        }
+
+        function drawVector2D(x1, y1, x2, y2, color, label) {
+            ctx2D.strokeStyle = color;
+            ctx2D.fillStyle = color;
+            ctx2D.lineWidth = 3;
+
+            ctx2D.beginPath();
+            ctx2D.moveTo(x1, y1);
+            ctx2D.lineTo(x2, y2);
+            ctx2D.stroke();
+
+            // Arrow tip
+            const headlen = 8;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            ctx2D.beginPath();
+            ctx2D.moveTo(x2, y2);
+            ctx2D.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+            ctx2D.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+            ctx2D.closePath();
+            ctx2D.fill();
+
+            // Label
+            ctx2D.font = 'bold 10px Sarabun, sans-serif';
+            ctx2D.fillText(label, x2 + 12, y2);
+        }
+
+        // ================= 3D VIEWPORT RENDERER =================
+        function render3D() {
+            if (state.renderMode !== '3d') return;
+
+            // Fluid Mesh 3D height adjustment
+            fluidMesh3D.scale.set(1, state.liquidHeight, 1);
+            fluidMesh3D.position.y = state.liquidHeight / 2;
+
+            // Object A 3D Mesh update
+            const sideA = Math.cbrt(state.volA * 0.001);
+            meshObjA3D.scale.set(sideA, sideA, sideA);
+            const posXA = state.compareMode ? -0.5 : 0;
+            meshObjA3D.position.set(posXA, state.yA, 0);
+
+            // Object B 3D Mesh
+            if (state.compareMode) {
+                meshObjB3D.visible = true;
+                const sideB = Math.cbrt(state.volB * 0.001);
+                meshObjB3D.scale.set(sideB, sideB, sideB);
+                meshObjB3D.position.set(0.5, state.yB, 0);
+            } else {
+                meshObjB3D.visible = false;
+            }
+
+            controls3D.update();
+            renderer3D.render(scene3D, camera3D);
+        }
+
+        // ================= 2D MOUSE DRAG INTERACTION =================
+        function onMouseDown2D(e) {
+            if (state.renderMode !== '2d') return;
+            const rect = canvas2D.getBoundingClientRect();
+            handleDragStart(e.clientX - rect.left, e.clientY - rect.top);
+        }
+
+        function handleDragStart(mouseX, mouseY) {
+            const h = canvas2D.clientHeight;
+            const w = canvas2D.clientWidth;
+            const scale = h / (state.tankHeight + 0.6);
+            const oy = h - 40;
+            const tankWidthPx = state.tankWidth * scale;
+
+            // Check Object A
+            const posXA = state.compareMode ? w / 2 - tankWidthPx * 0.22 : w / 2;
+            const sideA = Math.cbrt(state.volA * 0.001) * scale;
+            const screenYA = oy - state.yA * scale;
+
+            if (Math.abs(mouseX - posXA) < sideA && Math.abs(mouseY - screenYA) < sideA) {
+                state.isDraggingA = true;
+                state.vyA = 0;
+            }
+
+            // Check Object B
+            if (state.compareMode) {
+                const posXB = w / 2 + tankWidthPx * 0.22;
+                const sideB = Math.cbrt(state.volB * 0.001) * scale;
+                const screenYB = oy - state.yB * scale;
+
+                if (Math.abs(mouseX - posXB) < sideB && Math.abs(mouseY - screenYB) < sideB) {
+                    state.isDraggingB = true;
+                    state.vyB = 0;
+                }
+            }
+        }
+
+        function onMouseMove2D(e) {
+            if (state.renderMode !== '2d') return;
+            const rect = canvas2D.getBoundingClientRect();
+            handleDragMove(e.clientX - rect.left, e.clientY - rect.top);
+        }
+
+        function handleDragMove(mouseX, mouseY) {
+            const h = canvas2D.clientHeight;
+            const scale = h / (state.tankHeight + 0.6);
+            const oy = h - 40;
+
+            const newY = Math.max(0.1, Math.min(state.tankHeight + 0.2, (oy - mouseY) / scale));
+
+            if (state.isDraggingA) {
+                state.yA = newY;
+                state.vyA = 0;
+            } else if (state.isDraggingB) {
+                state.yB = newY;
+                state.vyB = 0;
+            }
+        }
+
+        function onMouseUp2D() {
+            state.isDraggingA = false;
+            state.isDraggingB = false;
+        }
+
+        // ================= UI STATE SYNC & EVENT HANDLERS =================
+        function updateUI() {
+            // Readout values
+            document.getElementById('val-mass-a-display').innerText = `${state.massA.toFixed(2)} kg`;
+            document.getElementById('val-vol-a-display').innerText = `${state.volA.toFixed(2)} L`;
+            document.getElementById('val-density-a-display').innerText = `${state.densityA.toFixed(2)} kg/m³`;
+
+            const Fg = state.massA * state.gravity;
+            const subVolL = getSubmergedVolume('A');
+            const Fb = state.fluidDensity * (subVolL * 0.001) * state.gravity;
+            const Fnet = Fb - Fg;
+
+            document.getElementById('val-fg-display').innerText = `${Fg.toFixed(2)} N`;
+            document.getElementById('val-fb-display').innerText = `${Fb.toFixed(2)} N`;
+            document.getElementById('val-fnet-display').innerText = `${Fnet.toFixed(2)} N`;
+
+            const subRatioPercent = (subVolL / state.volA) * 100;
+            document.getElementById('val-vsub-display').innerText = `${subVolL.toFixed(2)} L (${subRatioPercent.toFixed(1)}%)`;
+            document.getElementById('val-displaced-weight').innerText = `${Fb.toFixed(2)} N`;
+
+            document.getElementById('overlay-fluid-vol').innerText = `${(state.fluidBaseVolume + subVolL).toFixed(1)} L`;
+
+            // Status Badge Logic
+            const badge = document.getElementById('status-badge');
+            if (state.densityA < state.fluidDensity - 5) {
+                badge.innerText = 'ลอยน้ำ (Floating)';
+                badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full badge-float';
+            } else if (state.densityA > state.fluidDensity + 5) {
+                badge.innerText = 'จมน้ำ (Sinking)';
+                badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full badge-sink';
+            } else {
+                badge.innerText = 'ลอยกึ่งจม (Neutral)';
+                badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full badge-neutral';
+            }
+
+            // Compare Readouts
+            if (state.compareMode) {
+                document.getElementById('val-mass-b-display').innerText = `${state.massB.toFixed(2)} kg`;
+                document.getElementById('val-density-b-display').innerText = `${state.densityB.toFixed(2)} kg/m³`;
+            }
+        }
+
+        function onSliderInput() {
+            state.massA = parseFloat(document.getElementById('slider-mass-a').value);
+            state.volA = parseFloat(document.getElementById('slider-vol-a').value);
+            state.gravity = parseFloat(document.getElementById('slider-gravity').value);
+
+            if (state.compareMode) {
+                state.massB = parseFloat(document.getElementById('slider-mass-b').value);
+                state.volB = parseFloat(document.getElementById('slider-vol-b').value);
+            }
+
+            if (document.getElementById('select-fluid').value === 'custom') {
+                state.fluidDensity = parseFloat(document.getElementById('slider-fluid-density').value);
+            }
+
+            document.getElementById('slider-val-mass-a').innerText = `${state.massA.toFixed(2)} kg`;
+            document.getElementById('slider-val-vol-a').innerText = `${state.volA.toFixed(2)} L`;
+            document.getElementById('slider-val-gravity').innerText = `${state.gravity.toFixed(2)} m/s²`;
+            document.getElementById('slider-val-fluid-density').innerText = `${state.fluidDensity} kg/m³`;
+
+            if (state.compareMode) {
+                document.getElementById('slider-val-mass-b').innerText = `${state.massB.toFixed(2)} kg`;
+                document.getElementById('slider-val-vol-b').innerText = `${state.volB.toFixed(2)} L`;
+            }
+
+            // Set Material to custom if sliders moved manually
+            state.materialA = 'custom';
+            updateMaterialButtonsUI();
+
+            calculatePhysics();
+            updateUI();
+        }
+
+        function setMaterialPreset(matKey) {
+            state.materialA = matKey;
+            const preset = MATERIAL_PRESETS[matKey];
+
+            if (preset && matKey !== 'custom') {
+                state.densityA = preset.density;
+                // Keep volume, recalculate mass = density * volume
+                state.massA = (preset.density * (state.volA * 0.001));
+
+                document.getElementById('slider-mass-a').value = state.massA;
+                document.getElementById('slider-val-mass-a').innerText = `${state.massA.toFixed(2)} kg`;
+            }
+
+            updateMaterialButtonsUI();
+            calculatePhysics();
+            updateUI();
+        }
+
+        function updateMaterialButtonsUI() {
+            document.querySelectorAll('.mat-btn').forEach(btn => {
+                btn.className = 'mat-btn p-1.5 bg-physics-800 hover:bg-physics-700 text-gray-300 rounded-lg border border-white/10 text-center font-medium transition';
+            });
+            const activeBtn = document.getElementById(`btn-mat-${state.materialA}`);
+            if (activeBtn) {
+                activeBtn.className = 'mat-btn p-1.5 bg-cyan-500/20 text-cyan-300 rounded-lg border border-cyan-500/40 text-center font-medium transition';
+            }
+            document.getElementById('readout-material-a').innerText = MATERIAL_PRESETS[state.materialA] ? MATERIAL_PRESETS[state.materialA].name : 'กำหนดเอง';
+        }
+
+        function onFluidSelectChange() {
+            const val = document.getElementById('select-fluid').value;
+            const customContainer = document.getElementById('custom-fluid-container');
+
+            if (val === 'custom') {
+                customContainer.classList.remove('hidden');
+                state.fluidDensity = parseFloat(document.getElementById('slider-fluid-density').value);
+            } else {
+                customContainer.classList.add('hidden');
+                state.fluidDensity = parseFloat(val);
+            }
+
+            calculatePhysics();
+            updateUI();
+        }
+
+        function toggleCompareMode() {
+            state.compareMode = !state.compareMode;
+            const btn = document.getElementById('btn-compare-mode');
+            const controlsB = document.getElementById('compare-controls-b');
+            const readoutB = document.getElementById('compare-readout-b');
+
+            if (state.compareMode) {
+                btn.className = 'px-3 py-1.5 bg-amber-500/20 text-amber-300 text-xs rounded-xl transition border border-amber-500/40 flex items-center gap-1.5';
+                controlsB.classList.remove('hidden');
+                readoutB.classList.remove('hidden');
+            } else {
+                btn.className = 'px-3 py-1.5 bg-physics-800 hover:bg-physics-700 text-gray-200 text-xs rounded-xl transition border border-white/10 flex items-center gap-1.5';
+                controlsB.classList.add('hidden');
+                readoutB.classList.add('hidden');
+            }
+
+            calculatePhysics();
+            updateUI();
+        }
+
+        function setRenderMode(mode) {
+            state.renderMode = mode;
+            const btn2D = document.getElementById('btn-mode-2d');
+            const btn3D = document.getElementById('btn-mode-3d');
+            const container2D = document.getElementById('canvas-2d');
+            const container3D = document.getElementById('container-3d');
+
+            if (mode === '2d') {
+                btn2D.className = 'mode-btn active px-3 py-1.5 rounded-lg transition flex items-center gap-1';
+                btn3D.className = 'mode-btn px-3 py-1.5 text-gray-400 hover:text-white rounded-lg transition flex items-center gap-1';
+                container2D.classList.remove('hidden');
+                container3D.classList.add('hidden');
+            } else {
+                btn3D.className = 'mode-btn active px-3 py-1.5 rounded-lg transition flex items-center gap-1';
+                btn2D.className = 'mode-btn px-3 py-1.5 text-gray-400 hover:text-white rounded-lg transition flex items-center gap-1';
+                container3D.classList.remove('hidden');
+                container2D.classList.add('hidden');
+                onResize();
+            }
+        }
+
+        function switchTab(tabKey) {
+            ['calc', 'archimedes', 'theory'].forEach(k => {
+                document.getElementById(`content-${k}`).classList.add('hidden');
+                document.getElementById(`tab-${k}`).classList.remove('active');
+            });
+
+            document.getElementById(`content-${tabKey}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabKey}`).classList.add('active');
+        }
+
+        function resetToDefaults() {
+            state.massA = 2.0;
+            state.volA = 5.0;
+            state.massB = 5.0;
+            state.volB = 2.5;
+            state.gravity = 9.81;
+            state.fluidDensity = 1000;
+            state.yA = 1.0;
+            state.yB = 1.0;
+            state.vyA = 0;
+            state.vyB = 0;
+
+            document.getElementById('slider-mass-a').value = 2.0;
+            document.getElementById('slider-vol-a').value = 5.0;
+            document.getElementById('slider-gravity').value = 9.81;
+            document.getElementById('select-fluid').value = '1000';
+            document.getElementById('custom-fluid-container').classList.add('hidden');
+
+            setMaterialPreset('wood');
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        function onResize() {
+            if (state.renderMode === '3d' && renderer3D && camera3D) {
+                const container = document.getElementById('container-3d');
+                camera3D.aspect = container.clientWidth / container.clientHeight;
+                camera3D.updateProjectionMatrix();
+                renderer3D.setSize(container.clientWidth, container.clientHeight);
+            }
+        }
+    </script>
+</body>
+</html>

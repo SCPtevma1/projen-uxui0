@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แบบจำลองฟิสิกส์นิวเคลียร์ 3D (Nuclear Physics 3D)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Sarabun:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- KaTeX for Math Formatting -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    <!-- Three.js & Controls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #0a0512;
+            --panel-bg: rgba(15, 10, 25, 0.85);
+            --panel-border: rgba(168, 85, 247, 0.3);
+            --cyan-accent: #22d3ee;
+            --purple-accent: #a855f7;
+            --rose-accent: #f43f5e;
+            --amber-accent: #f59e0b;
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: var(--bg-dark);
+            color: #f4f4f5;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        .font-code { font-family: 'Fira Code', monospace; }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); }
+        ::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.4); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--purple-accent); }
+
+        /* Glassmorphism Panels */
+        .glass-card {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+        }
+
+        #webgl-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+        .hud-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10; pointer-events: none;
+            display: grid;
+            grid-template-columns: 360px 1fr 400px;
+            grid-template-rows: auto 1fr auto;
+            padding: 1rem; gap: 1rem;
+        }
+
+        .pointer-auto { pointer-events: auto; }
+        
+        .math-box {
+            background: rgba(0,0,0,0.5); border-left: 3px solid var(--purple-accent);
+            padding: 0.5rem; border-radius: 0 0.5rem 0.5rem 0; font-size: 0.85rem; margin: 0.5rem 0;
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Chart of Nuclides Canvas */
+        #chartCanvas {
+            width: 100%; height: 160px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px; margin-top: 0.5rem;
+        }
+
+        .btn-particle {
+            display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+            padding: 0.5rem; border-radius: 0.5rem; font-weight: bold; font-size: 0.85rem;
+            transition: all 0.2s; cursor: pointer; border: 1px solid transparent;
+        }
+        .btn-proton { background: rgba(244, 63, 94, 0.2); color: #fda4af; border-color: rgba(244, 63, 94, 0.5); }
+        .btn-proton:hover { background: rgba(244, 63, 94, 0.4); }
+        .btn-neutron { background: rgba(34, 211, 238, 0.2); color: #67e8f9; border-color: rgba(34, 211, 238, 0.5); }
+        .btn-neutron:hover { background: rgba(34, 211, 238, 0.4); }
+
+        .element-symbol-box {
+            font-family: 'Fira Code', monospace;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: center;
+            line-height: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="webgl-container"></div>
+
+    <div class="hud-overlay">
+
+        <!-- Top Header -->
+        <header class="glass-card rounded-xl p-4 pointer-auto col-span-2 flex items-center justify-between">
+            <div>
+                <h1 class="font-orbitron font-bold text-xl text-purple-400 flex items-center gap-2">
+                    <a href="../physics.html"><i class="fa-solid fa-atom"></i> ฟิสิกส์นิวเคลียร์ 3D (Nuclear Physics)</a>
+                </h1>
+                <p class="text-xs text-zinc-400 mt-1">
+                    ประดิษฐ์นิวเคลียส, ไอโซโทป, แผนผังนิวไคลด์, โครงสร้างเชลล์ และการสลายตัวของกัมมันตภาพรังสี
+                </p>
+            </div>
+            <div class="flex items-center gap-4">
+                <div id="stability-badge" class="px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-900/60 text-emerald-300 border border-emerald-500/50 flex items-center gap-2">
+                    <i class="fa-solid fa-check-circle"></i> เสถียร (Stable)
+                </div>
+            </div>
+        </header>
+
+        <!-- Left Controls Sidebar -->
+        <aside class="glass-card rounded-xl p-4 pointer-auto col-start-1 row-start-2 row-span-2 flex flex-col gap-4 overflow-y-auto max-h-[calc(100vh-6rem)]">
+            
+            <!-- Nucleus Builder -->
+            <div>
+                <h2 class="font-orbitron text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-wrench"></i> ประดิษฐ์นิวเคลียส (Builder)
+                </h2>
+                
+                <div class="bg-black/40 border border-zinc-700 rounded-lg p-3 flex items-center justify-center gap-4 mb-3">
+                    <div class="element-symbol-box text-sm text-zinc-400">
+                        <span id="sym-a" class="text-lg">12</span>
+                        <span id="sym-z" class="text-lg">6</span>
+                    </div>
+                    <div id="sym-element" class="font-orbitron font-bold text-5xl text-white">C</div>
+                    <div class="ml-2 text-xs text-zinc-400 flex flex-col gap-1">
+                        <div class="text-amber-400 font-bold" id="element-name">Carbon-12</div>
+                        <div><i class="fa-solid fa-circle text-rose-500 text-[10px]"></i> $Z$: <span id="val-z">6</span> (Protons)</div>
+                        <div><i class="fa-solid fa-circle text-cyan-500 text-[10px]"></i> $N$: <span id="val-n">6</span> (Neutrons)</div>
+                        <div><i class="fa-solid fa-scale-balanced text-zinc-500 text-[10px]"></i> $A$: <span id="val-a">12</span> (Mass)</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="changeParticle('p', 1)" class="btn-particle btn-proton"><i class="fa-solid fa-plus"></i> โปรตอน (P)</button>
+                    <button onclick="changeParticle('p', -1)" class="btn-particle btn-proton opacity-80"><i class="fa-solid fa-minus"></i> โปรตอน (P)</button>
+                    <button onclick="changeParticle('n', 1)" class="btn-particle btn-neutron"><i class="fa-solid fa-plus"></i> นิวตรอน (N)</button>
+                    <button onclick="changeParticle('n', -1)" class="btn-particle btn-neutron opacity-80"><i class="fa-solid fa-minus"></i> นิวตรอน (N)</button>
+                </div>
+            </div>
+
+            <!-- Decay Triggers -->
+            <div class="border-t border-zinc-800 pt-3">
+                <h2 class="font-orbitron text-xs font-semibold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-radiation"></i> การสลายตัว (Nuclear Decay)
+                </h2>
+                <div class="grid grid-cols-1 gap-2">
+                    <button id="btn-decay-alpha" onclick="triggerDecay('alpha')" class="px-3 py-2 rounded-lg text-xs bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/50 text-amber-300 font-semibold transition text-left flex justify-between items-center">
+                        <span>$\alpha$ Decay (ปล่อยนิวเคลียส He)</span>
+                        <i class="fa-solid fa-play text-[10px]"></i>
+                    </button>
+                    <button id="btn-decay-betaminus" onclick="triggerDecay('betaminus')" class="px-3 py-2 rounded-lg text-xs bg-sky-600/30 hover:bg-sky-600/50 border border-sky-500/50 text-sky-300 font-semibold transition text-left flex justify-between items-center">
+                        <span>$\beta^-$ Decay ($n \to p^+ + e^-$)</span>
+                        <i class="fa-solid fa-play text-[10px]"></i>
+                    </button>
+                    <button id="btn-decay-betaplus" onclick="triggerDecay('betaplus')" class="px-3 py-2 rounded-lg text-xs bg-rose-600/30 hover:bg-rose-600/50 border border-rose-500/50 text-rose-300 font-semibold transition text-left flex justify-between items-center">
+                        <span>$\beta^+$ Decay ($p^+ \to n + e^+$)</span>
+                        <i class="fa-solid fa-play text-[10px]"></i>
+                    </button>
+                </div>
+                <p id="decay-warning" class="text-[10px] text-rose-400 mt-2 hidden"><i class="fa-solid fa-triangle-exclamation"></i> ไม่สามารถสลายตัวแบบนี้ได้ (อนุภาคไม่พอ)</p>
+            </div>
+
+            <!-- Chart of Nuclides -->
+            <div class="border-t border-zinc-800 pt-3 mt-auto">
+                <h2 class="font-orbitron text-[11px] font-semibold text-zinc-400 mb-1 flex justify-between">
+                    <span>Chart of Nuclides ($N$ vs $Z$)</span>
+                    <span class="text-emerald-400">Valley of Stability</span>
+                </h2>
+                <canvas id="chartCanvas"></canvas>
+            </div>
+
+        </aside>
+
+        <!-- Right Educational & AI Tutor Panel -->
+        <aside class="glass-card rounded-xl p-4 pointer-auto col-start-3 row-start-1 row-span-3 flex flex-col gap-3 max-h-[calc(100vh-2rem)]">
+            
+            <!-- Tab Navigation -->
+            <div class="flex border-b border-zinc-700 pb-2 gap-1.5">
+                <button id="tab-btn-theory" onclick="switchRightTab('theory')" class="flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/50 flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-book-open"></i> ทฤษฎี
+                </button>
+                <button id="tab-btn-chat" onclick="switchRightTab('chat')" class="flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-zinc-800 text-zinc-400 border border-zinc-700 flex items-center justify-center gap-1 hover:text-zinc-200">
+                    <i class="fa-solid fa-robot"></i> AI Tutor
+                </button>
+            </div>
+
+            <!-- Tab 1: Theory Content -->
+            <div id="tab-content-theory" class="overflow-y-auto text-xs text-zinc-300 space-y-4 pr-1">
+                
+                <section>
+                    <h3 class="text-cyan-400 font-bold text-sm mb-1.5"><i class="fa-solid fa-atom"></i> ไอโซโทป (Isotopes)</h3>
+                    <p>ไอโซโทปคือธาตุที่มีจำนวน <b>โปรตอน ($Z$) เท่ากัน</b> (เป็นธาตุเดียวกัน) แต่มีจำนวน <b>นิวตรอน ($N$) ต่างกัน</b> ทำให้มวลอะตอม ($A$) ต่างกัน</p>
+                    <ul class="list-disc pl-4 mt-1 space-y-0.5 text-[11px] text-zinc-400">
+                        <li>ตัวอย่าง: Carbon-12 ($6P, 6N$) เสถียร, Carbon-14 ($6P, 8N$) เป็นกัมมันตรังสี</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h3 class="text-amber-400 font-bold text-sm mb-1.5"><i class="fa-solid fa-chart-scatter"></i> Chart of Nuclides</h3>
+                    <p>กราฟที่พล็อตจำนวนนิวตรอน ($N$ แกน X) เทียบกับโปรตอน ($Z$ แกน Y) พื้นที่สีเขียวตรงกลางเรียกว่า <b>Valley of Stability</b></p>
+                    <ul class="list-disc pl-4 mt-1 space-y-0.5 text-[11px] text-zinc-400">
+                        <li>ธาตุเบา ($Z < 20$): มักจะเสถียรเมื่อ $N \approx Z$</li>
+                        <li>ธาตุหนัก: ต้องการนิวตรอนมากกว่าโปรตอนเพื่อต้านแรงผลักทางไฟฟ้า (Coulomb Repulsion) ระหว่างโปรตอน</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h3 class="text-rose-400 font-bold text-sm mb-1.5"><i class="fa-solid fa-layer-group"></i> Nuclear Shell Model</h3>
+                    <p>นิวเคลียสมีโครงสร้างเป็นชั้นพลังงาน (Shells) คล้ายกับอิเล็กตรอน หากนิวเคลียสมีจำนวนโปรตอนหรือนิวตรอนตรงกับ <b>"Magic Numbers"</b> จะมีความเสถียรสูงเป็นพิเศษ</p>
+                    <div class="bg-black/50 p-2 rounded border border-rose-500/30 my-2 font-code text-center text-rose-300">
+                        Magic Numbers: 2, 8, 20, 28, 50, 82, 126
+                    </div>
+                </section>
+
+                <section>
+                    <h3 class="text-emerald-400 font-bold text-sm mb-1.5"><i class="fa-solid fa-radiation"></i> การสลายตัว (Decay)</h3>
+                    <div class="space-y-2">
+                        <div class="bg-zinc-900 p-2 rounded border border-zinc-800">
+                            <b>$\alpha$ Decay (อัลฟา):</b> ปล่อยนิวเคลียสฮีเลียม ($2P, 2N$) ทำให้ $Z$ ลดลง 2 และ $A$ ลดลง 4 (มักเกิดในธาตุหนักมาก)
+                        </div>
+                        <div class="bg-zinc-900 p-2 rounded border border-zinc-800">
+                            <b>$\beta^-$ Decay (บีตาลบ):</b> นิวตรอนเปลี่ยนเป็นโปรตอนและปล่อยอิเล็กตรอน ($e^-$) ทำให้ $Z$ เพิ่ม 1 ($A$ คงที่) เกิดเมื่อมีนิวตรอนมากเกินไป
+                        </div>
+                        <div class="bg-zinc-900 p-2 rounded border border-zinc-800">
+                            <b>$\beta^+$ Decay (บีตาบวก):</b> โปรตอนเปลี่ยนเป็นนิวตรอนและปล่อยโพซิตรอน ($e^+$) ทำให้ $Z$ ลด 1 ($A$ คงที่) เกิดเมื่อมีโปรตอนมากเกินไป
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- Tab 2: Gemini AI Physics Chatbot -->
+            <div id="tab-content-chat" class="hidden flex-col h-full gap-2">
+                <div class="text-xs text-zinc-400 mb-1 flex items-center gap-1">
+                    <i class="fa-solid fa-sparkles text-purple-400"></i> ถามคำถามฟิสิกส์นิวเคลียร์กับ AI
+                </div>
+                <div class="flex flex-wrap gap-1.5 mb-1">
+                    <button onclick="sendQuickChat('ทำไมธาตุหนักๆ ถึงต้องการนิวตรอนมากกว่าโปรตอนเพื่อความเสถียร?')" class="text-[10px] bg-zinc-800 hover:bg-zinc-700 text-cyan-300 px-2 py-1 rounded border border-zinc-700 transition">
+                        ทำไมต้องมีนิวตรอนเยอะในธาตุหนัก?
+                    </button>
+                    <button onclick="sendQuickChat('Nuclear Shell Model และ Magic Numbers คืออะไร?')" class="text-[10px] bg-zinc-800 hover:bg-zinc-700 text-rose-300 px-2 py-1 rounded border border-zinc-700 transition">
+                        Magic Numbers คืออะไร?
+                    </button>
+                </div>
+                <div id="chatLog" class="flex-1 overflow-y-auto bg-black/40 border border-zinc-800 rounded-lg p-2.5 space-y-2 text-xs">
+                    <div class="bg-zinc-800/70 border border-zinc-700 rounded-lg p-2 text-zinc-200">
+                        สวัสดีครับ! ผมคือ AI ช่วยสอนฟิสิกส์นิวเคลียร์ สอบถามเกี่ยวกับไอโซโทป การสลายตัว หรือโครงสร้างนิวเคลียสได้เลยครับ
+                    </div>
+                </div>
+                <div class="flex gap-2 mt-1">
+                    <input type="text" id="chatInput" placeholder="พิมพ์คำถามฟิสิกส์..." onkeypress="if(event.key==='Enter') sendChatMessage()" class="flex-1 bg-black/60 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-purple-400">
+                    <button onclick="sendChatMessage()" class="bg-purple-600 hover:bg-purple-500 text-white font-semibold px-3 py-1.5 rounded-lg text-xs transition">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- Bottom Controls -->
+        <footer class="glass-card rounded-xl px-4 py-2 pointer-auto col-start-2 row-start-3 justify-self-center flex items-center gap-4 text-xs">
+            <span class="text-zinc-400">ขนาดนิวเคลียส ($R \approx r_0 A^{1/3}$)</span>
+            <div class="h-4 w-px bg-zinc-700"></div>
+            <button onclick="resetCameraView()" class="text-zinc-400 hover:text-cyan-300 flex items-center gap-1 transition">
+                <i class="fa-solid fa-camera"></i> รีเซ็ตมุมมอง 3D
+            </button>
+        </footer>
+
+    </div>
+
+    <script>
+        // --- Global & State ---
+        let scene, camera, renderer, controls;
+        
+        let nucleusState = {
+            protons: 6, // Carbon
+            neutrons: 6,
+            isStable: true
+        };
+
+        const ELEMENTS = [
+            "n", "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", 
+            "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca",
+            "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn"
+        ]; // Up to Z=30 for this simulation
+
+        const MAGIC_NUMBERS = [2, 8, 20, 28, 50, 82, 126];
+
+        // 3D Objects
+        let nucleusGroup = new THREE.Group();
+        let particles = []; // Store meshes for animation
+        let emittingParticles = []; // For decay animations
+
+        // --- Init Three.js Scene ---
+        function initScene() {
+            const container = document.getElementById('webgl-container');
+
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x0a0512, 0.015);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 0, 25);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 1.0;
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+            dirLight.position.set(10, 20, 15);
+            scene.add(dirLight);
+
+            // Add Group
+            scene.add(nucleusGroup);
+
+            // Build Initial Nucleus
+            buildNucleus();
+
+            // Resize Event
+            window.addEventListener('resize', onWindowResize);
+
+            // Start Loop
+            animate();
+            drawNuclideChart();
+        }
+
+        // --- Core Physics Logic ---
+        
+        function updatePhysicsState() {
+            const Z = nucleusState.protons;
+            const N = nucleusState.neutrons;
+            const A = Z + N;
+
+            // Simple Stability Check
+            // Very light elements N ~ Z. Heavier elements need more N.
+            let isStable = false;
+            let isMagic = MAGIC_NUMBERS.includes(Z) || MAGIC_NUMBERS.includes(N);
+            let isDoubleMagic = MAGIC_NUMBERS.includes(Z) && MAGIC_NUMBERS.includes(N);
+
+            if (Z === 0 && N > 0) isStable = false; // Free neutrons decay
+            else if (Z > 0) {
+                const idealN = Z * (1 + 0.006 * Z); // Approximation for stability line
+                const diff = Math.abs(N - idealN);
+                if (diff <= 1) isStable = true;
+                if (isDoubleMagic && diff <= 3) isStable = true; // Magic numbers expand stability
+            }
+
+            nucleusState.isStable = isStable;
+
+            // Update UI
+            document.getElementById('val-z').innerText = Z;
+            document.getElementById('val-n').innerText = N;
+            document.getElementById('val-a').innerText = A;
+            document.getElementById('sym-z').innerText = Z;
+            document.getElementById('sym-a').innerText = A;
+
+            const sym = Z < ELEMENTS.length ? ELEMENTS[Z] : "X";
+            document.getElementById('sym-element').innerText = sym;
+            
+            let elName = Z < ELEMENTS.length ? `${sym}-${A}` : `Element-${Z}-${A}`;
+            document.getElementById('element-name').innerText = elName;
+
+            // Badge
+            const badge = document.getElementById('stability-badge');
+            if (isStable) {
+                badge.className = "px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-900/60 text-emerald-300 border border-emerald-500/50 flex items-center gap-2";
+                badge.innerHTML = `<i class="fa-solid fa-check-circle"></i> เสถียร (Stable)`;
+                if (isMagic) badge.innerHTML += ` <i class="fa-solid fa-star text-amber-400" title="Magic Number"></i>`;
+            } else {
+                badge.className = "px-3 py-1.5 rounded-full text-xs font-bold bg-rose-900/60 text-rose-300 border border-rose-500/50 flex items-center gap-2";
+                badge.innerHTML = `<i class="fa-solid fa-radiation animate-pulse"></i> ไม่เสถียร (Radioactive)`;
+            }
+
+            // Button states
+            document.getElementById('decay-warning').classList.add('hidden');
+            drawNuclideChart();
+        }
+
+        function changeParticle(type, amount) {
+            if (type === 'p') {
+                const newZ = nucleusState.protons + amount;
+                if (newZ >= 0 && newZ < ELEMENTS.length) nucleusState.protons = newZ;
+            } else if (type === 'n') {
+                const newN = nucleusState.neutrons + amount;
+                if (newN >= 0) nucleusState.neutrons = newN;
+            }
+            
+            // Prevent empty nucleus
+            if (nucleusState.protons === 0 && nucleusState.neutrons === 0) {
+                nucleusState.protons = 1;
+            }
+
+            updatePhysicsState();
+            buildNucleus();
+        }
+
+        // --- 3D Nucleus Building (Spherical Packing) ---
+        function buildNucleus() {
+            // Clear old
+            while(nucleusGroup.children.length > 0) {
+                nucleusGroup.remove(nucleusGroup.children[0]);
+            }
+            particles = [];
+
+            const Z = nucleusState.protons;
+            const N = nucleusState.neutrons;
+            const A = Z + N;
+
+            // Radius estimate: R = r0 * A^(1/3). We scale it up for visuals.
+            const baseRadius = 0.8;
+            const nucleusRadius = baseRadius * Math.pow(A, 1/3) * 1.5;
+
+            // Geometry & Materials
+            const sphereGeo = new THREE.SphereGeometry(0.6, 16, 16);
+            const protonMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.3 }); // Rose
+            const neutronMat = new THREE.MeshStandardMaterial({ color: 0x22d3ee, roughness: 0.3 }); // Cyan
+
+            // Generate particles
+            let particleTypes = Array(Z).fill('p').concat(Array(N).fill('n'));
+            // Shuffle
+            particleTypes.sort(() => Math.random() - 0.5);
+
+            // Simple random spherical packing (Fibonacci sphere approach for better distribution)
+            const phi = Math.PI * (3. - Math.sqrt(5.)); // golden angle
+            
+            for (let i = 0; i < A; i++) {
+                // Distribute within volume, not just surface.
+                // r scales with index to fill volume
+                const r = nucleusRadius * Math.cbrt((i + 0.5) / A); 
+                const y = 1 - (i / (A - 1)) * 2; // y goes from 1 to -1
+                const radiusAtY = Math.sqrt(1 - y * y);
+                const theta = phi * i;
+
+                const x = Math.cos(theta) * radiusAtY;
+                const z = Math.sin(theta) * radiusAtY;
+
+                const isP = particleTypes[i] === 'p';
+                const mesh = new THREE.Mesh(sphereGeo, isP ? protonMat : neutronMat);
+                
+                // Set target position for animation
+                const targetPos = new THREE.Vector3(x * r, y * r * nucleusRadius, z * r);
+                // Randomize slightly for organic look
+                targetPos.add(new THREE.Vector3((Math.random()-0.5)*0.3, (Math.random()-0.5)*0.3, (Math.random()-0.5)*0.3));
+                
+                mesh.position.copy(targetPos);
+                
+                // Store base position for idle wobble
+                mesh.userData = {
+                    basePos: targetPos.clone(),
+                    phase: Math.random() * Math.PI * 2,
+                    speed: 0.5 + Math.random() * 0.5
+                };
+
+                nucleusGroup.add(mesh);
+                particles.push(mesh);
+            }
+        }
+
+        // --- Decay Animations ---
+        function triggerDecay(type) {
+            let zChange = 0, nChange = 0;
+            let emitType = ''; // to color the emitted particle
+
+            if (type === 'alpha') {
+                if (nucleusState.protons < 2 || nucleusState.neutrons < 2) {
+                    document.getElementById('decay-warning').classList.remove('hidden');
+                    return;
+                }
+                zChange = -2; nChange = -2;
+                emitType = 'alpha';
+            } else if (type === 'betaminus') {
+                if (nucleusState.neutrons < 1) {
+                    document.getElementById('decay-warning').classList.remove('hidden');
+                    return;
+                }
+                zChange = 1; nChange = -1;
+                emitType = 'betaminus';
+            } else if (type === 'betaplus') {
+                if (nucleusState.protons < 1) {
+                    document.getElementById('decay-warning').classList.remove('hidden');
+                    return;
+                }
+                zChange = -1; nChange = 1;
+                emitType = 'betaplus';
+            }
+
+            document.getElementById('decay-warning').classList.add('hidden');
+
+            // Apply state change immediately for UI, but handle 3D independently
+            nucleusState.protons += zChange;
+            nucleusState.neutrons += nChange;
+            updatePhysicsState();
+            
+            // Rebuild nucleus for the new state
+            buildNucleus();
+
+            // Create emitted particle animation
+            createEmission(emitType);
+        }
+
+        function createEmission(type) {
+            const emitGroup = new THREE.Group();
+            
+            if (type === 'alpha') {
+                // Alpha is 2P 2N (He nucleus)
+                const geo = new THREE.SphereGeometry(0.6, 16, 16);
+                const pMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e });
+                const nMat = new THREE.MeshStandardMaterial({ color: 0x22d3ee });
+                
+                const p1 = new THREE.Mesh(geo, pMat); p1.position.set(0.4, 0.4, 0);
+                const p2 = new THREE.Mesh(geo, pMat); p2.position.set(-0.4, -0.4, 0);
+                const n1 = new THREE.Mesh(geo, nMat); n1.position.set(-0.4, 0.4, 0.2);
+                const n2 = new THREE.Mesh(geo, nMat); n2.position.set(0.4, -0.4, -0.2);
+                
+                emitGroup.add(p1, p2, n1, n2);
+            } else if (type === 'betaminus') {
+                // Emit Electron (Tiny blue sphere)
+                const geo = new THREE.SphereGeometry(0.3, 16, 16);
+                const mat = new THREE.MeshBasicMaterial({ color: 0x3b82f6 }); // Blue
+                const e = new THREE.Mesh(geo, mat);
+                emitGroup.add(e);
+            } else if (type === 'betaplus') {
+                // Emit Positron (Tiny red/yellow sphere)
+                const geo = new THREE.SphereGeometry(0.3, 16, 16);
+                const mat = new THREE.MeshBasicMaterial({ color: 0xfacc15 }); // Yellow
+                const p = new THREE.Mesh(geo, mat);
+                emitGroup.add(p);
+            }
+
+            // Random direction
+            const dir = new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).normalize();
+            emitGroup.userData = {
+                velocity: dir.multiplyScalar(0.4),
+                life: 0
+            };
+            
+            scene.add(emitGroup);
+            emittingParticles.push(emitGroup);
+        }
+
+        // --- Render Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = Date.now() * 0.002;
+
+            // Idle Wobble for Nucleus Particles (Quantum fluctuation feel)
+            particles.forEach(p => {
+                const base = p.userData.basePos;
+                p.position.x = base.x + Math.sin(time * p.userData.speed + p.userData.phase) * 0.2;
+                p.position.y = base.y + Math.cos(time * p.userData.speed + p.userData.phase) * 0.2;
+                p.position.z = base.z + Math.sin(time * p.userData.speed * 0.8 + p.userData.phase) * 0.2;
+            });
+
+            // Update Emitted Particles
+            for(let i = emittingParticles.length - 1; i >= 0; i--) {
+                const ep = emittingParticles[i];
+                ep.position.add(ep.userData.velocity);
+                ep.userData.life++;
+                if (ep.userData.life > 100) {
+                    scene.remove(ep);
+                    emittingParticles.splice(i, 1);
+                }
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // --- 2D Chart of Nuclides ---
+        function drawNuclideChart() {
+            const canvas = document.getElementById('chartCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Handle high DPI displays
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            
+            const w = rect.width;
+            const h = rect.height;
+            const padding = 15;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Axes
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padding, h - padding); ctx.lineTo(w - padding, h - padding); // N (X)
+            ctx.moveTo(padding, padding); ctx.lineTo(padding, h - padding); // Z (Y)
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '10px sans-serif';
+            ctx.fillText('N (Neutrons)', w - 60, h - 2);
+            ctx.save(); ctx.translate(10, 60); ctx.rotate(-Math.PI/2); ctx.fillText('Z (Protons)', 0, 0); ctx.restore();
+
+            // Draw N=Z line
+            const maxZ = 30; // Scale limits
+            const maxN = 40;
+            const scaleX = (w - padding*2) / maxN;
+            const scaleY = (h - padding*2) / maxZ;
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.beginPath();
+            ctx.moveTo(padding, h - padding);
+            ctx.lineTo(padding + maxZ * scaleX, h - padding - maxZ * scaleY);
+            ctx.stroke();
+
+            // Draw "Valley of Stability" approximate curve
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.2)'; // Emerald
+            ctx.beginPath();
+            ctx.moveTo(padding, h - padding);
+            for(let z=1; z<=maxZ; z++) {
+                const nCenter = z * (1 + 0.006 * z);
+                const x = padding + nCenter * scaleX;
+                const y = h - padding - z * scaleY;
+                ctx.lineTo(x, y);
+            }
+            ctx.lineWidth = 10;
+            ctx.strokeStyle = 'rgba(16, 185, 129, 0.2)';
+            ctx.stroke();
+            
+            // Draw current point
+            const cZ = nucleusState.protons;
+            const cN = nucleusState.neutrons;
+            if (cZ <= maxZ && cN <= maxN) {
+                const px = padding + cN * scaleX;
+                const py = h - padding - cZ * scaleY;
+                
+                ctx.fillStyle = nucleusState.isStable ? '#34d399' : '#fb7185';
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = ctx.fillStyle;
+                ctx.beginPath();
+                ctx.arc(px, py, 4, 0, Math.PI*2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        // --- UI Helpers ---
+        function switchRightTab(tabName) {
+            document.getElementById('tab-content-theory').style.display = tabName === 'theory' ? 'block' : 'none';
+            document.getElementById('tab-content-chat').style.display = tabName === 'chat' ? 'flex' : 'none';
+            
+            document.getElementById('tab-btn-theory').className = tabName === 'theory' ?
+                "flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/50 flex items-center justify-center gap-1" :
+                "flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-zinc-800 text-zinc-400 border border-zinc-700 flex items-center justify-center gap-1 hover:text-zinc-200";
+
+            document.getElementById('tab-btn-chat').className = tabName === 'chat' ?
+                "flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 flex items-center justify-center gap-1" :
+                "flex-1 py-1.5 px-2 rounded-md text-xs font-semibold bg-zinc-800 text-zinc-400 border border-zinc-700 flex items-center justify-center gap-1 hover:text-zinc-200";
+        }
+
+        function resetCameraView() {
+            camera.position.set(0, 0, 25);
+            controls.target.set(0, 0, 0);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            drawNuclideChart();
+        }
+        
+        // Initial setup for graph resolution
+        setTimeout(() => {
+            drawNuclideChart();
+        }, 100);
+
+        // --- Gemini AI Chatbot ---
+        async function sendChatMessage() {
+            const inputEl = document.getElementById('chatInput');
+            const userMsg = inputEl.value.trim();
+            if (!userMsg) return;
+
+            const chatLog = document.getElementById('chatLog');
+
+            const userBubble = document.createElement('div');
+            userBubble.className = "bg-purple-900/60 border border-purple-700/50 rounded-lg p-2 text-purple-100 text-right font-sans";
+            userBubble.textContent = userMsg;
+            chatLog.appendChild(userBubble);
+
+            inputEl.value = '';
+            chatLog.scrollTop = chatLog.scrollHeight;
+
+            const aiBubble = document.createElement('div');
+            aiBubble.className = "bg-zinc-800/80 border border-zinc-700 rounded-lg p-2 text-zinc-300 font-sans";
+            aiBubble.textContent = "กำลังวิเคราะห์...";
+            chatLog.appendChild(aiBubble);
+            chatLog.scrollTop = chatLog.scrollHeight;
+
+            const systemPrompt = "คุณคือครูสอนฟิสิกส์นิวเคลียร์ อธิบายเรื่องนิวเคลียส โปรตอน นิวตรอน ไอโซโทป การสลายตัวแบบแอลฟาและบีตา ตอบสั้นๆ กระชับและเข้าใจง่าย";
+            const apiKey = ""; // Canvas injects this
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userMsg }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] }
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                const aiReply = result.candidates?.[0]?.content?.parts?.[0]?.text || "ขออภัย เกิดข้อผิดพลาดในการคำนวณคำตอบ";
+                aiBubble.innerHTML = aiReply.replace(/\n/g, '<br>');
+            } catch (err) {
+                aiBubble.textContent = "เกิดข้อผิดพลาดในการเชื่อมต่อกับ AI";
+            }
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        function sendQuickChat(promptText) {
+            switchRightTab('chat');
+            document.getElementById('chatInput').value = promptText;
+            sendChatMessage();
+        }
+
+        window.onload = initScene;
+    </script>
+</body>
+</html>

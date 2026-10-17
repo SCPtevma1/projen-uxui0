@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แบบจำลองทัศนศาสตร์เชิงเรขาคณิต 2D/3D (Geometric Optics Simulation)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        optics: {
+                            900: '#0B0F17',
+                            800: '#111827',
+                            700: '#1F2937',
+                            600: '#374151',
+                            cyan: '#06B6D4',
+                            amber: '#F59E0B',
+                            emerald: '#10B981',
+                            rose: '#F43F5E',
+                            purple: '#A855F7'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Sarabun', 'Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- KaTeX for Physics Formula Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #0B0F17;
+            color: #F3F4F6;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+        }
+
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.6);
+        }
+
+        .glass-card {
+            background: rgba(31, 41, 55, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(11, 15, 23, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(6, 182, 212, 0.3);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(6, 182, 212, 0.6);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            height: 5px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 15px;
+            width: 15px;
+            border-radius: 50%;
+            background: #06B6D4;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.6);
+            transition: all 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.25);
+            background: #67e8f9;
+        }
+
+        .tab-btn.active {
+            background-color: rgba(6, 182, 212, 0.2);
+            color: #06B6D4;
+            border-bottom: 2px solid #06B6D4;
+        }
+
+        .mode-btn.active {
+            background-color: #06B6D4;
+            color: #000;
+            font-weight: 600;
+        }
+
+        #viewport-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .badge-real {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .badge-virtual {
+            background: rgba(244, 63, 94, 0.2);
+            color: #fb7185;
+            border: 1px solid rgba(244, 63, 94, 0.3);
+        }
+    </style>
+</head>
+<body class="select-none">
+
+    <!-- UI Header Bar -->
+    <header class="absolute top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between glass-panel px-4 py-2.5 rounded-2xl pointer-events-auto">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-cyan-500/20 text-cyan-400 rounded-xl border border-cyan-500/30">
+                <i data-lucide="scan-line" class="w-6 h-6"></i>
+            </div>
+            <div>
+               <a href="../physics.html">
+                 <h1 class="font-bold text-base md:text-lg text-white flex items-center gap-2">
+                    แบบจำลองทัศนศาสตร์เชิงเรขาคณิต 2D/3D
+                    <span class="text-[10px] font-normal px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Geometric Optics Physics</span>
+                </h1>
+               </a>
+                <p class="text-xs text-gray-400 hidden sm:block">วิเคราะห์การหักเห การสะท้อน รังสีของแสง เลนส์และกระจกเงาโค้ง</p>
+            </div>
+        </div>
+
+        <!-- Viewport Mode Switcher & Actions -->
+        <div class="flex items-center gap-3">
+            <div class="flex items-center bg-optics-900/90 p-1 rounded-xl border border-white/10 text-xs">
+                <button id="btn-mode-2d" onclick="setRenderMode('2d')" class="mode-btn active px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+                    <i data-lucide="square" class="w-3.5 h-3.5"></i>
+                    <span>2D Ray Diagram</span>
+                </button>
+                <button id="btn-mode-3d" onclick="setRenderMode('3d')" class="mode-btn px-3 py-1.5 text-gray-400 hover:text-white rounded-lg transition flex items-center gap-1">
+                    <i data-lucide="box" class="w-3.5 h-3.5"></i>
+                    <span>3D Scene</span>
+                </button>
+            </div>
+
+            <button onclick="resetToDefaults()" class="p-2 bg-optics-700 hover:bg-optics-600 text-gray-200 rounded-xl transition border border-white/5" title="รีเซ็ต">
+                <i data-lucide="rotate-ccw" class="w-4 h-4 text-cyan-400"></i>
+            </button>
+            <button onclick="toggleFullscreen()" class="p-2 bg-optics-700 hover:bg-optics-600 text-gray-300 rounded-xl transition border border-white/5" title="เต็มจอ">
+                <i data-lucide="maximize" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main App Container Layout -->
+    <div class="absolute inset-0 pt-16 p-3 pointer-events-none grid grid-cols-1 md:grid-cols-12 gap-3 h-full pb-3">
+
+        <!-- ================= SECTION 1: Educational Theory & Analysis Panel (Left Side) ================= -->
+        <aside class="md:col-span-4 lg:col-span-3 glass-panel rounded-2xl flex flex-col pointer-events-auto overflow-hidden max-h-[calc(100vh-5rem)] shadow-2xl z-10">
+            <!-- Header & Tabs -->
+            <div class="p-3 border-b border-white/10 bg-optics-800/80">
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="font-semibold text-white text-sm flex items-center gap-2">
+                        <i data-lucide="book-open" class="w-4 h-4 text-cyan-400"></i>
+                        คำนวณ & ทฤษฎีภาพ (Theory)
+                    </h2>
+                    <span id="badge-image-type" class="text-[10px] font-bold px-2 py-0.5 rounded-full badge-real">ภาพจริง</span>
+                </div>
+
+                <div class="grid grid-cols-3 gap-1 bg-optics-900/80 p-1 rounded-xl text-[11px] font-medium text-center">
+                    <button onclick="switchTab('calc')" id="tab-calc" class="tab-btn active py-1.5 rounded-lg transition">คำนวณ</button>
+                    <button onclick="switchTab('props')" id="tab-props" class="tab-btn py-1.5 rounded-lg transition">สรุปภาพ</button>
+                    <button onclick="switchTab('laws')" id="tab-laws" class="tab-btn py-1.5 rounded-lg transition">กฎการหักเห</button>
+                </div>
+            </div>
+
+            <!-- Scrollable Content -->
+            <div class="flex-1 overflow-y-auto p-3.5 space-y-3.5 text-xs text-gray-300">
+
+                <!-- TAB 1: Calculations & Formulas -->
+                <div id="content-calc" class="space-y-3">
+                    <div class="glass-card p-3 rounded-xl border-l-4 border-cyan-400 space-y-1">
+                        <h3 class="font-bold text-white text-xs">สูตรแก้วตาและกระจก (Lens/Mirror Formula)</h3>
+                        <div id="math-formula" class="py-1 text-center text-cyan-300 font-mono text-sm"></div>
+                        <p class="text-[10px] text-gray-400">$f$ = ความยาวโฟกัส, $u$ = ระยะวัตถุ, $v$ = ระยะภาพ</p>
+                    </div>
+
+                    <div class="glass-card p-3 rounded-xl border-l-4 border-amber-400 space-y-1">
+                        <h3 class="font-bold text-white text-xs">กำลังขยาย (Magnification $m$)</h3>
+                        <div id="math-mag-formula" class="py-1 text-center text-amber-300 font-mono text-sm"></div>
+                        <p class="text-[10px] text-gray-400">$h'$ = ความสูงภาพ, $h$ = ความสูงวัตถุ ($m > 0$ ภาพเสมือน, $m < 0$ ภาพจริง)</p>
+                    </div>
+
+                    <!-- Live Calculation Results Output -->
+                    <div class="bg-optics-900/90 p-3 rounded-xl border border-white/10 space-y-2 font-mono">
+                        <div class="text-[11px] font-bold text-gray-400 font-sans border-b border-white/10 pb-1 flex justify-between">
+                            <span>ผลการคำนวณ (Live Calculation)</span>
+                            <span class="text-cyan-400">Real-time</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-[11px]">
+                            <div class="bg-optics-800/60 p-2 rounded-lg">
+                                <span class="text-gray-400 text-[9px] block font-sans">ระยะภาพ ($v$)</span>
+                                <span id="calc-v-val" class="text-cyan-300 font-bold">+30.00 cm</span>
+                            </div>
+                            <div class="bg-optics-800/60 p-2 rounded-lg">
+                                <span class="text-gray-400 text-[9px] block font-sans">กำลังขยาย ($m$)</span>
+                                <span id="calc-m-val" class="text-amber-300 font-bold">-1.50 x</span>
+                            </div>
+                            <div class="bg-optics-800/60 p-2 rounded-lg">
+                                <span class="text-gray-400 text-[9px] block font-sans">ความสูงภาพ ($h'$)</span>
+                                <span id="calc-hp-val" class="text-emerald-300 font-bold">-7.50 cm</span>
+                            </div>
+                            <div class="bg-optics-800/60 p-2 rounded-lg">
+                                <span class="text-gray-400 text-[9px] block font-sans">ความยาวโฟกัส ($f$)</span>
+                                <span id="calc-f-val" class="text-purple-300 font-bold">+20.00 cm</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Image Properties Summary -->
+                <div id="content-props" class="space-y-3 hidden">
+                    <div class="glass-card p-3 rounded-xl border-l-4 border-emerald-400 space-y-2">
+                        <h3 class="font-bold text-white text-xs flex items-center gap-1.5">
+                            <i data-lucide="eye" class="w-4 h-4 text-emerald-400"></i>
+                            ลักษณะของภาพที่เกิดขึ้น (Image Characteristics)
+                        </h3>
+                        <div class="space-y-1.5 text-[11px]">
+                            <div class="flex justify-between items-center bg-optics-900/60 p-2 rounded-lg">
+                                <span class="text-gray-400">1. ชนิดของภาพ:</span>
+                                <span id="prop-type" class="font-bold text-emerald-400">ภาพจริง (Real Image)</span>
+                            </div>
+                            <div class="flex justify-between items-center bg-optics-900/60 p-2 rounded-lg">
+                                <span class="text-gray-400">2. ทิศทางของภาพ:</span>
+                                <span id="prop-orient" class="font-bold text-amber-400">ภาพหัวกลับ (Inverted)</span>
+                            </div>
+                            <div class="flex justify-between items-center bg-optics-900/60 p-2 rounded-lg">
+                                <span class="text-gray-400">3. ขนาดของภาพ:</span>
+                                <span id="prop-size" class="font-bold text-cyan-400">ขยายใหญ่ขึ้น (Magnified)</span>
+                            </div>
+                            <div class="flex justify-between items-center bg-optics-900/60 p-2 rounded-lg">
+                                <span class="text-gray-400">4. ตำแหน่งภาพ:</span>
+                                <span id="prop-pos" class="font-bold text-purple-300">ด้านหลังเลนส์ ($v > 0$)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-optics-800/80 p-3 rounded-xl border border-white/5 space-y-2 text-[11px]">
+                        <h4 class="font-bold text-cyan-400 flex items-center gap-1">
+                            <i data-lucide="info" class="w-4 h-4"></i> ข้อจำกัดและข้อสังเกต:
+                        </h4>
+                        <p id="prop-explanation" class="text-gray-300 leading-relaxed">
+                            เมื่อวัตถุวางอยู่นอกจุดโฟกัส รังสีแสงหักเหจริงจะตัดกันเกิดเป็น **ภาพจริงหัวกลับ** สามารถเอาฉากมารับภาพได้
+                        </p>
+                    </div>
+                </div>
+
+                <!-- TAB 3: Geometric Optics Laws -->
+                <div id="content-laws" class="space-y-3 hidden">
+                    <div class="glass-card p-3 rounded-xl border-l-4 border-purple-400 space-y-1.5">
+                        <h3 class="font-bold text-white text-xs">กฎการสะท้อน (Law of Reflection)</h3>
+                        <div id="math-reflection" class="py-0.5 text-center text-purple-300 font-mono text-xs"></div>
+                        <p class="text-[11px] text-gray-300">มุมตกกระทบ ($\theta_1$) เท่ากับมุมสะท้อน ($\theta_2$) เสมอเมื่อวัดกับเส้นแนวฉาก (Normal Line)</p>
+                    </div>
+
+                    <div class="glass-card p-3 rounded-xl border-l-4 border-cyan-400 space-y-1.5">
+                        <h3 class="font-bold text-white text-xs">กฎของสเนลล์ (Snell's Law)</h3>
+                        <div id="math-snell" class="py-0.5 text-center text-cyan-300 font-mono text-xs"></div>
+                        <p class="text-[11px] text-gray-300">แสงเคลื่อนที่ผ่านตัวกลางที่มีดรรชนีหักเห $n_1 \rightarrow n_2$ ทำให้ความเร็วและทิศทางของแสงเปลี่ยนไป</p>
+                    </div>
+
+                    <div class="bg-optics-800/80 p-3 rounded-xl border border-white/5 space-y-1.5 text-[11px]">
+                        <h4 class="font-bold text-amber-400">3 เส้นรังสีหลัก (Principal Rays):</h4>
+                        <ol class="list-decimal list-inside space-y-1 text-gray-300">
+                            <li><strong class="text-rose-400">Ray 1 (ขนาน):</strong> วิ่งขนานแกนมุขสำคัญ แล้วหักเห/สะท้อนผ่านจุดโฟกัส ($F$)</li>
+                            <li><strong class="text-emerald-400">Ray 2 (ศูนย์กลาง):</strong> วิ่งผ่านจุดกึ่งกลาง (Optical Center) โดยไม่เบี่ยงเบน</li>
+                            <li><strong class="text-blue-400">Ray 3 (โฟกัส):</strong> วิ่งผ่านจุดโฟกัส ($F$) แล้วหักเห/สะท้อนขนานแกนมุขสำคัญ</li>
+                        </ol>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- ================= SECTION 2: Interactive Viewport Container (Center) ================= -->
+        <main class="md:col-span-8 lg:col-span-6 relative rounded-2xl overflow-hidden glass-panel flex flex-col pointer-events-auto border border-white/10 shadow-2xl">
+            <!-- Canvas Canvas Overlay Viewport -->
+            <div id="viewport-container" class="flex-1 bg-black/40 cursor-crosshair">
+                <!-- 2D Canvas -->
+                <canvas id="canvas-2d" class="absolute inset-0 w-full h-full z-0"></canvas>
+                <!-- 3D Three.js Container -->
+                <div id="container-3d" class="absolute inset-0 w-full h-full hidden z-0"></div>
+
+                <!-- On-Screen Drag Guide Tooltip -->
+                <div id="drag-tooltip" class="absolute bottom-3 left-3 bg-optics-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 text-[11px] text-gray-300 flex items-center gap-2 pointer-events-none z-10">
+                    <i data-lucide="hand" class="w-4 h-4 text-cyan-400 animate-bounce"></i>
+                    <span>ลาก <strong class="text-amber-400">ลูกศรวัตถุสีส้ม</strong> ใน 2D Viewport เพื่อปรับระยะ $u$ และความสูง $h$ ได้โดยตรง</span>
+                </div>
+            </div>
+        </main>
+
+        <!-- ================= SECTION 3: Controls & Sandbox Panel (Right Side) ================= -->
+        <aside class="md:col-span-12 lg:col-span-3 glass-panel rounded-2xl flex flex-col pointer-events-auto overflow-hidden max-h-[calc(100vh-5rem)] shadow-2xl z-10">
+            <!-- Header -->
+            <div class="p-3 border-b border-white/10 bg-optics-800/80 flex justify-between items-center">
+                <h2 class="font-semibold text-white text-sm flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-4 h-4 text-cyan-400"></i>
+                    ตั้งค่าอุปกรณ์ (Sandbox Controls)
+                </h2>
+            </div>
+
+            <!-- Scrollable Controls Body -->
+            <div class="flex-1 overflow-y-auto p-3.5 space-y-3.5 text-xs">
+
+                <!-- Optical Element Selection Type -->
+                <div class="space-y-1.5">
+                    <label class="text-[11px] font-semibold text-gray-300 flex items-center gap-1">
+                        <i data-lucide="disc" class="w-3.5 h-3.5 text-cyan-400"></i> ชนิดอุปกรณ์ทัศนศาสตร์ (Optic Element)
+                    </label>
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <button onclick="setOpticType('convex_lens')" id="btn-elem-convex_lens" class="elem-btn py-2 px-2 bg-cyan-500/20 text-cyan-300 rounded-xl border border-cyan-500/40 text-center font-medium transition">
+                            เลนส์นูน (Convex Lens)
+                        </button>
+                        <button onclick="setOpticType('concave_lens')" id="btn-elem-concave_lens" class="elem-btn py-2 px-2 bg-optics-800 hover:bg-optics-700 text-gray-300 rounded-xl border border-white/10 text-center font-medium transition">
+                            เลนส์เว้า (Concave Lens)
+                        </button>
+                        <button onclick="setOpticType('concave_mirror')" id="btn-elem-concave_mirror" class="elem-btn py-2 px-2 bg-optics-800 hover:bg-optics-700 text-gray-300 rounded-xl border border-white/10 text-center font-medium transition">
+                            กระจกเว้า (Concave Mirror)
+                        </button>
+                        <button onclick="setOpticType('convex_mirror')" id="btn-elem-convex_mirror" class="elem-btn py-2 px-2 bg-optics-800 hover:bg-optics-700 text-gray-300 rounded-xl border border-white/10 text-center font-medium transition">
+                            กระจกนูน (Convex Mirror)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Presets Quick Selector -->
+                <div class="space-y-1.5">
+                    <label class="text-[11px] font-semibold text-gray-300 flex items-center gap-1">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i> สถานการณ์จำลอง (Presets)
+                    </label>
+                    <div class="grid grid-cols-2 gap-1.5 text-[11px]">
+                        <button onclick="applyPreset('magnifier')" class="py-1.5 bg-optics-800 hover:bg-optics-700 text-amber-300 rounded-lg border border-white/10 transition text-center">🔍 แว่นขยาย ($u < f$)</button>
+                        <button onclick="applyPreset('camera')" class="py-1.5 bg-optics-800 hover:bg-optics-700 text-cyan-300 rounded-lg border border-white/10 transition text-center">📷 กล้องถ่ายรูป ($u > 2f$)</button>
+                        <button onclick="applyPreset('projector')" class="py-1.5 bg-optics-800 hover:bg-optics-700 text-emerald-300 rounded-lg border border-white/10 transition text-center">📹 โปรเจกเตอร์ ($f<u<2f$)</button>
+                        <button onclick="applyPreset('car_mirror')" class="py-1.5 bg-optics-800 hover:bg-optics-700 text-rose-300 rounded-lg border border-white/10 transition text-center">🚗 กระจกมองข้างรถ</button>
+                    </div>
+                </div>
+
+                <!-- Sliders for Object & Lens Parameters -->
+                <div class="glass-card p-3 rounded-xl space-y-3">
+                    <div class="text-[11px] font-bold text-cyan-400 border-b border-white/10 pb-1">
+                        พารามิเตอร์วัตถุและอุปกรณ์ (Parameters)
+                    </div>
+
+                    <!-- Object Distance (u) -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-300">ระยะวัตถุ ($u$):</span>
+                            <span id="val-u" class="font-mono text-amber-400 font-bold">35.0 cm</span>
+                        </div>
+                        <input type="range" id="slider-u" min="5" max="100" step="1" value="35" class="w-full" oninput="updateControlsFromSliders()">
+                    </div>
+
+                    <!-- Object Height (h) -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-300">ความสูงวัตถุ ($h$):</span>
+                            <span id="val-h" class="font-mono text-emerald-400 font-bold">12.0 cm</span>
+                        </div>
+                        <input type="range" id="slider-h" min="2" max="30" step="0.5" value="12" class="w-full" oninput="updateControlsFromSliders()">
+                    </div>
+
+                    <!-- Focal Length (f) -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-300">ความยาวโฟกัส ($|f|$):</span>
+                            <span id="val-f" class="font-mono text-cyan-400 font-bold">20.0 cm</span>
+                        </div>
+                        <input type="range" id="slider-f" min="5" max="50" step="1" value="20" class="w-full" oninput="updateControlsFromSliders()">
+                    </div>
+
+                    <!-- Refractive Index (n) -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-300">ดรรชนีหักเห ($n$ แก้ว):</span>
+                            <span id="val-n" class="font-mono text-purple-400 font-bold">1.52 (Glass)</span>
+                        </div>
+                        <input type="range" id="slider-n" min="1.0" max="2.4" step="0.02" value="1.52" class="w-full" oninput="updateControlsFromSliders()">
+                    </div>
+                </div>
+
+                <!-- Light Rays Mode Selection -->
+                <div class="space-y-1.5">
+                    <label class="text-[11px] font-semibold text-gray-300 flex items-center gap-1">
+                        <i data-lucide="sun" class="w-3.5 h-3.5 text-amber-400"></i> ชนิดรังสีแสง (Ray Mode)
+                    </label>
+                    <select id="select-ray-mode" onchange="updateControlsFromSliders()" class="w-full bg-optics-900 border border-white/10 rounded-xl p-2 text-xs text-gray-200 font-medium focus:border-cyan-500 focus:outline-none">
+                        <option value="principal">Principal Rays (3 เส้นหลัก)</option>
+                        <option value="parallel">Parallel Beam (ลำแสงขนาน)</option>
+                        <option value="single">Single Ray (รังสีเดี่ยวปรับมุมได้)</option>
+                    </select>
+                </div>
+
+                <!-- Visual Helpers Switches -->
+                <div class="glass-card p-3 rounded-xl space-y-1.5">
+                    <div class="text-[11px] font-bold text-cyan-400 border-b border-white/10 pb-1">
+                        ตัวช่วยแสดงผล (Visual Overlays)
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-xs text-gray-300 pt-1">
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-white">
+                            <input type="checkbox" id="toggle-virtual-rays" checked onchange="render()" class="accent-rose-500 rounded">
+                            <span>รังสีเสมือน (Virtual)</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-white">
+                            <input type="checkbox" id="toggle-focal-points" checked onchange="render()" class="accent-cyan-500 rounded">
+                            <span>จุดโฟกัส ($F, 2F$)</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-white">
+                            <input type="checkbox" id="toggle-grid" checked onchange="render()" class="accent-gray-400 rounded">
+                            <span>ไม้บรรทัด (Grid)</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-white">
+                            <input type="checkbox" id="toggle-normal-line" checked onchange="render()" class="accent-emerald-500 rounded">
+                            <span>เส้นแนวฉาก (Normal)</span>
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+    </div>
+
+    <!-- MAIN SIMULATION LOGIC SCRIPT -->
+    <script>
+        // Application Optics State
+        const state = {
+            renderMode: '2d',           // '2d' or '3d'
+            opticType: 'convex_lens',   // 'convex_lens', 'concave_lens', 'concave_mirror', 'convex_mirror'
+            u: 35.0,                    // Object distance (cm)
+            h: 12.0,                    // Object height (cm)
+            fAbs: 20.0,                 // Absolute focal length (cm)
+            n: 1.52,                    // Refractive index
+            rayMode: 'principal',       // 'principal', 'parallel', 'single'
+
+            // Computed Optics Variables
+            f: 20.0,                    // Signed focal length
+            v: 30.0,                    // Signed image distance
+            m: -1.5,                    // Magnification
+            hp: -18.0,                  // Image height
+
+            // Helpers
+            showVirtualRays: true,
+            showFocalPoints: true,
+            showGrid: true,
+            showNormalLine: true,
+
+            // Interactivity State (2D Mouse Drag)
+            isDraggingObject: false,
+            scale2D: 4.5,               // Pixels per cm
+            originX: 0,
+            originY: 0
+        };
+
+        // 2D Canvas References
+        let canvas2D, ctx2D;
+
+        // Three.js 3D References
+        let scene3D, camera3D, renderer3D, controls3D;
+        let objMesh3D, imgMesh3D, opticMesh3D, rayLines3DGroup;
+
+        // Initialize Application
+        window.addEventListener('DOMContentLoaded', () => {
+            initKaTeX();
+            init2DCanvas();
+            init3DScene();
+            lucide.createIcons();
+
+            calculateOptics();
+            render();
+
+            window.addEventListener('resize', onResize);
+        });
+
+        // Initialize KaTeX Formulas
+        function initKaTeX() {
+            if (window.katex) {
+                katex.render("\\frac{1}{f} = \\frac{1}{u} + \\frac{1}{v}", document.getElementById('math-formula'));
+                katex.render("m = -\\frac{v}{u} = \\frac{h'}{h}", document.getElementById('math-mag-formula'));
+                katex.render("\\theta_i = \\theta_r", document.getElementById('math-reflection'));
+                katex.render("n_1 \\sin(\\theta_1) = n_2 \\sin(\\theta_2)", document.getElementById('math-snell'));
+            }
+        }
+
+        // Initialize 2D Interactive Canvas
+        function init2DCanvas() {
+            canvas2D = document.getElementById('canvas-2d');
+            ctx2D = canvas2D.getContext('2d');
+
+            // Mouse Events for Direct Dragging of Object
+            canvas2D.addEventListener('mousedown', onMouseDown2D);
+            canvas2D.addEventListener('mousemove', onMouseMove2D);
+            window.addEventListener('mouseup', onMouseUp2D);
+
+            // Touch support for mobile devices
+            canvas2D.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    const touch = e.touches[0];
+                    const rect = canvas2D.getBoundingClientRect();
+                    handleDragStart(touch.clientX - rect.left, touch.clientY - rect.top);
+                }
+            });
+            canvas2D.addEventListener('touchmove', (e) => {
+                if (state.isDraggingObject && e.touches.length === 1) {
+                    const touch = e.touches[0];
+                    const rect = canvas2D.getBoundingClientRect();
+                    handleDragMove(touch.clientX - rect.left, touch.clientY - rect.top);
+                }
+            });
+            canvas2D.addEventListener('touchend', () => { state.isDraggingObject = false; });
+        }
+
+        // Initialize Three.js 3D Viewport
+        function init3DScene() {
+            const container = document.getElementById('container-3d');
+
+            scene3D = new THREE.Scene();
+            scene3D.fog = new THREE.FogExp2(0x0B0F17, 0.005);
+
+            camera3D = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera3D.position.set(0, 25, 80);
+
+            renderer3D = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer3D.setSize(container.clientWidth, container.clientHeight);
+            renderer3D.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer3D.domElement);
+
+            controls3D = new THREE.OrbitControls(camera3D, renderer3D.domElement);
+            controls3D.enableDamping = true;
+            controls3D.dampingFactor = 0.05;
+
+            // Lights
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            scene3D.add(ambient);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(20, 40, 20);
+            scene3D.add(dirLight);
+
+            // 3D Grid
+            const grid = new THREE.GridHelper(200, 40, 0x06B6D4, 0x1F2937);
+            grid.position.y = -15;
+            scene3D.add(grid);
+
+            // Create 3D Objects Group
+            rayLines3DGroup = new THREE.Group();
+            scene3D.add(rayLines3DGroup);
+
+            create3DMaterialsAndMeshes();
+        }
+
+        function create3DMaterialsAndMeshes() {
+            // Object Arrow (Amber Mesh)
+            const objGeo = new THREE.CylinderGeometry(0.5, 0.5, 10, 16);
+            const objMat = new THREE.MeshStandardMaterial({ color: 0xF59E0B, roughness: 0.3 });
+            objMesh3D = new THREE.Mesh(objGeo, objMat);
+            scene3D.add(objMesh3D);
+
+            // Image Arrow (Cyan Mesh)
+            const imgMat = new THREE.MeshStandardMaterial({ color: 0x06B6D4, transparent: true, opacity: 0.8 });
+            imgMesh3D = new THREE.Mesh(objGeo, imgMat);
+            scene3D.add(imgMesh3D);
+
+            // Optic Element Glass Geometry (Glass Blue)
+            const opticGeo = new THREE.CylinderGeometry(12, 12, 0.8, 32);
+            const opticMat = new THREE.MeshPhysicalMaterial({
+                color: 0x38BDF8,
+                transparent: true,
+                opacity: 0.5,
+                roughness: 0.1,
+                transmission: 0.9
+            });
+            opticMesh3D = new THREE.Mesh(opticGeo, opticMat);
+            opticMesh3D.rotation.x = Math.PI / 2;
+            scene3D.add(opticMesh3D);
+        }
+
+        // ================= OPTICS COMPUTATION ENGINE =================
+        function calculateOptics() {
+            // Determine Signed Focal Length based on Optic Type
+            // Convex Lens: f > 0, Concave Lens: f < 0
+            // Concave Mirror: f > 0, Convex Mirror: f < 0
+            if (state.opticType === 'convex_lens' || state.opticType === 'concave_mirror') {
+                state.f = state.fAbs;
+            } else {
+                state.f = -state.fAbs;
+            }
+
+            // Lens / Mirror Formula: 1/f = 1/u + 1/v => v = (u * f) / (u - f)
+            const u = state.u;
+            const f = state.f;
+
+            if (Math.abs(u - f) < 0.001) {
+                // Object placed exactly at focal point -> Image at infinity
+                state.v = Infinity;
+                state.m = Infinity;
+                state.hp = Infinity;
+            } else {
+                state.v = (u * f) / (u - f);
+                state.m = -state.v / u;
+                state.hp = state.m * state.h;
+            }
+
+            updateUI();
+        }
+
+        // Update Text Cards and Formulas
+        function updateUI() {
+            const vText = isFinite(state.v) ? `${state.v > 0 ? '+' : ''}${state.v.toFixed(2)} cm` : '∞ (อนันต์)';
+            const mText = isFinite(state.m) ? `${state.m.toFixed(2)} x` : '∞';
+            const hpText = isFinite(state.hp) ? `${state.hp.toFixed(2)} cm` : '∞';
+
+            document.getElementById('calc-v-val').innerText = vText;
+            document.getElementById('calc-m-val').innerText = mText;
+            document.getElementById('calc-hp-val').innerText = hpText;
+            document.getElementById('calc-f-val').innerText = `${state.f > 0 ? '+' : ''}${state.f.toFixed(2)} cm`;
+
+            // Badge & Image Property Explanations
+            const badgeType = document.getElementById('badge-image-type');
+            const propType = document.getElementById('prop-type');
+            const propOrient = document.getElementById('prop-orient');
+            const propSize = document.getElementById('prop-size');
+            const propPos = document.getElementById('prop-pos');
+            const propExp = document.getElementById('prop-explanation');
+
+            const isMirror = state.opticType.includes('mirror');
+
+            if (!isFinite(state.v)) {
+                badgeType.innerText = 'ไม่เกิดภาพ (ที่ระยะอนันต์)';
+                badgeType.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-500/20 text-gray-300 border border-gray-500/30';
+                propType.innerText = 'รังสีแสงขนานกัน ไม่ตัดกัน';
+                propOrient.innerText = '-';
+                propSize.innerText = 'ขนาดอนันต์ (Infinity)';
+                propPos.innerText = 'ระยะอนันต์ (∞)';
+                propExp.innerText = 'เมื่อวางวัตถุไว้ที่จุดโฟกัสพอดี ($u = f$) รังสีแสงหักเห/สะท้อนออกไปเป็นลำแสงขนานกัน';
+                return;
+            }
+
+            // Real vs Virtual Image Logic
+            // For Lenses: v > 0 is Real Image (behind lens), v < 0 is Virtual (in front)
+            // For Mirrors: v > 0 is Real Image (in front of mirror), v < 0 is Virtual (behind mirror)
+            const isReal = isMirror ? (state.v > 0) : (state.v > 0);
+
+            if (isReal) {
+                badgeType.innerText = 'ภาพจริง (Real Image)';
+                badgeType.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full badge-real';
+                propType.innerText = 'ภาพจริง (เอาฉากรับภาพได้)';
+                propOrient.innerText = 'ภาพหัวกลับ (Inverted)';
+                propOrient.className = 'font-bold text-amber-400';
+            } else {
+                badgeType.innerText = 'ภาพเสมือน (Virtual Image)';
+                badgeType.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full badge-virtual';
+                propType.innerText = 'ภาพเสมือน (มองเห็นด้วยตาเปล่า)';
+                propOrient.innerText = 'ภาพหัวตั้ง (Upright)';
+                propOrient.className = 'font-bold text-emerald-400';
+            }
+
+            // Size comparison
+            const absM = Math.abs(state.m);
+            if (Math.abs(absM - 1.0) < 0.02) {
+                propSize.innerText = 'ขนาดเท่ากับวัตถุ (|m| = 1)';
+            } else if (absM > 1.0) {
+                propSize.innerText = `ขยายใหญ่ขึ้น (|m| = ${absM.toFixed(2)})`;
+            } else {
+                propSize.innerText = `ขนาดย่อเล็กลง (|m| = ${absM.toFixed(2)})`;
+            }
+
+            // Position description
+            if (isMirror) {
+                propPos.innerText = state.v > 0 ? 'ด้านหน้ากระจก (Real)' : 'ด้านหลังกระจก (Virtual)';
+            } else {
+                propPos.innerText = state.v > 0 ? 'ด้านหลังเลนส์ (Real)' : 'ด้านหน้าเลนส์ (Virtual)';
+            }
+
+            // Contextual Explanation
+            if (state.opticType === 'convex_lens') {
+                if (state.u > 2 * state.f) propExp.innerText = 'วางวัตถุอยู่นอกระยะ $2F$ เกิดภาพจริงหัวกลับขนาดเล็กกว่าวัตถุ (หลักการของกล้องถ่ายรูป)';
+                else if (Math.abs(state.u - 2 * state.f) < 1) propExp.innerText = 'วางวัตถุที่ระยะ $2F$ เกิดภาพจริงหัวกลับขนาดเท่าวัตถุพอดีที่ระยะ $2F$ ด้านหลัง';
+                else if (state.u > state.f) propExp.innerText = 'วางวัตถุระหว่าง $F$ และ $2F$ เกิดภาพจริงหัวกลับขนาดขยาย (หลักการของโปรเจกเตอร์/เครื่องฉาย)';
+                else propExp.innerText = 'วางวัตถุไว้ภายในจุดโฟกัส ($u < f$) เกิดภาพเสมือนหัวตั้งขนาดขยายใหญ่ขึ้น (หลักการของแว่นขยาย)';
+            } else if (state.opticType === 'concave_lens') {
+                propExp.innerText = 'เลนส์เว้าจะกระจายแสง และให้ภาพเสมือน หัวตั้ง ขนาดเล็กกว่าวัตถุเสมอ ไม่ว่าจะวางวัตถุไว้ที่ระยะใดก็ตาม';
+            } else if (state.opticType === 'concave_mirror') {
+                if (state.u > state.f) propExp.innerText = 'กระจกเว้าบีบแสงรวมกันเกิดเป็นภาพจริงหัวกลับด้านหน้ากระจก';
+                else propExp.innerText = 'กระจกเว้าเมื่อวางวัตถุใกล้กว่าจุดโฟกัส ($u < f$) จะเกิดภาพเสมือนหัวตั้งขนาดใหญ่กว่าวัตถุอยู่หลังกระจก (กระจกแต่งหน้า/ส่องฟัน)';
+            } else if (state.opticType === 'convex_mirror') {
+                propExp.innerText = 'กระจกนูนกระจายแสงออก ให้ภาพเสมือน หัวตั้ง ขนาดเล็กกว่าวัตถุเสมอ ช่วยเพิ่มมุมมองให้กว้างขึ้น (กระจกมองข้างรถ/กระจกโค้งจราจร)';
+            }
+        }
+
+        // ================= MAIN RENDER DISPATCHER =================
+        function render() {
+            if (state.renderMode === '2d') {
+                render2D();
+            } else {
+                render3D();
+            }
+        }
+
+        // ================= 2D RAY DIAGRAM CANVAS DRAWING =================
+        function render2D() {
+            const w = canvas2D.clientWidth;
+            const h = canvas2D.clientHeight;
+            canvas2D.width = w * window.devicePixelRatio;
+            canvas2D.height = h * window.devicePixelRatio;
+            ctx2D.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+            ctx2D.clearRect(0, 0, w, h);
+
+            // Origin at Canvas Center
+            state.originX = w / 2;
+            state.originY = h / 2;
+            const ox = state.originX;
+            const oy = state.originY;
+            const scale = state.scale2D;
+
+            // Draw Background Grid Lines
+            if (state.showGrid) {
+                ctx2D.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+                ctx2D.lineWidth = 1;
+                const step = 20 * scale; // 20 cm grid spacing
+
+                for (let x = ox % step; x < w; x += step) {
+                    ctx2D.beginPath(); ctx2D.moveTo(x, 0); ctx2D.lineTo(x, h); ctx2D.stroke();
+                }
+                for (let y = oy % step; y < h; y += step) {
+                    ctx2D.beginPath(); ctx2D.moveTo(0, y); ctx2D.lineTo(w, y); ctx2D.stroke();
+                }
+            }
+
+            // Draw Principal Optical Axis (Horizontal X-Axis)
+            ctx2D.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx2D.lineWidth = 1.5;
+            ctx2D.beginPath();
+            ctx2D.moveTo(0, oy);
+            ctx2D.lineTo(w, oy);
+            ctx2D.stroke();
+
+            // Draw Normal Line / Optic Center Axis (Vertical Y-Axis)
+            if (state.showNormalLine) {
+                ctx2D.strokeStyle = 'rgba(16, 185, 129, 0.4)';
+                ctx2D.setLineDash([4, 4]);
+                ctx2D.beginPath();
+                ctx2D.moveTo(ox, 20);
+                ctx2D.lineTo(ox, h - 20);
+                ctx2D.stroke();
+                ctx2D.setLineDash([]);
+            }
+
+            // Draw Focal Points (F and 2F)
+            if (state.showFocalPoints) {
+                drawFocalPoint2D(ox - state.fAbs * scale, oy, 'F');
+                drawFocalPoint2D(ox - 2 * state.fAbs * scale, oy, '2F');
+                drawFocalPoint2D(ox + state.fAbs * scale, oy, 'F\'');
+                drawFocalPoint2D(ox + 2 * state.fAbs * scale, oy, '2F\'');
+            }
+
+            // Draw Optical Element (Lens or Mirror Shape)
+            drawOpticElement2D(ox, oy, scale);
+
+            // Calculate Key Screen Coordinates
+            const objX = ox - state.u * scale;
+            const objY = oy - state.h * scale;
+
+            // Draw Object Arrow (Amber)
+            drawArrow2D(objX, oy, objX, objY, '#F59E0B', 3.5, 'วัตถุ (Object)');
+
+            // Draw Image Arrow (Cyan) if Image is finite
+            if (isFinite(state.v)) {
+                let imgX;
+                if (state.opticType.includes('mirror')) {
+                    // For Mirrors: Real Image (v > 0) is on left (-X), Virtual (v < 0) is on right (+X)
+                    imgX = ox - state.v * scale;
+                } else {
+                    // For Lenses: Real Image (v > 0) is on right (+X), Virtual (v < 0) is on left (-X)
+                    imgX = ox + state.v * scale;
+                }
+                const imgY = oy - state.hp * scale;
+                const isVirtual = state.v < 0 || (state.opticType.includes('mirror') && state.v < 0);
+                const color = isVirtual ? '#F43F5E' : '#06B6D4';
+
+                drawArrow2D(imgX, oy, imgX, imgY, color, 3, 'ภาพ (Image)', isVirtual);
+            }
+
+            // Draw Rays Diagram (Principal Rays 3 เส้น)
+            if (state.rayMode === 'principal') {
+                drawPrincipalRays2D(ox, oy, scale, objX, objY);
+            } else if (state.rayMode === 'parallel') {
+                drawParallelRays2D(ox, oy, scale, objX, objY);
+            }
+        }
+
+        // Draw Focal Point Label Helper
+        function drawFocalPoint2D(x, y, label) {
+            ctx2D.fillStyle = '#06B6D4';
+            ctx2D.beginPath();
+            ctx2D.arc(x, y, 4, 0, Math.PI * 2);
+            ctx2D.fill();
+
+            ctx2D.fillStyle = '#9CA3AF';
+            ctx2D.font = '11px Sarabun, sans-serif';
+            ctx2D.textAlign = 'center';
+            ctx2D.fillText(label, x, y + 16);
+        }
+
+        // Draw Lens/Mirror Graphic Element
+        function drawOpticElement2D(ox, oy, scale) {
+            ctx2D.lineWidth = 3;
+            ctx2D.strokeStyle = '#38BDF8';
+            ctx2D.fillStyle = 'rgba(56, 189, 248, 0.12)';
+
+            const height = 140;
+
+            ctx2D.beginPath();
+            if (state.opticType === 'convex_lens') {
+                // Curved outwards lens shape ()
+                ctx2D.moveTo(ox, oy - height);
+                ctx2D.quadraticCurveTo(ox + 18, oy, ox, oy + height);
+                ctx2D.quadraticCurveTo(ox - 18, oy, ox, oy - height);
+            } else if (state.opticType === 'concave_lens') {
+                // Curved inwards lens shape )(
+                ctx2D.moveTo(ox - 12, oy - height);
+                ctx2D.lineTo(ox + 12, oy - height);
+                ctx2D.quadraticCurveTo(ox + 3, oy, ox + 12, oy + height);
+                ctx2D.lineTo(ox - 12, oy + height);
+                ctx2D.quadraticCurveTo(ox - 3, oy, ox - 12, oy - height);
+            } else if (state.opticType === 'concave_mirror') {
+                // Concave mirror curve (
+                ctx2D.moveTo(ox + 10, oy - height);
+                ctx2D.quadraticCurveTo(ox - 15, oy, ox + 10, oy + height);
+            } else if (state.opticType === 'convex_mirror') {
+                // Convex mirror curve )
+                ctx2D.moveTo(ox - 10, oy - height);
+                ctx2D.quadraticCurveTo(ox + 15, oy, ox - 10, oy + height);
+            }
+            ctx2D.fill();
+            ctx2D.stroke();
+
+            // Label
+            ctx2D.fillStyle = '#67e8f9';
+            ctx2D.font = '12px Sarabun, sans-serif';
+            ctx2D.textAlign = 'center';
+            const nameMap = {
+                'convex_lens': 'เลนส์นูน (Convex Lens)',
+                'concave_lens': 'เลนส์เว้า (Concave Lens)',
+                'concave_mirror': 'กระจกเว้า (Concave Mirror)',
+                'convex_mirror': 'กระจกนูน (Convex Mirror)'
+            };
+            ctx2D.fillText(nameMap[state.opticType], ox, oy - height - 12);
+        }
+
+        // Draw Arrow for Object or Image
+        function drawArrow2D(x1, y1, x2, y2, color, strokeWidth, label, isDashed = false) {
+            ctx2D.strokeStyle = color;
+            ctx2D.fillStyle = color;
+            ctx2D.lineWidth = strokeWidth;
+
+            if (isDashed) ctx2D.setLineDash([5, 5]);
+
+            ctx2D.beginPath();
+            ctx2D.moveTo(x1, y1);
+            ctx2D.lineTo(x2, y2);
+            ctx2D.stroke();
+
+            ctx2D.setLineDash([]);
+
+            // Arrow Head Tip
+            const headlen = 10;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            ctx2D.beginPath();
+            ctx2D.moveTo(x2, y2);
+            ctx2D.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+            ctx2D.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+            ctx2D.closePath();
+            ctx2D.fill();
+
+            // Label Text
+            ctx2D.font = 'bold 11px Sarabun, sans-serif';
+            ctx2D.textAlign = 'center';
+            ctx2D.fillText(label, x2, y2 + (y2 < y1 ? -10 : 20));
+        }
+
+        // Draw 3 Principal Rays Engine
+        function drawPrincipalRays2D(ox, oy, scale, objX, objY) {
+            const isLens = state.opticType.includes('lens');
+            const isConvexLens = state.opticType === 'convex_lens';
+            const isConcaveLens = state.opticType === 'concave_lens';
+            const isConcaveMirror = state.opticType === 'concave_mirror';
+            const isConvexMirror = state.opticType === 'convex_mirror';
+
+            const fVal = state.fAbs * scale;
+
+            // RAY 1: Parallel to Axis -> through/from Focal Point
+            // Color: Rose / Red
+            drawRayLine2D(objX, objY, ox, objY, '#F43F5E');
+
+            if (isConvexLens) {
+                // Refracts through back Focal Point F' (ox + fVal, oy)
+                drawRayLine2D(ox, objY, ox + 600, objY + (600 / fVal) * (oy - objY), '#F43F5E');
+                if (state.showVirtualRays && state.u < state.fAbs) {
+                    drawVirtualRayLine2D(ox, objY, ox - 600, objY - (600 / fVal) * (oy - objY), '#F43F5E');
+                }
+            } else if (isConcaveLens) {
+                // Diverges as if coming from front Focal Point F (ox - fVal, oy)
+                const slope = (objY - oy) / fVal;
+                drawRayLine2D(ox, objY, ox + 600, objY + 600 * slope, '#F43F5E');
+                if (state.showVirtualRays) {
+                    drawVirtualRayLine2D(ox, objY, ox - fVal, oy, '#F43F5E');
+                }
+            } else if (isConcaveMirror) {
+                // Reflects back through Focal Point F (ox - fVal, oy)
+                const slope = (oy - objY) / fVal;
+                drawRayLine2D(ox, objY, ox - 600, objY + 600 * slope, '#F43F5E');
+                if (state.showVirtualRays && state.u < state.fAbs) {
+                    drawVirtualRayLine2D(ox, objY, ox + 600, objY - 600 * slope, '#F43F5E');
+                }
+            } else if (isConvexMirror) {
+                // Reflects outwards as if coming from behind Focal Point F (ox + fVal, oy)
+                const slope = (objY - oy) / fVal;
+                drawRayLine2D(ox, objY, ox - 600, objY - 600 * slope, '#F43F5E');
+                if (state.showVirtualRays) {
+                    drawVirtualRayLine2D(ox, objY, ox + fVal, oy, '#F43F5E');
+                }
+            }
+
+            // RAY 2: Through Optical Center (0,0) or Center of Curvature
+            // Color: Emerald / Green
+            if (isLens) {
+                // Straight through lens center (ox, oy) uninterrupted
+                const slope = (oy - objY) / (ox - objX);
+                drawRayLine2D(objX, objY, ox + 600, oy + 600 * slope, '#10B981');
+                if (state.showVirtualRays && state.v < 0) {
+                    drawVirtualRayLine2D(ox, oy, ox - 600, oy - 600 * slope, '#10B981');
+                }
+            } else {
+                // For Mirrors: Ray pointing towards Center of Curvature C (2F)
+                const cX = isConcaveMirror ? ox - 2 * fVal : ox + 2 * fVal;
+                drawRayLine2D(objX, objY, ox, oy, '#10B981');
+                drawRayLine2D(ox, oy, objX - 300, objY - 300 * ((oy - objY) / (ox - objX)), '#10B981');
+                if (state.showVirtualRays && isConvexMirror) {
+                    drawVirtualRayLine2D(ox, oy, cX, oy, '#10B981');
+                }
+            }
+
+            // RAY 3: Through Focal Point -> emerges Parallel
+            // Color: Blue / Cyan
+            if (isConvexLens) {
+                if (state.u > state.fAbs) {
+                    // Passes through front F (ox - fVal, oy) to lens
+                    drawRayLine2D(objX, objY, ox, oy - state.hp * scale, '#38BDF8');
+                    drawRayLine2D(ox, oy - state.hp * scale, ox + 600, oy - state.hp * scale, '#38BDF8');
+                }
+            } else if (isConcaveMirror) {
+                if (state.u > state.fAbs) {
+                    drawRayLine2D(objX, objY, ox, oy - state.hp * scale, '#38BDF8');
+                    drawRayLine2D(ox, oy - state.hp * scale, ox - 600, oy - state.hp * scale, '#38BDF8');
+                }
+            }
+        }
+
+        // Draw Parallel Beam Rays
+        function drawParallelRays2D(ox, oy, scale, objX, objY) {
+            const count = 5;
+            const spacing = 15;
+
+            for (let i = -count; i <= count; i++) {
+                const y = oy + i * spacing;
+                drawRayLine2D(0, y, ox, y, '#F59E0B');
+
+                if (state.opticType === 'convex_lens') {
+                    drawRayLine2D(ox, y, ox + state.fAbs * scale, oy, '#06B6D4');
+                    drawRayLine2D(ox + state.fAbs * scale, oy, ox + 600, oy - (y - oy) * 2, '#06B6D4');
+                } else if (state.opticType === 'concave_lens') {
+                    drawRayLine2D(ox, y, ox + 600, y + (y - oy) * 1.5, '#06B6D4');
+                    if (state.showVirtualRays) {
+                        drawVirtualRayLine2D(ox, y, ox - state.fAbs * scale, oy, '#06B6D4');
+                    }
+                }
+            }
+        }
+
+        function drawRayLine2D(x1, y1, x2, y2, color) {
+            ctx2D.strokeStyle = color;
+            ctx2D.lineWidth = 1.8;
+            ctx2D.beginPath();
+            ctx2D.moveTo(x1, y1);
+            ctx2D.lineTo(x2, y2);
+            ctx2D.stroke();
+        }
+
+        function drawVirtualRayLine2D(x1, y1, x2, y2, color) {
+            ctx2D.strokeStyle = color;
+            ctx2D.lineWidth = 1.5;
+            ctx2D.setLineDash([4, 4]);
+            ctx2D.beginPath();
+            ctx2D.moveTo(x1, y1);
+            ctx2D.lineTo(x2, y2);
+            ctx2D.stroke();
+            ctx2D.setLineDash([]);
+        }
+
+        // ================= 2D MOUSE DRAG INTERACTION =================
+        function onMouseDown2D(e) {
+            if (state.renderMode !== '2d') return;
+            const rect = canvas2D.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            handleDragStart(mouseX, mouseY);
+        }
+
+        function handleDragStart(mouseX, mouseY) {
+            const objScreenX = state.originX - state.u * state.scale2D;
+            const objScreenY = state.originY - state.h * state.scale2D;
+
+            // Check if user clicked near object arrow top
+            const dist = Math.hypot(mouseX - objScreenX, mouseY - objScreenY);
+            if (dist < 30 || Math.abs(mouseX - objScreenX) < 20) {
+                state.isDraggingObject = true;
+            }
+        }
+
+        function onMouseMove2D(e) {
+            if (!state.isDraggingObject || state.renderMode !== '2d') return;
+            const rect = canvas2D.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            handleDragMove(mouseX, mouseY);
+        }
+
+        function handleDragMove(mouseX, mouseY) {
+            // Convert screen X to distance u (cm)
+            let newU = (state.originX - mouseX) / state.scale2D;
+            newU = Math.max(5, Math.min(100, newU));
+
+            // Convert screen Y to height h (cm)
+            let newH = (state.originY - mouseY) / state.scale2D;
+            newH = Math.max(2, Math.min(30, newH));
+
+            state.u = newU;
+            state.h = newH;
+
+            // Update Sliders UI
+            document.getElementById('slider-u').value = state.u;
+            document.getElementById('slider-h').value = state.h;
+            document.getElementById('val-u').innerText = `${state.u.toFixed(1)} cm`;
+            document.getElementById('val-h').innerText = `${state.h.toFixed(1)} cm`;
+
+            calculateOptics();
+            render();
+        }
+
+        function onMouseUp2D() {
+            state.isDraggingObject = false;
+        }
+
+        // ================= 3D VIEWPORT RENDERER =================
+        function render3D() {
+            if (state.renderMode !== '3d') return;
+
+            // Update 3D Object Cylinder Position & Height
+            const scale3D = 0.8;
+            objMesh3D.scale.set(1, state.h * scale3D / 10, 1);
+            objMesh3D.position.set(-state.u * scale3D, (state.h * scale3D) / 2 - 15, 0);
+
+            // Update 3D Image Cylinder
+            if (isFinite(state.v)) {
+                imgMesh3D.visible = true;
+                const isMirror = state.opticType.includes('mirror');
+                const imgX = isMirror ? -state.v * scale3D : state.v * scale3D;
+                const imgH = Math.abs(state.hp) * scale3D;
+
+                imgMesh3D.scale.set(1, imgH / 10, 1);
+                const signY = state.hp >= 0 ? 1 : -1;
+                imgMesh3D.position.set(imgX, (signY * imgH) / 2 - 15, 0);
+
+                if (state.hp < 0) {
+                    imgMesh3D.rotation.z = Math.PI;
+                } else {
+                    imgMesh3D.rotation.z = 0;
+                }
+            } else {
+                imgMesh3D.visible = false;
+            }
+
+            // Optic Element Position
+            opticMesh3D.position.set(0, -15, 0);
+
+            controls3D.update();
+            renderer3D.render(scene3D, camera3D);
+            requestAnimationFrame(render3D);
+        }
+
+        // ================= UI CONTROL EVENT HANDLERS =================
+        function updateControlsFromSliders() {
+            state.u = parseFloat(document.getElementById('slider-u').value);
+            state.h = parseFloat(document.getElementById('slider-h').value);
+            state.fAbs = parseFloat(document.getElementById('slider-f').value);
+            state.n = parseFloat(document.getElementById('slider-n').value);
+            state.rayMode = document.getElementById('select-ray-mode').value;
+
+            document.getElementById('val-u').innerText = `${state.u.toFixed(1)} cm`;
+            document.getElementById('val-h').innerText = `${state.h.toFixed(1)} cm`;
+            document.getElementById('val-f').innerText = `${state.fAbs.toFixed(1)} cm`;
+            document.getElementById('val-n').innerText = `${state.n.toFixed(2)}`;
+
+            calculateOptics();
+            render();
+        }
+
+        function setOpticType(type) {
+            state.opticType = type;
+
+            // Highlight button
+            document.querySelectorAll('.elem-btn').forEach(btn => {
+                btn.className = 'elem-btn py-2 px-2 bg-optics-800 hover:bg-optics-700 text-gray-300 rounded-xl border border-white/10 text-center font-medium transition';
+            });
+            const activeBtn = document.getElementById(`btn-elem-${type}`);
+            if (activeBtn) {
+                activeBtn.className = 'elem-btn py-2 px-2 bg-cyan-500/20 text-cyan-300 rounded-xl border border-cyan-500/40 text-center font-medium transition';
+            }
+
+            calculateOptics();
+            render();
+        }
+
+        function setRenderMode(mode) {
+            state.renderMode = mode;
+            const btn2D = document.getElementById('btn-mode-2d');
+            const btn3D = document.getElementById('btn-mode-3d');
+            const container2D = document.getElementById('canvas-2d');
+            const container3D = document.getElementById('container-3d');
+
+            if (mode === '2d') {
+                btn2D.className = 'mode-btn active px-3 py-1.5 rounded-lg transition flex items-center gap-1';
+                btn3D.className = 'mode-btn px-3 py-1.5 text-gray-400 hover:text-white rounded-lg transition flex items-center gap-1';
+                container2D.classList.remove('hidden');
+                container3D.classList.add('hidden');
+            } else {
+                btn3D.className = 'mode-btn active px-3 py-1.5 rounded-lg transition flex items-center gap-1';
+                btn2D.className = 'mode-btn px-3 py-1.5 text-gray-400 hover:text-white rounded-lg transition flex items-center gap-1';
+                container3D.classList.remove('hidden');
+                container2D.classList.add('hidden');
+                onResize();
+            }
+            render();
+        }
+
+        // Apply Preset Situations
+        function applyPreset(presetKey) {
+            if (presetKey === 'magnifier') {
+                // Magnifying glass: Convex Lens, u < f
+                setOpticType('convex_lens');
+                state.fAbs = 20;
+                state.u = 12;
+                state.h = 10;
+            } else if (presetKey === 'camera') {
+                // Camera: Convex Lens, u > 2f
+                setOpticType('convex_lens');
+                state.fAbs = 18;
+                state.u = 50;
+                state.h = 15;
+            } else if (presetKey === 'projector') {
+                // Projector: Convex Lens, f < u < 2f
+                setOpticType('convex_lens');
+                state.fAbs = 20;
+                state.u = 30;
+                state.h = 10;
+            } else if (presetKey === 'car_mirror') {
+                // Convex side mirror
+                setOpticType('convex_mirror');
+                state.fAbs = 25;
+                state.u = 45;
+                state.h = 16;
+            }
+
+            // Sync Sliders
+            document.getElementById('slider-f').value = state.fAbs;
+            document.getElementById('slider-u').value = state.u;
+            document.getElementById('slider-h').value = state.h;
+            updateControlsFromSliders();
+        }
+
+        function switchTab(tabKey) {
+            ['calc', 'props', 'laws'].forEach(k => {
+                document.getElementById(`content-${k}`).classList.add('hidden');
+                document.getElementById(`tab-${k}`).classList.remove('active');
+            });
+
+            document.getElementById(`content-${tabKey}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabKey}`).classList.add('active');
+        }
+
+        function resetToDefaults() {
+            state.u = 35.0;
+            state.h = 12.0;
+            state.fAbs = 20.0;
+            state.n = 1.52;
+            state.rayMode = 'principal';
+            setOpticType('convex_lens');
+
+            document.getElementById('slider-u').value = 35;
+            document.getElementById('slider-h').value = 12;
+            document.getElementById('slider-f').value = 20;
+            document.getElementById('slider-n').value = 1.52;
+            document.getElementById('select-ray-mode').value = 'principal';
+
+            updateControlsFromSliders();
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        function onResize() {
+            if (state.renderMode === '2d') {
+                render2D();
+            } else if (renderer3D && camera3D) {
+                const container = document.getElementById('container-3d');
+                camera3D.aspect = container.clientWidth / container.clientHeight;
+                camera3D.updateProjectionMatrix();
+                renderer3D.setSize(container.clientWidth, container.clientHeight);
+            }
+        }
+    </script>
+</body>
+</html>

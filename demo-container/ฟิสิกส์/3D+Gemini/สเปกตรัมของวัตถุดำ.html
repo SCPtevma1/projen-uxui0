@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ปฏิบัติการเสมือนจริง: สเปกตรัมของวัตถุดำ (Blackbody Spectrum 2D/3D)</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        lab: {
+                            bg: '#080d1a',
+                            panel: '#0f172a',
+                            accent: '#38bdf8',
+                            heat: '#ef4444',
+                            cool: '#3b82f6'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Sarabun', 'Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- KaTeX for Physics Equations -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+    <!-- Three.js Library for 3D Simulation Mode -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #080d1a;
+            color: #f3f4f6;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            touch-action: none;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.3);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(56, 189, 248, 0.7);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: linear-gradient(to right, #ef4444, #f59e0b, #eab308, #ffffff, #60a5fa, #3b82f6);
+            border-radius: 4px;
+            height: 8px;
+            outline: none;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+            border: 2px solid #0f172a;
+            transition: all 0.1s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .tab-btn.active {
+            background-color: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            border-bottom: 2px solid #38bdf8;
+            font-weight: 600;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .color-badge {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+    </style>
+</head>
+<body class="select-none text-slate-100">
+
+    <!-- Navigation Header -->
+    <header class="absolute top-2 left-2 right-2 z-30 flex items-center justify-between glass-panel px-4 py-2 rounded-xl">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-amber-500/20 text-amber-400 rounded-lg border border-amber-500/30">
+                <i data-lucide="sun" class="w-5 h-5 animate-[spin_10s_linear_infinite]"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-sm md:text-base text-white flex items-center gap-2">
+                    ปฏิบัติการเสมือนจริง: สเปกตรัมของวัตถุดำ
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">Quantum Mechanics & Astronomy</span>
+                </h1>
+                <p class="text-[11px] text-slate-400 hidden sm:block">กฎของพลังค์ (Planck's Law) & กฎการกระจัดของวีน (Wien's Displacement Law)</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Mode Switch 2D / 3D -->
+            <div class="flex bg-slate-900/90 p-1 rounded-lg border border-white/10 text-xs font-semibold">
+                <button id="btn-mode-2d" onclick="switchDimension('2D')" class="px-3 py-1 rounded-md bg-amber-500 text-slate-950 font-bold transition">
+                    2D Graph
+                </button>
+                <button id="btn-mode-3d" onclick="switchDimension('3D')" class="px-3 py-1 rounded-md text-slate-400 hover:text-white transition">
+                    3D Star View
+                </button>
+            </div>
+
+            <!-- Fullscreen Toggle -->
+            <button onclick="toggleFullscreen()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition border border-white/10" title="เต็มจอ">
+                <i data-lucide="maximize" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Layout Container -->
+    <div class="absolute inset-0 pt-14 p-2 pointer-events-none grid grid-cols-1 md:grid-cols-12 gap-2 h-full pb-2">
+
+        <!-- ================= LEFT PANEL: Controls & Sandbox Controls ================= -->
+        <aside class="md:col-span-3 lg:col-span-3 glass-panel rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <div class="p-2.5 border-b border-white/10 bg-slate-900/80 flex justify-between items-center">
+                <span class="font-semibold text-xs text-white flex items-center gap-1.5">
+                    <i data-lucide="sliders" class="w-4 h-4 text-amber-400"></i>
+                    ตั้งค่าอุณหภูมิ (Controls)
+                </span>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-3 space-y-3 text-xs">
+
+                <!-- TEMPERATURE CONTROL -->
+                <div class="glass-card p-2.5 rounded-lg space-y-3 border-l-2 border-amber-400">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-amber-400 text-[11px] flex items-center gap-1">
+                            <i data-lucide="thermometer" class="w-3.5 h-3.5"></i> อุณหภูมิสัมบูรณ์ ($T$)
+                        </span>
+                        <div class="flex items-center gap-1">
+                            <span id="color-indicator" class="color-badge bg-white shadow-[0_0_8px_#fff]"></span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] text-slate-300">
+                            <span>สไลเดอร์อุณหภูมิ:</span>
+                        </div>
+                        <!-- Logarithmic scale feeling via UI -->
+                        <input type="range" id="slider-temp" min="200" max="15000" step="50" value="5800" class="w-full" oninput="onControlChange('slider')">
+                        <div class="flex justify-between text-[9px] text-slate-500 px-1 mt-1">
+                            <span>200 K</span>
+                            <span>15,000 K</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-1 pt-2 border-t border-white/5">
+                        <span class="text-[10px] text-slate-300">ป้อนค่าอุณหภูมิ ($T$):</span>
+                        <div class="flex items-center gap-1">
+                            <input type="number" id="input-temp" value="5800" min="200" max="15000" class="w-20 bg-slate-900 text-amber-300 border border-white/10 rounded px-1.5 py-1 text-[11px] font-mono text-center" onchange="onControlChange('input')">
+                            <span class="text-[10px] text-slate-400">K</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PRESET OBJECTS -->
+                <div class="glass-card p-2.5 rounded-lg space-y-2">
+                    <span class="text-[11px] font-bold text-cyan-300 block border-b border-white/10 pb-1 flex items-center gap-1">
+                        <i data-lucide="star" class="w-3.5 h-3.5"></i> วัตถุอ้างอิง (Presets)
+                    </span>
+                    <div class="grid grid-cols-1 gap-1.5">
+                        <button onclick="applyPreset(300)" class="flex justify-between items-center p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px] border border-white/5 transition">
+                            <span class="flex items-center gap-1.5"><span class="color-badge" style="background:#ff3800;"></span> โลก / มนุษย์ (Infrared)</span>
+                            <span class="font-mono text-slate-400">~300 K</span>
+                        </button>
+                        <button onclick="applyPreset(3000)" class="flex justify-between items-center p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px] border border-white/5 transition">
+                            <span class="flex items-center gap-1.5"><span class="color-badge" style="background:#ffb46b;"></span> หลอดไฟไส้ทังสเตน</span>
+                            <span class="font-mono text-slate-400">~3000 K</span>
+                        </button>
+                        <button onclick="applyPreset(5800)" class="flex justify-between items-center p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px] border border-amber-500/30 transition shadow-[0_0_5px_rgba(245,158,11,0.2)]">
+                            <span class="flex items-center gap-1.5 font-bold text-amber-300"><span class="color-badge" style="background:#fff3ef;"></span> ดวงอาทิตย์ (Sun)</span>
+                            <span class="font-mono text-amber-200">5800 K</span>
+                        </button>
+                        <button onclick="applyPreset(9940)" class="flex justify-between items-center p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px] border border-white/5 transition">
+                            <span class="flex items-center gap-1.5"><span class="color-badge" style="background:#cddcff;"></span> ดาวซิริอุส (Sirius A)</span>
+                            <span class="font-mono text-slate-400">9940 K</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- VISUAL OVERLAYS & OPTIONS -->
+                <div class="glass-card p-2.5 rounded-lg space-y-2">
+                    <span class="text-[11px] font-bold text-slate-300 block border-b border-white/10 pb-1 flex items-center justify-between">
+                        <span>ตั้งค่าการแสดงผลกราฟ</span>
+                        <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400"></i>
+                    </span>
+                    <label class="flex items-center justify-between cursor-pointer text-[10px] text-slate-300 hover:text-white">
+                        <span>แสดงแถบสเปกตรัมแสงที่มองเห็นได้ (Visible Light)</span>
+                        <input type="checkbox" id="toggle-visible" checked onchange="forceRender()" class="accent-amber-500 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[10px] text-slate-300 hover:text-white">
+                        <span>แสดงเส้นจุดยอดความยาวคลื่น ($\lambda_{max}$)</span>
+                        <input type="checkbox" id="toggle-peak" checked onchange="forceRender()" class="accent-cyan-500 rounded">
+                    </label>
+                    <div class="flex items-center justify-between pt-1 border-t border-white/5">
+                        <span class="text-[10px] text-slate-400">แกน X (ความยาวคลื่น) Zoom:</span>
+                        <div class="flex gap-1">
+                            <button onclick="zoomX(0.8)" class="px-2 py-0.5 bg-slate-700 rounded text-[10px]"><i data-lucide="zoom-in" class="w-3 h-3"></i></button>
+                            <button onclick="zoomX(1.2)" class="px-2 py-0.5 bg-slate-700 rounded text-[10px]"><i data-lucide="zoom-out" class="w-3 h-3"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- ================= CENTER: Interactive Viewport (2D Canvas / 3D Three.js) ================= -->
+        <main class="md:col-span-5 lg:col-span-5 glass-panel rounded-xl flex flex-col pointer-events-auto border border-white/10 shadow-2xl relative overflow-hidden">
+            
+            <div id="viewport-container" class="flex-1 bg-[#050810] relative flex flex-col overflow-hidden">
+                
+                <!-- 2D Spectrum Graph Canvas -->
+                <canvas id="canvas-2d" class="w-full h-full absolute inset-0 z-10 block cursor-crosshair"></canvas>
+
+                <!-- 3D Three.js Container -->
+                <div id="container-3d" class="w-full h-full absolute inset-0 z-10 hidden"></div>
+
+                <!-- Live Badges -->
+                <div class="absolute top-2 left-2 bg-slate-900/90 backdrop-blur p-2 rounded-lg border border-white/10 text-slate-200 z-20 space-y-1 w-52 shadow-xl pointer-events-none">
+                    <div class="flex justify-between items-center border-b border-white/10 pb-0.5 mb-1">
+                        <span class="text-[9px] text-slate-400 uppercase tracking-wider">สถานะวัตถุดำ</span>
+                        <div class="flex items-center gap-1">
+                            <i data-lucide="activity" class="w-3 h-3 text-emerald-400"></i>
+                        </div>
+                    </div>
+                    <div class="flex justify-between text-[10px] font-mono">
+                        <span class="text-slate-400">T:</span>
+                        <span id="badge-t" class="text-amber-300 font-bold">5800 K</span>
+                    </div>
+                    <div class="flex justify-between text-[10px] font-mono">
+                        <span class="text-slate-400">Peak $\lambda_{max}$:</span>
+                        <span id="badge-lambda" class="text-cyan-300 font-bold">0.500 $\mu$m</span>
+                    </div>
+                    <div class="flex justify-between text-[10px] font-mono">
+                        <span class="text-slate-400">Color:</span>
+                        <span id="badge-color-name" class="text-white">White-Yellow</span>
+                    </div>
+                </div>
+
+                <!-- Graph Legend -->
+                <div id="graph-legend" class="absolute bottom-2 right-2 bg-slate-900/80 backdrop-blur px-2 py-1.5 rounded-lg border border-white/5 text-[9px] text-slate-300 z-20 pointer-events-none text-right">
+                    <div>แกน Y: ความเข้มรังสี (Spectral Radiance)</div>
+                    <div>แกน X: ความยาวคลื่น (Wavelength $\mu$m)</div>
+                </div>
+            </div>
+        </main>
+
+        <!-- ================= RIGHT PANEL: Calculations & Physics Theory ================= -->
+        <aside class="md:col-span-4 lg:col-span-4 glass-panel rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <!-- Navigation Tabs -->
+            <div class="p-2 border-b border-white/10 bg-slate-900/80">
+                <div class="grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-lg text-[11px] font-semibold text-center">
+                    <button onclick="switchRightTab('calc')" id="tab-calc" class="tab-btn active py-1 rounded transition">สูตรและการคำนวณ</button>
+                    <button onclick="switchRightTab('theory')" id="tab-theory" class="tab-btn py-1 rounded transition">อภิปรายผล & ปรากฏการณ์</button>
+                </div>
+            </div>
+
+            <!-- Scrollable Content Panels -->
+            <div class="flex-1 overflow-y-auto p-3 text-xs">
+
+                <!-- TAB 1: Calculation & Formulas -->
+                <div id="content-calc" class="space-y-3">
+                    
+                    <!-- Wien's Law -->
+                    <div class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-cyan-400">
+                        <span class="text-[11px] font-bold text-cyan-300 block border-b border-white/10 pb-1">
+                            กฎการกระจัดของวีน (Wien's Displacement Law)
+                        </span>
+                        <p class="text-[10px] text-slate-300 leading-relaxed">
+                            ความยาวคลื่นที่วัตถุดำแผ่รังสีออกมามากที่สุด ($\lambda_{max}$) จะแปรผกผันกับอุณหภูมิสัมบูรณ์ ($T$)
+                        </p>
+                        <div id="math-formula-wien" class="py-1 text-center text-cyan-100 font-mono text-xs bg-slate-950/60 rounded p-1.5"></div>
+                        
+                        <div class="bg-slate-950/60 p-2 rounded border border-white/5 space-y-1 font-mono text-[10px] text-slate-300 mt-2">
+                            <span class="text-slate-400 block font-sans text-[9.5px]">การคำนวณสด ณ อุณหภูมิปัจจุบัน:</span>
+                            <div>• ค่าคงที่ $b = 2.898 \times 10^{-3} \text{ m}\cdot\text{K}$</div>
+                            <div>• $T = $ <span id="math-t-val" class="text-amber-300">5800</span> K</div>
+                            <div class="text-cyan-300 font-bold border-t border-white/10 pt-1 mt-1">
+                                $\lambda_{max} = \frac{2898 \text{ }\mu\text{m}\cdot\text{K}}{<span id="math-t-sub">5800</span> \text{ K}} = <span id="math-lambda-ans">0.500</span> \text{ }\mu\text{m}$
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Planck's Law -->
+                    <div class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-fuchsia-400">
+                        <span class="text-[11px] font-bold text-fuchsia-300 block border-b border-white/10 pb-1">
+                            กฎการแผ่รังสีของพลังค์ (Planck's Law)
+                        </span>
+                        <p class="text-[10px] text-slate-300 leading-relaxed">
+                            อธิบายความเข้มของรังสี (Spectral Radiance) ที่ความยาวคลื่นต่างๆ ซึ่งเป็นรากฐานของกลศาสตร์ควอนตัม (พลังงานถูกปล่อยเป็นก้อน ควอนตา $E=hf$)
+                        </p>
+                        <div id="math-formula-planck" class="py-1 text-center text-fuchsia-100 font-mono text-xs bg-slate-950/60 rounded p-1.5 overflow-x-auto"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Theory & Discussion -->
+                <div id="content-theory" class="space-y-3 hidden">
+                    
+                    <!-- Phenomenon 1: Temperature effect -->
+                    <div class="bg-slate-900/60 p-2.5 rounded-lg border border-white/5 space-y-1.5">
+                        <h4 class="font-bold text-amber-400 text-[11px] flex items-center gap-1">
+                            <i data-lucide="trending-up" class="w-3.5 h-3.5"></i> ผลของการเพิ่ม/ลดอุณหภูมิ ($T$)
+                        </h4>
+                        <ul class="text-[10px] text-slate-300 space-y-1 list-disc pl-4 leading-relaxed">
+                            <li><strong class="text-white">เมื่อเพิ่มอุณหภูมิ (T สูงขึ้น):</strong> พื้นที่ใต้กราฟ (พลังงานรวม) จะเพิ่มขึ้นอย่างมหาศาล ($E \propto T^4$) และ <b>จุดยอดของกราฟ ($\lambda_{max}$) จะเลื่อนไปทางซ้าย</b> (ความยาวคลื่นสั้นลง ความถี่สูงขึ้น แสงจะออกไปทางสีน้ำเงิน)</li>
+                            <li><strong class="text-white">เมื่อลดอุณหภูมิ (T ต่ำลง):</strong> กราฟจะเตี้ยลง พลังงานลดลง และ <b>จุดยอดเลื่อนไปทางขวา</b> (ความยาวคลื่นยาวขึ้น แสงออกไปทางสีแดงหรืออินฟราเรดที่มองไม่เห็น)</li>
+                        </ul>
+                    </div>
+
+                    <!-- Phenomenon 2: The 3000K Lightbulb -->
+                    <div class="bg-slate-900/60 p-2.5 rounded-lg border border-white/5 space-y-1.5">
+                        <h4 class="font-bold text-rose-400 text-[11px] flex items-center gap-1">
+                            <i data-lucide="lightbulb" class="w-3.5 h-3.5"></i> ทำไมหลอดไฟไส้ (3000 K) จึงร้อน?
+                        </h4>
+                        <p class="text-[10px] text-slate-300 leading-relaxed">
+                            หากกำหนด T = 3000 K (ลองกด Preset) จะพบว่าจุดยอดของกราฟ ($\lambda_{max} \approx 0.96 \mu m$) <b>ตกอยู่ในย่านรังสีอินฟราเรด (Infrared)</b> ซึ่งตาคนมองไม่เห็น<br><br>
+                            พื้นที่ใต้กราฟส่วนใหญ่อยู่นอกแถบสีรุ้ง (Visible Light) หมายความว่าพลังงานไฟฟ้าส่วนใหญ่ถูกปล่อยออกมาในรูปของ <b>"ความร้อน"</b> มีเพียงส่วนน้อยนิด (หางกราฟด้านซ้าย) ที่ตกในย่านสีแดง-เหลือง ทำให้เราเห็นหลอดไฟเปล่งแสงสีส้มเหลือง และตัวหลอดจะร้อนจัดมาก
+                        </p>
+                    </div>
+
+                    <!-- Phenomenon 3: Orange vs Blue Star -->
+                    <div class="bg-slate-900/60 p-2.5 rounded-lg border border-white/5 space-y-1.5">
+                        <h4 class="font-bold text-cyan-400 text-[11px] flex items-center gap-1">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> ดาวสีส้ม กับ ดาวสีฟ้า ดวงไหนร้อนกว่ากัน?
+                        </h4>
+                        <p class="text-[10px] text-slate-300 leading-relaxed">
+                            <b>"ดาวสีฟ้าร้อนกว่าดาวสีส้ม"</b><br>
+                            ตามกฎของวีน ยิ่งวัตถุมีอุณหภูมิสูง จุดยอดของสเปกตรัมจะเลื่อนไปทางความยาวคลื่นสั้น (ความถี่สูง/พลังงานสูง) ซึ่งแสงสีฟ้ามีความยาวคลื่นสั้นกว่าสีส้ม<br>
+                            • ดาวสีส้ม (เช่น Betelgeuse) T $\approx 3500$ K<br>
+                            • ดาวสีฟ้า (เช่น Sirius) T $\approx 10000$ K
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- MAIN SIMULATION ENGINE & PHYSICS LOGIC SCRIPT -->
+    <script>
+        // Physics Constants
+        const h = 6.626e-34; // Planck constant (J*s)
+        const c = 3.0e8;     // Speed of light (m/s)
+        const kB = 1.38e-23; // Boltzmann constant (J/K)
+        const b_wien = 2.8977e-3; // Wien's displacement constant (m*K)
+        const b_wien_um = 2898;   // Wien's constant in um*K
+
+        // State Management
+        const state = {
+            renderMode: '2D', // '2D' or '3D'
+            T: 5800,          // Temperature in Kelvin
+            maxX: 3.0,        // Max X axis (Wavelength in um)
+            maxY: 1.0,        // Max Y axis (Dynamic based on peak)
+            lambdaMax: 0.5,   // Peak wavelength in um
+            colorRGB: {r: 255, g: 243, b: 239},
+            colorName: "White-Yellow",
+            
+            // Visual Options
+            showVisible: true,
+            showPeak: true
+        };
+
+        // Canvas 2D
+        let canvas, ctx;
+        let chartWidth, chartHeight;
+        const margin = { top: 20, right: 20, bottom: 40, left: 60 };
+
+        // Three.js 3D Variables
+        let scene, camera, renderer, starMesh, glowSprite, pointLight;
+        let is3DInitialized = false;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initKaTeX();
+            initCanvas();
+            lucide.createIcons();
+            
+            window.addEventListener('resize', onWindowResize);
+            
+            updatePhysics(); // Calculate initial state
+            requestAnimationFrame(renderLoop);
+        });
+
+        function initKaTeX() {
+            if (window.katex) {
+                katex.render("\\lambda_{max} = \\frac{b}{T}", document.getElementById('math-formula-wien'));
+                katex.render("B_\\lambda(T) = \\frac{2hc^2}{\\lambda^5} \\frac{1}{e^{\\frac{hc}{\\lambda k_B T}} - 1}", document.getElementById('math-formula-planck'));
+            }
+        }
+
+        function initCanvas() {
+            canvas = document.getElementById('canvas-2d');
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+        }
+
+        function resizeCanvas() {
+            if (canvas) {
+                const container = canvas.parentElement;
+                canvas.width = container.clientWidth * window.devicePixelRatio;
+                canvas.height = container.clientHeight * window.devicePixelRatio;
+                chartWidth = canvas.width - margin.left - margin.right;
+                chartHeight = canvas.height - margin.top - margin.bottom;
+            }
+            if (renderer && is3DInitialized) {
+                const container = document.getElementById('container-3d');
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }
+            forceRender();
+        }
+
+        // --- PHYSICS & COLOR LOGIC ---
+
+        function updatePhysics() {
+            // Calculate Peak Wavelength (Wien's Law)
+            state.lambdaMax = b_wien_um / state.T; // in micrometers (um)
+
+            // Calculate Max Intensity for Dynamic Y-Axis Scaling
+            // B(lambda_max, T)
+            const maxI = planckLaw(state.lambdaMax, state.T);
+            state.maxY = maxI * 1.2; // Add 20% headroom
+
+            // Calculate RGB Color based on Temperature
+            state.colorRGB = kelvinToRGB(state.T);
+            state.colorName = getColorName(state.T);
+
+            updateUI();
+        }
+
+        function planckLaw(lambda_um, T) {
+            // To prevent overflow/underflow, we compute a normalized proxy for visualization.
+            // True unit calculation: lambda in meters
+            const l_m = lambda_um * 1e-6;
+            
+            // Equation: (2 * h * c^2) / (l^5) * 1 / (exp(hc / lkT) - 1)
+            const c1 = 2 * h * c * c; // 1.191e-16
+            const c2 = (h * c) / kB;  // 1.438e-2
+
+            const term1 = c1 / Math.pow(l_m, 5);
+            const exponent = c2 / (l_m * T);
+            
+            // Avoid Infinity if exponent is too large
+            if (exponent > 700) return 0;
+            
+            const term2 = 1.0 / (Math.exp(exponent) - 1.0);
+            
+            // Return Spectral Radiance in W / (sr m^3) 
+            // Scale down by 1e-12 for manageable graph numbers (MW / (sr m^2 um))
+            return (term1 * term2) * 1e-12; 
+        }
+
+        // Color mapping algorithm (Standard approximation)
+        function kelvinToRGB(kelvin) {
+            let temp = kelvin / 100;
+            let red, green, blue;
+
+            if (temp <= 66) {
+                red = 255;
+            } else {
+                red = temp - 60;
+                red = 329.698727446 * Math.pow(red, -0.1332047592);
+                if (red < 0) red = 0;
+                if (red > 255) red = 255;
+            }
+
+            if (temp <= 66) {
+                green = temp;
+                green = 99.4708025861 * Math.log(green) - 161.1195681661;
+                if (green < 0) green = 0;
+                if (green > 255) green = 255;
+            } else {
+                green = temp - 60;
+                green = 288.1221695283 * Math.pow(green, -0.0755148492);
+                if (green < 0) green = 0;
+                if (green > 255) green = 255;
+            }
+
+            if (temp >= 66) {
+                blue = 255;
+            } else {
+                if (temp <= 19) {
+                    blue = 0;
+                } else {
+                    blue = temp - 10;
+                    blue = 138.5177312231 * Math.log(blue) - 305.0447927307;
+                    if (blue < 0) blue = 0;
+                    if (blue > 255) blue = 255;
+                }
+            }
+            return { r: Math.round(red), g: Math.round(green), b: Math.round(blue) };
+        }
+
+        function getColorName(T) {
+            if (T < 1500) return "Deep Red (Infrared dominant)";
+            if (T < 2500) return "Red";
+            if (T < 3500) return "Orange";
+            if (T < 5000) return "Yellow-White";
+            if (T < 7000) return "White (Sun-like)";
+            if (T < 9000) return "Blue-White";
+            return "Deep Blue";
+        }
+
+        // --- UI UPDATES ---
+
+        function onControlChange(source) {
+            if (source === 'slider') {
+                state.T = parseInt(document.getElementById('slider-temp').value);
+                document.getElementById('input-temp').value = state.T;
+            } else if (source === 'input') {
+                let val = parseInt(document.getElementById('input-temp').value);
+                if (isNaN(val)) val = 5800;
+                val = Math.max(200, Math.min(15000, val));
+                state.T = val;
+                document.getElementById('input-temp').value = val;
+                document.getElementById('slider-temp').value = val;
+            }
+            updatePhysics();
+            forceRender();
+        }
+
+        function applyPreset(temp) {
+            state.T = temp;
+            document.getElementById('slider-temp').value = temp;
+            document.getElementById('input-temp').value = temp;
+            
+            // Auto zoom X for very cold objects so we can see the peak
+            if (temp < 1000) state.maxX = 10.0;
+            else if (temp < 3500) state.maxX = 4.0;
+            else state.maxX = 2.0;
+
+            updatePhysics();
+            forceRender();
+        }
+
+        function zoomX(factor) {
+            state.maxX = Math.max(0.5, Math.min(20.0, state.maxX * factor));
+            forceRender();
+        }
+
+        function updateUI() {
+            state.showVisible = document.getElementById('toggle-visible').checked;
+            state.showPeak = document.getElementById('toggle-peak').checked;
+
+            const rgbStr = `rgb(${state.colorRGB.r}, ${state.colorRGB.g}, ${state.colorRGB.b})`;
+            
+            document.getElementById('color-indicator').style.backgroundColor = rgbStr;
+            document.getElementById('color-indicator').style.boxShadow = `0 0 10px ${rgbStr}`;
+            
+            document.getElementById('badge-t').innerText = `${state.T} K`;
+            document.getElementById('badge-lambda').innerText = `${state.lambdaMax.toFixed(3)} μm`;
+            document.getElementById('badge-color-name').innerText = state.colorName;
+            
+            // Math panel updates
+            document.getElementById('math-t-val').innerText = state.T;
+            document.getElementById('math-t-sub').innerText = state.T;
+            document.getElementById('math-lambda-ans').innerText = state.lambdaMax.toFixed(3);
+        }
+
+        // --- RENDER ENGINE ---
+
+        let renderRequested = false;
+        function forceRender() {
+            if (!renderRequested) {
+                renderRequested = true;
+                requestAnimationFrame(renderLoop);
+            }
+        }
+
+        function renderLoop() {
+            renderRequested = false;
+            
+            if (state.renderMode === '2D') {
+                render2D();
+            } else if (state.renderMode === '3D' && is3DInitialized) {
+                render3D();
+            }
+        }
+
+        function render2D() {
+            if (!ctx) return;
+            
+            ctx.save();
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            
+            // Clear Background
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Coordinate Mappers
+            const getX = (um) => margin.left + (um / state.maxX) * chartWidth;
+            const getY = (val) => canvas.height / window.devicePixelRatio - margin.bottom - (val / state.maxY) * chartHeight;
+
+            // 1. Draw Visible Spectrum Background (380nm - 750nm  -> 0.38 - 0.75 um)
+            if (state.showVisible) {
+                const visStartX = getX(0.38);
+                const visEndX = getX(0.75);
+                
+                if (visStartX < margin.left + chartWidth) {
+                    const gradient = ctx.createLinearGradient(visStartX, 0, visEndX, 0);
+                    gradient.addColorStop(0, "rgba(138, 43, 226, 0.4)"); // Violet
+                    gradient.addColorStop(0.2, "rgba(0, 0, 255, 0.4)");   // Blue
+                    gradient.addColorStop(0.4, "rgba(0, 255, 0, 0.4)");   // Green
+                    gradient.addColorStop(0.6, "rgba(255, 255, 0, 0.4)"); // Yellow
+                    gradient.addColorStop(0.8, "rgba(255, 127, 0, 0.4)"); // Orange
+                    gradient.addColorStop(1, "rgba(255, 0, 0, 0.4)");     // Red
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(Math.max(margin.left, visStartX), margin.top, Math.min(visEndX - visStartX, chartWidth), chartHeight);
+                    
+                    ctx.fillStyle = "rgba(255,255,255,0.3)";
+                    ctx.font = "9px Inter";
+                    ctx.textAlign = "center";
+                    ctx.fillText("Visible", (visStartX + visEndX)/2, margin.top + 15);
+                }
+            }
+
+            // 2. Draw Axes and Grid
+            ctx.strokeStyle = "rgba(255,255,255,0.2)";
+            ctx.lineWidth = 1;
+            
+            // X Axis
+            ctx.beginPath();
+            ctx.moveTo(margin.left, getY(0));
+            ctx.lineTo(margin.left + chartWidth, getY(0));
+            ctx.stroke();
+
+            // Y Axis
+            ctx.beginPath();
+            ctx.moveTo(margin.left, margin.top);
+            ctx.lineTo(margin.left, getY(0));
+            ctx.stroke();
+
+            // X Axis Labels
+            ctx.fillStyle = "rgba(255,255,255,0.6)";
+            ctx.font = "10px Inter";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "top";
+            for (let i = 0; i <= state.maxX; i += (state.maxX > 5 ? 1 : 0.5)) {
+                let px = getX(i);
+                if (px <= margin.left + chartWidth) {
+                    ctx.fillText(i.toFixed(1), px, getY(0) + 5);
+                    ctx.beginPath();
+                    ctx.moveTo(px, getY(0));
+                    ctx.lineTo(px, getY(0) + 3);
+                    ctx.stroke();
+                }
+            }
+
+            // 3. Draw Planck Curve
+            ctx.beginPath();
+            let first = true;
+            let curvePoints = [];
+            const steps = 300;
+            const dx = state.maxX / steps;
+
+            for (let i = 0; i <= steps; i++) {
+                let x_um = i * dx;
+                if (x_um === 0) x_um = 0.001; // Avoid div zero
+                
+                let intensity = planckLaw(x_um, state.T);
+                let px = getX(x_um);
+                let py = getY(intensity);
+                
+                // Clamp Y for drawing
+                py = Math.max(margin.top - 100, Math.min(getY(0)+100, py));
+
+                if (first) {
+                    ctx.moveTo(px, py);
+                    first = false;
+                } else {
+                    ctx.lineTo(px, py);
+                }
+                curvePoints.push({x: px, y: py});
+            }
+
+            // Stroke the line
+            ctx.strokeStyle = `rgb(${state.colorRGB.r}, ${state.colorRGB.g}, ${state.colorRGB.b})`;
+            ctx.lineWidth = 3;
+            ctx.lineJoin = "round";
+            ctx.stroke();
+
+            // Fill under curve
+            curvePoints.push({x: getX(state.maxX), y: getY(0)});
+            curvePoints.push({x: getX(0), y: getY(0)});
+            
+            ctx.beginPath();
+            ctx.moveTo(curvePoints[0].x, curvePoints[0].y);
+            for(let p of curvePoints) ctx.lineTo(p.x, p.y);
+            
+            const fillGrad = ctx.createLinearGradient(0, margin.top, 0, getY(0));
+            fillGrad.addColorStop(0, `rgba(${state.colorRGB.r}, ${state.colorRGB.g}, ${state.colorRGB.b}, 0.5)`);
+            fillGrad.addColorStop(1, `rgba(${state.colorRGB.r}, ${state.colorRGB.g}, ${state.colorRGB.b}, 0.0)`);
+            ctx.fillStyle = fillGrad;
+            ctx.fill();
+
+            // 4. Draw Peak Marker (Wien's Law)
+            if (state.showPeak && state.lambdaMax <= state.maxX) {
+                const peakX = getX(state.lambdaMax);
+                const peakI = planckLaw(state.lambdaMax, state.T);
+                const peakY = getY(peakI);
+
+                ctx.strokeStyle = "#22d3ee"; // Cyan-400
+                ctx.setLineDash([4, 4]);
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(peakX, getY(0));
+                ctx.lineTo(peakX, peakY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Peak Dot
+                ctx.fillStyle = "#22d3ee";
+                ctx.beginPath();
+                ctx.arc(peakX, peakY, 4, 0, Math.PI*2);
+                ctx.fill();
+                
+                // Peak Label
+                ctx.fillStyle = "#fff";
+                ctx.textAlign = "left";
+                ctx.textBaseline = "bottom";
+                ctx.fillText(`λ = ${state.lambdaMax.toFixed(3)} μm`, peakX + 6, peakY - 6);
+            }
+
+            ctx.restore();
+        }
+
+        function init3DScene() {
+            const container = document.getElementById('container-3d');
+            if (!container || is3DInitialized) return;
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050810);
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 0, 15);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // The Star / Blackbody Object
+            const geometry = new THREE.SphereGeometry(3, 64, 64);
+            const material = new THREE.MeshBasicMaterial({ 
+                color: 0xffffff // Will be updated dynamically
+            });
+            starMesh = new THREE.Mesh(geometry, material);
+            scene.add(starMesh);
+
+            // Glow Effect using PointLight and Sprite
+            pointLight = new THREE.PointLight(0xffffff, 2, 50);
+            scene.add(pointLight);
+
+            // Create a simple radial gradient texture for glow
+            const glowCanvas = document.createElement('canvas');
+            glowCanvas.width = 128;
+            glowCanvas.height = 128;
+            const gCtx = glowCanvas.getContext('2d');
+            const gGrad = gCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            gGrad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            gGrad.addColorStop(0.2, 'rgba(255, 255, 255, 0.8)');
+            gGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            gCtx.fillStyle = gGrad;
+            gCtx.fillRect(0, 0, 128, 128);
+
+            const glowTexture = new THREE.CanvasTexture(glowCanvas);
+            const spriteMaterial = new THREE.SpriteMaterial({ 
+                map: glowTexture, 
+                color: 0xffffff,
+                transparent: true,
+                blending: THREE.AdditiveBlending
+            });
+            glowSprite = new THREE.Sprite(spriteMaterial);
+            glowSprite.scale.set(12, 12, 1);
+            starMesh.add(glowSprite);
+
+            is3DInitialized = true;
+            
+            // Add simple rotation animation
+            animate3D();
+        }
+
+        function animate3D() {
+            if (state.renderMode === '3D' && is3DInitialized) {
+                starMesh.rotation.y += 0.005;
+                render3D();
+            }
+            requestAnimationFrame(animate3D);
+        }
+
+        function render3D() {
+            if (!is3DInitialized) return;
+
+            // Convert RGB object to Three.js Color
+            const tColor = new THREE.Color(
+                state.colorRGB.r / 255, 
+                state.colorRGB.g / 255, 
+                state.colorRGB.b / 255
+            );
+
+            // Update Star Core Color
+            starMesh.material.color = tColor;
+            
+            // Update Glow Color
+            glowSprite.material.color = tColor;
+            pointLight.color = tColor;
+
+            // Simulate intensity/brightness changes based on T
+            // T^4 is Stefan-Boltzmann, but visually we just scale it non-linearly
+            const relativeIntensity = Math.min(2.0, 0.5 + (state.T / 5800)); 
+            
+            // If very cold (e.g. 300K), make it look dim/dark red
+            if (state.T < 1000) {
+                starMesh.material.color = new THREE.Color(0.2, 0.0, 0.0);
+                glowSprite.material.opacity = 0.2;
+            } else {
+                glowSprite.material.opacity = Math.min(1.0, relativeIntensity * 0.8);
+            }
+            
+            glowSprite.scale.set(9 + relativeIntensity*4, 9 + relativeIntensity*4, 1);
+
+            renderer.render(scene, camera);
+        }
+
+        function switchDimension(dim) {
+            state.renderMode = dim;
+            const btn2D = document.getElementById('btn-mode-2d');
+            const btn3D = document.getElementById('btn-mode-3d');
+            const canvas2DObj = document.getElementById('canvas-2d');
+            const container3DObj = document.getElementById('container-3d');
+            const legendObj = document.getElementById('graph-legend');
+
+            if (dim === '2D') {
+                btn2D.className = 'px-3 py-1 rounded-md bg-amber-500 text-slate-950 font-bold transition';
+                btn3D.className = 'px-3 py-1 rounded-md text-slate-400 hover:text-white transition';
+                canvas2DObj.classList.remove('hidden');
+                legendObj.classList.remove('hidden');
+                container3DObj.classList.add('hidden');
+                forceRender();
+            } else {
+                btn3D.className = 'px-3 py-1 rounded-md bg-amber-500 text-slate-950 font-bold transition';
+                btn2D.className = 'px-3 py-1 rounded-md text-slate-400 hover:text-white transition';
+                canvas2DObj.classList.add('hidden');
+                legendObj.classList.add('hidden');
+                container3DObj.classList.remove('hidden');
+
+                if (!is3DInitialized) {
+                    init3DScene();
+                }
+                forceRender();
+            }
+        }
+
+        function switchRightTab(tabKey) {
+            ['calc', 'theory'].forEach(k => {
+                document.getElementById(`content-${k}`).classList.add('hidden');
+                document.getElementById(`tab-${k}`).classList.remove('active');
+            });
+            document.getElementById(`content-${tabKey}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabKey}`).classList.add('active');
+        }
+
+        function toggleFullscreen() {
+            try {
+                if (!document.fullscreenElement) {
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen().catch(err => console.warn(err));
+                    }
+                } else if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(err => console.warn(err));
+                }
+            } catch (err) {
+                console.warn("Fullscreen restricted:", err);
+            }
+        }
+
+        function onWindowResize() {
+            resizeCanvas();
+        }
+    </script>
+</body>
+</html>

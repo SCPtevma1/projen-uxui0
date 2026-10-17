@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ปฏิบัติการเสมือนจริง: มวลและสปริง (Mass and Spring Basics & Hooke's Law)</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        lab: {
+                            bg: '#080d1a',
+                            panel: '#0f172a',
+                            accent: '#38bdf8',
+                            spring: '#94a3b8'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Sarabun', 'Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- KaTeX for Physics Equations -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+    <!-- Three.js for 3D Viewport -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #080d1a;
+            color: #f3f4f6;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            touch-action: none;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.3);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(56, 189, 248, 0.7);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            height: 6px;
+            outline: none;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+            transition: all 0.1s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #7dd3fc;
+        }
+
+        .tab-btn.active {
+            background-color: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            border-bottom: 2px solid #38bdf8;
+            font-weight: 600;
+        }
+
+        .stopwatch-btn {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .stopwatch-btn:hover {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: #38bdf8;
+        }
+    </style>
+</head>
+<body class="select-none text-slate-100">
+
+    <!-- Navigation Header -->
+    <header class="absolute top-2 left-2 right-2 z-30 flex items-center justify-between glass-panel px-4 py-2 rounded-xl">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-blue-500/20 text-blue-400 rounded-lg border border-blue-500/30">
+                <i data-lucide="activity" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-sm md:text-base text-white flex items-center gap-2">
+                    ปฏิบัติการเสมือนจริง: มวลและสปริง พื้นฐาน
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">Mechanics & SHM</span>
+                </h1>
+                <p class="text-[11px] text-slate-400 hidden sm:block">กฎของฮุค (Hooke's Law), การวัด และการเคลื่อนที่แบบคาบ (Periodic Motion)</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Mode Switch 2D / 3D -->
+            <div class="flex bg-slate-900/90 p-1 rounded-lg border border-white/10 text-xs font-semibold">
+                <button id="btn-mode-2d" onclick="switchDimension('2D')" class="px-3 py-1 rounded-md bg-blue-500 text-white font-bold transition shadow-lg shadow-blue-500/30">
+                    2D Lab
+                </button>
+                <button id="btn-mode-3d" onclick="switchDimension('3D')" class="px-3 py-1 rounded-md text-slate-400 hover:text-white transition">
+                    3D Space
+                </button>
+            </div>
+
+            <!-- Fullscreen Toggle -->
+            <button onclick="toggleFullscreen()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition border border-white/10" title="เต็มจอ">
+                <i data-lucide="maximize" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Layout Container -->
+    <div class="absolute inset-0 pt-14 p-2 pointer-events-none grid grid-cols-1 md:grid-cols-12 gap-2 h-full pb-2">
+
+        <!-- ================= LEFT PANEL: Controls & Sandbox ================= -->
+        <aside class="md:col-span-3 lg:col-span-3 glass-panel rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <div class="p-2.5 border-b border-white/10 bg-slate-900/80 flex justify-between items-center">
+                <span class="font-semibold text-xs text-white flex items-center gap-1.5">
+                    <i data-lucide="sliders" class="w-4 h-4 text-blue-400"></i>
+                    ตั้งค่าพารามิเตอร์ระบบ
+                </span>
+                <button onclick="resetPhysics()" class="p-1 hover:bg-slate-800 rounded transition text-rose-400" title="รีเซ็ต">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-3 space-y-3 text-xs">
+                
+                <!-- Mass Control -->
+                <div class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-emerald-400">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-emerald-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="box" class="w-3.5 h-3.5"></i> มวลวัตถุ ($m$)
+                        </span>
+                        <div class="flex items-center gap-1">
+                            <input type="number" id="input-mass" value="1.0" min="0.1" max="5.0" step="0.1" class="w-14 bg-slate-900 text-emerald-300 border border-white/10 rounded px-1 py-0.5 text-[10px] font-mono text-center" onchange="updateInputs('mass', 'input')">
+                            <span class="text-[9px] text-slate-400">kg</span>
+                        </div>
+                    </div>
+                    <input type="range" id="slider-mass" min="0.1" max="5.0" step="0.1" value="1.0" class="w-full accent-emerald-500" oninput="updateInputs('mass', 'slider')">
+                    <div class="flex justify-between text-[9px] text-slate-500 px-1"><span>0.1 kg</span><span>5.0 kg</span></div>
+                </div>
+
+                <!-- Spring Constant Control -->
+                <div class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-blue-400">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-blue-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="git-merge" class="w-3.5 h-3.5"></i> ค่านิจสปริง ($k$)
+                        </span>
+                        <div class="flex items-center gap-1">
+                            <input type="number" id="input-k" value="50" min="10" max="200" step="1" class="w-14 bg-slate-900 text-blue-300 border border-white/10 rounded px-1 py-0.5 text-[10px] font-mono text-center" onchange="updateInputs('k', 'input')">
+                            <span class="text-[9px] text-slate-400">N/m</span>
+                        </div>
+                    </div>
+                    <input type="range" id="slider-k" min="10" max="200" step="1" value="50" class="w-full accent-blue-500" oninput="updateInputs('k', 'slider')">
+                    <div class="flex justify-between text-[9px] text-slate-500 px-1"><span>10 (อ่อน)</span><span>200 (แข็ง)</span></div>
+                </div>
+
+                <!-- Gravity Control -->
+                <div class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-amber-400">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-amber-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="arrow-down-circle" class="w-3.5 h-3.5"></i> ความเร่งโน้มถ่วง ($g$)
+                        </span>
+                        <select id="select-gravity" class="bg-slate-900 border border-white/10 rounded text-[10px] text-amber-300 px-1 py-0.5" onchange="updateGravity()">
+                            <option value="9.81">โลก (9.81 m/s²)</option>
+                            <option value="1.62">ดวงจันทร์ (1.62 m/s²)</option>
+                            <option value="24.79">ดาวพฤหัส (24.79 m/s²)</option>
+                            <option value="0">ไร้น้ำหนัก (0 m/s²)</option>
+                        </select>
+                    </div>
+                    <input type="range" id="slider-g" min="0" max="30" step="0.1" value="9.81" class="w-full accent-amber-500" oninput="updateInputs('g', 'slider')">
+                    <div class="flex justify-between items-center text-[9px] text-slate-400">
+                        <span>กำหนดเอง:</span>
+                        <span id="display-g" class="font-mono">9.81 m/s²</span>
+                    </div>
+                </div>
+
+                <!-- Damping Control -->
+                <div class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-purple-400">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-purple-300 text-[11px] flex items-center gap-1">
+                            <i data-lucide="waves" class="w-3.5 h-3.5"></i> แรงต้าน / ความหนืด
+                        </span>
+                        <span id="display-damping" class="text-[9px] font-mono text-purple-300">0.5 Ns/m</span>
+                    </div>
+                    <input type="range" id="slider-damping" min="0" max="5" step="0.1" value="0.5" class="w-full accent-purple-500" oninput="updateInputs('damping', 'slider')">
+                    <div class="flex justify-between text-[9px] text-slate-500 px-1"><span>0 (ไม่หนืดเลย)</span><span>5 (หนืดมาก)</span></div>
+                </div>
+
+                <!-- Display Tools Toggles -->
+                <div class="glass-card p-2.5 rounded-lg space-y-2">
+                    <span class="text-[11px] font-bold text-slate-300 block border-b border-white/10 pb-1 flex items-center justify-between">
+                        <span>เครื่องมือ & การแสดงผล (Tools)</span>
+                        <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400"></i>
+                    </span>
+                    <label class="flex items-center justify-between cursor-pointer text-[10px] text-slate-300 hover:text-white">
+                        <span class="flex items-center gap-1"><i data-lucide="ruler" class="w-3 h-3 text-cyan-400"></i> แสดงไม้บรรทัด (Ruler)</span>
+                        <input type="checkbox" id="toggle-ruler" checked onchange="forceRender()" class="accent-cyan-500 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[10px] text-slate-300 hover:text-white">
+                        <span class="flex items-center gap-1"><i data-lucide="arrow-up-down" class="w-3 h-3 text-rose-400"></i> แสดงเวกเตอร์แรง (Forces)</span>
+                        <input type="checkbox" id="toggle-vectors" checked onchange="forceRender()" class="accent-rose-500 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer text-[10px] text-slate-300 hover:text-white">
+                        <span class="flex items-center gap-1"><i data-lucide="minus" class="w-3 h-3 text-green-400"></i> เส้นอ้างอิงสมดุล (Equilibrium)</span>
+                        <input type="checkbox" id="toggle-ref" checked onchange="forceRender()" class="accent-green-500 rounded">
+                    </label>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- ================= CENTER: Interactive Viewport (2D / 3D) ================= -->
+        <main class="md:col-span-5 lg:col-span-5 glass-panel rounded-xl flex flex-col pointer-events-auto border border-white/10 shadow-2xl relative overflow-hidden">
+            
+            <div id="viewport-container" class="flex-1 bg-[#050810] relative flex flex-col overflow-hidden">
+                
+                <!-- 2D Physics Canvas -->
+                <canvas id="canvas-2d" class="w-full h-full absolute inset-0 z-10 block cursor-grab active:cursor-grabbing"></canvas>
+
+                <!-- 3D Three.js Container -->
+                <div id="container-3d" class="w-full h-full absolute inset-0 z-10 hidden"></div>
+
+                <!-- Floating Stopwatch UI -->
+                <div id="stopwatch-ui" class="absolute top-4 right-4 bg-slate-900/90 backdrop-blur border border-white/20 p-3 rounded-lg shadow-xl z-20 pointer-events-auto cursor-move select-none flex flex-col items-center gap-2">
+                    <div class="flex items-center gap-2 text-slate-300 border-b border-white/10 pb-1 w-full justify-center">
+                        <i data-lucide="timer" class="w-4 h-4 text-amber-400"></i>
+                        <span class="text-[10px] font-bold tracking-wider">นาฬิกาจับเวลา</span>
+                    </div>
+                    <div id="stopwatch-display" class="font-mono text-xl font-bold text-amber-300">00:00.00</div>
+                    <div class="flex gap-2 text-[10px]">
+                        <button onclick="swToggle()" id="sw-btn-toggle" class="stopwatch-btn text-emerald-400 hover:text-emerald-300"><i data-lucide="play" class="w-4 h-4"></i></button>
+                        <button onclick="swReset()" class="stopwatch-btn text-rose-400 hover:text-rose-300"><i data-lucide="square" class="w-4 h-4"></i></button>
+                    </div>
+                </div>
+
+                <!-- Live Badges -->
+                <div class="absolute bottom-2 left-2 bg-slate-900/80 backdrop-blur p-2 rounded-lg border border-white/10 text-slate-200 z-20 space-y-1 w-48 shadow-xl pointer-events-none">
+                    <div class="flex justify-between text-[10px] font-mono border-b border-white/10 pb-1 mb-1">
+                        <span class="text-slate-400">สถานะระบบ:</span>
+                        <span id="badge-status" class="text-emerald-400">กำลังแกว่ง...</span>
+                    </div>
+                    <div class="flex justify-between text-[10px] font-mono">
+                        <span class="text-slate-400">ระยะจัด (y):</span>
+                        <span id="badge-y" class="text-white">0.00 m</span>
+                    </div>
+                    <div class="flex justify-between text-[10px] font-mono">
+                        <span class="text-slate-400">ความเร็ว (v):</span>
+                        <span id="badge-v" class="text-cyan-300">0.00 m/s</span>
+                    </div>
+                    <div class="flex justify-between text-[10px] font-mono">
+                        <span class="text-slate-400">แรงสุทธิ (F):</span>
+                        <span id="badge-f" class="text-rose-400">0.00 N</span>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- ================= RIGHT PANEL: Calculations & Physics Theory ================= -->
+        <aside class="md:col-span-4 lg:col-span-4 glass-panel rounded-xl flex flex-col pointer-events-auto overflow-hidden shadow-2xl z-20">
+            <!-- Navigation Tabs -->
+            <div class="p-2 border-b border-white/10 bg-slate-900/80">
+                <div class="grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-lg text-[11px] font-semibold text-center">
+                    <button onclick="switchRightTab('calc')" id="tab-calc" class="tab-btn active py-1 rounded transition">สูตรและการคำนวณสด</button>
+                    <button onclick="switchRightTab('theory')" id="tab-theory" class="tab-btn py-1 rounded transition">อภิปรายทฤษฎี & SHM</button>
+                </div>
+            </div>
+
+            <!-- Scrollable Content Panels -->
+            <div class="flex-1 overflow-y-auto p-3 text-xs">
+
+                <!-- TAB 1: Calculation & Formulas -->
+                <div id="content-calc" class="space-y-3">
+                    
+                    <!-- Hooke's Law -->
+                    <div class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-blue-400">
+                        <span class="text-[11px] font-bold text-blue-300 block border-b border-white/10 pb-1">
+                            กฎของฮุค (Hooke's Law) & จุดสมดุล
+                        </span>
+                        <p class="text-[10px] text-slate-300 leading-relaxed">
+                            แรงดึงกลับของสปริงจะแปรผันตรงกับระยะยืดหรือหด ($x$) จากจุดความยาวธรรมชาติ
+                        </p>
+                        <div id="math-hooke" class="py-1 text-center text-blue-100 font-mono text-[11px] bg-slate-950/60 rounded p-1.5 overflow-x-auto"></div>
+                        
+                        <div class="bg-slate-950/60 p-2 rounded border border-white/5 space-y-1 font-mono text-[10px] text-slate-300 mt-2">
+                            <span class="text-slate-400 block font-sans text-[9.5px]">คำนวณตำแหน่งสมดุล ($F_{net} = 0$):</span>
+                            <div>$mg = k\Delta x \implies \Delta x = \frac{mg}{k}$</div>
+                            <div class="text-emerald-300 font-bold border-t border-white/10 pt-1 mt-1">
+                                $\Delta x = \frac{(<span id="calc-m">1.0</span>)(<span id="calc-g">9.81</span>)}{<span id="calc-k">50</span>} = <span id="calc-eq">0.196</span> \text{ m}$
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Periodic Motion (SHM) -->
+                    <div class="glass-card p-2.5 rounded-lg space-y-2 border-l-2 border-fuchsia-400">
+                        <span class="text-[11px] font-bold text-fuchsia-300 block border-b border-white/10 pb-1">
+                            คาบการแกว่ง (Period of Oscillation)
+                        </span>
+                        <p class="text-[10px] text-slate-300 leading-relaxed">
+                            เวลาที่ใช้ในการเคลื่อนที่ครบ 1 รอบเต็ม ($T$) ขึ้นอยู่กับมวล ($m$) และค่านิจสปริง ($k$) โดยไม่ขึ้นกับแอมพลิจูด
+                        </p>
+                        <div id="math-period" class="py-1 text-center text-fuchsia-100 font-mono text-[11px] bg-slate-950/60 rounded p-1.5 overflow-x-auto"></div>
+                        
+                        <div class="bg-slate-950/60 p-2 rounded border border-white/5 space-y-1 font-mono text-[10px] text-slate-300 mt-2">
+                            <span class="text-slate-400 block font-sans text-[9.5px]">การคาดการณ์คาบเชิงทฤษฎี:</span>
+                            <div class="text-fuchsia-300 font-bold border-t border-white/10 pt-1 mt-1">
+                                $T = 2\pi\sqrt{\frac{<span id="calc-m2">1.0</span>}{<span id="calc-k2">50</span>}} \approx <span id="calc-t">0.889</span> \text{ s}$
+                            </div>
+                            <p class="text-[9px] text-slate-400 mt-1 font-sans">
+                                * ลองใช้ "นาฬิกาจับเวลา" วัด 1 รอบดูว่าตรงกับทฤษฎีหรือไม่! (หากมีความหนืด คาบจะยาวขึ้นเล็กน้อย)
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Theory & Discussion -->
+                <div id="content-theory" class="space-y-3 hidden">
+                    
+                    <!-- Phenomenon 1: Mass and K relation -->
+                    <div class="bg-slate-900/60 p-2.5 rounded-lg border border-white/5 space-y-1.5">
+                        <h4 class="font-bold text-blue-400 text-[11px] flex items-center gap-1">
+                            <i data-lucide="info" class="w-3.5 h-3.5"></i> ผลของ มวล ($m$) และ ความแข็งสปริง ($k$)
+                        </h4>
+                        <ul class="text-[10px] text-slate-300 space-y-1 list-disc pl-4 leading-relaxed">
+                            <li><strong class="text-white">เมื่อเพิ่มมวล ($m$):</strong> มวลที่มากขึ้นจะมีความเฉื่อยสูงขึ้น ทำให้สปริงดึงกลับได้ช้าลง ส่งผลให้ <b>คาบ ($T$) เพิ่มขึ้น</b> (แกว่งช้าลง) และจุดสมดุลจะยืดต่ำลงไปอีก</li>
+                            <li><strong class="text-white">เมื่อเพิ่มค่านิจสปริง ($k$):</strong> สปริงจะแข็งขึ้นและมีแรงดึงกลับที่รุนแรงขึ้น ทำให้ดึงมวลกลับได้เร็ว ส่งผลให้ <b>คาบ ($T$) ลดลง</b> (แกว่งเร็วขึ้น)</li>
+                        </ul>
+                    </div>
+
+                    <!-- Phenomenon 2: SHM -->
+                    <div class="bg-slate-900/60 p-2.5 rounded-lg border border-white/5 space-y-1.5">
+                        <h4 class="font-bold text-fuchsia-400 text-[11px] flex items-center gap-1">
+                            <i data-lucide="repeat" class="w-3.5 h-3.5"></i> การเคลื่อนที่แบบฮาร์มอนิกอย่างง่าย (SHM)
+                        </h4>
+                        <p class="text-[10px] text-slate-300 leading-relaxed">
+                            หากไม่มีแรงต้าน (ความหนืด = 0) ระบบจะแกว่งไปมารอบ <b>จุดสมดุล (Equilibrium)</b> ซ้ำรอยเดิมตลอดกาล โดยมีการเปลี่ยนรูปพลังงานไปมาระหว่าง:
+                            <br>- <b>พลังงานศักย์ยืดหยุ่น ($E_{ps} = \frac{1}{2}kx^2$)</b>: สูงสุดที่จุดต่ำสุดและสูงสุดของการแกว่ง
+                            <br>- <b>พลังงานจลน์ ($E_k = \frac{1}{2}mv^2$)</b>: สูงสุดเมื่อมวลวิ่งผ่านจุดสมดุล
+                        </p>
+                    </div>
+
+                     <!-- Phenomenon 3: Damping -->
+                     <div class="bg-slate-900/60 p-2.5 rounded-lg border border-white/5 space-y-1.5">
+                        <h4 class="font-bold text-amber-400 text-[11px] flex items-center gap-1">
+                            <i data-lucide="wind" class="w-3.5 h-3.5"></i> การหน่วง (Damped Oscillation)
+                        </h4>
+                        <p class="text-[10px] text-slate-300 leading-relaxed">
+                            ในโลกความเป็นจริง จะมีแรงต้านอากาศหรือความหนืด ($F_{damp} = -cv$) ซึ่งจะดึงพลังงานกลออกจากระบบเปลี่ยนเป็นความร้อน ทำให้แอมพลิจูดของการแกว่งลดลงเรื่อยๆ จนหยุดนิ่งที่จุดสมดุล
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- MAIN SIMULATION ENGINE & PHYSICS LOGIC SCRIPT -->
+    <script>
+        // --- State Management ---
+        const state = {
+            renderMode: '2D',
+            m: 1.0,         // Mass (kg)
+            k: 50,          // Spring Constant (N/m)
+            g: 9.81,        // Gravity (m/s^2)
+            damping: 0.5,   // Damping coefficient (Ns/m)
+            
+            // Simulation specific coordinates
+            y: 0,           // Current vertical displacement from natural length (m) (down is positive)
+            v: 0,           // Velocity (m/s)
+            
+            scale: 150,     // pixels per meter (for 2D)
+            naturalLength: 1.0, // Fixed physical length of unstretched spring (m)
+            
+            // UI States
+            isDragging: false,
+            mouseY: 0,
+            
+            showRuler: true,
+            showVectors: true,
+            showRef: true,
+            
+            // Stopwatch
+            swRunning: false,
+            swTime: 0,
+            swLastStamp: 0
+        };
+
+        // UI references
+        let canvas, ctx, chartWidth, chartHeight;
+        let lastTime = 0;
+        let is3DInitialized = false;
+        
+        // 3D references
+        let scene, camera, renderer, springLine, massMesh, floorMesh;
+
+        // Initialize Application
+        window.addEventListener('DOMContentLoaded', () => {
+            initKaTeX();
+            initCanvas();
+            lucide.createIcons();
+            
+            setupInteraction();
+            makeDraggable(document.getElementById('stopwatch-ui'));
+            
+            // Calculate initial rest position
+            state.y = calculateEquilibrium();
+            
+            updateUI();
+            
+            window.addEventListener('resize', onWindowResize);
+            requestAnimationFrame(simulationLoop);
+        });
+
+        function initKaTeX() {
+            if (window.katex) {
+                katex.render("\\vec{F}_s = -k\\vec{x}", document.getElementById('math-hooke'));
+                katex.render("T = 2\\pi\\sqrt{\\frac{m}{k}}", document.getElementById('math-period'));
+            }
+        }
+
+        function calculateEquilibrium() {
+            return (state.m * state.g) / state.k;
+        }
+
+        // --- Physics Engine (Verlet / Euler Integration) ---
+        function simulationLoop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const dt = Math.min((timestamp - lastTime) / 1000, 0.05); // Limit dt to prevent explosion on lag
+            lastTime = timestamp;
+
+            // Physics Update (only if not dragging)
+            if (!state.isDragging) {
+                // F_net = F_gravity + F_spring + F_damping
+                // F_net = m*g - k*y - c*v
+                // a = F_net / m
+                const f_spring = -state.k * state.y;
+                const f_gravity = state.m * state.g;
+                const f_damping = -state.damping * state.v;
+                
+                const f_net = f_gravity + f_spring + f_damping;
+                const a = f_net / state.m;
+
+                // Update velocity and position (Semi-implicit Euler is stable enough for this)
+                state.v += a * dt;
+                state.y += state.v * dt;
+            }
+
+            // Update Stopwatch
+            if (state.swRunning) {
+                state.swTime += (timestamp - state.swLastStamp);
+                state.swLastStamp = timestamp;
+                updateStopwatchDisplay();
+            }
+
+            // Real-time Badge Updates (Throttled via visual frame)
+            document.getElementById('badge-y').innerText = `${state.y.toFixed(3)} m`;
+            document.getElementById('badge-v').innerText = `${state.v.toFixed(3)} m/s`;
+            
+            const netF = (state.m * state.g) - (state.k * state.y);
+            document.getElementById('badge-f').innerText = `${netF.toFixed(2)} N`;
+            
+            if (state.isDragging) {
+                document.getElementById('badge-status').innerText = 'ถูกจับ/ลาก';
+                document.getElementById('badge-status').className = 'text-amber-400 font-bold';
+            } else if (Math.abs(state.v) < 0.01 && Math.abs(state.y - calculateEquilibrium()) < 0.01) {
+                document.getElementById('badge-status').innerText = 'หยุดนิ่ง (สมดุล)';
+                document.getElementById('badge-status').className = 'text-slate-400 font-bold';
+            } else {
+                document.getElementById('badge-status').innerText = 'กำลังแกว่ง...';
+                document.getElementById('badge-status').className = 'text-emerald-400 font-bold';
+            }
+
+            // Render Frame
+            if (state.renderMode === '2D') {
+                render2D();
+            } else if (state.renderMode === '3D' && is3DInitialized) {
+                render3D();
+            }
+
+            requestAnimationFrame(simulationLoop);
+        }
+
+        // --- 2D Rendering ---
+        function initCanvas() {
+            canvas = document.getElementById('canvas-2d');
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+        }
+
+        function resizeCanvas() {
+            if (canvas) {
+                const container = canvas.parentElement;
+                canvas.width = container.clientWidth * window.devicePixelRatio;
+                canvas.height = container.clientHeight * window.devicePixelRatio;
+                chartWidth = canvas.width;
+                chartHeight = canvas.height;
+            }
+            if (renderer && is3DInitialized) {
+                const container = document.getElementById('container-3d');
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }
+        }
+
+        function onWindowResize() {
+            resizeCanvas();
+        }
+        
+        function forceRender() {
+            // Checkboxes update
+            state.showRuler = document.getElementById('toggle-ruler').checked;
+            state.showVectors = document.getElementById('toggle-vectors').checked;
+            state.showRef = document.getElementById('toggle-ref').checked;
+        }
+
+        function render2D() {
+            if (!ctx) return;
+            
+            ctx.save();
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            
+            // Clear Background
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const cx = chartWidth / (2 * window.devicePixelRatio);
+            const topY = 50; // Ceiling position
+            
+            const physicalY = topY + (state.naturalLength * state.scale) + (state.y * state.scale);
+            const naturalY = topY + (state.naturalLength * state.scale);
+            const equilibriumY = topY + (state.naturalLength * state.scale) + (calculateEquilibrium() * state.scale);
+
+            // 1. Draw Ceiling
+            ctx.fillStyle = '#334155'; // slate-700
+            ctx.fillRect(cx - 100, topY - 20, 200, 20);
+            // Hatches
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 2;
+            for(let i=cx-90; i<cx+100; i+=15) {
+                ctx.beginPath();
+                ctx.moveTo(i, topY-20);
+                ctx.lineTo(i+10, topY);
+                ctx.stroke();
+            }
+            ctx.strokeStyle = '#94a3b8'; // line bottom
+            ctx.beginPath(); ctx.moveTo(cx - 100, topY); ctx.lineTo(cx + 100, topY); ctx.stroke();
+
+            // 2. Draw Reference Lines
+            if (state.showRef) {
+                // Natural Length Line (Blue)
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+                ctx.setLineDash([5, 5]);
+                ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(cx - 120, naturalY); ctx.lineTo(cx + 120, naturalY); ctx.stroke();
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.8)';
+                ctx.font = '10px Inter'; ctx.fillText('Natural Length (x=0)', cx + 125, naturalY + 4);
+
+                // Equilibrium Line (Green)
+                ctx.strokeStyle = 'rgba(52, 211, 153, 0.4)';
+                ctx.beginPath(); ctx.moveTo(cx - 120, equilibriumY); ctx.lineTo(cx + 120, equilibriumY); ctx.stroke();
+                ctx.fillStyle = 'rgba(52, 211, 153, 0.8)';
+                ctx.fillText('Equilibrium', cx + 125, equilibriumY + 4);
+                ctx.setLineDash([]);
+            }
+
+            // 3. Draw Spring
+            const coils = 15;
+            const springWidth = 30;
+            const segHeight = (physicalY - topY) / coils;
+            
+            ctx.strokeStyle = '#94a3b8'; // slate-400
+            ctx.lineWidth = 4;
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            
+            ctx.beginPath();
+            ctx.moveTo(cx, topY);
+            
+            for (let i = 1; i <= coils; i++) {
+                let y = topY + i * segHeight;
+                // Alternate left and right for zigzag
+                let xOffset = (i === coils) ? 0 : ((i % 2 === 0) ? springWidth/2 : -springWidth/2);
+                ctx.lineTo(cx + xOffset, y);
+            }
+            ctx.stroke();
+
+            // 4. Draw Mass Box
+            const boxSize = 50 + (state.m * 5); // Scale box slightly with mass
+            ctx.fillStyle = '#f59e0b'; // amber-500
+            if (state.isDragging) ctx.fillStyle = '#fbbf24'; // lighter when dragged
+            
+            // Draw box centered on end of spring
+            const boxTop = physicalY;
+            const boxLeft = cx - boxSize/2;
+            
+            ctx.fillRect(boxLeft, boxTop, boxSize, boxSize);
+            ctx.strokeStyle = '#b45309'; // amber-700
+            ctx.lineWidth = 2;
+            ctx.strokeRect(boxLeft, boxTop, boxSize, boxSize);
+            
+            // Box Label
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 12px Inter';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${state.m.toFixed(1)} kg`, cx, boxTop + boxSize/2 + 4);
+
+            // 5. Draw Vectors
+            if (state.showVectors) {
+                const vecStartX = cx + boxSize/2 + 15;
+                const vecCenterY = boxTop + boxSize/2;
+                
+                const f_gravity = state.m * state.g;
+                const f_spring = -state.k * state.y;
+                
+                // Vector Scale multiplier
+                const vScale = 1.5; 
+
+                // Gravity (Down, Red)
+                if (f_gravity > 0) {
+                    drawArrow(ctx, vecStartX, vecCenterY, vecStartX, vecCenterY + (f_gravity * vScale), '#ef4444');
+                    ctx.fillStyle = '#ef4444';
+                    ctx.fillText(`mg`, vecStartX + 20, vecCenterY + (f_gravity * vScale)/2);
+                }
+
+                // Spring Force (Up/Down depending on x, Blue)
+                if (Math.abs(f_spring) > 0.1) {
+                    const springEndX = vecStartX + 30; // Offset slightly to not overlap completely
+                    drawArrow(ctx, springEndX, vecCenterY, springEndX, vecCenterY + (f_spring * vScale), '#3b82f6');
+                    ctx.fillStyle = '#3b82f6';
+                    ctx.fillText(`-kx`, springEndX + 20, vecCenterY + (f_spring * vScale)/2);
+                }
+            }
+
+            // 6. Draw Ruler
+            if (state.showRuler) {
+                const rulerX = cx - 180;
+                const rulerTop = topY;
+                const rulerLength = 400;
+                
+                ctx.fillStyle = '#fef08a'; // yellow-200
+                ctx.fillRect(rulerX, rulerTop, 30, rulerLength);
+                ctx.strokeStyle = '#a16207';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(rulerX, rulerTop, 30, rulerLength);
+                
+                // Ruler markings (0 is at natural length)
+                ctx.fillStyle = '#854d0e';
+                ctx.font = '10px Inter';
+                ctx.textAlign = 'right';
+                
+                // Draw ticks every 0.1m
+                for (let i = -1.0; i <= 2.0; i += 0.1) {
+                    let tickY = naturalY + (i * state.scale);
+                    if (tickY >= rulerTop && tickY <= rulerTop + rulerLength) {
+                        ctx.beginPath();
+                        ctx.moveTo(rulerX + 15, tickY);
+                        ctx.lineTo(rulerX + 30, tickY);
+                        ctx.stroke();
+                        
+                        // Text for major markings (0.5m)
+                        if (Math.abs(i % 0.5) < 0.01) {
+                            ctx.fillText(`${i.toFixed(1)}m`, rulerX + 12, tickY + 3);
+                            ctx.beginPath();
+                            ctx.moveTo(rulerX, tickY);
+                            ctx.lineTo(rulerX + 30, tickY);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            ctx.restore();
+        }
+
+        function drawArrow(context, fromx, fromy, tox, toy, color) {
+            const headlen = 10; // length of head in pixels
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            
+            context.strokeStyle = color;
+            context.fillStyle = color;
+            context.lineWidth = 3;
+            
+            context.beginPath();
+            context.moveTo(fromx, fromy);
+            context.lineTo(tox, toy);
+            context.stroke();
+            
+            context.beginPath();
+            context.moveTo(tox, toy);
+            context.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            context.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            context.lineTo(tox, toy);
+            context.fill();
+        }
+
+        // --- Interaction ---
+        function setupInteraction() {
+            canvas.addEventListener('mousedown', handleDragStart);
+            canvas.addEventListener('mousemove', handleDragMove);
+            window.addEventListener('mouseup', handleDragEnd);
+            
+            canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleDragStart(e.touches[0]); }, {passive: false});
+            canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handleDragMove(e.touches[0]); }, {passive: false});
+            window.addEventListener('touchend', handleDragEnd);
+        }
+
+        function handleDragStart(e) {
+            if (state.renderMode !== '2D') return;
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.clientX - rect.left;
+            const clientY = e.clientY - rect.top;
+            
+            const cx = chartWidth / (2 * window.devicePixelRatio);
+            const topY = 50;
+            const physicalY = topY + (state.naturalLength * state.scale) + (state.y * state.scale);
+            const boxSize = 50 + (state.m * 5);
+            const boxTop = physicalY;
+            const boxLeft = cx - boxSize/2;
+            
+            // Check if clicked inside mass box
+            if (clientX >= boxLeft && clientX <= boxLeft + boxSize &&
+                clientY >= boxTop && clientY <= boxTop + boxSize) {
+                state.isDragging = true;
+                state.v = 0; // Stop velocity
+            }
+        }
+
+        function handleDragMove(e) {
+            if (!state.isDragging) return;
+            const rect = canvas.getBoundingClientRect();
+            const clientY = e.clientY - rect.top;
+            
+            const topY = 50;
+            const boxSize = 50 + (state.m * 5);
+            // Calculate new Y based on mouse position (center of box to mouse)
+            let newPhysicalY = clientY - boxSize/2;
+            
+            // Limit how far up it can go (don't go through ceiling)
+            if (newPhysicalY < topY + 20) newPhysicalY = topY + 20;
+            
+            // Convert back to abstract state.y (meters from natural length)
+            state.y = (newPhysicalY - topY - (state.naturalLength * state.scale)) / state.scale;
+            state.v = 0;
+        }
+
+        function handleDragEnd() {
+            if (state.isDragging) {
+                state.isDragging = false;
+            }
+        }
+
+        // --- Draggable UI Helper ---
+        function makeDraggable(elmnt) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            elmnt.onmousedown = dragMouseDown;
+            elmnt.ontouchstart = (e) => dragMouseDown(e.touches[0]);
+
+            function dragMouseDown(e) {
+                // e = e || window.event;
+                // Avoid dragging if clicking a button inside
+                if(e.target.tagName.toLowerCase() === 'button' || e.target.tagName.toLowerCase() === 'i') return;
+                
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+                document.ontouchend = closeDragElement;
+                document.ontouchmove = (e) => elementDrag(e.touches[0]);
+            }
+
+            function elementDrag(e) {
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+                elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+                // Reset right/bottom defaults
+                elmnt.style.right = 'auto';
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+                document.ontouchend = null;
+                document.ontouchmove = null;
+            }
+        }
+
+
+        // --- 3D Rendering (Three.js) ---
+        function init3DScene() {
+            const container = document.getElementById('container-3d');
+            if (!container || is3DInitialized) return;
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050810);
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 0, 15);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+            const pointLight = new THREE.PointLight(0xffffff, 0.8);
+            pointLight.position.set(5, 10, 5);
+            scene.add(pointLight);
+
+            // Ceiling / Support
+            const ceilingGeo = new THREE.BoxGeometry(4, 0.2, 4);
+            const ceilingMat = new THREE.MeshPhongMaterial({ color: 0x334155 });
+            const ceiling = new THREE.Mesh(ceilingGeo, ceilingMat);
+            ceiling.position.y = 5;
+            scene.add(ceiling);
+
+            // Mass Box
+            const massGeo = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+            const massMat = new THREE.MeshPhongMaterial({ color: 0xf59e0b });
+            massMesh = new THREE.Mesh(massGeo, massMat);
+            scene.add(massMesh);
+
+            // Dynamic Spring (Line)
+            const material = new THREE.LineBasicMaterial({ color: 0x94a3b8, linewidth: 3 });
+            const geometry = new THREE.BufferGeometry();
+            // Allocate space for 300 points
+            const positions = new Float32Array(300 * 3);
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            springLine = new THREE.Line(geometry, material);
+            scene.add(springLine);
+
+            is3DInitialized = true;
+        }
+
+        function render3D() {
+            if (!is3DInitialized) return;
+
+            // Mapping state.y to 3D world coordinates
+            // Ceiling is at Y = 5. Base natural length = 3 units.
+            // state.y is in meters. Let's say 1m = 2 units.
+            const naturalLen3D = 3;
+            const stretch3D = state.y * 2.0; 
+            const massY = 5 - naturalLen3D - stretch3D;
+
+            // Scale mass box based on state.m (visual cue)
+            const s = 0.8 + (state.m * 0.2);
+            massMesh.scale.set(s, s, s);
+            // Position mass (offset by half its size so it hangs below spring)
+            massMesh.position.y = massY - (1.5 * s / 2);
+
+            // Update Spring Geometry
+            const positions = springLine.geometry.attributes.position.array;
+            const numPoints = 300;
+            const turns = 10;
+            const radius = 0.5;
+            const totalHeight = 5 - massY;
+
+            for (let i = 0; i < numPoints; i++) {
+                const t = i / (numPoints - 1); // 0 to 1
+                const angle = t * Math.PI * 2 * turns;
+                
+                // x = r*cos, z = r*sin, y = linear down
+                positions[i * 3] = radius * Math.cos(angle);
+                positions[i * 3 + 1] = 5 - (t * totalHeight);
+                positions[i * 3 + 2] = radius * Math.sin(angle);
+            }
+            springLine.geometry.attributes.position.needsUpdate = true;
+
+            // Gentle auto-rotation of camera for 3D feel
+            scene.rotation.y = Math.sin(Date.now() * 0.0005) * 0.2;
+
+            renderer.render(scene, camera);
+        }
+
+        // --- UI and System Updates ---
+        function updateInputs(param, source) {
+            let val;
+            if (source === 'slider') {
+                val = parseFloat(document.getElementById(`slider-${param}`).value);
+                if(document.getElementById(`input-${param}`)) {
+                    document.getElementById(`input-${param}`).value = val;
+                }
+            } else if (source === 'input') {
+                val = parseFloat(document.getElementById(`input-${param}`).value);
+                // Clamp limits
+                const min = parseFloat(document.getElementById(`slider-${param}`).min);
+                const max = parseFloat(document.getElementById(`slider-${param}`).max);
+                val = Math.max(min, Math.min(max, val));
+                document.getElementById(`input-${param}`).value = val;
+                document.getElementById(`slider-${param}`).value = val;
+            }
+
+            state[param] = val;
+
+            // Specific UI text updates
+            if (param === 'damping') document.getElementById('display-damping').innerText = `${val.toFixed(1)} Ns/m`;
+            if (param === 'g') {
+                document.getElementById('display-g').innerText = `${val.toFixed(2)} m/s²`;
+                document.getElementById('select-gravity').value = val.toString(); // try match preset
+            }
+
+            updateMathPanel();
+        }
+
+        function updateGravity() {
+            const val = parseFloat(document.getElementById('select-gravity').value);
+            document.getElementById('slider-g').value = val;
+            updateInputs('g', 'slider');
+        }
+
+        function resetPhysics() {
+            state.y = calculateEquilibrium();
+            state.v = 0;
+            
+            // Also reset stopwatch
+            if(state.swRunning) swToggle();
+            swReset();
+        }
+
+        function updateMathPanel() {
+            // Update theoretical calculation values in text
+            document.getElementById('calc-m').innerText = state.m.toFixed(1);
+            document.getElementById('calc-g').innerText = state.g.toFixed(2);
+            document.getElementById('calc-k').innerText = state.k;
+            document.getElementById('calc-eq').innerText = calculateEquilibrium().toFixed(3);
+
+            document.getElementById('calc-m2').innerText = state.m.toFixed(1);
+            document.getElementById('calc-k2').innerText = state.k;
+            const period = 2 * Math.PI * Math.sqrt(state.m / state.k);
+            document.getElementById('calc-t').innerText = period.toFixed(3);
+        }
+
+        function updateUI() {
+            // Sync initial HTML values to state
+            document.getElementById('input-mass').value = state.m;
+            document.getElementById('slider-mass').value = state.m;
+            document.getElementById('input-k').value = state.k;
+            document.getElementById('slider-k').value = state.k;
+            document.getElementById('slider-g').value = state.g;
+            document.getElementById('slider-damping').value = state.damping;
+            
+            updateMathPanel();
+        }
+
+        // --- Stopwatch Logic ---
+        function swToggle() {
+            state.swRunning = !state.swRunning;
+            const btn = document.getElementById('sw-btn-toggle');
+            if (state.swRunning) {
+                state.swLastStamp = performance.now();
+                btn.innerHTML = '<i data-lucide="pause" class="w-4 h-4"></i>';
+                btn.classList.replace('text-emerald-400', 'text-amber-400');
+                btn.classList.replace('hover:text-emerald-300', 'hover:text-amber-300');
+            } else {
+                btn.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i>';
+                btn.classList.replace('text-amber-400', 'text-emerald-400');
+                btn.classList.replace('hover:text-amber-300', 'hover:text-emerald-300');
+            }
+            lucide.createIcons();
+        }
+
+        function swReset() {
+            state.swRunning = false;
+            state.swTime = 0;
+            updateStopwatchDisplay();
+            
+            const btn = document.getElementById('sw-btn-toggle');
+            btn.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i>';
+            btn.classList.remove('text-amber-400');
+            btn.classList.add('text-emerald-400');
+            lucide.createIcons();
+        }
+
+        function updateStopwatchDisplay() {
+            const totalMs = state.swTime;
+            const mins = Math.floor(totalMs / 60000);
+            const secs = Math.floor((totalMs % 60000) / 1000);
+            const ms = Math.floor((totalMs % 1000) / 10);
+            
+            const formatted = 
+                String(mins).padStart(2, '0') + ':' + 
+                String(secs).padStart(2, '0') + '.' + 
+                String(ms).padStart(2, '0');
+                
+            document.getElementById('stopwatch-display').innerText = formatted;
+        }
+
+        // --- Tabs and Modes ---
+        function switchDimension(dim) {
+            state.renderMode = dim;
+            const btn2D = document.getElementById('btn-mode-2d');
+            const btn3D = document.getElementById('btn-mode-3d');
+            const canvas2DObj = document.getElementById('canvas-2d');
+            const container3DObj = document.getElementById('container-3d');
+
+            if (dim === '2D') {
+                btn2D.className = 'px-3 py-1 rounded-md bg-blue-500 text-white font-bold transition shadow-lg shadow-blue-500/30';
+                btn3D.className = 'px-3 py-1 rounded-md text-slate-400 hover:text-white transition';
+                canvas2DObj.classList.remove('hidden');
+                container3DObj.classList.add('hidden');
+            } else {
+                btn3D.className = 'px-3 py-1 rounded-md bg-blue-500 text-white font-bold transition shadow-lg shadow-blue-500/30';
+                btn2D.className = 'px-3 py-1 rounded-md text-slate-400 hover:text-white transition';
+                canvas2DObj.classList.add('hidden');
+                container3DObj.classList.remove('hidden');
+
+                if (!is3DInitialized) {
+                    init3DScene();
+                }
+            }
+        }
+
+        function switchRightTab(tabKey) {
+            ['calc', 'theory'].forEach(k => {
+                document.getElementById(`content-${k}`).classList.add('hidden');
+                document.getElementById(`tab-${k}`).classList.remove('active');
+            });
+            document.getElementById(`content-${tabKey}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabKey}`).classList.add('active');
+        }
+
+        function toggleFullscreen() {
+            try {
+                if (!document.fullscreenElement) {
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen().catch(err => console.warn(err));
+                    }
+                } else if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(err => console.warn(err));
+                }
+            } catch (err) {
+                console.warn("Fullscreen restricted:", err);
+            }
+        }
+    </script>
+</body>
+</html>
