@@ -1,20 +1,341 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>เคมี | รายวิชาสำหรับนักเรียน</title>
-  <link rel="stylesheet" href="../../css/student-demo.css">
-  <link rel="stylesheet" href="../../css/popo/chemistry.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>หลักสูตรเคมี (Chemistry Course) | E-Learning</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <link rel="stylesheet" href="/demo-container/Chemistry/vs.css/casc.css" />
 </head>
 <body>
-  <main class="subject-page">
-    <a class="subject-page__back" href="../student.html">← กลับไปหน้ารวมรายวิชา</a>
-    <article class="subject-page__content">
-      <p class="course-eyebrow">รายวิชา</p>
-      <h1>เคมี</h1>
-      <p>ทำความเข้าใจสารและสมบัติของสาร การเปลี่ยนแปลงทางเคมี และแนวคิดพื้นฐานของปฏิกิริยาเคมี</p>
-    </article>
-  </main>
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="#" class="brand-logo">
+                <div class="icon-box">
+                    <span class="material-symbols-rounded">science</span>
+                </div>
+                E-LearnLab
+            </a>
+
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="/demo-container/student.html" class="nav-link">หน้าแรก</a></li>
+                    <li><a href="/demo-container/student.html" class="nav-link">ตารางธาตุ</a></li>
+                    <li class="dropdown">
+                        <a href="#" class="nav-link active">
+                            หมวดวิชา <span class="material-symbols-rounded">expand_more</span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="#" class="dropdown-item"><span class="material-symbols-rounded">biotech</span> วิชาเคมี</a></li>
+                            <li><a href="#" class="dropdown-item"><span class="material-symbols-rounded">bolt</span> วิชาฟิสิกส์</a></li>
+                            <li><a href="#" class="dropdown-item"><span class="material-symbols-rounded">terminal</span> วิชาการเขียนโปรแกรม</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#" class="nav-link">เกี่ยวกับเรา</a></li>
+                    <li><a href="#" class="nav-link">ติดต่อสอบถาม</a></li>
+                </ul>
+            </nav>
+
+            <button class="btn-primary">
+                <span class="material-symbols-rounded">account_circle</span> เข้าสู่ระบบ
+            </button>
+        </div>
+    </header>
+    <section class="hero">
+        <div class="hero-container">
+            <div>
+                <a href="#" class="back-link">
+                    <span class="material-symbols-rounded">arrow_back</span> กลับไปยังหน้ารวมรายวิชา
+                </a>
+                <h1 class="hero-title">เจาะลึกโลกแห่ง <span>วิชาเคมี</span> ปูพื้นฐานสู่ความเชี่ยวชาญ</h1>
+                <p class="hero-desc">เรียนรู้โครงสร้าง อะตอม พันธะเคมี และปฏิกิริยาต่างๆ อย่างเป็นระบบ ผ่านภาพการสอนและโมเดล 3D เข้าใจง่าย ได้ผลจริง</p>
+                
+                <div class="hero-stats">
+                    <div class="stat-badge">
+                        <span class="material-symbols-rounded">menu_book</span> 5 บทเรียนหลัก
+                    </div>
+                    <div class="stat-badge">
+                        <span class="material-symbols-rounded">schedule</span> 15 ชม. รวม
+                    </div>
+                    <div class="stat-badge">
+                        <span class="material-symbols-rounded">verified</span> ใบประกาศนียบัตร
+                    </div>
+                </div>
+            </div>
+
+            <div class="hero-card-preview">
+                <img src="https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=600&q=80" alt="Chemistry Lab">
+                <h3>พร้อมสำหรับการเรียนรู้เคมีหรือยัง?</h3>
+                <p style="color: var(--gray-600); font-size: 0.9rem; margin-top: 6px;">เริ่มเรียนบทแรกได้ทันทีโดยไม่ต้องมีพื้นฐานมาก่อน</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. COURSE MODULES SECTION (SWIPER) -->
+    <main class="section-container">
+        <div class="section-header">
+            <div>
+                <h2>โครงสร้างบทเรียนในหลักสูตร</h2>
+                <p>เลือกเรียนตามลำดับ หรือเลือกหัวข้อที่คุณต้องการทบทวน</p>
+            </div>
+            <div class="filter-bar">
+                <button class="filter-btn active">ทั้งหมด</button>
+                <button class="filter-btn">พื้นฐาน</button>
+                <button class="filter-btn">ปานกลาง</button>
+                <button class="filter-btn">ขั้นสูง</button>
+            </div>
+        </div>
+
+        <!-- Swiper Carousel -->
+        <div class="swiper card-wrapper">
+            <div class="swiper-wrapper">
+
+                <!-- Module Card 1 -->
+                <div class="swiper-slide">
+                    <div class="course-card">
+                        <div class="card-img-wrapper">
+                            <span class="badge-level">บทที่ 1 • พื้นฐาน</span>
+                            <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=500&q=80" alt="โครงสร้างอะตอม">
+                        </div>
+                        <div class="card-body">
+                            <div class="card-meta">
+                                <span><span class="material-symbols-rounded" style="font-size: 16px;">schedule</span> 2.5 ชม.</span>
+                                <span><span class="material-symbols-rounded" style="font-size: 16px;">play_circle</span> 6 คลิป</span>
+                            </div>
+                            <h3 class="card-title">โครงสร้างอะตอมและตารางธาตุ</h3>
+                            <div class="card-footer">
+                                <span style="font-size: 0.85rem; color: var(--gray-600);">เริ่มเรียนบทนี้</span>
+                                <button class="btn-circle">
+                                    <span class="material-symbols-rounded">arrow_forward</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Module Card 2 -->
+                <div class="swiper-slide">
+                    <div class="course-card">
+                        <div class="card-img-wrapper">
+                            <span class="badge-level">บทที่ 2 • ปานกลาง</span>
+                            <img src="https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=500&q=80" alt="พันธะเคมี">
+                        </div>
+                        <div class="card-body">
+                            <div class="card-meta">
+                                <span><span class="material-symbols-rounded" style="font-size: 16px;">schedule</span> 3.0 ชม.</span>
+                                <span><span class="material-symbols-rounded" style="font-size: 16px;">play_circle</span> 8 คลิป</span>
+                            </div>
+                            <h3 class="card-title">พันธะเคมี และแรงยึดเหนี่ยวโมเลกุล</h3>
+                            <div class="card-footer">
+                                <span style="font-size: 0.85rem; color: var(--gray-600);">เริ่มเรียนบทนี้</span>
+                                <button class="btn-circle">
+                                    <span class="material-symbols-rounded">arrow_forward</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Module Card 3 -->
+                <div class="swiper-slide">
+                    <div class="course-card">
+                        <div class="card-img-wrapper">
+                            <span class="badge-level">บทที่ 3 • ปานกลาง</span>
+                            <img src="https://images.unsplash.com/photo-1603126857599-f6e157fa2fe6?auto=format&fit=crop&w=500&q=80" alt="ปริมาณสารสัมพันธ์">
+                        </div>
+                        <div class="card-body">
+                            <div class="card-meta">
+                                <span><span class="material-symbols-rounded" style="font-size: 16px;">schedule</span> 3.5 ชม.</span>
+                                <span><span class="material-symbols-rounded" style="font-size: 16px;">play_circle</span> 9 คลิป</span>
+                            </div>
+                            <h3 class="card-title">ปริมาณสารสัมพันธ์และสมการเคมี</h3>
+                            <div class="card-footer">
+                                <span style="font-size: 0.85rem; color: var(--gray-600);">เริ่มเรียนบทนี้</span>
+                                <button class="btn-circle">
+                                    <span class="material-symbols-rounded">arrow_forward</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Module Card 4 -->
+                <div class="swiper-slide">
+                    <div class="course-card">
+                        <div class="card-img-wrapper">
+                            <span class="badge-level">บทที่ 4 • ขั้นสูง</span>
+                            <img src="https://images.unsplash.com/photo-1554475901-4538ddfbccc2?auto=format&fit=crop&w=500&q=80" alt="เคมีอินทรีย์">
+                        </div>
+                        <div class="card-body">
+                            <div class="card-meta">
+                                <span><span class="material-symbols-rounded" style="font-size: 16px;">schedule</span> 4.0 ชม.</span>
+                                <span><span class="material-symbols-rounded" style="font-size: 16px;">play_circle</span> 10 คลิป</span>
+                            </div>
+                            <h3 class="card-title">เคมีอินทรีย์และการประยุกต์ใช้งาน</h3>
+                            <div class="card-footer">
+                                <span style="font-size: 0.85rem; color: var(--gray-600);">เริ่มเรียนบทนี้</span>
+                                <button class="btn-circle">
+                                    <span class="material-symbols-rounded">arrow_forward</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Pagination & Navigation -->
+            <div class="swiper-pagination"></div>
+        </div>
+    </main>
+<!-- External Learning Resources Section -->
+<section class="resources-section">
+  <div class="resources-container">
+    
+    <!-- Heading -->
+    <div class="resources-header">
+      <span class="resources-badge">Recommended Links</span>
+      <h1 class="resources-title">รวมแหล่งเรียนรู้จากเว็บต่างๆ</h1>
+      <p class="resources-subtitle">รวบรวมเว็บไซต์และเครื่องมือช่วยเรียนรู้เคมี คาบธาตุ และแบบจำลอง 3D ที่น่าสนใจ</p>
+    </div>
+
+    <!-- Link Box Grid -->
+    <div class="resources-grid">
+      
+      <!-- Box Item 1 -->
+      <a href="https://ptable.com" target="_blank" rel="noopener noreferrer" class="resource-card">
+        <div class="card-icon-wrapper">
+          <span class="material-symbols-rounded">grid_view</span>
+        </div>
+        <div class="card-content">
+          <div class="card-meta">
+            <span class="card-tag">Interactive</span>
+            <span class="material-symbols-rounded open-icon">open_in_new</span>
+          </div>
+          <h3 class="card-title">Dynamic Periodic Table</h3>
+          <p class="card-desc">ตารางธาตุแบบอินเทอร์แอคทีฟ แสดงคุณสมบัติ โครงสร้างอิเล็กตรอน และออร์บิทัลแบบเรียลไทม์</p>
+        </div>
+      </a>
+
+      <!-- Box Item 2 -->
+      <a href="https://phet.colorado.edu" target="_blank" rel="noopener noreferrer" class="resource-card">
+        <div class="card-icon-wrapper">
+          <span class="material-symbols-rounded">science</span>
+        </div>
+        <div class="card-content">
+          <div class="card-meta">
+            <span class="card-tag">Simulation</span>
+            <span class="material-symbols-rounded open-icon">open_in_new</span>
+          </div>
+          <h3 class="card-title">PhET Interactive Simulations</h3>
+          <p class="card-desc">แบบจำลองสถานการณ์ทางเคมีและฟิสิกส์ ช่วยให้เห็นภาพปฏิกิริยาและพันธะเคมีได้ชัดเจนยิ่งขึ้น</p>
+        </div>
+      </a>
+
+      <!-- Box Item 3 -->
+      <a href="https://pubchem.ncbi.nlm.nih.gov" target="_blank" rel="noopener noreferrer" class="resource-card">
+        <div class="card-icon-wrapper">
+          <span class="material-symbols-rounded">database</span>
+        </div>
+        <div class="card-content">
+          <div class="card-meta">
+            <span class="card-tag">Database</span>
+            <span class="material-symbols-rounded open-icon">open_in_new</span>
+          </div>
+          <h3 class="card-title">PubChem Database</h3>
+          <p class="card-desc">ฐานข้อมูลสารเคมีและโมเลกุลที่ใหญ่ที่สุดในโลก ค้นหาสูตรเคมี โครงสร้าง 3D และข้อมูลความเป็นพิษ</p>
+        </div>
+      </a>
+
+      <!-- Box Item 4 -->
+      <a href="https://molview.org" target="_blank" rel="noopener noreferrer" class="resource-card">
+        <div class="card-icon-wrapper">
+          <span class="material-symbols-rounded">view_in_ar</span>
+        </div>
+        <div class="card-content">
+          <div class="card-meta">
+            <span class="card-tag">3D Model</span>
+            <span class="material-symbols-rounded open-icon">open_in_new</span>
+          </div>
+          <h3 class="card-title">MolView 3D Chemistry</h3>
+          <p class="card-desc">เครื่องมือวาดและจำลองโครงสร้างโมเลกุลแบบ 3 มิติ ใช้งานง่ายผ่านเว็บเบราว์เซอร์</p>
+        </div>
+      </a>
+
+      <!-- Box Item 5 -->
+      <a href="https://www.khanacademy.org/science/chemistry" target="_blank" rel="noopener noreferrer" class="resource-card">
+        <div class="card-icon-wrapper">
+          <span class="material-symbols-rounded">school</span>
+        </div>
+        <div class="card-content">
+          <div class="card-meta">
+            <span class="card-tag">Online Course</span>
+            <span class="material-symbols-rounded open-icon">open_in_new</span>
+          </div>
+          <h3 class="card-title">Khan Academy Chemistry</h3>
+          <p class="card-desc">บทเรียนเคมีออนไลน์ฟรี ครอบคลุมตั้งแต่เคมีพื้นฐานไปจนถึงเคมีอินทรีย์และการคำนวณปริมาณสาร</p>
+        </div>
+      </a>
+
+      <!-- Box Item 6 -->
+      <a href="https://chem.libretexts.org" target="_blank" rel="noopener noreferrer" class="resource-card">
+        <div class="card-icon-wrapper">
+          <span class="material-symbols-rounded">menu_book</span>
+        </div>
+        <div class="card-content">
+          <div class="card-meta">
+            <span class="card-tag">Textbook</span>
+            <span class="material-symbols-rounded open-icon">open_in_new</span>
+          </div>
+          <h3 class="card-title">Chemistry LibreTexts</h3>
+          <p class="card-desc">คลังตำราเรียนเคมีแบบเปิด (Open Access) รวบรวมเนื้อหาระดับมหาวิทยาลัยและมัธยมปลาย</p>
+        </div>
+      </a>
+
+    </div>
+  </div>
+</section>
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-brand">
+                <h3>E-LearnLab</h3>
+                <p>แพลตฟอร์มเรียนรู้ออนไลน์ที่มุ่งมั่นสร้างประสบการณ์การเรียนรู้วิทยาศาสตร์ให้เข้าถึงง่ายและน่าสนใจสำหรับทุกคน</p>
+            </div>
+            <div class="footer-col">
+                <h4>หมวดวิชา</h4>
+                <ul>
+                    <li><a href="#">วิชาเคมี</a></li>
+                    <li><a href="#">วิชาฟิสิกส์</a></li>
+                    <li><a href="#">วิชาชีววิทยา</a></li>
+                    <li><a href="#">การเขียนโปรแกรม</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>ลิงก์ด่วน</h4>
+                <ul>
+                    <li><a href="#">หน้าแรก</a></li>
+                    <li><a href="#">เกี่ยวกับเรา</a></li>
+                    <li><a href="#">คำถามที่พบบ่อย</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>ติดต่อเรา</h4>
+                <ul>
+                    <li>Email: support@elearnlab.com</li>
+                    <li>Tel: 02-123-4567</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 E-LearnLab Platform. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Swiper JS Script -->
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="/demo-container/Chemistry/awdsc6/cf.js"></script>
 </body>
 </html>
