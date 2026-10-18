@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plinko Probability | สถิติและความน่าจะเป็น</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js for 3D visualization -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Chart.js for Histogram -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- MathJax for equations -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+        
+        * { font-family: 'Sarabun', sans-serif; box-sizing: border-box; }
+        
+        body {
+            background-color: #0f172a; /* slate-900 */
+            color: #f8fafc;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .canvas-container {
+            width: 100%;
+            height: 100%;
+            min-height: 400px;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            position: relative;
+            background-color: #020617;
+            border: 1px solid #334155;
+        }
+
+        canvas { display: block; width: 100%; height: 100%; }
+
+        .btn-action { transition: all 0.2s ease; }
+        .btn-action:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); }
+        .btn-action:active:not(:disabled) { transform: translateY(0); }
+        .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #ef4444; /* red-500 */
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #334155;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="flex flex-col">
+
+    <!-- Header -->
+    <header class="glass-panel sticky top-0 z-50 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-4">
+            <div class="p-3 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl shadow-lg shadow-red-500/30">
+                <i class="fa-solid fa-sitemap text-xl text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">
+                    Plinko Probability
+                </h1>
+                <p class="text-xs md:text-sm text-slate-400">
+                    แบบจำลองการแจกแจงความน่าจะเป็น (Binomial Distribution)
+                </p>
+            </div>
+        </div>
+        <div class="flex gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
+            <button id="btn-2d" onclick="setMode('2D')" class="px-4 py-2 text-xs font-semibold rounded-lg transition-all bg-red-600 text-white shadow">
+                <i class="fa-solid fa-square mr-1"></i> 2D
+            </button>
+            <button id="btn-3d" onclick="setMode('3D')" class="px-4 py-2 text-xs font-semibold rounded-lg transition-all text-slate-400 hover:text-white hover:bg-slate-800">
+                <i class="fa-solid fa-cube mr-1"></i> 3D
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow p-4 md:p-6 max-w-[1600px] mx-auto w-full flex flex-col gap-6">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left Sidebar: Controls -->
+            <aside class="lg:col-span-3 flex flex-col gap-5">
+                
+                <div class="glass-panel p-5 rounded-2xl flex flex-col gap-4">
+                    <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-2">
+                        <i class="fa-solid fa-play text-red-400 mr-2"></i> ปล่อยลูกบอล (Drop Balls)
+                    </h2>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="queueBalls(1)" class="btn-action py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl border border-slate-700 font-bold text-sm">
+                            +1
+                        </button>
+                        <button onclick="queueBalls(10)" class="btn-action py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl border border-slate-700 font-bold text-sm">
+                            +10
+                        </button>
+                        <button onclick="queueBalls(100)" class="btn-action py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl border border-slate-700 font-bold text-sm">
+                            +100
+                        </button>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-5 rounded-2xl flex flex-col gap-5">
+                    <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-1">
+                        <i class="fa-solid fa-sliders text-orange-400 mr-2"></i> พารามิเตอร์ (Parameters)
+                    </h2>
+                    
+                    <div>
+                        <div class="flex justify-between text-sm mb-2 text-slate-300">
+                            <span>จำนวนชั้น (Rows):</span>
+                            <span id="rows-val" class="font-bold text-red-400 font-mono">10</span>
+                        </div>
+                        <input type="range" id="rows-slider" min="5" max="15" step="1" value="10" onchange="updateBoardParams()">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-sm mb-2 text-slate-300">
+                            <span>โอกาสไปทางขวา (Prob):</span>
+                            <span id="prob-val" class="font-bold text-red-400 font-mono">0.50</span>
+                        </div>
+                        <input type="range" id="prob-slider" min="0.1" max="0.9" step="0.05" value="0.5" oninput="updateProbLabel()" onchange="updateTheoreticalCurve()">
+                    </div>
+                </div>
+
+                <div class="glass-panel p-5 rounded-2xl flex flex-col gap-3 mt-auto">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-slate-400">จำนวนลูกบอลทั้งหมด (N):</span>
+                        <span id="stat-total" class="font-bold text-white text-lg">0</span>
+                    </div>
+                    <button onclick="clearBoard()" class="btn-action w-full py-3 mt-2 bg-red-900/40 hover:bg-red-900/60 text-red-400 rounded-xl border border-red-800/50 font-bold text-sm flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-trash-can"></i> ล้างกระดาน (Clear)
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Center: Plinko Board (2D/3D) -->
+            <section class="lg:col-span-5 flex flex-col gap-4">
+                <div class="glass-panel p-2 rounded-2xl relative flex flex-col h-full min-h-[500px]">
+                    <div class="absolute top-4 left-4 z-10 bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-700 text-xs text-slate-300 pointer-events-none" id="view-indicator">
+                        <i class="fa-solid fa-vector-square text-red-400 mr-1"></i> 2D Board
+                    </div>
+                    
+                    <!-- 2D Canvas -->
+                    <div class="canvas-container flex-1" id="container-2d">
+                        <canvas id="canvas-2d"></canvas>
+                    </div>
+
+                    <!-- 3D Canvas -->
+                    <div class="canvas-container flex-1 hidden" id="container-3d">
+                        <!-- ThreeJS injects here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right: Histogram Chart -->
+            <section class="lg:col-span-4 flex flex-col gap-4">
+                <div class="glass-panel p-4 rounded-2xl flex flex-col h-full min-h-[500px]">
+                    <h2 class="text-sm font-bold text-slate-300 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-column text-red-400"></i> กราฟพฤติกรรมการแจกแจง
+                    </h2>
+                    <div class="w-full h-full relative bg-slate-50/5 rounded-xl p-2 border border-slate-700/50 flex-1">
+                        <canvas id="histogramChart"></canvas>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Educational Panels -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+            <!-- Panel 1 -->
+            <div class="glass-panel p-6 rounded-2xl border-t-4 border-t-red-500">
+                <h3 class="font-bold text-lg text-white mb-3">1. กลไกทางคณิตศาสตร์เบื้องหลัง Plinko</h3>
+                <p class="text-sm text-slate-300 mb-4">
+                    พฤติกรรมของลูกบอลในแต่ละชั้นสามารถอธิบายได้ด้วยทฤษฎีความน่าจะเป็นดังนี้:
+                </p>
+                <ul class="text-sm text-slate-300 space-y-4 list-disc pl-5">
+                    <li>
+                        <strong class="text-red-400">ทฤษฎีบททวินาม (Binomial Distribution):</strong> ในทุกๆ ชั้นที่ลูกบอลตกลงมาชนหมุด ลูกบอลมีโอกาสจะเด้งไป <span class="font-semibold text-white">ทางซ้าย (L)</span> หรือ <span class="font-semibold text-white">ทางขวา (R)</span> ด้วยความน่าจะเป็น \(p\) ตามที่ตั้งค่าไว้
+                    </li>
+                    <li>
+                        <strong class="text-orange-400">สามเหลี่ยมปาสกาล (Pascal's Triangle):</strong> จำนวนเส้นทางทั้งหมดที่ลูกบอลสามารถเดินทางไปยังช่องรับด้านล่างจะสอดคล้องกับตัวเลขในสามเหลี่ยมปาสกาล ยิ่งช่องรับอยู่ตรงกลางมากเท่าไหร่ ก็ยิ่งมีจำนวนเส้นทาง (Paths) ซิกแซกสลับซ้ายขวาให้มาถึงได้มากเท่านั้น ส่งผลให้ <span class="text-white font-semibold">โอกาสที่ลูกบอลจะตกลงมาตรงกลางมีสูงที่สุด (Peak)</span> ในขณะที่ช่องริมสุดมีเพียงเส้นทางเดียว (ต้องเด้งไปทางเดียวกันตลอดทุกชั้น) จึงเกิดได้ยากมาก (Rare)
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Panel 2 -->
+            <div class="glass-panel p-6 rounded-2xl border-t-4 border-t-orange-500">
+                <h3 class="font-bold text-lg text-white mb-3">2. กราฟพฤติกรรมการแจกแจง (Plinko Simulation)</h3>
+                <p class="text-sm text-slate-300 mb-4">
+                    เมื่อปล่อยลูกบอลจำนวนมากผ่านกระดาน สถิติของจำนวนลูกบอลที่ตกลงในแต่ละช่องรับด้านล่างจะมีลักษณะเป็นรูปกราฟแท่งที่มีการลู่เข้าหาเส้นโค้งระฆังคว่ำ:
+                </p>
+                <ul class="text-sm text-slate-300 space-y-4 list-disc pl-5">
+                    <li>
+                        <strong class="text-red-400">เส้นโค้งทฤษฎี (Theoretical Curve):</strong> เส้นสีแดงบนกราฟแสดงถึงค่าคาดหวังทางคณิตศาสตร์ คำนวณจากสมการ \( P(k) = \binom{n}{k} p^k (1-p)^{n-k} \) โดย \(n\) คือจำนวนชั้น และ \(k\) คือหมายเลขช่อง
+                    </li>
+                    <li>
+                        <strong class="text-orange-400">ทฤษฎีบทขีดจำกัดศูนย์กลาง (Central Limit Theorem):</strong> การทดลอง Plinko เป็นตัวอย่างคลาสสิกของทฤษฎีนี้ ที่ระบุว่าผลรวมของตัวแปรสุ่มอิสระ (การเด้งซ้าย/ขวาในแต่ละชั้น) เมื่อมีจำนวนมากพอ จะมีการแจกแจงเข้าใกล้ <span class="text-white font-semibold">การแจกแจงปกติ (Normal Distribution หรือ โค้งระฆังคว่ำ)</span> เสมอ
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </main>
+
+    <!-- App Logic Script -->
+    <script>
+        // --- State Variables ---
+        let viewMode = '2D'; // '2D' or '3D'
+        let rows = 10;
+        let probRight = 0.5;
+        
+        let bins = []; // Array tracking ball counts in each bin
+        let totalBalls = 0;
+        let activeBalls = []; // Balls currently falling
+        
+        let pendingDrops = 0; // Queue for dropping multiple balls
+        
+        // Physics constants
+        const gravity = 0.05;
+        let animationId;
+
+        // --- Chart Setup ---
+        let histogramChart;
+        function initChart() {
+            const ctx = document.getElementById('histogramChart').getContext('2d');
+            Chart.defaults.color = '#94a3b8';
+            Chart.defaults.font.family = 'Sarabun';
+
+            histogramChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Array.from({length: rows + 1}, (_, i) => i.toString()),
+                    datasets: [
+                        {
+                            label: 'Actual Balls (ผลการทดลองจริง)',
+                            data: Array(rows + 1).fill(0),
+                            backgroundColor: 'rgba(99, 102, 241, 0.8)', // Indigo
+                            borderColor: '#4f46e5',
+                            borderWidth: 1,
+                            barPercentage: 0.9,
+                            categoryPercentage: 1.0
+                        },
+                        {
+                            label: 'Theoretical Curve (เส้นทฤษฎีทวินาม)',
+                            data: Array(rows + 1).fill(0),
+                            type: 'line',
+                            borderColor: '#ef4444', // Red
+                            backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#ef4444',
+                            fill: false,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 0 }, // Disable animation for performance on rapid updates
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Slot Position (ช่องรับ)', color: '#94a3b8' },
+                            grid: { display: false }
+                        },
+                        y: {
+                            title: { display: true, text: 'Number of Balls (จำนวน)', color: '#94a3b8' },
+                            beginAtZero: true,
+                            grid: { color: 'rgba(51, 65, 85, 0.3)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'top' }
+                    }
+                }
+            });
+            updateTheoreticalCurve();
+        }
+
+        // --- Math Helpers ---
+        function combinations(n, k) {
+            if (k < 0 || k > n) return 0;
+            if (k === 0 || k === n) return 1;
+            k = Math.min(k, n - k);
+            let c = 1;
+            for (let i = 0; i < k; i++) {
+                c = c * (n - i) / (i + 1);
+            }
+            return c;
+        }
+
+        function updateTheoreticalCurve() {
+            if(!histogramChart) return;
+            
+            const theoreticalData = [];
+            const scale = Math.max(totalBalls, 10); // Show theoretical curve scaled to current total, or min 10
+            
+            for (let k = 0; k <= rows; k++) {
+                const p = combinations(rows, k) * Math.pow(probRight, k) * Math.pow(1 - probRight, rows - k);
+                theoreticalData.push(p * scale);
+            }
+            
+            histogramChart.data.datasets[1].data = theoreticalData;
+            histogramChart.update();
+        }
+
+        function updateChartData() {
+            histogramChart.data.datasets[0].data = [...bins];
+            updateTheoreticalCurve(); // update curve scale too
+            document.getElementById('stat-total').innerText = totalBalls;
+        }
+
+
+        // --- UI Interactions ---
+        function setMode(mode) {
+            viewMode = mode;
+            const btn2D = document.getElementById('btn-2d');
+            const btn3D = document.getElementById('btn-3d');
+            const c2D = document.getElementById('container-2d');
+            const c3D = document.getElementById('container-3d');
+            const indicator = document.getElementById('view-indicator');
+
+            if (mode === '2D') {
+                btn2D.className = "px-4 py-2 text-xs font-semibold rounded-lg transition-all bg-red-600 text-white shadow";
+                btn3D.className = "px-4 py-2 text-xs font-semibold rounded-lg transition-all text-slate-400 hover:text-white hover:bg-slate-800";
+                c2D.classList.remove('hidden');
+                c3D.classList.add('hidden');
+                indicator.innerHTML = '<i class="fa-solid fa-vector-square text-red-400 mr-1"></i> 2D Board';
+            } else {
+                btn3D.className = "px-4 py-2 text-xs font-semibold rounded-lg transition-all bg-red-600 text-white shadow";
+                btn2D.className = "px-4 py-2 text-xs font-semibold rounded-lg transition-all text-slate-400 hover:text-white hover:bg-slate-800";
+                c3D.classList.remove('hidden');
+                c2D.classList.add('hidden');
+                indicator.innerHTML = '<i class="fa-solid fa-cube text-red-400 mr-1"></i> 3D Board (Drag to rotate)';
+            }
+        }
+
+        function updateProbLabel() {
+            probRight = parseFloat(document.getElementById('prob-slider').value);
+            document.getElementById('prob-val').innerText = probRight.toFixed(2);
+        }
+
+        function updateBoardParams() {
+            rows = parseInt(document.getElementById('rows-slider').value);
+            document.getElementById('rows-val').innerText = rows;
+            clearBoard();
+            
+            // Re-init chart labels
+            histogramChart.data.labels = Array.from({length: rows + 1}, (_, i) => i.toString());
+            histogramChart.data.datasets[0].data = Array(rows + 1).fill(0);
+            updateTheoreticalCurve();
+            
+            init3DScene(); // Rebuild pegs
+        }
+
+        function clearBoard() {
+            bins = Array(rows + 1).fill(0);
+            totalBalls = 0;
+            activeBalls = [];
+            pendingDrops = 0;
+            
+            // Clear 3D Balls
+            if (scene) {
+                const toRemove = [];
+                scene.children.forEach(c => {
+                    if(c.name === 'fallingBall') toRemove.push(c);
+                });
+                toRemove.forEach(c => scene.remove(c));
+            }
+
+            updateChartData();
+        }
+
+        function queueBalls(num) {
+            pendingDrops += num;
+        }
+
+        // --- Core Simulation Logic ---
+        // Logical coordinates: row 0 to rows. col at row r is 0 to r.
+        // x pos: (col - r/2) * spacing
+        
+        function addBall() {
+            const ball = {
+                id: Math.random().toString(36).substr(2, 9),
+                row: 0,
+                col: 0,
+                x: 0,
+                y: 0, // 0 is top
+                progress: 0, // 0 to 1 between rows
+                targetCol: Math.random() < probRight ? 1 : 0,
+                mesh: null // for 3D
+            };
+            activeBalls.push(ball);
+
+            if (viewMode === '3D' && scene) {
+                const geometry = new THREE.SphereGeometry(0.3, 16, 16);
+                const material = new THREE.MeshPhongMaterial({ color: 0xef4444, shininess: 100 });
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.name = 'fallingBall';
+                scene.add(mesh);
+                ball.mesh = mesh;
+            }
+        }
+
+        function updatePhysics() {
+            // Process queue
+            if (pendingDrops > 0) {
+                // Drop up to 3 balls per frame to avoid clumping but process quickly
+                let dropsThisFrame = Math.min(3, pendingDrops);
+                for(let i=0; i<dropsThisFrame; i++) {
+                    addBall();
+                    pendingDrops--;
+                }
+            }
+
+            const speed = 0.08; // progression speed between rows
+            
+            for (let i = activeBalls.length - 1; i >= 0; i--) {
+                let b = activeBalls[i];
+                b.progress += speed;
+
+                if (b.progress >= 1.0) {
+                    // Arrived at next peg/row
+                    b.row++;
+                    b.col = b.targetCol;
+                    b.progress = 0;
+
+                    if (b.row >= rows) {
+                        // Reached bottom bin
+                        bins[b.col]++;
+                        totalBalls++;
+                        
+                        if (b.mesh && scene) scene.remove(b.mesh);
+                        activeBalls.splice(i, 1);
+                        
+                        // Update chart periodically or on hit
+                        if (totalBalls % 5 === 0 || activeBalls.length === 0) {
+                            updateChartData();
+                        }
+                    } else {
+                        // Decide next step
+                        b.targetCol = b.col + (Math.random() < probRight ? 1 : 0);
+                    }
+                } else {
+                    // Interpolate position visually
+                    // X follows a linear path + slight arc
+                    const startX = b.col - b.row/2;
+                    const endX = b.targetCol - (b.row+1)/2;
+                    
+                    b.x = startX + (endX - startX) * b.progress;
+                    
+                    // Y goes down constantly, adding a little bounce arc
+                    // Bounce arc: -sin(progress * PI)
+                    const bounce = Math.sin(b.progress * Math.PI) * 0.3;
+                    b.y = b.row + b.progress - bounce;
+                }
+            }
+        }
+
+        // --- 2D Canvas Engine ---
+        const canvas2D = document.getElementById('canvas-2d');
+        const ctx2D = canvas2D.getContext('2d');
+
+        function resize2D() {
+            canvas2D.width = canvas2D.parentElement.clientWidth;
+            canvas2D.height = canvas2D.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resize2D);
+
+        function render2D() {
+            ctx2D.clearRect(0, 0, canvas2D.width, canvas2D.height);
+            
+            const w = canvas2D.width;
+            const h = canvas2D.height;
+            
+            // Compute scaling and offsets
+            const marginY = 50;
+            const usableHeight = h - marginY * 2;
+            const spacingY = usableHeight / Math.max(10, rows);
+            const spacingX = spacingY; // square grid
+            
+            const centerX = w / 2;
+            const startY = marginY;
+
+            // Draw Pegs
+            ctx2D.fillStyle = '#64748b'; // slate-500
+            for (let r = 1; r <= rows; r++) { // Pegs start at row 1
+                for (let c = 0; c <= r; c++) {
+                    let px = centerX + (c - r/2) * spacingX;
+                    let py = startY + r * spacingY;
+                    
+                    ctx2D.beginPath();
+                    ctx2D.arc(px, py, 4, 0, Math.PI*2);
+                    ctx2D.fill();
+                }
+            }
+
+            // Draw Active Balls
+            ctx2D.fillStyle = '#ef4444'; // red-500
+            ctx2D.strokeStyle = '#991b1b';
+            ctx2D.lineWidth = 2;
+            for (let b of activeBalls) {
+                let px = centerX + b.x * spacingX;
+                let py = startY + b.y * spacingY;
+                
+                ctx2D.beginPath();
+                ctx2D.arc(px, py, spacingX * 0.25, 0, Math.PI*2);
+                ctx2D.fill();
+                ctx2D.stroke();
+                
+                // Add a small highlight for 3D-ish feel
+                ctx2D.fillStyle = 'rgba(255,255,255,0.4)';
+                ctx2D.beginPath();
+                ctx2D.arc(px - 2, py - 2, spacingX * 0.08, 0, Math.PI*2);
+                ctx2D.fill();
+                ctx2D.fillStyle = '#ef4444'; // reset
+            }
+        }
+
+
+        // --- 3D Three.js Engine ---
+        let scene, camera, renderer, controls3D;
+        let pegGroup;
+
+        function init3D() {
+            const container = document.getElementById('container-3d');
+            scene = new THREE.Scene();
+
+            // Setup Camera
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, -rows/2, 25);
+
+            // Setup Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // Controls
+            controls3D = new THREE.OrbitControls(camera, renderer.domElement);
+            controls3D.enableDamping = true;
+            controls3D.dampingFactor = 0.05;
+            controls3D.target.set(0, -rows/2, 0);
+
+            // Lighting
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambient);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 10, 10);
+            scene.add(dirLight);
+
+            // Peg Group
+            pegGroup = new THREE.Group();
+            scene.add(pegGroup);
+
+            init3DScene();
+
+            window.addEventListener('resize', () => {
+                if(camera && renderer) {
+                    camera.aspect = container.clientWidth / container.clientHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(container.clientWidth, container.clientHeight);
+                }
+            });
+        }
+
+        function init3DScene() {
+            if(!scene) return;
+            
+            // Clear existing pegs
+            while(pegGroup.children.length > 0){ 
+                pegGroup.remove(pegGroup.children[0]); 
+            }
+
+            const pegGeo = new THREE.CylinderGeometry(0.15, 0.15, 1, 16);
+            const pegMat = new THREE.MeshPhongMaterial({ color: 0x64748b, shininess: 50 }); // slate-500
+            
+            // Build Pegs
+            for (let r = 1; r <= rows; r++) {
+                for (let c = 0; c <= r; c++) {
+                    const mesh = new THREE.Mesh(pegGeo, pegMat);
+                    mesh.rotation.x = Math.PI / 2; // Point outwards
+                    mesh.position.set( (c - r/2) * 2, -r * 2, 0 );
+                    pegGroup.add(mesh);
+                }
+            }
+
+            // Adjust camera to fit
+            camera.position.set(0, -rows, rows * 2.5);
+            controls3D.target.set(0, -rows, 0);
+        }
+
+        function render3D() {
+            if(!scene) return;
+            controls3D.update();
+
+            // Update Ball Positions
+            for (let b of activeBalls) {
+                if(b.mesh) {
+                    b.mesh.position.set( b.x * 2, -b.y * 2, 0.5 ); // 0.5 offset to sit in front of pegs
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // --- Main Game Loop ---
+        function animate() {
+            animationId = requestAnimationFrame(animate);
+            updatePhysics();
+            
+            if (viewMode === '2D') {
+                render2D();
+            } else {
+                render3D();
+            }
+        }
+
+        // --- Initialization ---
+        window.onload = () => {
+            bins = Array(rows + 1).fill(0);
+            initChart();
+            resize2D();
+            init3D();
+            animate();
+        };
+
+    </script>
+</body>
+</html>

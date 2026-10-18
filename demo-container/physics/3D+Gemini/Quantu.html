@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แบบจำลอง Quantum Coin Toss (เหรียญควอนตัม)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js for 3D visualization -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- MathJax for physics equations -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+        
+        * { font-family: 'Sarabun', sans-serif; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+        }
+
+        .canvas-container {
+            width: 100%;
+            height: 100%;
+            min-height: 400px;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .glow-superposition {
+            box-shadow: 0 0 25px rgba(168, 85, 247, 0.6);
+            border-color: rgba(168, 85, 247, 0.8);
+        }
+
+        .btn-quantum {
+            background: linear-gradient(135deg, #06b6d4, #3b82f6);
+            transition: all 0.3s ease;
+        }
+        .btn-quantum:hover {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .btn-hgate {
+            background: linear-gradient(135deg, #8b5cf6, #d946ef);
+            transition: all 0.3s ease;
+        }
+        .btn-hgate:hover {
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4 shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-purple-500/10 rounded-xl border border-purple-500/30 text-purple-400">
+                    <i class="fa-solid fa-coins text-2xl"></i>
+                </div>
+                <div>
+<a href="../physics.html">
+                        <h1 class="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-400 via-pink-300 to-cyan-400 bg-clip-text text-transparent">
+                        Quantum Coin Toss (เหรียญควอนตัม)
+                    </h1>
+</a>
+                    <p class="text-xs text-slate-400">
+                        การจำลอง Superposition และ Wavefunction Collapse ด้วย Qubit
+                    </p>
+                </div>
+            </div>
+
+            <!-- Mode Toggle -->
+            <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+                <button id="btn-mode-classical" onclick="setMode('classical')" class="px-4 py-2 text-xs font-semibold rounded-lg transition-all text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-globe"></i> Classical Coin
+                </button>
+                <button id="btn-mode-quantum" onclick="setMode('quantum')" class="px-4 py-2 text-xs font-semibold rounded-lg transition-all bg-purple-600 text-white shadow">
+                    <i class="fa-solid fa-atom"></i> Quantum Coin
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+        
+        <!-- Left Panel: Controls & Circuit -->
+        <aside class="lg:col-span-4 flex flex-col gap-5">
+            
+            <!-- System State Dashboard -->
+            <div id="state-panel" class="glass-panel p-5 rounded-2xl flex flex-col gap-4 text-center transition-all duration-500">
+                <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">สถานะปัจจุบัน (Current State)</h2>
+                <div class="py-4">
+                    <div id="display-state" class="text-4xl font-mono font-bold text-cyan-400">|0⟩ (Heads)</div>
+                    <div id="display-desc" class="text-sm text-slate-400 mt-2">สถานะแน่นอน: หัว (Deterministic State)</div>
+                </div>
+            </div>
+
+            <!-- Quantum Circuit Controls -->
+            <div class="glass-panel p-5 rounded-2xl flex flex-col gap-4">
+                <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-microchip text-purple-400"></i> Quantum Circuit Controls
+                </h2>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="initState(0)" class="p-3 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 transition flex flex-col items-center gap-1">
+                        <span class="text-lg font-mono font-bold text-cyan-400">|0⟩</span>
+                        <span class="text-xs text-slate-400">Init หัว (Heads)</span>
+                    </button>
+                    <button onclick="initState(1)" class="p-3 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 transition flex flex-col items-center gap-1">
+                        <span class="text-lg font-mono font-bold text-pink-400">|1⟩</span>
+                        <span class="text-xs text-slate-400">Init ก้อย (Tails)</span>
+                    </button>
+                </div>
+
+                <hr class="border-slate-800">
+
+                <button id="btn-hgate" onclick="applyAction()" class="btn-hgate p-4 rounded-xl text-white font-bold flex justify-center items-center gap-2 text-sm shadow-lg shadow-purple-900/40">
+                    <span class="font-mono text-lg bg-white text-purple-600 px-2 py-0.5 rounded">H</span> 
+                    <span id="text-action">Apply Hadamard Gate (โยนเหรียญ)</span>
+                </button>
+
+                <button id="btn-measure" onclick="measureState()" class="p-4 rounded-xl border border-cyan-500/50 bg-cyan-900/30 text-cyan-300 font-bold flex justify-center items-center gap-2 text-sm hover:bg-cyan-900/60 transition opacity-50 cursor-not-allowed" disabled>
+                    <i class="fa-solid fa-eye"></i> Measure (วัดค่า / สังเกตการณ์)
+                </button>
+            </div>
+
+            <!-- Stats -->
+            <div class="glass-panel p-5 rounded-2xl flex flex-col gap-3">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-400">จำนวนครั้งที่วัดผลทั้งหมด:</span>
+                    <span id="stat-total" class="font-bold text-white">0</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-cyan-400">หัว (|0⟩ Heads):</span>
+                    <span id="stat-heads" class="font-bold text-cyan-400">0</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-pink-400">ก้อย (|1⟩ Tails):</span>
+                    <span id="stat-tails" class="font-bold text-pink-400">0</span>
+                </div>
+                <button onclick="resetStats()" class="mt-2 text-xs text-slate-500 hover:text-slate-300 transition text-right">
+                    <i class="fa-solid fa-rotate-right"></i> รีเซ็ตข้อมูล
+                </button>
+            </div>
+        </aside>
+
+        <!-- Right Panel: Visualizer & Theory -->
+        <section class="lg:col-span-8 flex flex-col gap-5">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 flex-grow">
+                <!-- 3D Bloch Sphere & Coin -->
+                <div class="glass-panel p-4 rounded-2xl flex flex-col gap-3 h-full">
+                    <h2 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
+                        <i class="fa-solid fa-cube text-cyan-400"></i> 3D Qubit / Bloch Sphere View
+                    </h2>
+                    <div class="canvas-container bg-slate-900" id="container-3d">
+                        <!-- Three.js will render here -->
+                    </div>
+                </div>
+
+                <!-- 2D Data Chart -->
+                <div class="glass-panel p-4 rounded-2xl flex flex-col gap-3 h-full">
+                    <h2 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-bar text-pink-400"></i> ผลการทดลอง (Probability Data)
+                    </h2>
+                    <div class="w-full h-full relative min-h-[300px] flex items-center justify-center bg-slate-900 rounded-xl p-2 border border-slate-800">
+                        <canvas id="resultsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Educational Info -->
+            <div class="glass-panel p-5 rounded-2xl grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-400 leading-relaxed">
+                <div>
+                    <h3 class="text-white font-bold mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-coins text-yellow-400"></i> เหรียญควอนตัม vs เหรียญคลาสสิก
+                    </h3>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li><strong class="text-slate-200">Classical Coin:</strong> ขณะเหรียญหมุนกลางอากาศ มันมีสถานะ หัว หรือ ก้อย ที่แน่นอนอยู่แล้ว (Deterministic) เราแค่ไม่รู้จนกว่าเหรียญจะตกถึงพื้น</li>
+                        <li><strong class="text-slate-200">Quantum Coin:</strong> ขณะยังไม่ถูกตรวจวัด Qubit จะอยู่ในสถานะ <span class="text-purple-400">Superposition (การซ้อนทับ)</span> คือเป็นทั้ง "หัว" และ "ก้อย" พร้อมกัน มีความสุ่มแบบแท้จริง (True Randomness)</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-white font-bold mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-microchip text-cyan-400"></i> กลศาสตร์ควอนตัมเบื้องต้น
+                    </h3>
+                    <ul class="list-disc pl-5 space-y-2 break-words whitespace-normal">
+                        <li><strong>Qubit States:</strong> เราแทน หัว = |0⟩ (ชี้ขึ้น) และ ก้อย = |1⟩ (ชี้ลง) ใน Bloch Sphere</li>
+                        <li><strong>H-Gate (Hadamard Gate):</strong> เปลี่ยนสถานะแน่นอนให้กลายเป็นสภาวะซ้อนทับ (Superposition) 50/50: (|0⟩ + |1⟩)/√2 (ลูกศรชี้ไปที่เส้นศูนย์สูตร)</li>
+                        <li><strong>Measurement (การวัด):</strong> ทำให้ wavefunction ยุบตัว (Collapse) กลับสู่สภาวะ |0⟩ หรือ |1⟩ ทันที</li>
+                    </ul>
+                </div>
+            </div>
+            
+        </section>
+    </main>
+
+    <script>
+        // App State
+        let mode = 'quantum'; // 'classical' | 'quantum'
+        let currentState = 0; // 0, 1, or 'superposition'
+        
+        let stats = { total: 0, heads: 0, tails: 0 };
+        let resultsChart = null;
+
+        // Three.js Globals
+        let scene, camera, renderer, controls;
+        let blochSphere, stateVector, coinGroup;
+        let animationId;
+        
+        // Target rotation for smooth animation
+        let targetVectorX = 0, targetVectorZ = 0; // Angles
+        let currentVectorX = 0, currentVectorZ = 0;
+
+        window.onload = () => {
+            initThreeJS();
+            initChart();
+            initState(0, false); // Start at |0>
+            animate();
+        };
+
+        window.onresize = () => {
+            if(camera && renderer) {
+                const container = document.getElementById('container-3d');
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }
+        };
+
+        // UI Interactions
+        function setMode(newMode) {
+            mode = newMode;
+            document.getElementById('btn-mode-classical').className = mode === 'classical' 
+                ? "px-4 py-2 text-xs font-semibold rounded-lg transition-all bg-slate-700 text-white shadow"
+                : "px-4 py-2 text-xs font-semibold rounded-lg transition-all text-slate-400 hover:text-white";
+                
+            document.getElementById('btn-mode-quantum').className = mode === 'quantum'
+                ? "px-4 py-2 text-xs font-semibold rounded-lg transition-all bg-purple-600 text-white shadow"
+                : "px-4 py-2 text-xs font-semibold rounded-lg transition-all text-slate-400 hover:text-white";
+
+            document.getElementById('text-action').innerText = mode === 'classical' ? "โยนเหรียญ (Flip Coin)" : "Apply Hadamard Gate (โยนเหรียญ)";
+            
+            // Reset state safely when switching modes
+            if (currentState === 'superposition') initState(0);
+        }
+
+        function updateUIState() {
+            const display = document.getElementById('display-state');
+            const desc = document.getElementById('display-desc');
+            const panel = document.getElementById('state-panel');
+            const measureBtn = document.getElementById('btn-measure');
+
+            panel.classList.remove('glow-superposition');
+
+            if (currentState === 0) {
+                display.innerText = "|0⟩ (Heads)";
+                display.className = "text-4xl font-mono font-bold text-cyan-400";
+                desc.innerText = "สถานะแน่นอน: หัว (Deterministic State)";
+                measureBtn.disabled = true;
+                measureBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            } else if (currentState === 1) {
+                display.innerText = "|1⟩ (Tails)";
+                display.className = "text-4xl font-mono font-bold text-pink-400";
+                desc.innerText = "สถานะแน่นอน: ก้อย (Deterministic State)";
+                measureBtn.disabled = true;
+                measureBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            } else if (currentState === 'superposition') {
+                display.innerText = "(|0⟩ + |1⟩) / √2";
+                display.className = "text-3xl font-mono font-bold text-purple-400 animate-pulse";
+                desc.innerText = "สถานะซ้อนทับ: เป็นทั้งหัวและก้อย (Superposition)";
+                panel.classList.add('glow-superposition');
+                
+                measureBtn.disabled = false;
+                measureBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        function initState(val, animateRotation = true) {
+            currentState = val;
+            
+            // Update 3D Targets
+            if (val === 0) {
+                targetVectorX = 0; // Point up
+            } else if (val === 1) {
+                targetVectorX = Math.PI; // Point down
+            }
+            
+            if(!animateRotation) {
+                currentVectorX = targetVectorX;
+                updateVectorRotation();
+            }
+
+            updateUIState();
+        }
+
+        function applyAction() {
+            if (mode === 'classical') {
+                // Classical flip (just animate to random 0 or 1, skipping superposition)
+                let result = Math.random() < 0.5 ? 0 : 1;
+                // Add a spin effect before settling
+                targetVectorX = result === 0 ? Math.PI * 4 : Math.PI * 5; 
+                setTimeout(() => {
+                    currentState = result;
+                    recordStat(result);
+                    updateUIState();
+                    // normalize target for future flips
+                    currentVectorX = result === 0 ? 0 : Math.PI;
+                    targetVectorX = currentVectorX;
+                }, 1000);
+                
+            } else {
+                // Quantum mode: Apply H-Gate
+                if (currentState === 'superposition') {
+                    // Applying H-Gate to superposition (simplification: goes back to |0> if starting from |0>, but for coin toss sim we'll just re-randomize or toggle. Let's just say it stays in superposition for user simplicity, or resolves).
+                    // Standard physics: H(H|0>) = |0>. 
+                    // We will just force it to stay in superposition for this demo's flow unless measured.
+                    showToast("Qubit อยู่ในสภาวะ Superposition แล้ว ต้องทำการวัดค่า (Measure)");
+                    return;
+                }
+                
+                currentState = 'superposition';
+                targetVectorX = Math.PI / 2; // Point to equator
+                
+                updateUIState();
+            }
+        }
+
+        function measureState() {
+            if (currentState !== 'superposition') return;
+            
+            // Wavefunction Collapse (True Randomness simulation)
+            let collapseTo = Math.random() < 0.5 ? 0 : 1;
+            
+            // Visually snap to |0> or |1>
+            targetVectorX = collapseTo === 0 ? 0 : Math.PI;
+            
+            currentState = collapseTo;
+            recordStat(collapseTo);
+            updateUIState();
+        }
+
+        function recordStat(result) {
+            stats.total++;
+            if (result === 0) stats.heads++;
+            else stats.tails++;
+            
+            document.getElementById('stat-total').innerText = stats.total;
+            document.getElementById('stat-heads').innerText = stats.heads;
+            document.getElementById('stat-tails').innerText = stats.tails;
+
+            updateChart();
+        }
+
+        function resetStats() {
+            stats = { total: 0, heads: 0, tails: 0 };
+            document.getElementById('stat-total').innerText = '0';
+            document.getElementById('stat-heads').innerText = '0';
+            document.getElementById('stat-tails').innerText = '0';
+            updateChart();
+        }
+
+        // Custom Toast Notification (instead of alert)
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.className = "fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-xl border border-slate-600 shadow-2xl z-50 transition-opacity";
+            toast.innerText = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = 0; setTimeout(() => toast.remove(), 300); }, 2000);
+        }
+
+        // Three.js Initialization & Logic
+        function initThreeJS() {
+            const container = document.getElementById('container-3d');
+            scene = new THREE.Scene();
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(4, 3, 5);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            // Lights
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambient);
+            const point = new THREE.PointLight(0xffffff, 1);
+            point.position.set(5, 5, 5);
+            scene.add(point);
+
+            // Bloch Sphere (Wireframe/Transparent)
+            const sphereGeo = new THREE.SphereGeometry(2, 32, 32);
+            const sphereMat = new THREE.MeshBasicMaterial({ 
+                color: 0x475569, 
+                wireframe: true, 
+                transparent: true, 
+                opacity: 0.2 
+            });
+            blochSphere = new THREE.Mesh(sphereGeo, sphereMat);
+            scene.add(blochSphere);
+
+            // Axes
+            const axesHelper = new THREE.AxesHelper(2.5);
+            scene.add(axesHelper); // Red:X, Green:Y(|0>,|1>), Blue:Z
+
+            // State Vector & Coin Group
+            coinGroup = new THREE.Group();
+            scene.add(coinGroup);
+
+            // Arrow Vector
+            const dir = new THREE.Vector3(0, 1, 0);
+            const origin = new THREE.Vector3(0, 0, 0);
+            stateVector = new THREE.ArrowHelper(dir, origin, 2, 0xa855f7, 0.4, 0.2);
+            coinGroup.add(stateVector);
+
+            // Coin Representation (Cylinder)
+            const coinGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.1, 32);
+            
+            // Materials for Coin faces (Top=Cyan/Heads, Bottom=Pink/Tails, Side=Gold)
+            const matTop = new THREE.MeshPhongMaterial({ color: 0x06b6d4 });
+            const matBottom = new THREE.MeshPhongMaterial({ color: 0xec4899 });
+            const matSide = new THREE.MeshPhongMaterial({ color: 0xfacc15 });
+            const coinMesh = new THREE.Mesh(coinGeo, [matSide, matTop, matBottom]);
+            
+            // Position coin at the tip of the arrow
+            coinMesh.position.set(0, 2, 0);
+            // Rotate coin so flat face points in direction of arrow
+            coinMesh.rotation.x = 0; 
+            
+            // Allow accessing mesh to change glow later
+            coinGroup.userData.coinMesh = coinMesh;
+            coinGroup.add(coinMesh);
+        }
+
+        function updateVectorRotation() {
+            // Apply rotation to the entire group (Arrow + Coin)
+            // Y is UP in Threejs. Rotation around X axis moves it between up(+Y) and down(-Y).
+            coinGroup.rotation.x = currentVectorX;
+        }
+
+        function animate() {
+            animationId = requestAnimationFrame(animate);
+
+            // Smooth interpolation (Lerp) for Vector Rotation
+            currentVectorX += (targetVectorX - currentVectorX) * 0.1;
+            updateVectorRotation();
+
+            // Superposition Visual Effects
+            if (currentState === 'superposition') {
+                // Spin coin rapidly on its own local Y axis
+                coinGroup.userData.coinMesh.rotation.x += 0.2;
+                coinGroup.userData.coinMesh.rotation.z += 0.1;
+                
+                // Add translucent glowing effect
+                coinGroup.userData.coinMesh.material.forEach(mat => {
+                    mat.transparent = true;
+                    mat.opacity = 0.6;
+                    mat.emissive = new THREE.Color(0xa855f7);
+                    mat.emissiveIntensity = 0.5;
+                });
+            } else {
+                // Reset coin rotation to align with vector
+                coinGroup.userData.coinMesh.rotation.x = 0;
+                coinGroup.userData.coinMesh.rotation.z = 0;
+                
+                // Remove glowing effect
+                coinGroup.userData.coinMesh.material.forEach(mat => {
+                    mat.transparent = false;
+                    mat.opacity = 1.0;
+                    mat.emissive = new THREE.Color(0x000000);
+                });
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Chart.js Setup
+        function initChart() {
+            const ctx = document.getElementById('resultsChart').getContext('2d');
+            
+            Chart.defaults.color = '#94a3b8';
+            Chart.defaults.font.family = 'Sarabun';
+
+            resultsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['หัว (|0⟩ Heads)', 'ก้อย (|1⟩ Tails)'],
+                    datasets: [
+                        {
+                            label: 'ผลการวัดจริง (Actual %)',
+                            data: [0, 0], // Forces strictly to 0 on init
+                            backgroundColor: ['rgba(6, 182, 212, 0.8)', 'rgba(236, 72, 153, 0.8)'],
+                            borderColor: ['#06b6d4', '#ec4899'],
+                            borderWidth: 1,
+                            barPercentage: 0.6
+                        },
+                        {
+                            label: 'ทฤษฎี (Theoretical 50%)',
+                            data: [50, 50],
+                            type: 'line',
+                            borderColor: 'rgba(168, 85, 247, 0.8)',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            grid: { color: 'rgba(51, 65, 85, 0.3)' },
+                            title: { display: true, text: 'ความน่าจะเป็น (%)' }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: { enabled: true }
+                    }
+                }
+            });
+        }
+
+        function updateChart() {
+            if(stats.total === 0) {
+                resultsChart.data.datasets[0].data = [0, 0];
+            } else {
+                const headsPct = (stats.heads / stats.total) * 100;
+                const tailsPct = (stats.tails / stats.total) * 100;
+                resultsChart.data.datasets[0].data = [headsPct, tailsPct];
+            }
+            resultsChart.update();
+        }
+    </script>
+</body>
+</html>

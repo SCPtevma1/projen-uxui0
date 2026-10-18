@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curve Fitting (Polynomial Regression) | แบบจำลองการวิเคราะห์ข้อมูล</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Math.js for matrix operations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+    <!-- MathJax for rendering math equations -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+        
+        * { font-family: 'Sarabun', sans-serif; box-sizing: border-box; }
+        
+        body {
+            background-color: #0b1120;
+            color: #f8fafc;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,0.1) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,0.1) 0, transparent 50%);
+            min-height: 100vh;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .canvas-container {
+            width: 100%;
+            height: 100%;
+            min-height: 400px;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            position: relative;
+            background-color: #f8fafc; /* Light canvas for graph contrast */
+            border: 1px solid #334155;
+            cursor: crosshair;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .btn-action { transition: all 0.2s ease; }
+        .btn-action:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        .btn-action:active { transform: translateY(0); }
+
+        .metric-value {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="flex flex-col">
+
+    <!-- Header -->
+    <header class="glass-panel sticky top-0 z-50 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-4">
+            <div class="p-3 bg-gradient-to-br from-emerald-500 to-cyan-600 rounded-xl shadow-lg shadow-cyan-500/30">
+                <i class="fa-solid fa-chart-line text-xl text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">
+                    Curve Fitting Simulation
+                </h1>
+                <p class="text-xs md:text-sm text-slate-400">
+                    การประมาณค่าและถดถอยโพลิโนเมียล (Polynomial Regression)
+                </p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="addExampleTrend()" class="btn-action px-4 py-2 bg-emerald-600/80 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg shadow border border-emerald-500 flex items-center gap-2">
+                <i class="fa-solid fa-chart-area"></i> ข้อมูลตัวอย่าง
+            </button>
+            <button onclick="addRandomNoise()" class="btn-action px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium rounded-lg border border-slate-600 flex items-center gap-2">
+                <i class="fa-solid fa-braille"></i> สุ่มข้อมูลรบกวน
+            </button>
+            <button onclick="clearData()" class="btn-action px-4 py-2 bg-rose-900/40 hover:bg-rose-900/60 text-rose-400 text-sm font-medium rounded-lg border border-rose-800/50 flex items-center gap-2">
+                <i class="fa-solid fa-trash-can"></i> ล้างข้อมูล
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow p-4 md:p-6 max-w-[1600px] mx-auto w-full flex flex-col gap-6">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left: Controls & Analytics -->
+            <div class="lg:col-span-4 flex flex-col gap-5">
+                
+                <!-- Fitting Controls -->
+                <div class="glass-panel p-5 rounded-2xl flex flex-col gap-4">
+                    <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2 mb-2">
+                        <i class="fa-solid fa-sliders text-cyan-400"></i> โมเดล (Fitting Model)
+                    </h2>
+                    
+                    <div class="grid grid-cols-3 gap-2">
+                        <button id="btn-deg-1" onclick="setDegree(1)" class="btn-deg py-2 rounded-lg text-sm font-semibold border transition bg-cyan-900/40 border-cyan-500 text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.2)]">
+                            Linear<br><span class="text-[10px] font-normal opacity-75">ดีกรี 1</span>
+                        </button>
+                        <button id="btn-deg-2" onclick="setDegree(2)" class="btn-deg py-2 rounded-lg text-sm font-semibold border transition bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200">
+                            Quadratic<br><span class="text-[10px] font-normal opacity-75">ดีกรี 2</span>
+                        </button>
+                        <button id="btn-deg-3" onclick="setDegree(3)" class="btn-deg py-2 rounded-lg text-sm font-semibold border transition bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200">
+                            Cubic<br><span class="text-[10px] font-normal opacity-75">ดีกรี 3</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Analysis Dashboard -->
+                <div class="glass-panel p-5 rounded-2xl flex flex-col gap-4 flex-grow">
+                    <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-calculator text-purple-400"></i> การวิเคราะห์ความคลาดเคลื่อน
+                    </h2>
+                    
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 min-h-[80px] flex items-center justify-center overflow-x-auto">
+                        <div id="equation-display" class="text-lg text-cyan-300 font-medium">
+                            \( y = ? \)
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 mt-2">
+                        <div class="flex justify-between items-center bg-slate-800/50 p-3 rounded-lg">
+                            <span class="text-sm text-slate-400">จุดข้อมูล (Data Points):</span>
+                            <span id="stat-n" class="metric-value text-white">0</span>
+                        </div>
+                        <div class="flex justify-between items-center bg-slate-800/50 p-3 rounded-lg border-l-2 border-emerald-500">
+                            <span class="text-sm text-slate-400">R-Squared (\(R^2\)):</span>
+                            <span id="stat-r2" class="metric-value text-emerald-400">N/A</span>
+                        </div>
+                        <div class="flex justify-between items-center bg-slate-800/50 p-3 rounded-lg border-l-2 border-rose-500">
+                            <span class="text-sm text-slate-400">Mean Squared Error (MSE):</span>
+                            <span id="stat-mse" class="metric-value text-rose-400">N/A</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right: Interactive Canvas -->
+            <div class="lg:col-span-8 flex flex-col gap-5">
+                <div class="glass-panel p-2 rounded-2xl relative flex flex-col h-full min-h-[450px]">
+                    
+                    <!-- Canvas Legend -->
+                    <div class="absolute top-4 left-4 z-10 bg-white/90 px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-800 shadow-md pointer-events-none flex flex-col gap-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-rose-500"></div>
+                            <span>Raw Data (ข้อมูลดิบ)</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-0.5 bg-indigo-600"></div>
+                            <span id="legend-line-name">Fitted Curve (เส้นแนวโน้ม)</span>
+                        </div>
+                        <div class="mt-1 text-[10px] text-slate-500 italic">คลิกที่พื้นที่ว่างเพื่อเพิ่มจุดข้อมูล</div>
+                    </div>
+
+                    <div class="canvas-container flex-1" id="canvas-container">
+                        <canvas id="graph-canvas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Educational Panels -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+            
+            <div class="glass-panel p-6 rounded-2xl border-t-4 border-t-cyan-500">
+                <h3 class="font-bold text-lg text-white mb-4">
+                    1. รูปแบบของ Curve Fitting ที่นิยมใช้
+                </h3>
+                <p class="text-sm text-slate-300 mb-4">
+                    เราสามารถแบ่งลักษณะการ Fit กราฟออกเป็น 2 ประเภทหลัก ตามวัตถุประสงค์ของการใช้งาน:
+                </p>
+                <ul class="text-sm text-slate-300 space-y-4 list-disc pl-5">
+                    <li>
+                        <strong class="text-cyan-300">Regression (การถดถอย):</strong> เส้นกราฟไม่จำเป็นต้องลากผ่านจุดข้อมูลทุกจุด แต่จะเน้น <span class="text-white underline decoration-cyan-500/50 decoration-2">การตัดผ่านใจกลางกลุ่มข้อมูลเพื่อแสดงแนวโน้มรวม</span> เหมาะกับข้อมูลที่มีความคลาดเคลื่อนหรือมีสัญญาณรบกวน (Noise) เช่น ข้อมูลจากการทดลองทางฟิสิกส์หรือสถิติ
+                    </li>
+                    <li>
+                        <strong class="text-emerald-300">Interpolation (การประมาณค่าในช่วง):</strong> เส้นกราฟ <span class="text-white underline decoration-emerald-500/50 decoration-2">ต้องลากผ่านจุดข้อมูลทุกจุดอย่างแม่นยำ 100%</span> เหมาะสำหรับกลุ่มข้อมูลที่มีความแน่นอนสูงมาก และต้องการหาค่าของจุดที่อยู่ระหว่างจุดสองจุดที่เรารู้ค่าอยู่แล้ว
+                    </li>
+                </ul>
+            </div>
+
+            <div class="glass-panel p-6 rounded-2xl border-t-4 border-t-purple-500">
+                <h3 class="font-bold text-lg text-white mb-4">
+                    2. โมเดลการ Fit กราฟตามลักษณะเส้น (Fitting Models)
+                </h3>
+                <ul class="text-sm text-slate-300 space-y-4 list-disc pl-5">
+                    <li>
+                        <strong class="text-purple-300">Linear Fitting (เส้นตรง):</strong> สมดุลสมการอยู่ในรูป <span class="font-mono bg-slate-800 px-1 rounded">y = mx + c</span> ใช้เมื่อข้อมูลเปลี่ยนไปในอัตราส่วนที่คงที่
+                    </li>
+                    <li>
+                        <strong class="text-purple-300">Polynomial Fitting (พหุนาม/เส้นโค้ง):</strong> อยู่ในรูป <span class="font-mono bg-slate-800 px-1 rounded">y = ax² + bx + c</span> หรือดีกรีที่สูงกว่า ช่วยให้เส้นกราฟดัดโค้งโอบล้อมข้อมูลที่มีความซับซ้อนได้แม่นยำขึ้น
+                    </li>
+                    <li>
+                        <strong class="text-purple-300">Exponential / Logarithmic Fitting:</strong> เหมาะกับข้อมูลที่มีการเติบโตอย่างรวดเร็วฉับพลัน (เช่น การเติบโตของแบคทีเรีย ยอดผู้ติดเชื้อ หรือการลดลงของปฏิกิริยาควอนตัม)
+                    </li>
+                </ul>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // --- State ---
+        let points = [];
+        let degree = 1; // Default Linear
+        let coefficients = []; // [c, b, a, ...] for y = c + bx + ax^2 + ...
+        
+        // Math Bounds for Graph
+        const mathMinX = 0;
+        const mathMaxX = 10;
+        const mathMinY = 0;
+        const mathMaxY = 10;
+
+        // --- Canvas Setup ---
+        const canvas = document.getElementById('graph-canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvas-container');
+
+        function resizeCanvas() {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            draw();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // --- Coordinate Transformations ---
+        function toCanvasX(x) {
+            return ((x - mathMinX) / (mathMaxX - mathMinX)) * canvas.width;
+        }
+        function toCanvasY(y) {
+            // Y is inverted in canvas
+            return canvas.height - ((y - mathMinY) / (mathMaxY - mathMinY)) * canvas.height;
+        }
+        function toMathX(cx) {
+            return mathMinX + (cx / canvas.width) * (mathMaxX - mathMinX);
+        }
+        function toMathY(cy) {
+            return mathMinY + ((canvas.height - cy) / canvas.height) * (mathMaxY - mathMinY);
+        }
+
+        // --- Interaction ---
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const cx = e.clientX - rect.left;
+            const cy = e.clientY - rect.top;
+            
+            const mx = toMathX(cx);
+            const my = toMathY(cy);
+            
+            // Limit points to valid bounds
+            if (mx >= mathMinX && mx <= mathMaxX && my >= mathMinY && my <= mathMaxY) {
+                points.push({ x: mx, y: my });
+                calculateRegression();
+            }
+        });
+
+        // --- UI Controls ---
+        function setDegree(deg) {
+            degree = deg;
+            
+            // Update UI buttons
+            document.querySelectorAll('.btn-deg').forEach(btn => {
+                btn.className = "btn-deg py-2 rounded-lg text-sm font-semibold border transition bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200";
+            });
+            const activeBtn = document.getElementById(`btn-deg-${deg}`);
+            activeBtn.className = "btn-deg py-2 rounded-lg text-sm font-semibold border transition bg-cyan-900/40 border-cyan-500 text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.2)]";
+
+            const legendName = document.getElementById('legend-line-name');
+            if(deg === 1) legendName.innerText = "Linear Fit (เส้นตรง)";
+            if(deg === 2) legendName.innerText = "Quadratic Fit (พาราโบลา)";
+            if(deg === 3) legendName.innerText = "Cubic Fit (โค้งกำลังสาม)";
+
+            calculateRegression();
+        }
+
+        function clearData() {
+            points = [];
+            coefficients = [];
+            calculateRegression();
+        }
+
+        function addExampleTrend() {
+            points = [];
+            // Generate a noisy quadratic trend
+            for (let x = 1; x <= 9; x += 0.8) {
+                // y = -0.3(x-5)^2 + 8 + noise
+                let y = -0.25 * Math.pow(x - 5, 2) + 8;
+                y += (Math.random() - 0.5) * 1.5; // Add noise
+                
+                // Clamp
+                y = Math.max(mathMinY + 0.5, Math.min(mathMaxY - 0.5, y));
+                points.push({ x: x, y: y });
+            }
+            if (degree === 1) setDegree(2); // Auto switch to quadratic for best demo
+            else calculateRegression();
+        }
+
+        function addRandomNoise() {
+            for (let i = 0; i < 5; i++) {
+                points.push({
+                    x: mathMinX + 1 + Math.random() * (mathMaxX - 2),
+                    y: mathMinY + 1 + Math.random() * (mathMaxY - 2)
+                });
+            }
+            calculateRegression();
+        }
+
+
+        // --- Math Logic (Least Squares Regression) ---
+        function calculateRegression() {
+            const n = points.length;
+            document.getElementById('stat-n').innerText = n;
+
+            if (n < degree + 1) {
+                // Not enough points for this degree
+                coefficients = [];
+                updateMetricsDisplay(null, null, null);
+                draw();
+                return;
+            }
+
+            try {
+                // 1. Construct Matrices
+                // X matrix: [1, x, x^2, ..., x^d]
+                let X = [];
+                let Y = [];
+                for (let i = 0; i < n; i++) {
+                    let row = [];
+                    for (let d = 0; d <= degree; d++) {
+                        row.push(Math.pow(points[i].x, d));
+                    }
+                    X.push(row);
+                    Y.push([points[i].y]);
+                }
+
+                // 2. Solve beta = (X^T * X)^-1 * X^T * Y
+                const Xt = math.transpose(X);
+                let XtX = math.multiply(Xt, X);
+                
+                // Ridge regularization (add tiny value to diagonal) to prevent singular matrix errors 
+                // especially when points are co-linear or vertically stacked.
+                const lambda = 1e-9;
+                const identity = math.identity(degree + 1);
+                const regTerm = math.multiply(identity, lambda);
+                XtX = math.add(XtX, regTerm);
+
+                const XtX_inv = math.inv(XtX);
+                const XtY = math.multiply(Xt, Y);
+                const betaMatrix = math.multiply(XtX_inv, XtY);
+                
+                // Extract coefficients
+                coefficients = betaMatrix.map(row => row[0]); // [c, b, a, ...]
+
+                // 3. Calculate Metrics (MSE, R^2)
+                let ss_tot = 0;
+                let ss_res = 0;
+                let mean_y = 0;
+                
+                for (let i = 0; i < n; i++) { mean_y += points[i].y; }
+                mean_y /= n;
+
+                for (let i = 0; i < n; i++) {
+                    let y_pred = evaluatePoly(points[i].x, coefficients);
+                    let y_actual = points[i].y;
+                    
+                    ss_res += Math.pow(y_actual - y_pred, 2);
+                    ss_tot += Math.pow(y_actual - mean_y, 2);
+                }
+
+                let mse = ss_res / n;
+                let r2 = ss_tot === 0 ? 1 : 1 - (ss_res / ss_tot);
+                
+                // Clamp R2 to 0-1 for display cleanliness if things get weird
+                r2 = Math.max(0, Math.min(1, r2));
+
+                updateMetricsDisplay(coefficients, mse, r2);
+
+            } catch (error) {
+                console.warn("Regression calculation error:", error);
+                coefficients = [];
+                updateMetricsDisplay(null, null, null);
+            }
+
+            draw();
+        }
+
+        function evaluatePoly(x, coeffs) {
+            if (!coeffs || coeffs.length === 0) return 0;
+            let sum = 0;
+            for (let i = 0; i < coeffs.length; i++) {
+                sum += coeffs[i] * Math.pow(x, i);
+            }
+            return sum;
+        }
+
+        function updateMetricsDisplay(coeffs, mse, r2) {
+            const eqDisp = document.getElementById('equation-display');
+            const mseDisp = document.getElementById('stat-mse');
+            const r2Disp = document.getElementById('stat-r2');
+
+            if (!coeffs) {
+                eqDisp.innerHTML = '\\( \\text{Not enough data points for Degree } ' + degree + ' \\)';
+                mseDisp.innerText = 'N/A';
+                r2Disp.innerText = 'N/A';
+            } else {
+                mseDisp.innerText = mse.toFixed(4);
+                r2Disp.innerText = r2.toFixed(4);
+
+                // Build LaTeX Equation
+                let latex = 'y = ';
+                let terms = [];
+                
+                // Iterate backwards from highest degree to 0
+                for (let i = coeffs.length - 1; i >= 0; i--) {
+                    let c = coeffs[i];
+                    if (Math.abs(c) < 1e-4 && i !== 0) continue; // Skip very small terms
+                    
+                    let termStr = '';
+                    let cFixed = Math.abs(c).toFixed(3);
+                    
+                    if (i === coeffs.length - 1) {
+                        termStr += (c < 0 ? '-' : '') + cFixed;
+                    } else {
+                        termStr += (c < 0 ? ' - ' : ' + ') + cFixed;
+                    }
+
+                    if (i === 1) termStr += 'x';
+                    else if (i > 1) termStr += 'x^' + i;
+                    
+                    terms.push(termStr);
+                }
+                
+                latex += terms.join('');
+                if (terms.length === 0) latex += '0';
+
+                eqDisp.innerHTML = '\\( ' + latex + ' \\)';
+            }
+            
+            // Re-render MathJax
+            if (window.MathJax) {
+                MathJax.typesetPromise([eqDisp]).catch((err) => console.log(err));
+            }
+        }
+
+
+        // --- Rendering ---
+        function drawGrid() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Subdued grid for light canvas
+            ctx.strokeStyle = '#e2e8f0'; // slate-200
+            ctx.lineWidth = 1;
+            
+            const xSteps = 10;
+            const ySteps = 10;
+
+            for (let i = 0; i <= xSteps; i++) {
+                let x = (i / xSteps) * canvas.width;
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+            }
+            for (let i = 0; i <= ySteps; i++) {
+                let y = (i / ySteps) * canvas.height;
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+            }
+
+            // Axes
+            ctx.strokeStyle = '#94a3b8'; // slate-400
+            ctx.lineWidth = 2;
+            let originX = toCanvasX(0);
+            let originY = toCanvasY(0);
+
+            // X Axis
+            if (originY >= 0 && originY <= canvas.height) {
+                ctx.beginPath(); ctx.moveTo(0, originY); ctx.lineTo(canvas.width, originY); ctx.stroke();
+            }
+            // Y Axis
+            if (originX >= 0 && originX <= canvas.width) {
+                ctx.beginPath(); ctx.moveTo(originX, 0); ctx.lineTo(originX, canvas.height); ctx.stroke();
+            }
+        }
+
+        function drawCurve() {
+            if (!coefficients || coefficients.length === 0) return;
+
+            ctx.strokeStyle = '#4f46e5'; // Indigo-600
+            ctx.lineWidth = 3;
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+
+            const step = (mathMaxX - mathMinX) / 200; // Resolution
+            
+            let firstPoint = true;
+            for (let x = mathMinX; x <= mathMaxX; x += step) {
+                let y = evaluatePoly(x, coefficients);
+                
+                let cx = toCanvasX(x);
+                let cy = toCanvasY(y);
+
+                if (firstPoint) {
+                    ctx.moveTo(cx, cy);
+                    firstPoint = false;
+                } else {
+                    ctx.lineTo(cx, cy);
+                }
+            }
+            ctx.stroke();
+        }
+
+        function drawPoints() {
+            for (let i = 0; i < points.length; i++) {
+                let cx = toCanvasX(points[i].x);
+                let cy = toCanvasY(points[i].y);
+
+                ctx.fillStyle = '#f43f5e'; // Rose-500
+                ctx.beginPath();
+                ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Point border
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+        }
+
+        function draw() {
+            drawGrid();
+            drawCurve();
+            drawPoints();
+        }
+
+        // --- Init ---
+        window.onload = () => {
+            resizeCanvas();
+            setDegree(1); // Force UI update
+            addExampleTrend();
+        };
+    </script>
+</body>
+</html>

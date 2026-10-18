@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แบบจำลอง Quantum Wave Interference 2D & 3D</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js for 3D visualization -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls for camera control -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Chart.js for screen detector histogram/intensity distribution -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- MathJax for nice render of physics equations -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Sarabun', sans-serif;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 450px;
+            background-color: #030712;
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+        }
+
+        .glow-cyan {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.35);
+        }
+
+        .glow-purple {
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.35);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <!-- Header Section -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4 shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-cyan-500/10 rounded-xl border border-cyan-500/30 text-cyan-400">
+                    <i class="fa-solid fa-atom text-2xl animate-spin" style="animation-duration: 12s;"></i>
+                </div>
+                <div>
+                     <a href="../physics.html">
+                                            <h1 class="text-xl md:text-2xl font-bold bg-gradient-to-r from-cyan-400 via-teal-300 to-indigo-400 bg-clip-text text-transparent">
+                        แบบจำลอง Quantum Wave Interference (2D & 3D)
+                    </h1>
+                     </a>
+                    <p class="text-xs text-slate-400">
+                        การทดลองสลิตคู่ ฟังก์ชันคลื่น ($\psi$) และทวิภาคของคลื่น-อนุภาค
+                    </p>
+                </div>
+            </div>
+
+            <!-- Global View Controls -->
+            <div class="flex items-center gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
+                <button id="btn-mode-2d" onclick="switchDimensionMode('2D')" class="px-4 py-2 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 bg-cyan-600 text-white shadow">
+                    <i class="fa-solid fa-square"></i> มุมมอง 2D
+                </button>
+                <button id="btn-mode-3d" onclick="switchDimensionMode('3D')" class="px-4 py-2 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800">
+                    <i class="fa-solid fa-cube"></i> มุมมอง 3D
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="max-w-7xl w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+        
+        <!-- Left Panel: Simulation Controls & Quantum Parameters -->
+        <aside class="lg:col-span-4 flex flex-col gap-5">
+            
+            <!-- Mode Selector Box -->
+            <div class="glass-panel p-5 rounded-2xl border border-slate-800 flex flex-col gap-4">
+                <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-cyan-400"></i> โหมดการทดลอง
+                </h2>
+                
+                <div class="grid grid-cols-3 gap-2">
+                    <button id="mode-double" onclick="setSlitMode('double')" class="p-3 text-xs font-medium rounded-xl border transition-all flex flex-col items-center gap-2 bg-cyan-500/20 border-cyan-500 text-cyan-300">
+                        <i class="fa-solid fa-bars text-lg"></i>
+                        <span>สลิตคู่</span>
+                    </button>
+                    <button id="mode-single" onclick="setSlitMode('single')" class="p-3 text-xs font-medium rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 hover:text-slate-200 transition-all flex flex-col items-center gap-2">
+                        <i class="fa-solid fa-bars-staggered text-lg"></i>
+                        <span>สลิตเดี่ยว</span>
+                    </button>
+                    <button id="mode-particle" onclick="setSlitMode('particle')" class="p-3 text-xs font-medium rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 hover:text-slate-200 transition-all flex flex-col items-center gap-2">
+                        <i class="fa-solid fa-braille text-lg"></i>
+                        <span>ยิงทีละอนุภาค</span>
+                    </button>
+                </div>
+
+                <!-- Particle Type Selector -->
+                <div class="mt-2">
+                    <label class="text-xs text-slate-400 mb-1.5 block">อนุภาคควอนตัม (Quantum Particles):</label>
+                    <select id="particle-type-select" onchange="changeParticleType()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+                        <option value="electron">อิเล็กตรอน (Electron: $m_e = 9.11 \times 10^{-31}\text{ kg}$)</option>
+                        <option value="photon">โฟตอน / แสง (Photon)</option>
+                        <option value="neutron">นิวตรอน (Neutron: $m_n = 1.67 \times 10^{-27}\text{ kg}$)</option>
+                        <option value="custom">กำหนดเอง (Custom Particle)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Quantum Parameters (de Broglie Wavelength Controls) -->
+            <div class="glass-panel p-5 rounded-2xl border border-slate-800 flex flex-col gap-4">
+                <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                    <span class="flex items-center gap-2"><i class="fa-solid fa-wave-square text-cyan-400"></i> ความยาวคลื่นเดอเบรย ($\lambda = \frac{h}{p}$)</span>
+                </h2>
+
+                <!-- Momentum / Mass / Velocity Sliders -->
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-400">ความเร็วอนุภาค ($v$):</span>
+                            <span id="v-val" class="text-cyan-400 font-mono">1.00 × 10⁶ m/s</span>
+                        </div>
+                        <input type="range" id="v-slider" min="0.1" max="5.0" step="0.05" value="1.0" oninput="updateQuantumParameters()" class="w-full accent-cyan-500 bg-slate-800 rounded-lg h-1.5 cursor-pointer">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-400">มวลอนุภาค ($m$ relative):</span>
+                            <span id="m-val" class="text-cyan-400 font-mono">1.00 mₑ</span>
+                        </div>
+                        <input type="range" id="m-slider" min="0.1" max="10.0" step="0.1" value="1.0" oninput="updateQuantumParameters()" class="w-full accent-cyan-500 bg-slate-800 rounded-lg h-1.5 cursor-pointer">
+                    </div>
+
+                    <!-- Calculated De Broglie Display Box -->
+                    <div class="p-3 bg-slate-900/90 rounded-xl border border-cyan-500/20 text-xs space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">โมเมนตัม ($p = mv$):</span>
+                            <span id="p-calc" class="text-indigo-300 font-mono">9.11 × 10⁻²๕ kg·m/s</span>
+                        </div>
+                        <div class="flex justify-between pt-1 border-t border-slate-800">
+                            <span class="text-slate-300 font-medium">ความยาวคลื่น ($\lambda = \frac{h}{p}$):</span>
+                            <span id="lambda-calc" class="text-cyan-400 font-bold font-mono">0.727 nm</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slit Geometry Controls -->
+            <div class="glass-panel p-5 rounded-2xl border border-slate-800 flex flex-col gap-4">
+                <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-ruler-combined text-cyan-400"></i> เรขาคณิตของสลิต
+                </h2>
+
+                <div class="space-y-4">
+                    <div id="slit-distance-container">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-400">ระยะห่างระหว่างสลิต ($d$):</span>
+                            <span id="d-val" class="text-cyan-400 font-mono">20 nm</span>
+                        </div>
+                        <input type="range" id="d-slider" min="5" max="60" step="1" value="20" oninput="updateSlitGeometry()" class="w-full accent-cyan-500 bg-slate-800 rounded-lg h-1.5 cursor-pointer">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-400">ความกว้างของสลิต ($a$):</span>
+                            <span id="a-val" class="text-cyan-400 font-mono">4 nm</span>
+                        </div>
+                        <input type="range" id="a-slider" min="1" max="15" step="0.5" value="4" oninput="updateSlitGeometry()" class="w-full accent-cyan-500 bg-slate-800 rounded-lg h-1.5 cursor-pointer">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-400">อัตราการยิงอนุภาค / แอมพลิจูด:</span>
+                            <span id="rate-val" class="text-cyan-400 font-mono">ปานกลาง</span>
+                        </div>
+                        <input type="range" id="rate-slider" min="1" max="10" step="1" value="5" oninput="updateParticleRate()" class="w-full accent-cyan-500 bg-slate-800 rounded-lg h-1.5 cursor-pointer">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Controls & Clear -->
+            <div class="flex gap-3">
+                <button id="btn-toggle-sim" onclick="toggleSimulation()" class="flex-1 py-3 px-4 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-cyan-900/30">
+                    <i class="fa-solid fa-pause" id="sim-icon"></i>
+                    <span id="sim-btn-text">หยุดชั่วคราว</span>
+                </button>
+                <button onclick="clearDetector()" class="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition flex items-center justify-center gap-2 border border-slate-700">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>ล้างฉากรับ</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Right Visualizer Area -->
+        <section class="lg:col-span-8 flex flex-col gap-5">
+            
+            <!-- Main Interactive Display Container -->
+            <div class="glass-panel p-4 rounded-2xl border border-slate-800 flex flex-col gap-3">
+                
+                <div class="flex flex-wrap justify-between items-center gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-cyan-400 inline-block animate-pulse"></span>
+                        <h2 id="view-title" class="text-sm font-semibold text-slate-200">
+                            2D Wave Function Probability Density ($|\psi|^2$)
+                        </h2>
+                    </div>
+
+                    <div class="flex items-center gap-4 text-xs">
+                        <label class="flex items-center gap-1.5 text-slate-300 cursor-pointer">
+                            <input type="checkbox" id="chk-phase-color" onchange="togglePhaseColor()" checked class="rounded accent-cyan-500">
+                            <span>แสดงเฟสด้วยสี (Phase Mapping)</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 text-slate-300 cursor-pointer">
+                            <input type="checkbox" id="chk-show-particles" onchange="toggleParticleHits()" checked class="rounded accent-cyan-500">
+                            <span>แสดงการสะสมอนุภาค</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Canvas Visualizers -->
+                <div class="canvas-container relative flex items-center justify-center">
+                    <!-- 2D Canvas -->
+                    <canvas id="canvas-2d" class="w-full h-full block rounded-xl cursor-crosshair"></canvas>
+                    <!-- 3D Canvas Container -->
+                    <div id="container-3d" class="w-full h-full absolute inset-0 hidden rounded-xl"></div>
+
+                    <!-- Overlay Quantum State Indicator -->
+                    <div class="absolute top-3 left-3 pointer-events-none bg-slate-950/80 backdrop-filter blur p-3 rounded-xl border border-slate-800 text-[11px] font-mono space-y-1">
+                        <div class="text-slate-400">สถานะควอนตัม (Quantum State):</div>
+                        <div class="text-cyan-400">ψ(x,y,t) = A·eⁱ⁽ᵏʳ⁻ʷᵗ⁾</div>
+                        <div class="text-slate-300" id="particle-count-display">อนุภาคที่ตรวจวัดได้: 0</div>
+                    </div>
+                </div>
+
+                <!-- Detector Screen Intensity Distribution Graph (Chart.js) -->
+                <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-semibold text-slate-300 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-area text-cyan-400"></i>
+                            ฉากรับภาพ & กราฟความน่าจะเป็น (Probability Density $|\psi|^2$ on Detector Screen)
+                        </span>
+                        <span class="text-[10px] text-slate-400" id="equation-indicator">
+                            $I(\theta) = I_0 \cos^2\left(\frac{\pi d \sin\theta}{\lambda}\right) \text{sinc}^2\left(\frac{\pi a \sin\theta}{\lambda}\right)$
+                        </span>
+                    </div>
+                    <div class="h-28 w-full relative">
+                        <canvas id="detector-chart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Physics Information Card -->
+            <div class="glass-panel p-5 rounded-2xl border border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800">
+                    <div class="font-bold text-cyan-400 mb-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-water"></i> การแทรกสอด (Interference)
+                    </div>
+                    <p class="text-slate-400 leading-relaxed">
+                        เกิดจากการซ้อนทับกันของฟังก์ชันคลื่น ($\psi_1 + \psi_2$) เมื่อแถบสว่าง ($d \sin\theta = n\lambda$) แทนจุดที่มีโอกาสพบอนุภาคสูง และแถบมืดแทนโอกาสเป็นศูนย์
+                    </p>
+                </div>
+
+                <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800">
+                    <div class="font-bold text-indigo-400 mb-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-shapes"></i> ทวิภาคของคลื่น-อนุภาค
+                    </div>
+                    <p class="text-slate-400 leading-relaxed">
+                        อนุภาคควอนตัมเดินทางประหนึ่งคลื่นแห่งความน่าจะเป็น แต่เมื่อกระทบฉากรับ จะตรวจวัดได้เป็น "จุดอนุภาค" เดี่ยวๆ เสมอ
+                    </p>
+                </div>
+
+                <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800">
+                    <div class="font-bold text-teal-400 mb-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-square-root-variable"></i> ฟังก์ชันคลื่น ($\psi$)
+                    </div>
+                    <p class="text-slate-400 leading-relaxed">
+                        ความน่าจะเป็นในการพบอนุภาค ณ ตำแหน่ง $(x,y)$ จะแปรผันตรงกับกำลังสองของแอมพลิจูดความน่าจะเป็น ($P = |\psi|^2$)
+                    </p>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-3 px-4 text-center text-xs text-slate-500">
+        แบบจำลองการเรียนรู้ทางควอนตัมฟิสิกส์ (Quantum Wave Interference Simulation) • พัฒนาโดยอ้างอิงจาก PhET Interactive Simulations
+    </footer>
+
+    <!-- SIMULATION LOGIC SCRIPT -->
+    <script>
+        // Constants & Physics Parameters
+        const h = 6.626e-34; // Planck's constant J·s
+        const m_e = 9.109e-31; // Electron mass kg
+        const m_n = 1.675e-27; // Neutron mass kg
+
+        // State Variables
+        let dimensionMode = '2D'; // '2D' or '3D'
+        let slitMode = 'double'; // 'double', 'single', 'particle'
+        let particleType = 'electron';
+        
+        let velocity = 1.0e6; // m/s
+        let mass = m_e; // kg
+        let momentum = mass * velocity;
+        let lambda_deBroglie = h / momentum; // meters
+
+        // Slit geometry parameters (scaled for simulation grid)
+        let slitD = 20; // grid units
+        let slitA = 4;  // grid units
+        let firingRate = 5;
+        let isRunning = true;
+        let showPhaseColor = true;
+        let showParticles = true;
+
+        let totalParticleHits = 0;
+        let particleHitsArray = []; // Stores accumulated particle detector positions
+
+        // Canvas Setup (2D)
+        const canvas2D = document.getElementById('canvas-2d');
+        const ctx2D = canvas2D.getContext('2d');
+        let width2D = 0, height2D = 0;
+
+        // Detector Chart Setup
+        let detectorChart = null;
+        let chartData = new Array(100).fill(0);
+
+        // Three.js Setup (3D)
+        let scene, camera, renderer, controls;
+        let waveMesh3D, slitMesh3D, particleSystem3D;
+        let waveGeometry3D;
+        const gridX = 120, gridY = 80;
+
+        // Initialize Simulation on Load
+        window.onload = function() {
+            init2DCanvas();
+            initChart();
+            init3DScene();
+            updateQuantumParameters();
+            
+            // Start main animation loop
+            requestAnimationFrame(animLoop);
+        };
+
+        // Window Resize Listener
+        window.onresize = function() {
+            init2DCanvas();
+            if (renderer && camera) {
+                const container = document.getElementById('container-3d');
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }
+        };
+
+        // Initialize 2D Canvas Dimensions
+        function init2DCanvas() {
+            const rect = canvas2D.parentElement.getBoundingClientRect();
+            canvas2D.width = rect.width;
+            canvas2D.height = rect.height || 450;
+            width2D = canvas2D.width;
+            height2D = canvas2D.height;
+        }
+
+        // Initialize Detector Intensity Chart
+        function initChart() {
+            const ctx = document.getElementById('detector-chart').getContext('2d');
+            detectorChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 100}, (_, i) => i - 50),
+                    datasets: [
+                        {
+                            label: 'ทฤษฎี (|Ψ|² Theoretical)',
+                            data: new Array(100).fill(0),
+                            borderColor: 'rgba(6, 182, 212, 0.9)',
+                            borderWidth: 2,
+                            fill: false,
+                            pointRadius: 0,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'อนุภาคที่สะสม (Accumulated Hits)',
+                            data: new Array(100).fill(0),
+                            backgroundColor: 'rgba(168, 85, 247, 0.4)',
+                            borderColor: 'rgba(168, 85, 247, 0.8)',
+                            borderWidth: 1,
+                            fill: true,
+                            type: 'bar'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    scales: {
+                        x: { display: false },
+                        y: { 
+                            display: true,
+                            suggestedMax: 1.1,
+                            grid: { color: 'rgba(51, 65, 85, 0.3)' },
+                            ticks: { color: '#94a3b8', font: { size: 9 } }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: '#cbd5e1', font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize Three.js 3D View
+        function init3DScene() {
+            const container = document.getElementById('container-3d');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x030712);
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, -60, 50);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const pointLight = new THREE.PointLight(0x06b6d4, 1.5, 100);
+            pointLight.position.set(0, 0, 30);
+            scene.add(pointLight);
+
+            // 3D Wave Surface Wireframe Mesh
+            waveGeometry3D = new THREE.PlaneGeometry(80, 50, gridX - 1, gridY - 1);
+            const waveMaterial3D = new THREE.MeshPhongMaterial({
+                color: 0x06b6d4,
+                wireframe: true,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.85
+            });
+            waveMesh3D = new THREE.Mesh(waveGeometry3D, waveMaterial3D);
+            scene.add(waveMesh3D);
+
+            // Slit Wall Mesh in 3D
+            const slitGroup = new THREE.Group();
+            slitMesh3D = slitGroup;
+            scene.add(slitGroup);
+            build3DSlits();
+        }
+
+        // Build 3D Slit Geometry
+        function build3DSlits() {
+            if (!slitMesh3D) return;
+            // Clear existing
+            while (slitMesh3D.children.length > 0) {
+                slitMesh3D.remove(slitMesh3D.children[0]);
+            }
+
+            const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8, roughness: 0.2 });
+            const wallX = -10; // Position along wave propagation axis
+
+            if (slitMode === 'double') {
+                const halfD = slitD / 4;
+                const halfA = slitA / 4;
+
+                // Top block
+                const topBox = new THREE.Mesh(new THREE.BoxGeometry(2, 25 - (halfD + halfA), 8), wallMaterial);
+                topBox.position.set(wallX, 12.5 + (halfD + halfA)/2, 0);
+                
+                // Middle block
+                const midBox = new THREE.Mesh(new THREE.BoxGeometry(2, (halfD - halfA) * 2, 8), wallMaterial);
+                midBox.position.set(wallX, 0, 0);
+
+                // Bottom block
+                const botBox = new THREE.Mesh(new THREE.BoxGeometry(2, 25 - (halfD + halfA), 8), wallMaterial);
+                botBox.position.set(wallX, -12.5 - (halfD + halfA)/2, 0);
+
+                slitMesh3D.add(topBox, midBox, botBox);
+            } else {
+                // Single slit
+                const halfA = slitA / 4;
+                const topBox = new THREE.Mesh(new THREE.BoxGeometry(2, 25 - halfA, 8), wallMaterial);
+                topBox.position.set(wallX, 12.5 + halfA/2, 0);
+
+                const botBox = new THREE.Mesh(new THREE.BoxGeometry(2, 25 - halfA, 8), wallMaterial);
+                botBox.position.set(wallX, -12.5 - halfA/2, 0);
+
+                slitMesh3D.add(topBox, botBox);
+            }
+        }
+
+        // Swapping Modes
+        function switchDimensionMode(mode) {
+            dimensionMode = mode;
+            const btn2d = document.getElementById('btn-mode-2d');
+            const btn3d = document.getElementById('btn-mode-3d');
+            const c2d = document.getElementById('canvas-2d');
+            const c3d = document.getElementById('container-3d');
+            const title = document.getElementById('view-title');
+
+            if (mode === '2D') {
+                btn2d.className = "px-4 py-2 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 bg-cyan-600 text-white shadow";
+                btn3d.className = "px-4 py-2 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800";
+                c2d.classList.remove('hidden');
+                c3d.classList.add('hidden');
+                title.innerText = "2D Wave Function Probability Density (|Ψ|²)";
+            } else {
+                btn3d.className = "px-4 py-2 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 bg-cyan-600 text-white shadow";
+                btn2d.className = "px-4 py-2 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800";
+                c3d.classList.remove('hidden');
+                c2d.classList.add('hidden');
+                title.innerText = "3D Interactive Wave Field Surface & Detector";
+            }
+        }
+
+        function setSlitMode(mode) {
+            slitMode = mode;
+            document.querySelectorAll('#mode-double, #mode-single, #mode-particle').forEach(b => {
+                b.className = "p-3 text-xs font-medium rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 hover:text-slate-200 transition-all flex flex-col items-center gap-2";
+            });
+
+            const activeBtn = document.getElementById(`mode-${mode}`);
+            if (activeBtn) {
+                activeBtn.className = "p-3 text-xs font-medium rounded-xl border transition-all flex flex-col items-center gap-2 bg-cyan-500/20 border-cyan-500 text-cyan-300";
+            }
+
+            const slitDistContainer = document.getElementById('slit-distance-container');
+            if (mode === 'single') {
+                slitDistContainer.classList.add('opacity-40', 'pointer-events-none');
+            } else {
+                slitDistContainer.classList.remove('opacity-40', 'pointer-events-none');
+            }
+
+            build3DSlits();
+            clearDetector();
+            updateTheoreticalChart();
+        }
+
+        function changeParticleType() {
+            const sel = document.getElementById('particle-type-select').value;
+            particleType = sel;
+            const mSlider = document.getElementById('m-slider');
+
+            if (sel === 'electron') {
+                mass = m_e;
+                mSlider.value = 1.0;
+            } else if (sel === 'photon') {
+                // Effective mass representation for photon
+                mass = 1e-36;
+                mSlider.value = 0.1;
+            } else if (sel === 'neutron') {
+                mass = m_n;
+                mSlider.value = 5.0;
+            }
+            updateQuantumParameters();
+        }
+
+        function updateQuantumParameters() {
+            const vRel = parseFloat(document.getElementById('v-slider').value);
+            const mRel = parseFloat(document.getElementById('m-slider').value);
+
+            velocity = vRel * 1.0e6; // m/s
+            if (particleType === 'electron') mass = mRel * m_e;
+            else if (particleType === 'neutron') mass = mRel * m_n;
+
+            momentum = mass * velocity;
+            lambda_deBroglie = h / momentum; // meters
+
+            // Update UI Labels
+            document.getElementById('v-val').innerText = `${vRel.toFixed(2)} × 10⁶ m/s`;
+            document.getElementById('m-val').innerText = `${mRel.toFixed(2)} m_rel`;
+            document.getElementById('p-calc').innerText = `${momentum.toExponential(2)} kg·m/s`;
+            
+            // De Broglie wavelength formatting in nanometers
+            const nmVal = (lambda_deBroglie * 1e9).toFixed(3);
+            document.getElementById('lambda-calc').innerText = `${nmVal} nm`;
+
+            updateTheoreticalChart();
+        }
+
+        function updateSlitGeometry() {
+            slitD = parseFloat(document.getElementById('d-slider').value);
+            slitA = parseFloat(document.getElementById('a-slider').value);
+
+            document.getElementById('d-val').innerText = `${slitD} nm`;
+            document.getElementById('a-val').innerText = `${slitA} nm`;
+
+            build3DSlits();
+            updateTheoreticalChart();
+        }
+
+        function updateParticleRate() {
+            firingRate = parseInt(document.getElementById('rate-slider').value);
+            const rateLabels = ["ต่ำมาก", "ต่ำ", "ปานกลาง-ต่ำ", "ปานกลาง", "สูง", "สูงมาก", "เร็วมาก", "ต่อเนื่อง", "ความถี่สูง", "สูงสุด"];
+            document.getElementById('rate-val').innerText = rateLabels[firingRate - 1];
+        }
+
+        function toggleSimulation() {
+            isRunning = !isRunning;
+            const icon = document.getElementById('sim-icon');
+            const text = document.getElementById('sim-btn-text');
+            if (isRunning) {
+                icon.className = "fa-solid fa-pause";
+                text.innerText = "หยุดชั่วคราว";
+            } else {
+                icon.className = "fa-solid fa-play";
+                text.innerText = "เริ่มทำงาน";
+            }
+        }
+
+        function togglePhaseColor() {
+            showPhaseColor = document.getElementById('chk-phase-color').checked;
+        }
+
+        function toggleParticleHits() {
+            showParticles = document.getElementById('chk-show-particles').checked;
+        }
+
+        function clearDetector() {
+            totalParticleHits = 0;
+            particleHitsArray = [];
+            chartData = new Array(100).fill(0);
+            document.getElementById('particle-count-display').innerText = `อนุภาคที่ตรวจวัดได้: 0`;
+            if (detectorChart) {
+                detectorChart.data.datasets[1].data = chartData;
+                detectorChart.update();
+            }
+        }
+
+        // Theoretical Calculation of Double/Single Slit Intensity Distribution
+        function updateTheoreticalChart() {
+            if (!detectorChart) return;
+
+            const simLambda = lambda_deBroglie * 1e9 * 25; // Scaled for simulation canvas
+            const simD = slitD;
+            const simA = slitA;
+
+            const theoreticalData = [];
+
+            for (let i = 0; i < 100; i++) {
+                const y = (i - 50) * 1.5; // angle/position mapping
+                const theta = Math.atan(y / 150);
+
+                let intensity = 1.0;
+
+                // Single Slit Diffraction Envelope
+                const beta = (Math.PI * simA * Math.sin(theta)) / (simLambda || 1);
+                const diff = (Math.abs(beta) < 1e-4) ? 1.0 : Math.pow(Math.sin(beta) / beta, 2);
+
+                if (slitMode === 'double' || slitMode === 'particle') {
+                    // Double Slit Interference
+                    const alpha = (Math.PI * simD * Math.sin(theta)) / (simLambda || 1);
+                    const interf = Math.pow(Math.cos(alpha), 2);
+                    intensity = interf * diff;
+                } else {
+                    intensity = diff;
+                }
+
+                theoreticalData.push(intensity);
+            }
+
+            detectorChart.data.datasets[0].data = theoreticalData;
+            detectorChart.update();
+        }
+
+        // Quantum Particle Emission Simulator (Quantum Wave-Particle Duality)
+        function emitQuantumParticle() {
+            if (!isRunning) return;
+
+            const simLambda = lambda_deBroglie * 1e9 * 25;
+            const simD = slitD;
+            const simA = slitA;
+
+            // Sample landing spot on detector screen using Monte Carlo acceptance-rejection based on theoretical probability
+            let sampled = false;
+            let attempts = 0;
+            let sampledY = 0;
+
+            while (!sampled && attempts < 100) {
+                attempts++;
+                const testY = (Math.random() - 0.5) * 100; // Screen bounds
+                const theta = Math.atan(testY / 150);
+
+                const beta = (Math.PI * simA * Math.sin(theta)) / (simLambda || 1);
+                const diff = (Math.abs(beta) < 1e-4) ? 1.0 : Math.pow(Math.sin(beta) / beta, 2);
+
+                let prob = diff;
+                if (slitMode === 'double' || slitMode === 'particle') {
+                    const alpha = (Math.PI * simD * Math.sin(theta)) / (simLambda || 1);
+                    prob *= Math.pow(Math.cos(alpha), 2);
+                }
+
+                if (Math.random() < prob) {
+                    sampledY = testY;
+                    sampled = true;
+                }
+            }
+
+            if (sampled) {
+                totalParticleHits++;
+                particleHitsArray.push({ y: sampledY, alpha: 1.0 });
+
+                // Update histogram data
+                const chartIdx = Math.min(99, Math.max(0, Math.floor(((sampledY + 50) / 100) * 100)));
+                chartData[chartIdx] += 1;
+
+                // Normalize chart for bar rendering
+                const maxVal = Math.max(...chartData);
+                const normalizedChart = chartData.map(v => v / (maxVal || 1));
+
+                detectorChart.data.datasets[1].data = normalizedChart;
+                detectorChart.update();
+
+                document.getElementById('particle-count-display').innerText = `อนุภาคที่ตรวจวัดได้: ${totalParticleHits}`;
+            }
+        }
+
+        // Main Physics & Render Animation Loop
+        let animTime = 0;
+        function animLoop() {
+            requestAnimationFrame(animLoop);
+
+            if (isRunning) {
+                animTime += 0.08;
+                // Emit particles periodically based on rate slider
+                if (Math.random() < (firingRate * 0.15)) {
+                    emitQuantumParticle();
+                }
+            }
+
+            if (dimensionMode === '2D') {
+                render2DWave();
+            } else {
+                render3DWave();
+            }
+        }
+
+        // Render 2D Wave Interference Map
+        function render2DWave() {
+            ctx2D.fillStyle = '#030712';
+            ctx2D.fillRect(0, 0, width2D, height2D);
+
+            const barrierX = width2D * 0.3;
+            const detectorX = width2D * 0.88;
+            const centerY = height2D / 2;
+
+            const k = (2 * Math.PI) / (lambda_deBroglie * 1e9 * 2.5); // Wave number
+            const w = 2.0; // Angular frequency
+
+            // Draw wavefield grid
+            const step = 6;
+            for (let x = 0; x < detectorX; x += step) {
+                for (let y = 0; y < height2D; y += step) {
+                    let psiReal = 0;
+                    let psiImag = 0;
+
+                    if (x < barrierX) {
+                        // Incoming plane wave / wave packet
+                        const r = x;
+                        const phase = k * r - animTime * w;
+                        psiReal = Math.cos(phase);
+                        psiImag = Math.sin(phase);
+                    } else {
+                        // Huygens-Fresnel secondary wave sources from slits
+                        const slits = [];
+                        if (slitMode === 'double' || slitMode === 'particle') {
+                            slits.push(centerY - slitD * 1.5);
+                            slits.push(centerY + slitD * 1.5);
+                        } else {
+                            slits.push(centerY);
+                        }
+
+                        slits.forEach(sY => {
+                            const dx = x - barrierX;
+                            const dy = y - sY;
+                            const r = Math.sqrt(dx * dx + dy * dy);
+                            if (r > 0) {
+                                const phase = k * r - animTime * w;
+                                const factor = 1 / Math.sqrt(r + 5); // Circular decay
+                                psiReal += Math.cos(phase) * factor * 8;
+                                psiImag += Math.sin(phase) * factor * 8;
+                            }
+                        });
+                    }
+
+                    const probDensity = psiReal * psiReal + psiImag * psiImag;
+                    const phaseAngle = Math.atan2(psiImag, psiReal);
+
+                    let color;
+                    if (showPhaseColor) {
+                        // Phase-to-color mapping (Hue based on complex wave phase)
+                        const hue = ((phaseAngle + Math.PI) / (2 * Math.PI)) * 360;
+                        const brightness = Math.min(100, probDensity * 70);
+                        color = `hsl(${hue}, 80%, ${brightness}%)`;
+                    } else {
+                        // Cyan intensity density map
+                        const intensity = Math.min(255, Math.floor(probDensity * 180));
+                        color = `rgb(0, ${intensity}, ${Math.floor(intensity * 0.9)})`;
+                    }
+
+                    ctx2D.fillStyle = color;
+                    ctx2D.fillRect(x, y, step, step);
+                }
+            }
+
+            // Draw Slit Wall (Barrier)
+            ctx2D.fillStyle = '#475569';
+            ctx2D.fillRect(barrierX - 4, 0, 8, height2D);
+
+            // Open Slit Gaps
+            ctx2D.fillStyle = '#030712';
+            if (slitMode === 'double' || slitMode === 'particle') {
+                ctx2D.fillRect(barrierX - 5, centerY - slitD * 1.5 - slitA, 10, slitA * 2);
+                ctx2D.fillRect(barrierX - 5, centerY + slitD * 1.5 - slitA, 10, slitA * 2);
+            } else {
+                ctx2D.fillRect(barrierX - 5, centerY - slitA * 1.5, 10, slitA * 3);
+            }
+
+            // Draw Detector Screen Wall
+            ctx2D.fillStyle = '#334155';
+            ctx2D.fillRect(detectorX, 0, 6, height2D);
+
+            // Render Particle Hit Dots on Screen
+            if (showParticles) {
+                particleHitsArray.forEach(pt => {
+                    const py = centerY + pt.y * (height2D / 120);
+                    ctx2D.beginPath();
+                    ctx2D.arc(detectorX + 3, py, 2.5, 0, Math.PI * 2);
+                    ctx2D.fillStyle = '#a855f7';
+                    ctx2D.shadowColor = '#c084fc';
+                    ctx2D.shadowBlur = 8;
+                    ctx2D.fill();
+                    ctx2D.shadowBlur = 0;
+                });
+            }
+        }
+
+        // Render 3D Wave Surface using Three.js
+        function render3DWave() {
+            if (!waveMesh3D || !controls) return;
+
+            controls.update();
+
+            const pos = waveMesh3D.geometry.attributes.position;
+            const k = (2 * Math.PI) / (lambda_deBroglie * 1e9 * 2.5);
+            const w = 2.0;
+
+            for (let i = 0; i < gridX; i++) {
+                for (let j = 0; j < gridY; j++) {
+                    const idx = i * gridY + j;
+                    const x = (i / gridX) * 80 - 40;
+                    const y = (j / gridY) * 50 - 25;
+
+                    let z = 0;
+                    if (x < -10) {
+                        // Incoming plane wave
+                        z = Math.sin(k * (x + 40) - animTime * w) * 2;
+                    } else {
+                        // Diffracted waves from slits
+                        const slits = [];
+                        if (slitMode === 'double' || slitMode === 'particle') {
+                            slits.push(-slitD / 4);
+                            slits.push(slitD / 4);
+                        } else {
+                            slits.push(0);
+                        }
+
+                        slits.forEach(sY => {
+                            const dx = x - (-10);
+                            const dy = y - sY;
+                            const r = Math.sqrt(dx * dx + dy * dy);
+                            if (r > 0) {
+                                z += (Math.sin(k * r - animTime * w) / Math.sqrt(r + 1)) * 4;
+                            }
+                        });
+                    }
+
+                    pos.setZ(idx, z);
+                }
+            }
+
+            pos.needsUpdate = true;
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>

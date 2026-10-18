@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Measurement: การวัดระดับควอนตัม</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js for 3D visualization -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- MathJax for physics equations -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+        
+        * { font-family: 'Sarabun', sans-serif; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        body {
+            background-color: #0b1121;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,0.1) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,0.1) 0, transparent 50%);
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .canvas-container {
+            width: 100%;
+            height: 100%;
+            min-height: 350px;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .btn-action {
+            transition: all 0.2s ease;
+        }
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .btn-action:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="text-slate-200 min-h-screen flex flex-col overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="glass-panel border-b border-slate-800 p-4 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-indigo-500/10 rounded-xl border border-indigo-500/30 text-indigo-400">
+                    <i class="fa-solid fa-atom text-2xl"></i>
+                </div>
+                <div>
+<a href="../physics.html">
+                        <h1 class="text-xl md:text-2xl font-bold bg-gradient-to-r from-indigo-400 via-purple-300 to-cyan-400 bg-clip-text text-transparent">
+                        Quantum Measurement (การวัดระดับควอนตัม)
+                    </h1>
+</a>
+                    <p class="text-xs text-slate-400">
+                        อนุภาคสปินเลขครึ่งจำนวนเต็ม (Spin-1/2 Particle)
+                    </p>
+                </div>
+            </div>
+            <div class="text-sm px-4 py-2 rounded-lg bg-slate-900 border border-slate-700 font-mono text-cyan-400 shadow-inner">
+                สถานะปัจจุบัน: <span id="status-indicator">Superposition</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl w-full mx-auto p-4 flex flex-col gap-6 flex-grow">
+        
+        <!-- Top Row: Controls & 3D & Stats -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left Panel: Controls & Stats -->
+            <div class="lg:col-span-4 flex flex-col gap-5">
+                
+                <!-- Measurement Controls -->
+                <div class="glass-panel p-5 rounded-2xl flex flex-col gap-4">
+                    <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-microscope text-purple-400"></i> ควบคุมการตรวจวัด (Measurement)
+                    </h2>
+
+                    <div class="flex flex-col gap-3">
+                        <button onclick="measure(1)" class="btn-action w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-sm border border-purple-500/50 flex justify-between items-center shadow-lg shadow-purple-900/20">
+                            <span>Measure (1 Shot)</span>
+                            <i class="fa-solid fa-bolt"></i>
+                        </button>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="measure(10)" class="btn-action py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-semibold text-sm flex justify-center items-center gap-2">
+                                + 10 Shots
+                            </button>
+                            <button onclick="measure(100)" class="btn-action py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-semibold text-sm flex justify-center items-center gap-2">
+                                + 100 Shots
+                            </button>
+                        </div>
+                    </div>
+
+                    <button onclick="resetSimulation()" class="btn-action mt-2 w-full py-2.5 px-4 rounded-xl border border-red-500/30 bg-red-900/20 hover:bg-red-900/40 text-red-400 font-semibold text-sm flex justify-center items-center gap-2 transition">
+                        <i class="fa-solid fa-rotate-right"></i> Reset Simulation
+                    </button>
+                </div>
+
+                <!-- Statistics -->
+                <div class="glass-panel p-5 rounded-2xl flex flex-col gap-3">
+                    <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                        สถิติการวัดผล (Statistics)
+                    </h2>
+                    <div class="flex justify-between items-center text-sm p-2 rounded-lg bg-slate-900/50">
+                        <span class="text-slate-400">จำนวนการวัดรวม (Total):</span>
+                        <span id="stat-total" class="font-mono font-bold text-white text-lg">0</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm p-2 rounded-lg bg-slate-900/50 border-l-2 border-cyan-500">
+                        <span class="text-slate-400">สปินขึ้น / หัว (|0⟩):</span>
+                        <span id="stat-heads" class="font-mono font-bold text-cyan-400">0</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm p-2 rounded-lg bg-slate-900/50 border-l-2 border-pink-500">
+                        <span class="text-slate-400">สปินลง / ก้อย (|1⟩):</span>
+                        <span id="stat-tails" class="font-mono font-bold text-pink-400">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: 3D Visualizer & Chart -->
+            <div class="lg:col-span-8 flex flex-col gap-5">
+                
+                <!-- 3D Visualization -->
+                <div class="glass-panel p-1 rounded-2xl h-80 relative flex items-center justify-center bg-slate-950">
+                    <div id="container-3d" class="canvas-container cursor-move"></div>
+                    <div class="absolute top-4 left-4 pointer-events-none bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-700 text-xs text-slate-300">
+                        <i class="fa-solid fa-cube text-cyan-400 mr-1"></i> Spin-1/2 Particle Visualizer
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Chart Section (Full Width) -->
+        <div class="glass-panel p-5 rounded-2xl w-full">
+            <h2 class="text-sm font-semibold text-slate-300 flex items-center gap-2 mb-4">
+                <i class="fa-solid fa-chart-line text-purple-400"></i> กราฟเปรียบเทียบเชิงสถิติ (Statistical Measurement Evolution)
+            </h2>
+            <div class="w-full h-[350px] relative bg-slate-50/5 rounded-xl p-4 border border-slate-700/50">
+                <canvas id="convergenceChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Educational Info Panel -->
+        <div class="glass-panel p-6 rounded-2xl flex flex-col gap-5">
+            <h2 class="text-lg font-bold text-white border-b border-slate-700 pb-3">
+                กลไกหลักของการวัดทางควอนตัม
+            </h2>
+            <p class="text-sm text-slate-400 mb-2">เมื่อคุณทำการกดปุ่มวัดผล (Measure) ระบบควอนตัมจะเกิดปรากฏการณ์สำคัญ 3 ประการดังนี้:</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                <!-- Info 1 -->
+                <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                    <h3 class="font-bold text-indigo-400 mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-compress text-lg"></i> Wavefunction Collapse
+                    </h3>
+                    <p class="text-slate-300 leading-relaxed font-light">
+                        (การยุบตัวของฟังก์ชันคลื่น): ก่อนการวัด ระบบจะอยู่ในสถานะซ้อนทับ (Superposition) เช่น เป็นทั้งหัวและก้อยพร้อมกัน <span class="font-mono text-xs bg-slate-800 px-1 rounded text-white">(|0⟩ + |1⟩)/√2</span> แต่ทันทีที่มีการตรวจวัด ฟังก์ชันคลื่นจะ "ยุบตัว" ทันที สุ่มเลือกสถานะจริงเพียงหนึ่งเดียว (|0⟩ หรือ |1⟩)
+                    </p>
+                </div>
+
+                <!-- Info 2 -->
+                <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                    <h3 class="font-bold text-pink-400 mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-scale-balanced text-lg"></i> Born's Rule
+                    </h3>
+                    <p class="text-slate-300 leading-relaxed font-light">
+                        (กฎของบอร์น): เป็นกฎที่ใช้คำนวณว่าระบบจะยุบตัวไปเป็นสถานะใดด้วยความน่าจะเป็นเท่าไหร่ โดยแอมพลิจูดความน่าจะเป็น (Probability Amplitude) จะถูกยกกำลังสอง ดังที่เห็นบนหน้าจอของคุณว่า ค่าความน่าจะเป็นทางทฤษฎีคือ 50% เท่ากันทั้งสองฝั่ง
+                    </p>
+                </div>
+
+                <!-- Info 3 -->
+                <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                    <h3 class="font-bold text-amber-400 mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-right-long text-lg"></i> Irreversibility
+                    </h3>
+                    <p class="text-slate-300 leading-relaxed font-light">
+                        (การผันกลับไม่ได้): เมื่อวัดผลแล้ว คิวบิตจะสูญเสียความเป็นควอนตัม (Decoherence) และค้างอยู่ที่สถานะนั้น ข้อมูลดั้งเดิมก่อนหน้าจะสูญหายไปทันที ไม่สามารถย้อนกลับไปสู่สภาวะซ้อนทับเดิมได้ด้วยตัวเอง
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Simulation Script -->
+    <script>
+        // --- State Variables ---
+        let totalShots = 0;
+        let headsCount = 0; // |0> (Spin Up)
+        let tailsCount = 0; // |1> (Spin Down)
+        let currentState = 'superposition'; // 'superposition', 'up', 'down'
+        
+        let chartDataPoints = []; // {x: total, y: percentage}
+
+        // --- Three.js Setup ---
+        let scene, camera, renderer, controls;
+        let particleGroup;
+        let arrowUp, arrowDown;
+        let coreSphere, glowSphere;
+        let animationId;
+        let time = 0;
+
+        function initThreeJS() {
+            const container = document.getElementById('container-3d');
+            scene = new THREE.Scene();
+            // Background is transparent to blend with CSS
+            
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 0, 8);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.enablePan = false;
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+            const pointLight = new THREE.PointLight(0xffffff, 1);
+            pointLight.position.set(5, 5, 5);
+            scene.add(pointLight);
+
+            // Particle Group
+            particleGroup = new THREE.Group();
+            scene.add(particleGroup);
+
+            // Core Sphere (Nucleus/Electron body)
+            const sphereGeo = new THREE.SphereGeometry(0.5, 32, 32);
+            const sphereMat = new THREE.MeshPhysicalMaterial({
+                color: 0x8b5cf6,
+                metalness: 0.5,
+                roughness: 0.2,
+                clearcoat: 1.0,
+                emissive: 0x4c1d95,
+                emissiveIntensity: 0.5
+            });
+            coreSphere = new THREE.Mesh(sphereGeo, sphereMat);
+            particleGroup.add(coreSphere);
+
+            // Glow Sphere (Superposition Cloud)
+            const glowGeo = new THREE.SphereGeometry(0.7, 32, 32);
+            const glowMat = new THREE.MeshBasicMaterial({
+                color: 0xa855f7,
+                transparent: true,
+                opacity: 0.3,
+                blending: THREE.AdditiveBlending
+            });
+            glowSphere = new THREE.Mesh(glowGeo, glowMat);
+            particleGroup.add(glowSphere);
+
+            // Custom Arrows for Spin states
+            arrowUp = createArrow(0x06b6d4, true); // Cyan for Up (|0>)
+            arrowDown = createArrow(0xec4899, false); // Pink for Down (|1>)
+            particleGroup.add(arrowUp);
+            particleGroup.add(arrowDown);
+
+            update3DState();
+            animate3D();
+        }
+
+        function createArrow(colorHex, isUp) {
+            const group = new THREE.Group();
+            const material = new THREE.MeshPhongMaterial({
+                color: colorHex,
+                emissive: colorHex,
+                emissiveIntensity: 0.4,
+                transparent: true,
+                opacity: 0.6
+            });
+
+            // Shaft
+            const cylinderGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.5, 16);
+            const cylinder = new THREE.Mesh(cylinderGeo, material);
+            cylinder.position.y = isUp ? 0.75 : -0.75;
+
+            // Head
+            const coneGeo = new THREE.ConeGeometry(0.25, 0.5, 16);
+            const cone = new THREE.Mesh(coneGeo, material);
+            cone.position.y = isUp ? 1.75 : -1.75;
+            if (!isUp) cone.rotation.z = Math.PI; // point down
+
+            group.add(cylinder);
+            group.add(cone);
+            
+            // Store material reference to easily change opacity later
+            group.userData.material = material;
+            return group;
+        }
+
+        function update3DState() {
+            if (currentState === 'superposition') {
+                // Both visible, semi-transparent, glow is active
+                arrowUp.visible = true;
+                arrowDown.visible = true;
+                arrowUp.userData.material.opacity = 0.5;
+                arrowDown.userData.material.opacity = 0.5;
+                arrowUp.userData.material.emissiveIntensity = 0.4;
+                arrowDown.userData.material.emissiveIntensity = 0.4;
+                glowSphere.visible = true;
+            } else if (currentState === 'up') {
+                arrowUp.visible = true;
+                arrowDown.visible = false;
+                arrowUp.userData.material.opacity = 1.0;
+                arrowUp.userData.material.emissiveIntensity = 0.8;
+                glowSphere.visible = false;
+            } else if (currentState === 'down') {
+                arrowUp.visible = false;
+                arrowDown.visible = true;
+                arrowDown.userData.material.opacity = 1.0;
+                arrowDown.userData.material.emissiveIntensity = 0.8;
+                glowSphere.visible = false;
+            }
+        }
+
+        function animate3D() {
+            animationId = requestAnimationFrame(animate3D);
+            time += 0.05;
+
+            if (currentState === 'superposition') {
+                // Gentle floating & pulsing
+                particleGroup.position.y = Math.sin(time * 0.5) * 0.2;
+                glowSphere.scale.setScalar(1 + Math.sin(time * 2) * 0.1);
+                coreSphere.rotation.y += 0.02;
+            } else {
+                // Static, slightly drifting when collapsed
+                particleGroup.position.y = THREE.MathUtils.lerp(particleGroup.position.y, 0, 0.1);
+                coreSphere.rotation.y += 0.005;
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.onresize = () => {
+            if(camera && renderer) {
+                const container = document.getElementById('container-3d');
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }
+        };
+
+        // --- Chart.js Setup ---
+        let convergenceChart;
+
+        function initChart() {
+            const ctx = document.getElementById('convergenceChart').getContext('2d');
+            
+            Chart.defaults.color = '#94a3b8';
+            Chart.defaults.font.family = 'Sarabun';
+
+            convergenceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Actual Measurement Ratio',
+                            data: chartDataPoints,
+                            borderColor: '#8b5cf6', // Solid purple
+                            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                            borderWidth: 2,
+                            pointRadius: 0, // hide dots for cleaner line
+                            pointHitRadius: 5,
+                            fill: true,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Theoretical Expectation (50%)',
+                            // We will dynamically add start and end points for this dashed line based on data
+                            data: [], 
+                            borderColor: '#f43f5e', // Rose/Red
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 0 // Disable animation for performance during bulk updates
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            title: { display: true, text: 'Number of Shots (Total Measurements)' },
+                            grid: { color: 'rgba(51, 65, 85, 0.3)' },
+                            min: 0
+                        },
+                        y: {
+                            title: { display: true, text: 'Percentage of Heads (|0⟩) (%)' },
+                            min: 0,
+                            max: 100,
+                            grid: { color: 'rgba(51, 65, 85, 0.3)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'top', labels: { color: '#e2e8f0' } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toFixed(2) + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChart() {
+            // Update theoretical line to stretch across current data range
+            const maxShots = Math.max(10, totalShots);
+            convergenceChart.data.datasets[1].data = [
+                {x: 0, y: 50},
+                {x: maxShots, y: 50}
+            ];
+            
+            convergenceChart.options.scales.x.max = maxShots;
+            convergenceChart.update();
+        }
+
+
+        // --- Simulation Logic ---
+
+        function measure(shots) {
+            // Simulate the shots
+            for (let i = 0; i < shots; i++) {
+                totalShots++;
+                
+                // Quantum random collapse (50/50)
+                const isHeads = Math.random() < 0.5;
+                if (isHeads) {
+                    headsCount++;
+                    if(i === shots - 1) currentState = 'up'; // Only visually show the last shot's result
+                } else {
+                    tailsCount++;
+                    if(i === shots - 1) currentState = 'down';
+                }
+
+                // Record data point for chart
+                const percentage = (headsCount / totalShots) * 100;
+                chartDataPoints.push({ x: totalShots, y: percentage });
+            }
+
+            // Update DOM Stats
+            document.getElementById('stat-total').innerText = totalShots;
+            document.getElementById('stat-heads').innerText = headsCount;
+            document.getElementById('stat-tails').innerText = tailsCount;
+
+            // Update Status Indicator
+            const indicator = document.getElementById('status-indicator');
+            if (currentState === 'up') {
+                indicator.innerHTML = 'Collapsed to |0⟩ (Spin Up)';
+                indicator.className = 'text-cyan-400 font-bold';
+            } else {
+                indicator.innerHTML = 'Collapsed to |1⟩ (Spin Down)';
+                indicator.className = 'text-pink-400 font-bold';
+            }
+
+            // Trigger Visual Updates
+            update3DState();
+            updateChart();
+            
+            // Auto-revert back to superposition after a short delay (if doing single shots mostly)
+            // But to demonstrate irreversibility, we'll keep it collapsed until they hit a button again.
+            // Actually, for multiple shots, the act of "Measuring" implies re-preparing and measuring.
+            // Let's just leave it in the collapsed state of the last particle.
+        }
+
+        function resetSimulation() {
+            totalShots = 0;
+            headsCount = 0;
+            tailsCount = 0;
+            currentState = 'superposition';
+            chartDataPoints.length = 0; // Clear array
+
+            document.getElementById('stat-total').innerText = '0';
+            document.getElementById('stat-heads').innerText = '0';
+            document.getElementById('stat-tails').innerText = '0';
+            
+            const indicator = document.getElementById('status-indicator');
+            indicator.innerHTML = 'Superposition (|0⟩ + |1⟩)/√2';
+            indicator.className = 'text-purple-400 animate-pulse';
+
+            update3DState();
+            updateChart();
+        }
+
+        // Initialize on Load
+        window.onload = () => {
+            initThreeJS();
+            initChart();
+            resetSimulation(); // Ensure everything is 0 and synced
+        };
+
+    </script>
+</body>
+</html>

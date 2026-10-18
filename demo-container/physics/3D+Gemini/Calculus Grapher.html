@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculus Grapher | แบบจำลองแคลคูลัส (อนุพันธ์ & อินทิกรัล)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- MathJax for rendering math equations -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+        
+        * { 
+            font-family: 'Sarabun', sans-serif; 
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #0f172a; /* slate-900 */
+            color: #f8fafc; /* slate-50 */
+            overflow-x: hidden;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7); /* slate-800 with opacity */
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(71, 85, 105, 0.5); /* slate-600 */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 180px;
+            background-color: #020617; /* slate-950 */
+            border-radius: 0.75rem;
+            overflow: hidden;
+            border: 1px solid #334155;
+            cursor: crosshair;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Canvas overlays for labels */
+        .graph-label {
+            position: absolute;
+            top: 8px;
+            left: 12px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            letter-spacing: 0.05em;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+        }
+
+        .btn-action {
+            transition: all 0.2s ease;
+        }
+        .btn-action:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+        .btn-action:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- Header -->
+    <header class="glass-panel sticky top-0 z-50 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-4">
+            <div class="p-3 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl shadow-lg shadow-cyan-500/30">
+                <i class="fa-solid fa-chart-line text-xl text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400">
+                    Calculus Grapher
+                </h1>
+                <p class="text-xs md:text-sm text-slate-400">
+                    แบบจำลอง Interactive สำหรับอนุพันธ์ (Derivative) และอินทิกรัล (Integral)
+                </p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="smoothFunction()" class="btn-action px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium rounded-lg border border-slate-600 flex items-center gap-2">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> ปรับเส้นให้เรียบ (Smooth)
+            </button>
+            <button onclick="clearGraph()" class="btn-action px-4 py-2 bg-red-900/40 hover:bg-red-900/60 text-red-400 text-sm font-medium rounded-lg border border-red-800/50 flex items-center gap-2">
+                <i class="fa-solid fa-trash-can"></i> ล้างกราฟ (Clear)
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow p-4 md:p-6 flex flex-col lg:flex-row gap-6 max-w-[1600px] mx-auto w-full">
+        
+        <!-- Left Sidebar: Controls & Presets -->
+        <aside class="w-full lg:w-72 flex flex-col gap-6 shrink-0">
+            
+            <!-- Instructions -->
+            <div class="glass-panel p-5 rounded-2xl">
+                <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-hand-pointer text-cyan-400"></i> วิธีใช้งาน
+                </h2>
+                <ul class="text-sm text-slate-400 space-y-2 list-disc pl-4">
+                    <li>ใช้เมาส์ <strong>คลิกและลาก</strong> บนกราฟ <span class="text-cyan-400 font-mono">f(x)</span> ด้านขวา เพื่อวาดเส้นกราฟอย่างอิสระ</li>
+                    <li>ระบบจะคำนวณและพล็อตกราฟ <strong>อนุพันธ์</strong> <span class="text-pink-400 font-mono">f'(x)</span> และ <strong>อินทิกรัล</strong> <span class="text-emerald-400 font-mono">F(x)</span> ให้แบบเรียลไทม์</li>
+                </ul>
+            </div>
+
+            <!-- Presets -->
+            <div class="glass-panel p-5 rounded-2xl flex flex-col gap-3">
+                <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-shapes text-emerald-400"></i> ฟังก์ชันสำเร็จรูป
+                </h2>
+                
+                <button onclick="loadPreset('sine')" class="btn-action p-3 bg-slate-800/80 border border-slate-700 rounded-xl text-left hover:border-cyan-500/50 group">
+                    <div class="font-bold text-slate-200 group-hover:text-cyan-400 transition-colors">Sine Wave (คลื่นไซน์)</div>
+                    <div class="text-xs text-slate-500 font-mono mt-1">f(x) = sin(x)</div>
+                </button>
+                
+                <button onclick="loadPreset('parabola')" class="btn-action p-3 bg-slate-800/80 border border-slate-700 rounded-xl text-left hover:border-cyan-500/50 group">
+                    <div class="font-bold text-slate-200 group-hover:text-cyan-400 transition-colors">Parabola (พาราโบลา)</div>
+                    <div class="text-xs text-slate-500 font-mono mt-1">f(x) = x²</div>
+                </button>
+                
+                <button onclick="loadPreset('linear')" class="btn-action p-3 bg-slate-800/80 border border-slate-700 rounded-xl text-left hover:border-cyan-500/50 group">
+                    <div class="font-bold text-slate-200 group-hover:text-cyan-400 transition-colors">Linear (เส้นตรง)</div>
+                    <div class="text-xs text-slate-500 font-mono mt-1">f(x) = x</div>
+                </button>
+
+                <button onclick="loadPreset('bell')" class="btn-action p-3 bg-slate-800/80 border border-slate-700 rounded-xl text-left hover:border-cyan-500/50 group">
+                    <div class="font-bold text-slate-200 group-hover:text-cyan-400 transition-colors">Gaussian (ระฆังคว่ำ)</div>
+                    <div class="text-xs text-slate-500 font-mono mt-1">f(x) = e^(-x²)</div>
+                </button>
+            </div>
+
+            <!-- Key Info Box -->
+            <div class="glass-panel p-5 rounded-2xl mt-auto">
+                <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-3">
+                    การวิเคราะห์จุดสำคัญ
+                </h2>
+                <div class="space-y-3 text-xs text-slate-400">
+                    <div class="flex items-start gap-2">
+                        <div class="w-3 h-3 rounded-full bg-pink-500 mt-0.5 shrink-0 shadow-[0_0_8px_rgba(236,72,153,0.8)]"></div>
+                        <p><strong>จุดวิกฤต (Critical Points):</strong> จุดที่ f'(x) ตัดแกน X (ความชัน = 0) จะตรงกับจุดสูงสุด/ต่ำสุดของ f(x)</p>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <div class="w-3 h-3 bg-emerald-500/30 border border-emerald-500 mt-0.5 shrink-0"></div>
+                        <p><strong>พื้นที่ใต้กราฟ:</strong> การสะสมพื้นที่ใต้ f(x) (อินทิกรัล) จะสะท้อนเป็นความสูง Y ในกราฟ F(x)</p>
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- Right Main Area: The 3 Canvases -->
+        <section class="flex-grow flex flex-col gap-4 relative" id="graph-container">
+            
+            <!-- Global Vertical Scrubber Line (follows mouse) -->
+            <div id="scrubber" class="absolute top-0 bottom-0 w-px bg-slate-100/30 border-l border-dashed border-slate-400/50 pointer-events-none z-40 hidden"></div>
+
+            <!-- Graph 1: Original Function f(x) -->
+            <div class="glass-panel p-2 rounded-2xl flex-1 flex flex-col min-h-[180px]">
+                <div class="canvas-container flex-1" id="container-fx">
+                    <canvas id="canvas-fx"></canvas>
+                    <div class="graph-label bg-cyan-900/60 text-cyan-300 border border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.2)]">
+                        f(x) <span class="text-[10px] font-normal text-cyan-200/70 ml-1">ฟังก์ชันดั้งเดิม (วาดที่นี่)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Graph 2: Derivative f'(x) -->
+            <div class="glass-panel p-2 rounded-2xl flex-1 flex flex-col min-h-[180px]">
+                <div class="canvas-container flex-1 pointer-events-none" id="container-dfx">
+                    <canvas id="canvas-dfx"></canvas>
+                    <div class="graph-label bg-pink-900/60 text-pink-300 border border-pink-500/30 shadow-[0_0_10px_rgba(236,72,153,0.2)]">
+                        f'(x) <span class="text-[10px] font-normal text-pink-200/70 ml-1">อนุพันธ์ (ความชัน)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Graph 3: Integral F(x) -->
+            <div class="glass-panel p-2 rounded-2xl flex-1 flex flex-col min-h-[180px]">
+                <div class="canvas-container flex-1 pointer-events-none" id="container-Fx">
+                    <canvas id="canvas-Fx"></canvas>
+                    <div class="graph-label bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                        F(x) = ∫f(x)dx <span class="text-[10px] font-normal text-emerald-200/70 ml-1">อินทิกรัล (พื้นที่สะสม)</span>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- App Logic Script -->
+    <script>
+        // --- Core Data & State ---
+        let width = 800; // Internal logical width
+        let height = 200; // Internal logical height for each graph
+        const midY = height / 2;
+        
+        let fx = new Array(width).fill(0); // Math values, 0 is center
+        let dfx = new Array(width).fill(0);
+        let Fx = new Array(width).fill(0);
+        
+        let isDrawing = false;
+        let lastMousePos = null;
+
+        // --- Canvas Setup ---
+        const canvasFx = document.getElementById('canvas-fx');
+        const ctxFx = canvasFx.getContext('2d');
+        const canvasDfx = document.getElementById('canvas-dfx');
+        const ctxDfx = canvasDfx.getContext('2d');
+        const canvasFxInt = document.getElementById('canvas-Fx');
+        const ctxFxInt = canvasFxInt.getContext('2d');
+
+        const scrubber = document.getElementById('scrubber');
+        const graphContainer = document.getElementById('graph-container');
+
+        // Resize Handling
+        function resizeCanvases() {
+            const container = document.getElementById('container-fx');
+            // We keep a fixed logical resolution for data arrays (width=800)
+            // But we scale the display to match container
+            const displayWidth = container.clientWidth;
+            const displayHeight = container.clientHeight;
+
+            [canvasFx, canvasDfx, canvasFxInt].forEach(c => {
+                c.width = width;
+                c.height = height;
+                // CSS handles actual display size via width:100%, height:100%
+            });
+
+            renderAll();
+        }
+
+        window.addEventListener('resize', resizeCanvases);
+
+        // --- Drawing Interactions (Only on f(x) canvas) ---
+        function getMousePos(canvas, evt) {
+            const rect = canvas.getBoundingClientRect();
+            // Scale mouse coordinates to our internal 800x200 resolution
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: Math.round((evt.clientX - rect.left) * scaleX),
+                y: (evt.clientY - rect.top) * scaleY
+            };
+        }
+
+        function handlePointerDown(e) {
+            isDrawing = true;
+            const pos = getMousePos(canvasFx, e);
+            lastMousePos = pos;
+            updateFxAt(pos.x, pos.y);
+        }
+
+        function handlePointerMove(e) {
+            // Update Scrubber Line visually
+            const rect = graphContainer.getBoundingClientRect();
+            const relX = e.clientX - rect.left;
+            if(relX >= 0 && relX <= rect.width) {
+                scrubber.style.display = 'block';
+                scrubber.style.left = `${relX}px`;
+            } else {
+                scrubber.style.display = 'none';
+            }
+
+            if (!isDrawing) return;
+            
+            const pos = getMousePos(canvasFx, e);
+            
+            // Linear Interpolation between last mouse event and current to prevent gaps
+            if (lastMousePos) {
+                const dx = pos.x - lastMousePos.x;
+                const dy = pos.y - lastMousePos.y;
+                const steps = Math.max(Math.abs(dx), 1);
+                
+                for (let i = 0; i <= steps; i++) {
+                    const interpX = Math.round(lastMousePos.x + (dx * i) / steps);
+                    const interpY = lastMousePos.y + (dy * i) / steps;
+                    updateFxAt(interpX, interpY);
+                }
+            } else {
+                updateFxAt(pos.x, pos.y);
+            }
+            
+            lastMousePos = pos;
+            recalculateMath();
+            renderAll();
+        }
+
+        function handlePointerUp() {
+            if (isDrawing) {
+                isDrawing = false;
+                lastMousePos = null;
+                // Auto-smooth lightly after drawing to fix small mouse jitters
+                applySmoothing(fx, 3); 
+                recalculateMath();
+                renderAll();
+            }
+        }
+
+        function updateFxAt(x, canvasY) {
+            if (x >= 0 && x < width) {
+                // Convert canvas Y (0 at top) to Math Y (0 at center, positive up)
+                let mathY = midY - canvasY; 
+                // Clamp values so it doesn't go too crazy
+                mathY = Math.max(-midY * 0.95, Math.min(midY * 0.95, mathY));
+                fx[x] = mathY;
+            }
+        }
+
+        // Attach listeners (Mouse & Touch)
+        canvasFx.addEventListener('mousedown', handlePointerDown);
+        window.addEventListener('mousemove', handlePointerMove);
+        window.addEventListener('mouseup', handlePointerUp);
+        
+        canvasFx.addEventListener('touchstart', (e) => { e.preventDefault(); handlePointerDown(e.touches[0]); });
+        window.addEventListener('touchmove', (e) => { handlePointerMove(e.touches[0]); }, {passive: false});
+        window.addEventListener('touchend', handlePointerUp);
+        
+        graphContainer.addEventListener('mouseleave', () => { scrubber.style.display = 'none'; });
+
+
+        // --- Math Engine ---
+
+        function recalculateMath() {
+            // 1. Calculate Derivative f'(x)
+            // Using central difference for smoother results where possible
+            for (let i = 0; i < width; i++) {
+                if (i === 0) {
+                    dfx[i] = (fx[i+1] - fx[i]);
+                } else if (i === width - 1) {
+                    dfx[i] = (fx[i] - fx[i-1]);
+                } else {
+                    dfx[i] = (fx[i+1] - fx[i-1]) / 2;
+                }
+            }
+
+            // Optional: Light smoothing on derivative to reduce noise amplification
+            let smoothedDfx = [...dfx];
+            applySmoothing(smoothedDfx, 2);
+            // Amplify derivative for visual scale (dx is effectively 1 pixel, we want a visible slope)
+            const dScale = 15.0; 
+            for(let i=0; i<width; i++) dfx[i] = smoothedDfx[i] * dScale;
+
+
+            // 2. Calculate Integral F(x) = integral f(t) dt
+            // Start integration from left side (x=0, F(0) = 0 usually, or centered)
+            let accumulatedArea = 0;
+            const dt = 0.05; // Scaling factor for visual integration speed
+            
+            // To make the integral graph visually centered, we can offset by the average
+            // or just start from left. PhET usually starts F(0) = 0 (middle of Y axis).
+            for (let i = 0; i < width; i++) {
+                accumulatedArea += fx[i] * dt;
+                Fx[i] = accumulatedArea;
+            }
+            
+            // Auto-scale Fx if it goes out of bounds
+            let maxInt = Math.max(...Fx.map(Math.abs));
+            if (maxInt > midY * 0.9) {
+                const scale = (midY * 0.9) / maxInt;
+                for (let i = 0; i < width; i++) {
+                    Fx[i] *= scale;
+                }
+            }
+        }
+
+        // 1D Box Blur for smoothing
+        function applySmoothing(arr, passes = 1) {
+            const windowSize = 9; // must be odd
+            const half = Math.floor(windowSize / 2);
+            let temp = [...arr];
+
+            for (let p = 0; p < passes; p++) {
+                for (let i = 0; i < width; i++) {
+                    let sum = 0;
+                    let count = 0;
+                    for (let j = -half; j <= half; j++) {
+                        let idx = i + j;
+                        if (idx >= 0 && idx < width) {
+                            sum += temp[idx];
+                            count++;
+                        }
+                    }
+                    arr[i] = sum / count;
+                }
+                temp = [...arr];
+            }
+        }
+
+        function smoothFunction() {
+            applySmoothing(fx, 15);
+            recalculateMath();
+            renderAll();
+        }
+
+        function clearGraph() {
+            fx.fill(0);
+            recalculateMath();
+            renderAll();
+        }
+
+        function loadPreset(type) {
+            for (let x = 0; x < width; x++) {
+                // Map x [0, width] to a normalized domain [-PI, PI] or similar
+                let nx = ((x / width) - 0.5) * 4 * Math.PI; 
+                let ny = 0;
+                
+                switch(type) {
+                    case 'sine':
+                        ny = Math.sin(nx) * (midY * 0.6);
+                        break;
+                    case 'parabola':
+                        ny = (nx * nx / 10) * (midY * 0.8) - (midY * 0.4);
+                        break;
+                    case 'linear':
+                        ny = nx * 10;
+                        break;
+                    case 'bell':
+                        ny = Math.exp(-(nx*nx)/4) * (midY * 0.8) - (midY * 0.2);
+                        break;
+                }
+                fx[x] = ny;
+            }
+            recalculateMath();
+            renderAll();
+        }
+
+        // --- Rendering ---
+
+        function drawGrid(ctx, drawAreaUnderCurveForFx = false) {
+            ctx.clearRect(0, 0, width, height);
+
+            // Grid lines
+            ctx.strokeStyle = '#1e293b'; // slate-800
+            ctx.lineWidth = 1;
+            
+            // Horizontal grid
+            for(let y = 0; y <= height; y += 40) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+            }
+            // Vertical grid
+            for(let x = 0; x <= width; x += 40) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+            }
+
+            // Main Axes
+            ctx.strokeStyle = '#475569'; // slate-600
+            ctx.lineWidth = 2;
+            
+            // X Axis
+            ctx.beginPath(); ctx.moveTo(0, midY); ctx.lineTo(width, midY); ctx.stroke();
+            
+            // Draw Area under curve on f(x) if requested
+            if (drawAreaUnderCurveForFx) {
+                ctx.fillStyle = 'rgba(16, 185, 129, 0.15)'; // Emerald tint for integral area
+                ctx.beginPath();
+                ctx.moveTo(0, midY);
+                for (let x = 0; x < width; x++) {
+                    ctx.lineTo(x, midY - fx[x]);
+                }
+                ctx.lineTo(width - 1, midY);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        function renderPath(ctx, dataArray, color, lineWidth = 3) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+
+            ctx.beginPath();
+            ctx.moveTo(0, midY - dataArray[0]);
+            for (let i = 1; i < width; i++) {
+                ctx.lineTo(i, midY - dataArray[i]);
+            }
+            ctx.stroke();
+        }
+
+        function renderAll() {
+            // Render f(x)
+            drawGrid(ctxFx, true); // True to show integral area shade
+            renderPath(ctxFx, fx, '#06b6d4', 4); // Cyan-500
+
+            // Render f'(x)
+            drawGrid(ctxDfx, false);
+            renderPath(ctxDfx, dfx, '#ec4899', 3); // Pink-500
+            
+            // Mark critical points on f(x) and f'(x)
+            // Find zero crossings of derivative
+            ctxFx.fillStyle = '#ec4899'; // Pink dots on f(x) mapping to f'(x)=0
+            ctxDfx.fillStyle = '#f8fafc'; // White dots on f'(x)=0 line
+            for(let i = 1; i < width - 1; i++) {
+                if(Math.sign(dfx[i]) !== Math.sign(dfx[i-1]) && Math.abs(dfx[i] - dfx[i-1]) < midY) {
+                    // It's a crossing point
+                    // Draw on dfx
+                    ctxDfx.beginPath();
+                    ctxDfx.arc(i, midY, 4, 0, Math.PI*2);
+                    ctxDfx.fill();
+                    
+                    // Draw on fx
+                    ctxFx.beginPath();
+                    // Pulse/Glow effect
+                    ctxFx.shadowColor = '#ec4899';
+                    ctxFx.shadowBlur = 10;
+                    ctxFx.arc(i, midY - fx[i], 5, 0, Math.PI*2);
+                    ctxFx.fill();
+                    ctxFx.shadowBlur = 0; // reset
+                }
+            }
+
+            // Render F(x)
+            drawGrid(ctxFxInt, false);
+            // Fill area under F(x) line down to axis slightly
+            ctxFxInt.fillStyle = 'rgba(16, 185, 129, 0.2)';
+            ctxFxInt.beginPath();
+            ctxFxInt.moveTo(0, midY);
+            for(let i=0; i<width; i++) ctxFxInt.lineTo(i, midY - Fx[i]);
+            ctxFxInt.lineTo(width-1, midY);
+            ctxFxInt.closePath();
+            ctxFxInt.fill();
+
+            renderPath(ctxFxInt, Fx, '#10b981', 3); // Emerald-500
+        }
+
+        // Init
+        window.onload = () => {
+            resizeCanvases();
+            loadPreset('sine');
+        };
+
+    </script>
+</body>
+</html>
