@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>จำลองสมดุลของคาน (Balancing Act)</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        panelBg: 'rgba(30, 41, 59, 0.85)',
+                        accent: '#f59e0b', // Amber
+                        momentLeft: '#ef4444', // Red
+                        momentRight: '#3b82f6', // Blue
+                        mystery: '#a855f7' // Purple
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Sarabun', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- MathJax -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        input[type=range] { accent-color: #f59e0b; }
+        
+        .math-display { font-size: 0.9rem; color: #fde68a; }
+        
+        .success-glow {
+            animation: glowPulse 2s infinite;
+        }
+        @keyframes glowPulse {
+            0% { box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); border-color: rgba(16, 185, 129, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.8); border-color: rgba(16, 185, 129, 1); }
+            100% { box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); border-color: rgba(16, 185, 129, 0.5); }
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col">
+
+    <header class="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 z-20 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
+                <i class="fa-solid fa-scale-balanced text-white text-sm"></i>
+            </div>
+          <a href="../physics.html">
+              <h1 class="text-base font-semibold tracking-wide flex items-center gap-2">
+                แบบจำลองคานสมดุล
+                <span class="text-xs font-normal text-slate-400 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">Balancing Act</span>
+            </h1>
+          </a>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="btn-camera" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-video text-amber-400"></i> มุมมองเริ่มต้น
+            </button>
+            <button id="btn-info" class="bg-indigo-600 hover:bg-indigo-500 text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-book-open text-white"></i> ทฤษฎี & คู่มือ DIY
+            </button>
+        </div>
+    </header>
+
+    <div class="flex-1 relative overflow-hidden flex">
+        
+        <!-- ThreeJS Canvas -->
+        <div id="canvas-container" class="absolute inset-0 w-full h-full z-0 cursor-move">
+            <canvas id="three-canvas"></canvas>
+        </div>
+
+        <!-- Left HUD: Controls -->
+        <aside class="absolute top-4 left-4 w-80 glass-panel rounded-xl flex flex-col z-10 max-h-[calc(100vh-6rem)] overflow-y-auto">
+            <div class="p-4 border-b border-slate-700/50">
+                <h2 class="text-sm font-semibold text-amber-400 flex items-center gap-2 uppercase tracking-wide">
+                    <i class="fa-solid fa-sliders"></i> ควบคุมการทดลอง
+                </h2>
+            </div>
+            
+            <div class="p-4 space-y-4">
+                
+                <!-- Mode Selection -->
+                <div>
+                    <div class="flex rounded-lg overflow-hidden border border-slate-600">
+                        <button id="btn-mode-challenge" class="flex-1 py-2 text-xs bg-amber-600 text-white font-medium shadow-inner transition-colors">โจทย์ปริศนา (Challenge)</button>
+                        <button id="btn-mode-sandbox" class="flex-1 py-2 text-xs bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors">ทดลองอิสระ (Sandbox)</button>
+                    </div>
+                </div>
+
+                <!-- Challenge Mode UI -->
+                <div id="panel-challenge" class="space-y-4">
+                    <div class="bg-indigo-900/40 border border-indigo-500/30 p-3 rounded-lg">
+                        <h3 class="text-xs font-bold text-indigo-300 mb-2">ภารกิจ: หาค่ามวล A ที่ทำให้คานสมดุล</h3>
+                        <p class="text-[10px] text-indigo-200/80 mb-3 leading-relaxed">
+                            ตั้งสมการโมเมนต์ฝั่งซ้าย (ทวนเข็ม) = ฝั่งขวา (ตามเข็ม) <br>
+                            ตามโจทย์ในรูปภาพ ปรับค่า A จนกว่าคานจะขนานกับพื้น
+                        </p>
+                        
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-mystery font-bold">มวลกล่องปริศนา A</span>
+                                <span id="val-mystery-a" class="font-mono text-mystery font-bold text-lg bg-slate-900 px-2 rounded">5.0 kg</span>
+                            </div>
+                            <input type="range" id="sl-mystery-a" min="0" max="20" step="0.01" value="5" class="w-full h-2 bg-slate-700 rounded-lg cursor-pointer accent-purple-500">
+                        </div>
+                    </div>
+                    
+                    <button id="btn-reset-challenge" class="w-full bg-slate-700 hover:bg-slate-600 text-white text-xs py-2 rounded-lg transition-colors">
+                        <i class="fa-solid fa-rotate-left"></i> รีเซ็ตโจทย์
+                    </button>
+                </div>
+
+                <!-- Sandbox Mode UI (Hidden initially) -->
+                <div id="panel-sandbox" class="space-y-4 hidden">
+                    <div class="bg-slate-900/50 p-3 rounded-lg border border-slate-700">
+                        <h3 class="text-xs font-semibold text-slate-300 mb-3 border-b border-slate-700 pb-1">เพิ่มน้ำหนักบนคาน</h3>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <div class="flex justify-between text-[10px] mb-1 text-slate-400">
+                                    <span>ตำแหน่ง (Position)</span>
+                                    <span id="val-sb-pos" class="font-mono text-white">ช่อง 1 (ขวา)</span>
+                                </div>
+                                <input type="range" id="sl-sb-pos" min="-8" max="8" step="1" value="1" class="w-full h-1.5 bg-slate-600 rounded-lg cursor-pointer">
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between text-[10px] mb-1 text-slate-400">
+                                    <span>มวล (Mass)</span>
+                                    <span id="val-sb-mass" class="font-mono text-white">5 kg</span>
+                                </div>
+                                <input type="range" id="sl-sb-mass" min="1" max="30" step="1" value="5" class="w-full h-1.5 bg-slate-600 rounded-lg cursor-pointer">
+                            </div>
+                            
+                            <button id="btn-sb-add" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs py-2 rounded transition-colors shadow">
+                                <i class="fa-solid fa-plus"></i> วางน้ำหนัก
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button id="btn-sb-clear" class="w-full bg-rose-600/80 hover:bg-rose-500 text-white text-xs py-2 rounded-lg transition-colors">
+                        <i class="fa-solid fa-trash"></i> นำน้ำหนักทั้งหมดออก
+                    </button>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- Right HUD: Calculations -->
+        <aside class="absolute top-4 right-4 w-[24rem] glass-panel rounded-xl flex flex-col z-10 pointer-events-none">
+            <div class="p-4 border-b border-slate-700/50 flex justify-between items-center">
+                <h2 class="text-sm font-semibold text-emerald-400 flex items-center gap-2 uppercase tracking-wide">
+                    <i class="fa-solid fa-calculator"></i> การคำนวณแบบ Real-time
+                </h2>
+            </div>
+            
+            <div class="p-4 space-y-4">
+                
+                <!-- Status -->
+                <div id="balance-status" class="text-center py-2 rounded-lg bg-slate-800 border border-slate-600 font-bold text-sm text-slate-300 transition-all duration-300">
+                    คานเอียง (Unbalanced)
+                </div>
+
+                <!-- Moments Comparison -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-red-900/20 rounded-lg p-3 border border-red-500/30">
+                        <div class="text-[10px] text-red-300 mb-1 text-center">โมเมนต์ทวนเข็ม (ซ้าย)</div>
+                        <div class="text-center font-mono text-xl text-red-400 font-bold" id="out-ml">0</div>
+                        <div class="text-center text-[9px] text-red-400/50">kg·unit</div>
+                    </div>
+                    <div class="bg-blue-900/20 rounded-lg p-3 border border-blue-500/30">
+                        <div class="text-[10px] text-blue-300 mb-1 text-center">โมเมนต์ตามเข็ม (ขวา)</div>
+                        <div class="text-center font-mono text-xl text-blue-400 font-bold" id="out-mr">0</div>
+                        <div class="text-center text-[9px] text-blue-400/50">kg·unit</div>
+                    </div>
+                </div>
+
+                <!-- Mathematical Equation Display -->
+                <div class="bg-slate-900/80 rounded-lg p-3 border border-slate-600">
+                    <h3 class="text-[11px] font-semibold text-slate-300 border-b border-slate-700 pb-1 mb-2 text-center">สมการกฎของโมเมนต์</h3>
+                    
+                    <!-- Dynamic Equation Container -->
+                    <div id="equation-container" class="text-[11px] font-mono text-slate-300 space-y-2 leading-relaxed text-center overflow-hidden">
+                        <!-- Content generated by JS -->
+                    </div>
+                    
+                </div>
+                
+            </div>
+        </aside>
+
+        <!-- Theory Modal -->
+        <div id="theory-modal" class="hidden absolute inset-0 bg-slate-900/90 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+            <div class="bg-slate-800 border border-slate-600 rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl pointer-events-auto">
+                <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50 rounded-t-xl shrink-0">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-book-open text-amber-400"></i> ทฤษฎีและการทำโมเดลกายภาพทำมือ (Physical DIY Model)</h2>
+                    <button id="btn-close-modal" class="text-slate-400 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                
+                <div class="p-6 overflow-y-auto space-y-6 text-sm text-slate-300 leading-relaxed">
+                    
+                    <section class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                        <h3 class="text-amber-400 font-semibold mb-2 text-base"><i class="fa-solid fa-hammer"></i> อุปกรณ์สำหรับการสร้างชิ้นงานจริง</h3>
+                        <p class="mb-2 text-xs">เหมาะสำหรับทำเป็นโครงงานวิทยาศาสตร์ สื่อการสอน หรือของเล่นเสริมทักษะที่จับต้องได้จริง</p>
+                        <ul class="list-disc pl-5 space-y-2 text-[12px]">
+                            <li><strong class="text-white">ตัวคาน (Lever Beam):</strong> ใช้ไม้บรรทัดยาว (12 นิ้ว/30 ซม.), แผ่นไม้อัดแบน, หรือท่อ PVC โดยแนะนำให้เขียนตำแหน่งตัวเลขหรือ ขีดเส้นแบ่งช่องระยะห่างที่เท่ากัน ไว้บนคานชัดเจน เพื่อใช้วัดระยะห่างจากจุดหมุน</li>
+                            <li><strong class="text-white">จุดหมุน (Fulcrum):</strong> สิ่งของทรงสามเหลี่ยมหรือทรงกระบอก เช่น ดินสอ, แท่งไม้สามเหลี่ยม, หรือฝาขวด วางไว้ตรงกึ่งกลางคานพอดี หรือใช้การเจาะรูตรงกลางคานแล้วร้อยน็อตเข้ากับฐานเพื่อให้คานเอียงซ้าย-ขวาได้อิสระ</li>
+                            <li><strong class="text-white">ฐานรองรับ (Base Support):</strong> กล่องกระดาษแข็งหนา หรือ บล็อกไม้ สำหรับยึดจุดหมุนให้สูงพ้นพื้น เพื่อให้ปลายคานทั้งสองข้างขยับขึ้นลงได้</li>
+                            <li><strong class="text-white">ตุ้มน้ำหนักทดสอบ (Weights/Loads):</strong> ตัวต่อเลโก้, เหรียญ, น็อตเหล็ก, หรือดินน้ำมัน นำมาปั้นหรือจับกลุ่มให้มีน้ำหนักคงที่แน่นอน (เช่น ก้อนละ 5 กรัม หรือ 10 กรัม)</li>
+                        </ul>
+                    </section>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <section class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                            <h3 class="text-emerald-400 font-semibold mb-2">1. หลักการฟิสิกส์ (กฎของโมเมนต์)</h3>
+                            <p class="text-[11px] mb-2">คานจะสมดุลได้เมื่อ: <strong>ผลรวมของโมเมนต์ทวนเข็มนาฬิกา (ฝั่งซ้าย) = ผลรวมของโมเมนต์ตามเข็มนาฬิกา (ฝั่งขวา)</strong></p>
+                            <div class="math-display text-center my-3 bg-slate-800 py-2 rounded">$$\sum M_{ทวน} = \sum M_{ตาม}$$</div>
+                            <p class="text-[11px] text-center">สูตรคำนวณ: โมเมนต์ = แรง (หรือมวล) &times; ระยะห่างจากจุดหมุน</p>
+                        </section>
+                        
+                        <section class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                            <h3 class="text-cyan-400 font-semibold mb-2">วัตถุประสงค์การเรียนรู้</h3>
+                            <ul class="list-disc pl-4 space-y-1 text-[11px] text-slate-400">
+                                <li>เข้าใจเรื่อง ทอร์ก (Torque) และ สมดุลการหมุน</li>
+                                <li>รู้จัก แขนคานงัด และจุดสมดุล</li>
+                                <li>ฝึกการให้เหตุผลเชิงสัดส่วน (Proportional reasoning)</li>
+                                <li>ทำนายว่าวัตถุที่มีมวลต่างกันจะสร้างสมดุลได้อย่างไร</li>
+                                <li>ทำนายผลกระทบของการเปลี่ยนตำแหน่งมวล</li>
+                                <li>ตั้งสมการคณิตศาสตร์เพื่อแก้ปริศนาการทำให้สมดุล</li>
+                            </ul>
+                        </section>
+                    </div>
+
+                    <section>
+                        <h3 class="text-white font-semibold mb-2 text-sm">การตั้งสมการจากโจทย์ภาพ (Challenge Mode)</h3>
+                        <div class="bg-slate-800 p-4 rounded border border-slate-600 font-mono text-xs text-center space-y-2">
+                            <p class="text-emerald-300">โมเมนต์ฝั่งซ้าย (ทวนเข็ม) = โมเมนต์ฝั่งขวา (ตามเข็ม)</p>
+                            <p>$(A \times 7) + (15 \times 4) + (5 \times 1) = (20 \times 7)$</p>
+                            <p>$(A \times 7) + 60 + 5 = 140$</p>
+                            <p>$(A \times 7) + 65 = 140$</p>
+                            <p>$A \times 7 = 140 - 65$</p>
+                            <p>$A \times 7 = 75$</p>
+                            <p class="text-mystery font-bold text-sm bg-slate-900 inline-block px-3 py-1 rounded mt-2">$A = \frac{75}{7} \approx 10.71 \text{ kg}$</p>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 1. State & Physics Variables ---
+        let currentMode = 'challenge'; // 'challenge' or 'sandbox'
+        
+        // Physics logic variables
+        const BEAM_LENGTH_UNITS = 16; // -8 to 8
+        const UNIT_TO_METERS = 1.0; // 1 visual unit = 1 meter for calc
+        let targetRotation = 0;
+        let currentRotation = 0;
+        
+        // Weights Array: { id, mass, pos, isLeft, mesh, color, labelMesh }
+        let weights = [];
+        let mysteryWeightRef = null; // Direct reference to the 'A' weight object
+        let mysteryValue = 5.0; // Starting value for A
+
+        // --- 2. Three.js Setup ---
+        let scene, camera, renderer, controls;
+        let clock = new THREE.Clock();
+        
+        // Groups
+        let systemGroup, beamGroup;
+        let pivotMesh;
+
+        // UI Map
+        const ui = {
+            btnChal: document.getElementById('btn-mode-challenge'),
+            btnSand: document.getElementById('btn-mode-sandbox'),
+            pnlChal: document.getElementById('panel-challenge'),
+            pnlSand: document.getElementById('panel-sandbox'),
+            
+            // Challenge
+            slMystA: document.getElementById('sl-mystery-a'),
+            valMystA: document.getElementById('val-mystery-a'),
+            btnResetChal: document.getElementById('btn-reset-challenge'),
+            
+            // Sandbox
+            slSbPos: document.getElementById('sl-sb-pos'),
+            slSbMass: document.getElementById('sl-sb-mass'),
+            valSbPos: document.getElementById('val-sb-pos'),
+            valSbMass: document.getElementById('val-sb-mass'),
+            btnAdd: document.getElementById('btn-sb-add'),
+            btnClear: document.getElementById('btn-sb-clear'),
+            
+            // Outputs
+            outML: document.getElementById('out-ml'),
+            outMR: document.getElementById('out-mr'),
+            status: document.getElementById('balance-status'),
+            eqContainer: document.getElementById('equation-container'),
+            
+            // General
+            btnCam: document.getElementById('btn-camera'),
+            modal: document.getElementById('theory-modal'),
+            btnInfo: document.getElementById('btn-info'),
+            btnClose: document.getElementById('btn-close-modal')
+        };
+
+        init();
+        animate();
+
+        function init() {
+            const container = document.getElementById('canvas-container');
+            
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color('#0f172a');
+            scene.fog = new THREE.FogExp2('#0f172a', 0.015);
+
+            // Camera (Orthographic-like view is better for balancing, but we use perspective with low FOV)
+            camera = new THREE.PerspectiveCamera(35, container.clientWidth / container.clientHeight, 0.1, 200);
+            camera.position.set(0, 5, 30);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three-canvas'), antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.target.set(0, 0, 0);
+            
+            // Limit to keep focus on seesaw
+            controls.maxDistance = 60;
+            controls.minDistance = 10;
+            controls.maxPolarAngle = Math.PI / 2 + 0.1; // Don't go too far below ground
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 15, 10);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            dirLight.shadow.camera.left = -15;
+            dirLight.shadow.camera.right = 15;
+            scene.add(dirLight);
+
+            buildEnvironment();
+            setupEvents();
+            
+            // Load Initial Challenge Mode
+            setupChallengeMode();
+            
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function buildEnvironment() {
+            // Ground
+            const groundGeo = new THREE.PlaneGeometry(100, 100);
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 1.0 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -3;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            // Grid for spatial awareness
+            const grid = new THREE.GridHelper(40, 40, 0x334155, 0x1e293b);
+            grid.position.y = -2.99;
+            scene.add(grid);
+
+            systemGroup = new THREE.Group();
+            scene.add(systemGroup);
+
+            // Base Block
+            const baseGeo = new THREE.BoxGeometry(4, 1.5, 3);
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0x475569 });
+            const base = new THREE.Mesh(baseGeo, baseMat);
+            base.position.y = -2.25;
+            base.castShadow = true;
+            base.receiveShadow = true;
+            systemGroup.add(base);
+
+            // Fulcrum (Pyramid)
+            const pivotGeo = new THREE.ConeGeometry(1, 1.5, 4);
+            const pivotMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 }); // Amber
+            pivotMesh = new THREE.Mesh(pivotGeo, pivotMat);
+            pivotMesh.rotation.y = Math.PI / 4; // Align flat face forward
+            pivotMesh.position.y = -0.75;
+            pivotMesh.castShadow = true;
+            systemGroup.add(pivotMesh);
+
+            // Beam Group (Rotates around Y=0)
+            beamGroup = new THREE.Group();
+            systemGroup.add(beamGroup);
+
+            // The Wooden Plank
+            const beamGeo = new THREE.BoxGeometry(BEAM_LENGTH_UNITS + 1, 0.4, 2);
+            const beamMat = new THREE.MeshStandardMaterial({ color: 0xc28e5c, roughness: 0.8 }); // Wood color
+            const plank = new THREE.Mesh(beamGeo, beamMat);
+            plank.castShadow = true;
+            plank.receiveShadow = true;
+            beamGroup.add(plank);
+
+            // Tick Marks on Beam
+            const tickMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            const tickGeo = new THREE.BoxGeometry(0.1, 0.42, 2.05); // Slightly larger than beam to show
+            
+            for(let i = -8; i <= 8; i++) {
+                if (i === 0) continue; // Skip center
+                
+                const tick = new THREE.Mesh(tickGeo, tickMat);
+                tick.position.x = i;
+                beamGroup.add(tick);
+                
+                // Add number label (Simple Text Sprite)
+                const numSprite = createTextSprite(Math.abs(i).toString(), '#ffffff', '#334155');
+                numSprite.position.set(i, 0, 1.2);
+                beamGroup.add(numSprite);
+            }
+            
+            // Center marker
+            const centerTick = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.45, 2.1), new THREE.MeshBasicMaterial({color: 0xf59e0b}));
+            beamGroup.add(centerTick);
+        }
+
+        // Helper to create text labels
+        function createTextSprite(text, colorStr, bgStr) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            
+            if(bgStr) {
+                ctx.fillStyle = bgStr;
+                ctx.beginPath();
+                ctx.arc(32, 32, 28, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            ctx.fillStyle = colorStr;
+            ctx.font = 'bold 36px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, 32, 36);
+            
+            const tex = new THREE.CanvasTexture(canvas);
+            const mat = new THREE.SpriteMaterial({ map: tex });
+            const sprite = new THREE.Sprite(mat);
+            sprite.scale.set(0.8, 0.8, 1);
+            return sprite;
+        }
+
+        function addWeight(mass, position, isMystery = false) {
+            // Check if position already occupied (simple visual handling, replace it)
+            const existingIdx = weights.findIndex(w => w.pos === position);
+            if(existingIdx !== -1) {
+                beamGroup.remove(weights[existingIdx].mesh);
+                weights.splice(existingIdx, 1);
+            }
+
+            // Create Visual Mesh
+            // Volume proportional to mass. Side length = cube_root(mass) / scale
+            const scaleFactor = 0.6; 
+            const side = Math.max(0.8, Math.pow(mass, 1/3) * scaleFactor);
+            
+            const isLeft = position < 0;
+            let colorHex = isLeft ? 0xef4444 : 0x3b82f6; // Red left, Blue right
+            if (isMystery) colorHex = 0xa855f7; // Purple
+
+            const geo = new THREE.BoxGeometry(side, side, side);
+            const mat = new THREE.MeshStandardMaterial({ 
+                color: colorHex, 
+                roughness: 0.6,
+                emissive: isMystery ? 0x4c1d95 : 0x000000,
+                emissiveIntensity: 0.5
+            });
+            
+            const mesh = new THREE.Mesh(geo, mat);
+            // Place on top of beam
+            mesh.position.set(position, (side / 2) + 0.2, 0); 
+            mesh.castShadow = true;
+            
+            // Add Label
+            const labelText = isMystery ? `A=?` : `${mass}kg`;
+            const label = createTextSprite(labelText, '#ffffff', '');
+            label.position.set(0, (side / 2) + 0.4, 0);
+            label.scale.set(1.5, 1.5, 1.5);
+            mesh.add(label);
+
+            beamGroup.add(mesh);
+
+            const weightObj = {
+                id: Date.now() + Math.random(),
+                mass: mass,
+                pos: position,
+                isLeft: isLeft,
+                mesh: mesh,
+                label: label,
+                isMystery: isMystery
+            };
+
+            weights.push(weightObj);
+            
+            if (isMystery) {
+                mysteryWeightRef = weightObj;
+            }
+
+            calculatePhysics();
+        }
+
+        function clearAllWeights() {
+            weights.forEach(w => beamGroup.remove(w.mesh));
+            weights = [];
+            mysteryWeightRef = null;
+            calculatePhysics();
+        }
+
+        function setupChallengeMode() {
+            clearAllWeights();
+            
+            // Given in the image prompt:
+            // Right: 20kg at pos 7
+            // Left: 5kg at pos -1, 15kg at pos -4, A at pos -7
+            
+            addWeight(20, 7);
+            addWeight(5, -1);
+            addWeight(15, -4);
+            
+            // Add mystery weight at -7 with initial value from slider
+            mysteryValue = parseFloat(ui.slMystA.value);
+            addWeight(mysteryValue, -7, true);
+        }
+
+        function calculatePhysics() {
+            let momentLeft = 0;
+            let momentRight = 0;
+            
+            // Equation string builders
+            let eqLeftStr = [];
+            let eqRightStr = [];
+
+            weights.forEach(w => {
+                const distance = Math.abs(w.pos);
+                const moment = w.mass * distance;
+                
+                let termStr = `(${w.isMystery ? 'A' : w.mass.toFixed(1)} &times; ${distance})`;
+
+                if (w.isLeft) {
+                    momentLeft += moment;
+                    eqLeftStr.push(termStr);
+                } else {
+                    momentRight += moment;
+                    eqRightStr.push(termStr);
+                }
+            });
+
+            // Calculate Net Torque
+            const netMoment = momentRight - momentLeft;
+            
+            // Max angle around 20 degrees (Math.PI / 9)
+            // Clamp target rotation based on net moment
+            const maxMomentDiff = 100; // arbitrary scale for visual tilt
+            let clampedDiff = Math.max(-maxMomentDiff, Math.min(maxMomentDiff, netMoment));
+            targetRotation = -(clampedDiff / maxMomentDiff) * (Math.PI / 9); // Negative because right heavy = clockwise (negative Z rotation)
+
+            // --- Update UI ---
+            ui.outML.textContent = momentLeft.toFixed(1);
+            ui.outMR.textContent = momentRight.toFixed(1);
+
+            const isBalanced = Math.abs(netMoment) < 0.5; // tolerance
+
+            if (isBalanced) {
+                ui.status.textContent = "คานสมดุล (Balanced)";
+                ui.status.className = "text-center py-2 rounded-lg bg-emerald-900/50 border border-emerald-500 font-bold text-lg text-emerald-400 success-glow";
+            } else {
+                let dir = netMoment > 0 ? "เอียงขวา (ตามเข็ม)" : "เอียงซ้าย (ทวนเข็ม)";
+                ui.status.textContent = `คานเอียง : ${dir}`;
+                ui.status.className = "text-center py-2 rounded-lg bg-slate-800 border border-slate-600 font-bold text-sm text-slate-300";
+            }
+
+            // Build Equation Display
+            let strL = eqLeftStr.length > 0 ? eqLeftStr.join(" + ") : "0";
+            let strR = eqRightStr.length > 0 ? eqRightStr.join(" + ") : "0";
+            
+            let htmlEq = `<div class="text-rose-300 font-bold mb-1">ซ้าย (ทวนเข็ม) = ${strL}</div>
+                          <div class="text-blue-300 font-bold mb-2">ขวา (ตามเข็ม) = ${strR}</div>`;
+                          
+            if (currentMode === 'challenge' && mysteryWeightRef) {
+                // Show the specific solving steps like the image
+                let knownLeftSum = 0;
+                weights.forEach(w => {
+                    if(w.isLeft && !w.isMystery) knownLeftSum += (w.mass * Math.abs(w.pos));
+                });
+                
+                htmlEq += `<div class="border-t border-slate-600 pt-2 mt-2 space-y-1">
+                             <div class="text-slate-400">$(A \\times 7) + ${knownLeftSum} = ${momentRight.toFixed(0)}$</div>
+                             <div class="text-slate-400">$(A \\times 7) = ${momentRight.toFixed(0)} - ${knownLeftSum}$</div>
+                             <div class="text-slate-400">$(A \\times 7) = ${(momentRight - knownLeftSum).toFixed(0)}$</div>
+                             <div class="${isBalanced ? 'text-emerald-400 font-bold' : 'text-slate-200'}">
+                                $A = ${( (momentRight - knownLeftSum)/7 ).toFixed(2)}$ kg
+                             </div>
+                           </div>`;
+                           
+                // Force MathJax to re-render inside the container
+                setTimeout(() => {
+                    if (window.MathJax) {
+                        MathJax.Hub.Queue(["Typeset", MathJax.Hub, "equation-container"]);
+                    }
+                }, 10);
+            } else {
+                htmlEq += `<div class="text-white text-sm font-bold border-t border-slate-600 pt-2 mt-2">
+                             ผลรวม: ${momentLeft.toFixed(1)} <span class="mx-2 ${isBalanced ? 'text-emerald-400' : 'text-slate-500'}">${isBalanced ? '=' : '≠'}</span> ${momentRight.toFixed(1)}
+                           </div>`;
+            }
+
+            ui.eqContainer.innerHTML = htmlEq;
+        }
+
+        function setupEvents() {
+            // Mode Switches
+            ui.btnChal.addEventListener('click', () => {
+                currentMode = 'challenge';
+                ui.btnChal.className = "flex-1 py-2 text-xs bg-amber-600 text-white font-medium shadow-inner transition-colors";
+                ui.btnSand.className = "flex-1 py-2 text-xs bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors";
+                ui.pnlChal.classList.remove('hidden');
+                ui.pnlSand.classList.add('hidden');
+                setupChallengeMode();
+            });
+            
+            ui.btnSand.addEventListener('click', () => {
+                currentMode = 'sandbox';
+                ui.btnSand.className = "flex-1 py-2 text-xs bg-amber-600 text-white font-medium shadow-inner transition-colors";
+                ui.btnChal.className = "flex-1 py-2 text-xs bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors";
+                ui.pnlSand.classList.remove('hidden');
+                ui.pnlChal.classList.add('hidden');
+                clearAllWeights();
+            });
+
+            // Challenge Mode Controls
+            ui.slMystA.addEventListener('input', (e) => {
+                mysteryValue = parseFloat(e.target.value);
+                ui.valMystA.textContent = `${mysteryValue.toFixed(2)} kg`;
+                
+                if (mysteryWeightRef) {
+                    mysteryWeightRef.mass = mysteryValue;
+                    
+                    // Update visual size of mystery box
+                    const scaleFactor = 0.6; 
+                    const side = Math.max(0.8, Math.pow(mysteryValue, 1/3) * scaleFactor);
+                    mysteryWeightRef.mesh.geometry.dispose();
+                    mysteryWeightRef.mesh.geometry = new THREE.BoxGeometry(side, side, side);
+                    mysteryWeightRef.mesh.position.y = (side / 2) + 0.2;
+                    
+                    calculatePhysics();
+                }
+            });
+            
+            ui.btnResetChal.addEventListener('click', setupChallengeMode);
+
+            // Sandbox Mode Controls
+            ui.slSbPos.addEventListener('input', (e) => {
+                const pos = parseInt(e.target.value);
+                let txt = pos === 0 ? "จุดหมุน" : (pos > 0 ? `ช่อง ${pos} (ขวา)` : `ช่อง ${Math.abs(pos)} (ซ้าย)`);
+                ui.valSbPos.textContent = txt;
+            });
+            
+            ui.slSbMass.addEventListener('input', (e) => {
+                ui.valSbMass.textContent = `${e.target.value} kg`;
+            });
+            
+            ui.btnAdd.addEventListener('click', () => {
+                const mass = parseInt(ui.slSbMass.value);
+                const pos = parseInt(ui.slSbPos.value);
+                if (pos !== 0) {
+                    addWeight(mass, pos);
+                }
+            });
+            
+            ui.btnClear.addEventListener('click', clearAllWeights);
+
+            // Camera
+            ui.btnCam.addEventListener('click', () => {
+                camera.position.set(0, 5, 30);
+                controls.target.set(0,0,0);
+            });
+
+            // Modals
+            ui.btnInfo.addEventListener('click', () => ui.modal.classList.remove('hidden'));
+            ui.btnClose.addEventListener('click', () => ui.modal.classList.add('hidden'));
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Delta time for smooth animation independent of framerate
+            const delta = clock.getDelta();
+            
+            controls.update();
+
+            // Smoothly interpolate beam rotation towards target
+            if (beamGroup) {
+                // Lerp formula: current = current + (target - current) * factor
+                currentRotation += (targetRotation - currentRotation) * 5.0 * delta;
+                beamGroup.rotation.z = currentRotation;
+                
+                // Keep text labels upright
+                weights.forEach(w => {
+                    if(w.label) {
+                        w.label.rotation.z = -currentRotation;
+                    }
+                });
+            }
+
+            renderer.render(scene, camera);
+        }
+
+    </script>
+</body>
+</html>

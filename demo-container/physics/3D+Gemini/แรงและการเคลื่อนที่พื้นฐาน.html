@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forces and Motion Basics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    
+    <style>
+        body { font-family: 'Kanit', sans-serif; background-color: #f8fafc; margin: 0; overflow: hidden; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        
+        .slider-custom { -webkit-appearance: none; width: 100%; height: 8px; border-radius: 5px; outline: none; }
+        .slider-custom::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; transition: transform .1s; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .slider-custom::-webkit-slider-thumb:hover { transform: scale(1.15); }
+        
+        /* Specific slider colors */
+        .slider-force { background: linear-gradient(to right, #fdba74, #f97316, #fdba74); }
+        .slider-force::-webkit-slider-thumb { background: #ea580c; border: 2px solid white; }
+        
+        .slider-friction { background: linear-gradient(to right, #93c5fd, #94a3b8, #64748b); }
+        .slider-friction::-webkit-slider-thumb { background: #ef4444; border: 2px solid white; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        #canvas-container {
+            background: linear-gradient(to bottom, #87CEEB 0%, #e0f6ff 60%, #e2e8f0 60%, #cbd5e1 100%);
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col md:flex-row text-slate-800">
+
+    <main class="flex-1 relative flex flex-col items-center overflow-hidden h-full" id="canvas-container">
+        
+        <!-- Live Data Dashboard (Overlay) -->
+        <div class="absolute top-4 left-4 z-10 bg-white/95 p-4 rounded-xl shadow-lg border border-slate-200 min-w-[280px] backdrop-blur-sm">
+            <h3 class="font-bold text-slate-800 border-b pb-2 mb-2 flex items-center gap-2">
+                <i data-lucide="gauge" class="w-5 h-5 text-blue-500"></i> ข้อมูลการเคลื่อนที่
+            </h3>
+            
+            <div class="space-y-1 text-sm font-mono">
+                <div class="flex justify-between items-center bg-orange-50 px-2 py-1 rounded">
+                    <span class="text-orange-700 font-semibold">แรงผลัก (Applied):</span>
+                    <span id="disp-Fapp" class="font-bold text-orange-600">0 N</span>
+                </div>
+                <div class="flex justify-between items-center bg-red-50 px-2 py-1 rounded">
+                    <span class="text-red-700 font-semibold">แรงต้าน (Friction):</span>
+                    <span id="disp-Ffric" class="font-bold text-red-600">0 N</span>
+                </div>
+                <div class="flex justify-between items-center bg-green-50 px-2 py-1 rounded mt-1 border border-green-200">
+                    <span class="text-green-800 font-bold">แรงลัพธ์ (Net Force):</span>
+                    <span id="disp-Fnet" class="font-bold text-green-600">0 N</span>
+                </div>
+                
+                <div class="flex justify-between mt-3 pt-2 border-t border-slate-200">
+                    <span class="text-slate-600">มวลรวม (Mass, m):</span>
+                    <span id="disp-m" class="font-bold text-slate-800">50 kg</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-600">ความเร่ง (a = ΣF/m):</span>
+                    <span id="disp-a" class="font-bold text-blue-600">0.00 m/s²</span>
+                </div>
+            </div>
+            
+            <div id="balance-badge" class="mt-4 text-center py-2 rounded-md font-bold text-sm bg-slate-100 text-slate-600 border border-slate-300 shadow-inner transition-colors">
+                รอเริ่มการจำลอง...
+            </div>
+        </div>
+
+        <!-- HTML5 Canvas for Simulation -->
+        <canvas id="simCanvas" class="w-full h-full absolute inset-0"></canvas>
+        
+        <!-- Center Force Control at Bottom of Canvas -->
+        <div class="absolute bottom-8 z-10 w-[80%] max-w-lg bg-white/90 p-4 rounded-2xl shadow-2xl border border-slate-200 flex flex-col items-center backdrop-blur-md">
+            <label class="w-full flex justify-between text-sm font-bold text-slate-700 mb-3">
+                <span><i data-lucide="arrow-left" class="inline w-4 h-4 mr-1"></i>ผลักซ้าย (Push Left)</span>
+                <span id="slider-force-val" class="text-lg text-orange-600 font-black">0 N</span>
+                <span>ผลักขวา (Push Right)<i data-lucide="arrow-right" class="inline w-4 h-4 ml-1"></i></span>
+            </label>
+            <input type="range" id="input-force" min="-500" max="500" step="10" value="0" class="slider-custom slider-force w-full">
+            <button id="btn-zero-force" class="mt-3 px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-full text-xs font-bold transition-colors">
+                หยุดออกแรง (F = 0)
+            </button>
+        </div>
+    </main>
+
+    <aside class="w-full md:w-[450px] glass-panel h-full overflow-y-auto border-l border-slate-200 shadow-2xl flex flex-col z-20">
+        <!-- Header -->
+        <div class="bg-indigo-700 text-white p-5 shadow-md">
+<a href="../physics.html">
+                <h1 class="text-2xl font-bold flex items-center gap-2">
+                <i data-lucide="move"></i> Forces & Motion
+            </h1>
+</a>
+            <p class="text-indigo-200 text-sm mt-1">จำลองแรงและการเคลื่อนที่พื้นฐาน (ΣF = ma)</p>
+        </div>
+
+        <div class="p-6 space-y-6 flex-1 bg-slate-50">
+            <!-- Controls Section -->
+            <section class="space-y-5 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-lg font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
+                    <i data-lucide="settings" class="w-5 h-5 text-indigo-500"></i> ตั้งค่าระบบ
+                </h2>
+
+                <!-- Object Selection (Mass) -->
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">เลือกวัตถุ (มวล, Mass)</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button class="obj-btn bg-indigo-100 text-indigo-700 border-indigo-500 border-2 py-2 rounded-lg text-xs font-bold transition-all flex flex-col items-center gap-1" data-mass="50" data-type="box">
+                            <i data-lucide="box" class="w-5 h-5"></i> กล่อง (50kg)
+                        </button>
+                        <button class="obj-btn bg-slate-100 text-slate-600 border-transparent border-2 hover:bg-slate-200 py-2 rounded-lg text-xs font-bold transition-all flex flex-col items-center gap-1" data-mass="200" data-type="fridge">
+                            <i data-lucide="refrigerator" class="w-5 h-5"></i> ตู้เย็น (200kg)
+                        </button>
+                        <button class="obj-btn bg-slate-100 text-slate-600 border-transparent border-2 hover:bg-slate-200 py-2 rounded-lg text-xs font-bold transition-all flex flex-col items-center gap-1" data-mass="20" data-type="dog">
+                            <i data-lucide="dog" class="w-5 h-5"></i> สุนัข (20kg)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Friction Control -->
+                <div class="pt-2">
+                    <label class="flex justify-between text-sm font-bold text-slate-700 mb-2">
+                        <span>ความเสียดทาน (Friction)</span>
+                    </label>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs text-blue-500 font-semibold">น้ำแข็ง<br>(ไม่มี)</span>
+                        <input type="range" id="input-friction" min="0" max="300" step="10" value="100" class="slider-custom slider-friction flex-1">
+                        <span class="text-xs text-amber-700 font-semibold text-right">พื้นขรุขระ<br>(มาก)</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-2">* ถ้าปรับไปซ้ายสุด (น้ำแข็ง) จะไม่มีแรงต้านเลย!</p>
+                </div>
+                
+                <!-- Reset Scene -->
+                <button id="btn-reset" class="w-full py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-sm font-bold transition-colors">
+                    <i data-lucide="rotate-ccw" class="inline w-4 h-4 mr-1"></i> หยุดและรีเซ็ตวัตถุ
+                </button>
+            </section>
+
+            <section class="space-y-4 bg-indigo-50/50 p-5 rounded-xl border border-indigo-100 text-sm">
+                <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2 border-b-2 border-indigo-200 pb-2">
+                    <i data-lucide="book-open" class="w-5 h-5 text-indigo-600"></i> หลักการฟิสิกส์
+                </h2>
+                
+                <div class="space-y-4 text-slate-700 h-64 overflow-y-auto pr-2 custom-scrollbar">
+                    
+                    <div>
+                        <strong class="text-slate-900 text-base text-green-700"><i data-lucide="check-circle-2" class="inline w-4 h-4 mr-1"></i>แรงลัพธ์ (Net Force, ΣF)</strong>
+                        <p class="mt-1 leading-relaxed text-xs">
+                            คือผลรวมของแรงทั้งหมดที่กระทำต่อวัตถุ ในที่นี้คือ: <br>
+                            <span class="font-mono bg-white px-1 border border-slate-200 rounded">ΣF = แรงผลัก(ส้ม) + แรงเสียดทาน(แดง)</span>
+                        </p>
+                    </div>
+
+                    <div>
+                        <strong class="text-slate-900 text-base text-blue-700"><i data-lucide="scale" class="inline w-4 h-4 mr-1"></i>สมดุล vs ไม่สมดุล</strong>
+                        <ul class="list-disc pl-5 space-y-1 mt-1 text-xs">
+                            <li><b>แรงสมดุล (Balanced):</b> เมื่อ ΣF = 0 ลูกศรสีเขียวจะหายไป วัตถุจะนิ่ง หรือเคลื่อนที่ด้วยความเร็วคงที่</li>
+                            <li><b>แรงไม่สมดุล (Unbalanced):</b> เมื่อ ΣF ≠ 0 มีแรงลัพธ์เหลืออยู่ วัตถุจะเกิด "ความเร่ง (a)" ทำให้ความเร็วเปลี่ยนไปเรื่อยๆ</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <strong class="text-slate-900 text-base">กฎข้อที่ 1 ของนิวตัน (Inertia)</strong>
+                        <div class="bg-white p-2 mt-1 rounded border border-slate-200 shadow-sm text-xs leading-relaxed">
+                            "วัตถุจะรักษาสภาพอยู่นิ่ง หรือเคลื่อนที่ด้วยความเร็วคงที่ในทิศทางเดิมเสมอ หากไม่มีแรงลัพธ์มากระทำ (ΣF = 0)"<br><br>
+                            <span class="font-semibold text-indigo-700">💡 ลองทำดู:</span> ปรับแรงเสียดทานไปที่ "น้ำแข็ง (ไม่มี)" แล้วออกแรงผลักให้วัตถุเคลื่อนที่ จากนั้นหยุดผลัก (F=0) คุณจะเห็นว่าวัตถุจะไถลต่อไปเรื่อยๆ ไม่หยุด!
+                        </div>
+                    </div>
+
+                    <div>
+                        <strong class="text-slate-900 text-base">กฎข้อที่ 2 ของนิวตัน (F=ma)</strong>
+                        <p class="mt-1 leading-relaxed text-xs">
+                            ความเร่ง (a) แปรผันตรงกับแรงลัพธ์ (ΣF) แต่แปรผกผันกับมวล (m)<br>
+                            ถ้ามวลมาก (เช่น ตู้เย็น 200kg) จะต้องใช้แรงผลักมหาศาลกว่าจะทำให้มีความเร่งเท่ากับกล่องใบเล็กๆ
+                        </p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </aside>
+
+    <script>
+        // Load Icons
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        // Physics State
+        const state = {
+            m: 50,           // Mass (kg)
+            type: 'box',     // 'box', 'fridge', 'dog'
+            F_app: 0,        // Applied Force (N) - can be negative (left) or positive (right)
+            F_fric_max: 100, // Maximum friction limit set by slider
+            
+            F_fric: 0,       // Current friction force (N)
+            F_net: 0,        // Net Force (N)
+            
+            x: 0,            // Position (m) - visual loop
+            v: 0,            // Velocity (m/s)
+            a: 0,            // Acceleration (m/s^2)
+        };
+
+        // DOM Elements
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const UI = {
+            sliderForce: document.getElementById('input-force'),
+            valForce: document.getElementById('slider-force-val'),
+            btnZeroForce: document.getElementById('btn-zero-force'),
+            sliderFriction: document.getElementById('input-friction'),
+            btnReset: document.getElementById('btn-reset'),
+            objBtns: document.querySelectorAll('.obj-btn'),
+            
+            dispFapp: document.getElementById('disp-Fapp'),
+            dispFfric: document.getElementById('disp-Ffric'),
+            dispFnet: document.getElementById('disp-Fnet'),
+            dispM: document.getElementById('disp-m'),
+            dispA: document.getElementById('disp-a'),
+            badge: document.getElementById('balance-badge')
+        };
+
+        UI.sliderForce.addEventListener('input', (e) => {
+            state.F_app = parseInt(e.target.value);
+            UI.valForce.textContent = `${state.F_app} N`;
+            if(state.F_app < 0) {
+                UI.valForce.className = "text-lg text-blue-600 font-black"; // Push left
+            } else if (state.F_app > 0) {
+                UI.valForce.className = "text-lg text-orange-600 font-black"; // Push right
+            } else {
+                UI.valForce.className = "text-lg text-slate-500 font-black";
+            }
+        });
+
+        UI.btnZeroForce.addEventListener('click', () => {
+            UI.sliderForce.value = 0;
+            state.F_app = 0;
+            UI.valForce.textContent = `0 N`;
+            UI.valForce.className = "text-lg text-slate-500 font-black";
+        });
+
+        UI.sliderFriction.addEventListener('input', (e) => {
+            state.F_fric_max = parseInt(e.target.value);
+        });
+
+        UI.btnReset.addEventListener('click', () => {
+            state.v = 0;
+            state.a = 0;
+            state.x = 0;
+            UI.btnZeroForce.click(); // Reset force to 0 too
+        });
+
+        UI.objBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // Remove active classes
+                UI.objBtns.forEach(b => {
+                    b.classList.remove('bg-indigo-100', 'text-indigo-700', 'border-indigo-500');
+                    b.classList.add('bg-slate-100', 'text-slate-600', 'border-transparent');
+                });
+                // Add to clicked
+                const target = e.currentTarget;
+                target.classList.remove('bg-slate-100', 'text-slate-600', 'border-transparent');
+                target.classList.add('bg-indigo-100', 'text-indigo-700', 'border-indigo-500');
+                
+                state.m = parseInt(target.dataset.mass);
+                state.type = target.dataset.type;
+                UI.dispM.textContent = `${state.m} kg`;
+            });
+        });
+
+        // Resize Canvas
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let lastTime = performance.now();
+        
+        function updatePhysics(time) {
+            let dt = (time - lastTime) / 1000;
+            if (dt > 0.1) dt = 0.1; 
+            lastTime = time;
+
+            // Determine Friction Force Direction and Magnitude
+            if (Math.abs(state.v) < 0.05) {
+                // Object is mostly stationary
+                state.v = 0; // lock to exactly zero to prevent jitter
+                
+                if (Math.abs(state.F_app) <= state.F_fric_max) {
+                    // Static friction perfectly opposes applied force
+                    state.F_fric = -state.F_app;
+                } else {
+                    // Force exceeds static friction, object will break away
+                    // Friction opposes the direction of applied force at max magnitude
+                    state.F_fric = -Math.sign(state.F_app) * state.F_fric_max;
+                }
+            } else {
+                // Object is moving (Kinetic friction)
+                // Friction always opposes velocity
+                state.F_fric = -Math.sign(state.v) * state.F_fric_max;
+                
+                // Crucial Check: If applied force is 0 or opposing, friction will slow it down.
+                // We must prevent friction from pushing the object backwards once it stops.
+                let expectedNetForce = state.F_app + state.F_fric;
+                let expectedAccel = expectedNetForce / state.m;
+                let nextV = state.v + (expectedAccel * dt);
+                
+                // If velocity changes sign during this frame, it means it stopped
+                if (Math.sign(nextV) !== Math.sign(state.v)) {
+                    state.v = 0;
+                    state.a = 0;
+                    state.F_fric = -state.F_app; // Re-evaluate static state immediately
+                    // Re-clamp if needed
+                    if (Math.abs(state.F_app) > state.F_fric_max) {
+                        state.F_fric = -Math.sign(state.F_app) * state.F_fric_max;
+                    }
+                }
+            }
+
+            // Calculate Net Force and Acceleration
+            state.F_net = state.F_app + state.F_fric;
+            
+            // If v is 0 and net force is 0, explicitly set a to 0
+            if (state.v === 0 && Math.abs(state.F_net) < 0.001) {
+                state.a = 0;
+                state.F_net = 0;
+            } else {
+                state.a = state.F_net / state.m;
+            }
+
+            // Integrate Velocity and Position
+            state.v += state.a * dt;
+            state.x += state.v * dt;
+
+            updateDashboard();
+            renderGraphics();
+
+            requestAnimationFrame(updatePhysics);
+        }
+
+        function updateDashboard() {
+            UI.dispFapp.textContent = `${state.F_app} N`;
+            UI.dispFfric.textContent = `${Math.abs(state.F_fric).toFixed(0)} N`; // Show magnitude
+            UI.dispFnet.textContent = `${state.F_net.toFixed(0)} N`;
+            UI.dispA.textContent = `${state.a.toFixed(2)} m/s²`;
+
+            // State Badge Logic (Newton's Laws Status)
+            if (Math.abs(state.F_net) < 0.1) {
+                // Balanced
+                if (Math.abs(state.v) < 0.1) {
+                    UI.badge.textContent = "แรงสมดุล: วัตถุหยุดนิ่ง (v=0)";
+                    UI.badge.className = "mt-4 text-center py-2 rounded-md font-bold text-sm bg-slate-100 text-slate-500 border border-slate-300";
+                } else {
+                    UI.badge.textContent = "แรงสมดุล: ความเร็วคงที่ (กฎข้อ 1)";
+                    UI.badge.className = "mt-4 text-center py-2 rounded-md font-bold text-sm bg-blue-100 text-blue-700 border border-blue-300 shadow-sm";
+                }
+            } else {
+                // Unbalanced
+                UI.badge.textContent = "แรงไม่สมดุล: เกิดความเร่ง (กฎข้อ 2)";
+                UI.badge.className = "mt-4 text-center py-2 rounded-md font-bold text-sm bg-green-100 text-green-700 border border-green-300 shadow-sm animate-pulse";
+            }
+        }
+
+        function drawArrow(ctx, fromX, fromY, magnitude, forceMax, color, label, offsetVertical) {
+            if (Math.abs(magnitude) < 1) return; // Too small to draw
+            
+            // Limit max visual length so it fits on screen
+            const visualLength = Math.max(40, Math.min(250, (Math.abs(magnitude) / 500) * 200));
+            const direction = Math.sign(magnitude);
+            
+            const startX = fromX;
+            const endX = fromX + (visualLength * direction);
+            const headY = fromY + offsetVertical;
+            const headlen = 15;
+
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = 8;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            // Main Line
+            ctx.beginPath();
+            ctx.moveTo(startX, headY);
+            ctx.lineTo(endX, headY);
+            ctx.stroke();
+
+            // Arrow Head
+            ctx.beginPath();
+            ctx.moveTo(endX, headY);
+            ctx.lineTo(endX - headlen * direction, headY - headlen);
+            ctx.lineTo(endX - headlen * direction, headY + headlen);
+            ctx.fill();
+
+            // Text Label
+            ctx.font = "bold 16px Kanit";
+            ctx.textAlign = direction > 0 ? "right" : "left";
+            const textX = direction > 0 ? endX : endX;
+            ctx.fillText(label, textX, headY - 18);
+        }
+
+        function drawSpeedometer(ctx, centerX, centerY, speed) {
+            const radius = 60;
+            
+            // Background
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, Math.PI, 2 * Math.PI);
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fill();
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.stroke();
+
+            // Ticks
+            for(let i=0; i<=180; i+=30) {
+                const angle = (180 + i) * Math.PI / 180;
+                const inner = i % 90 === 0 ? radius - 15 : radius - 10;
+                ctx.beginPath();
+                ctx.moveTo(centerX + inner * Math.cos(angle), centerY + inner * Math.sin(angle));
+                ctx.lineTo(centerX + radius * Math.cos(angle), centerY + radius * Math.sin(angle));
+                ctx.strokeStyle = '#94a3b8';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            // Center Speed Text
+            ctx.fillStyle = '#334155';
+            ctx.font = 'bold 20px Kanit';
+            ctx.textAlign = 'center';
+            ctx.fillText(Math.abs(speed).toFixed(1), centerX, centerY - 15);
+            ctx.font = '12px Kanit';
+            ctx.fillText("m/s", centerX, centerY - 2);
+
+            // Needle
+            // Map speed to angle: max visual speed ~20 m/s mapped to 0-180deg
+            const maxVisualSpeed = 20;
+            let currentSpeed = Math.abs(speed);
+            if(currentSpeed > maxVisualSpeed) currentSpeed = maxVisualSpeed;
+            
+            const needleAngle = Math.PI + (currentSpeed / maxVisualSpeed) * Math.PI;
+            
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(centerX + (radius - 5) * Math.cos(needleAngle), centerY + (radius - 5) * Math.sin(needleAngle));
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // Center Pin
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 6, 0, 2*Math.PI);
+            ctx.fillStyle = '#1e293b';
+            ctx.fill();
+        }
+
+        function renderGraphics() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const groundY = canvas.height * 0.7;
+            const pixelsPerMeter = 40; 
+            const floorOffset = (state.x * pixelsPerMeter) % 120; // moving texture
+
+            // 1. Draw Environment (Ground)
+            ctx.fillStyle = "#94a3b8"; 
+            ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+            
+            // Ground texture (dots/lines) moving opposite to velocity
+            ctx.fillStyle = "#64748b";
+            for(let i = -120; i < canvas.width + 120; i += 40) {
+                const lineX = i - floorOffset;
+                ctx.fillRect(lineX, groundY, 4, 10);
+            }
+
+            // Draw Ice surface if friction is low
+            if (state.F_fric_max < 20) {
+                ctx.fillStyle = "rgba(255,255,255,0.6)";
+                ctx.fillRect(0, groundY, canvas.width, 15);
+            } else if (state.F_fric_max > 200) {
+                // Draw rough surface
+                ctx.fillStyle = "rgba(63, 39, 0, 0.4)";
+                ctx.fillRect(0, groundY, canvas.width, 8);
+            }
+
+            // 2. Determine Object Size & Positioning
+            // Fix object horizontally in center of screen
+            let boxWidth, boxHeight, color, borderColor;
+            
+            if (state.type === 'box') {
+                boxWidth = 100; boxHeight = 100;
+                color = "#eab308"; borderColor = "#ca8a04"; // Yellow
+            } else if (state.type === 'fridge') {
+                boxWidth = 120; boxHeight = 180;
+                color = "#cbd5e1"; borderColor = "#94a3b8"; // Silver/Gray
+            } else if (state.type === 'dog') {
+                boxWidth = 80; boxHeight = 60;
+                color = "#a16207"; borderColor = "#713f12"; // Brown
+            }
+
+            const boxX = canvas.width / 2 - boxWidth / 2;
+            const boxY = groundY - boxHeight;
+            const centerX = canvas.width / 2;
+            const centerY = boxY + boxHeight / 2;
+
+            // Draw Object
+            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            ctx.shadowBlur = 15;
+            ctx.shadowOffsetY = 10;
+            ctx.fillStyle = color;
+            ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+            
+            ctx.shadowColor = 'transparent'; // reset
+            ctx.strokeStyle = borderColor;
+            ctx.lineWidth = 4;
+            ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+
+            // Draw Mass Label
+            ctx.fillStyle = "#1e293b";
+            ctx.font = "bold 20px Kanit";
+            ctx.textAlign = "center";
+            ctx.fillText(`${state.m} kg`, centerX, centerY);
+            
+            // Details based on type
+            if(state.type === 'fridge') {
+                ctx.fillStyle = '#f8fafc';
+                ctx.fillRect(boxX + 10, boxY + 20, 15, 60); // handle
+            }
+
+            // 3. Draw Force Vectors
+            // Stagger them vertically so they don't overlap
+            
+            // Friction (Red) - Drawn at the bottom edge near the floor
+            if (Math.abs(state.F_fric) > 0.1) {
+                drawArrow(ctx, centerX, boxY + boxHeight - 20, state.F_fric, 500, "#ef4444", `f = ${Math.abs(state.F_fric).toFixed(0)}N`, 0);
+            }
+            
+            // Applied Force (Orange) - Drawn in the middle
+            if (Math.abs(state.F_app) > 0) {
+                drawArrow(ctx, centerX, centerY - 10, state.F_app, 500, "#f97316", `F = ${Math.abs(state.F_app)}N`, 0);
+            }
+
+            // Net Force (Green) - Drawn above the object
+            if (Math.abs(state.F_net) > 0.1) {
+                drawArrow(ctx, centerX, boxY - 30, state.F_net, 500, "#22c55e", `ΣF = ${Math.abs(state.F_net).toFixed(0)}N`, 0);
+            }
+
+            // 4. Draw Speedometer (Top Right/Center)
+            drawSpeedometer(ctx, canvas.width / 2, 100, state.v);
+        }
+
+        // Start Physics Engine
+        requestAnimationFrame(updatePhysics);
+
+    </script>
+</body>
+</html>

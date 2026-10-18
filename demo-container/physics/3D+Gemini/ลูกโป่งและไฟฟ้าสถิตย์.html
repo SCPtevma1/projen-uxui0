@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Static Electricity Simulation</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+    <style>
+        body { font-family: 'Kanit', sans-serif; background-color: #f8fafc; margin: 0; overflow: hidden; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        #canvas-container {
+            background: radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%);
+            touch-action: none; /* Prevent scrolling while dragging on mobile */
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col md:flex-row text-slate-800">
+
+    <main class="flex-1 relative flex flex-col items-center overflow-hidden h-full" id="canvas-container">
+        
+        <!-- Live Data Dashboard -->
+        <div class="absolute top-4 left-4 z-10 bg-white/90 p-4 rounded-xl shadow-md border border-slate-200 min-w-[220px] backdrop-blur-sm pointer-events-none">
+            <h3 class="font-bold text-slate-800 border-b pb-2 mb-2 flex items-center gap-2">
+                <i data-lucide="zap" class="w-5 h-5 text-amber-500"></i> ปริมาณประจุสุทธิ
+            </h3>
+            
+            <div class="space-y-2 text-sm font-mono">
+                <div class="flex justify-between items-center bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                    <span class="text-blue-800 font-semibold">เสื้อกันหนาว:</span>
+                    <span id="disp-sweater-charge" class="font-bold text-red-600 text-lg">0</span>
+                </div>
+                
+                <div class="flex justify-between items-center bg-yellow-50 px-2 py-1 rounded border border-yellow-100">
+                    <span class="text-yellow-800 font-semibold">ลูกโป่ง:</span>
+                    <span id="disp-balloon-charge" class="font-bold text-blue-600 text-lg">0</span>
+                </div>
+            </div>
+            
+            <div id="status-badge" class="mt-3 text-center py-2 rounded-md font-bold text-xs bg-slate-100 text-slate-600 border border-slate-300 shadow-inner transition-colors">
+                ถูลูกโป่งกับเสื้อเพื่อรับประจุลบ
+            </div>
+        </div>
+
+        <!-- Instructional Overlay -->
+        <div id="instruction-overlay" class="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 bg-slate-800/80 text-white px-6 py-3 rounded-full shadow-lg backdrop-blur pointer-events-none animate-bounce flex gap-4 text-sm font-light">
+            <span class="flex items-center gap-2"><i data-lucide="hand" class="w-4 h-4 text-yellow-400"></i> ลากลูกโป่งไปถูที่เสื้อ</span>
+            <div class="w-px h-4 bg-slate-500"></div>
+            <span class="flex items-center gap-2"><i data-lucide="move-right" class="w-4 h-4 text-blue-400"></i> ลากเข้าใกล้กำแพง</span>
+        </div>
+
+        <!-- HTML5 Canvas for Simulation -->
+        <canvas id="simCanvas" class="w-full h-full absolute inset-0"></canvas>
+    </main>
+
+    <aside class="w-full md:w-[450px] glass-panel h-full overflow-y-auto border-l border-slate-200 shadow-2xl flex flex-col z-20">
+        <!-- Header -->
+        <div class="bg-amber-500 text-slate-900 p-5 shadow-md">
+            <h1 class="text-2xl font-black flex items-center gap-2">
+                <i data-lucide="magnet"></i> ไฟฟ้าสถิตเบื้องต้น
+            </h1>
+            <p class="text-amber-900 font-medium text-sm mt-1">ลูกโป่ง เสื้อกันหนาว และการเหนี่ยวนำ</p>
+        </div>
+
+        <div class="p-6 space-y-6 flex-1 bg-slate-50">
+            <!-- Controls Section -->
+            <section class="space-y-4 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-lg font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-5 h-5 text-amber-600"></i> การควบคุม (Controls)
+                </h2>
+                
+                <div class="space-y-3">
+                    <label class="block text-sm font-bold text-slate-700">แสดงประจุไฟฟ้า (Show Charges):</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button class="charge-vis-btn bg-amber-100 text-amber-700 border-amber-500 border-2 py-2 rounded-lg text-xs font-bold transition-all" data-mode="all">แสดงทั้งหมด</button>
+                        <button class="charge-vis-btn bg-slate-100 text-slate-600 border-transparent border-2 hover:bg-slate-200 py-2 rounded-lg text-xs font-bold transition-all" data-mode="diff">แสดงส่วนต่าง</button>
+                        <button class="charge-vis-btn bg-slate-100 text-slate-600 border-transparent border-2 hover:bg-slate-200 py-2 rounded-lg text-xs font-bold transition-all" data-mode="none">ไม่แสดงเลย</button>
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button id="btn-reset" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg text-sm font-bold transition-colors shadow-sm flex justify-center items-center gap-2">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i> รีเซ็ตการทดลอง (Reset)
+                    </button>
+                </div>
+            </section>
+
+            <section class="space-y-4 bg-blue-50/50 p-5 rounded-xl border border-blue-100 text-sm">
+                <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2 border-b-2 border-blue-200 pb-2">
+                    <i data-lucide="book-open" class="w-5 h-5 text-blue-600"></i> หลักการฟิสิกส์ (Physics)
+                </h2>
+                
+                <div class="space-y-4 text-slate-700 h-64 overflow-y-auto pr-2 custom-scrollbar">
+                    
+                    <div>
+                        <strong class="text-slate-900 text-base text-blue-700"><i data-lucide="repeat-2" class="inline w-4 h-4 mr-1"></i>1. การขัดสี (Triboelectric Effect)</strong>
+                        <p class="mt-1 leading-relaxed text-sm">
+                            เมื่อนำวัตถุสองชนิดมาถูกัน (เช่น ลูกโป่งยางและเสื้อขนสัตว์) อิเล็กตรอน (ประจุลบ) จะย้ายจากเสื้อไปยังลูกโป่ง ทำให้ลูกโป่งมี <b>ประจุลบสุทธิ (-)</b> และเสื้อมี <b>ประจุบวกสุทธิ (+)</b>
+                        </p>
+                    </div>
+
+                    <div>
+                        <strong class="text-slate-900 text-base text-red-600"><i data-lucide="magnet" class="inline w-4 h-4 mr-1"></i>2. แรงระหว่างประจุ (Electrostatic Force)</strong>
+                        <ul class="list-disc pl-5 space-y-1 mt-1 text-sm">
+                            <li>ประจุชนิดเดียวกัน <b>ผลักกัน</b> (ลบ ผลัก ลบ)</li>
+                            <li>ประจุต่างชนิดกัน <b>ดูดกัน</b> (ลบ ดูด บวก)</li>
+                        </ul>
+                        <div class="bg-white p-2 mt-2 rounded border border-slate-200 shadow-sm text-xs leading-relaxed">
+                            <span class="font-semibold text-red-600">💡 ลองทำดู:</span> ถูลูกโป่งให้มีประจุลบ แล้วปล่อยเมาส์ใกล้ๆ เสื้อ ลูกโป่งจะลอยกลับไปติดเสื้อทันทีเพราะแรงดึงดูด!
+                        </div>
+                    </div>
+
+                    <div>
+                        <strong class="text-slate-900 text-base text-amber-600"><i data-lucide="move-right" class="inline w-4 h-4 mr-1"></i>3. การเหนี่ยวนำไฟฟ้าสถิต (Induction)</strong>
+                        <p class="mt-1 leading-relaxed text-sm">
+                            ผนังกำแพงเป็นกลางทางไฟฟ้า แต่เมื่อนำลูกโป่งประจุลบเข้าใกล้ ประจุลบในกำแพงจะถูก <b>ผลักให้ถอยร่นเข้าไปด้านใน</b> ทิ้งให้ผิวหน้าของกำแพงมีประจุบวกมากกว่า ส่งผลให้เกิดแรงดึงดูด ทำให้ลูกโป่งสามารถ <b>ติดกำแพงได้</b> โดยไม่ต้องถู!
+                        </p>
+                    </div>
+                    
+                </div>
+            </section>
+        </div>
+    </aside>
+
+    <script>
+        // Initialize Icons
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        // ---------------------------------------------------------
+        // Physics Engine & State
+        // ---------------------------------------------------------
+        const state = {
+            visibilityMode: 'all', // 'all', 'diff', 'none'
+            isDragging: false,
+            
+            // Sweater
+            sweater: { x: 0, y: 0, width: 250, height: 300, charges: [] },
+            
+            // Wall
+            wall: { x: 0, y: 0, width: 100, height: 0, charges: [] }, // height set on resize
+            
+            // Balloon
+            balloon: { 
+                x: 0, y: 0, 
+                vx: 0, vy: 0, 
+                radiusX: 55, radiusY: 65, 
+                charges: [] 
+            },
+            
+            // Mouse tracking
+            mouseX: 0, mouseY: 0,
+            offsetX: 0, offsetY: 0 // offset for smooth dragging
+        };
+
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const UI = {
+            sweaterCharge: document.getElementById('disp-sweater-charge'),
+            balloonCharge: document.getElementById('disp-balloon-charge'),
+            statusBadge: document.getElementById('status-badge'),
+            overlay: document.getElementById('instruction-overlay'),
+            visBtns: document.querySelectorAll('.charge-vis-btn'),
+            btnReset: document.getElementById('btn-reset')
+        };
+
+        // ---------------------------------------------------------
+        // Setup and Layout
+        // ---------------------------------------------------------
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            
+            // Layout Objects
+            state.sweater.x = canvas.width * 0.25;
+            state.sweater.y = canvas.height / 2;
+            
+            state.wall.width = 120;
+            state.wall.height = canvas.height;
+            state.wall.x = canvas.width - state.wall.width;
+            state.wall.y = canvas.height / 2;
+            
+            if(!state.isDragging && state.balloon.charges.length === 0) {
+                state.balloon.x = canvas.width * 0.6;
+                state.balloon.y = canvas.height / 2;
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function initCharges() {
+            state.sweater.charges = [];
+            state.wall.charges = [];
+            state.balloon.charges = [];
+
+            // Populate Sweater with paired charges (+ and -)
+            // Arrange them inside a bounding box roughly matching the sweater shape
+            for(let i = 0; i < 40; i++) {
+                let rx = (Math.random() - 0.5) * (state.sweater.width - 60);
+                let ry = (Math.random() - 0.5) * (state.sweater.height - 60);
+                
+                // Add Positive (Static)
+                state.sweater.charges.push({ type: '+', x: rx, y: ry });
+                // Add Negative (Removable)
+                state.sweater.charges.push({ type: '-', x: rx, y: ry, isMobile: true, pairId: i });
+            }
+
+            // Populate Wall with paired charges (+ and -)
+            const rows = 12;
+            const cols = 3;
+            for(let r = 0; r < rows; r++) {
+                for(let c = 0; c < cols; c++) {
+                    // Position relative to wall center
+                    let px = (c - cols/2 + 0.5) * 35;
+                    let py = (r - rows/2 + 0.5) * (canvas.height / rows);
+                    
+                    state.wall.charges.push({ type: '+', homeX: px, homeY: py, currentX: px, currentY: py });
+                    state.wall.charges.push({ type: '-', homeX: px + 10, homeY: py, currentX: px + 10, currentY: py, isMobile: true });
+                }
+            }
+            updateDashboard();
+        }
+
+        // ---------------------------------------------------------
+        // Input Handling
+        // ---------------------------------------------------------
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        function handlePointerDown(e) {
+            const pos = getMousePos(e);
+            state.mouseX = pos.x;
+            state.mouseY = pos.y;
+
+            // Check if clicking inside balloon ellipse
+            const dx = pos.x - state.balloon.x;
+            const dy = pos.y - state.balloon.y;
+            // Ellipse equation check
+            if ((dx*dx)/(state.balloon.radiusX*state.balloon.radiusX) + (dy*dy)/(state.balloon.radiusY*state.balloon.radiusY) <= 1.2) {
+                state.isDragging = true;
+                state.offsetX = dx;
+                state.offsetY = dy;
+                
+                state.balloon.vx = 0;
+                state.balloon.vy = 0;
+                
+                UI.overlay.style.opacity = '0'; // Hide instruction
+            }
+        }
+
+        function handlePointerMove(e) {
+            const pos = getMousePos(e);
+            
+            // Cursor update
+            const dx = pos.x - state.balloon.x;
+            const dy = pos.y - state.balloon.y;
+            if ((dx*dx)/(state.balloon.radiusX*state.balloon.radiusX) + (dy*dy)/(state.balloon.radiusY*state.balloon.radiusY) <= 1.2) {
+                canvas.style.cursor = 'grab';
+            } else {
+                canvas.style.cursor = 'default';
+            }
+
+            if (state.isDragging) {
+                canvas.style.cursor = 'grabbing';
+                state.balloon.x = pos.x - state.offsetX;
+                state.balloon.y = pos.y - state.offsetY;
+                
+                checkRubbing();
+            }
+        }
+
+        function handlePointerUp() {
+            state.isDragging = false;
+            canvas.style.cursor = 'default';
+        }
+
+        canvas.addEventListener('mousedown', handlePointerDown);
+        window.addEventListener('mousemove', handlePointerMove);
+        window.addEventListener('mouseup', handlePointerUp);
+        
+        canvas.addEventListener('touchstart', handlePointerDown, {passive: false});
+        window.addEventListener('touchmove', (e) => {
+            if(state.isDragging) e.preventDefault();
+            handlePointerMove(e);
+        }, {passive: false});
+        window.addEventListener('touchend', handlePointerUp);
+
+        // ---------------------------------------------------------
+        // Physics Logic
+        // ---------------------------------------------------------
+        function checkRubbing() {
+            // Check if balloon overlaps sweater area to transfer electrons
+            for (let i = state.sweater.charges.length - 1; i >= 0; i--) {
+                let charge = state.sweater.charges[i];
+                if (charge.type === '-' && charge.isMobile) {
+                    // Absolute position of charge
+                    let absX = state.sweater.x + charge.x;
+                    let absY = state.sweater.y + charge.y;
+                    
+                    let dx = absX - state.balloon.x;
+                    let dy = absY - state.balloon.y;
+                    
+                    // If inside balloon radius
+                    if ((dx*dx)/(state.balloon.radiusX*state.balloon.radiusX) + (dy*dy)/(state.balloon.radiusY*state.balloon.radiusY) <= 1.0) {
+                        // Transfer to balloon
+                        state.sweater.charges.splice(i, 1);
+                        
+                        // Pick a random spot inside balloon for the charge to sit
+                        let ang = Math.random() * Math.PI * 2;
+                        let rad = Math.random() * 0.8; // within 80% of radius
+                        state.balloon.charges.push({
+                            type: '-',
+                            relX: Math.cos(ang) * state.balloon.radiusX * rad,
+                            relY: Math.sin(ang) * state.balloon.radiusY * rad
+                        });
+                        
+                        updateDashboard();
+                    }
+                }
+            }
+        }
+
+        function updatePhysics() {
+            // 1. Balloon Attraction to Sweater
+            let netBalloonCharge = state.balloon.charges.length; // all are negative
+            
+            // Count net positive charge on sweater
+            let pCount = 0; let nCount = 0;
+            state.sweater.charges.forEach(c => c.type === '+' ? pCount++ : nCount++);
+            let netSweaterPositive = pCount - nCount;
+
+            let forceX = 0, forceY = 0;
+
+            if (!state.isDragging && netBalloonCharge > 0) {
+                // Distance to sweater
+                let dxS = state.sweater.x - state.balloon.x;
+                let dyS = state.sweater.y - state.balloon.y;
+                let distSqS = dxS*dxS + dyS*dyS;
+                
+                // Coulomb-like attraction to sweater
+                if (distSqS > 400 && netSweaterPositive > 0) {
+                    let forceMagn = (netBalloonCharge * netSweaterPositive * 0.1) / distSqS;
+                    let dist = Math.sqrt(distSqS);
+                    forceX += (dxS / dist) * Math.min(forceMagn, 2.0); // Cap force
+                    forceY += (dyS / dist) * Math.min(forceMagn, 2.0);
+                }
+
+                // Attraction to Wall (due to induction)
+                // The balloon repels electrons in the wall, leaving the wall surface effectively positive
+                let dxW = state.wall.x - state.balloon.x;
+                if (dxW > 0 && dxW < 300) { // If close enough to wall
+                    // Attractive force to the induced positive surface
+                    let inducedForceMagn = (netBalloonCharge * 15) / (dxW * dxW);
+                    forceX += Math.min(inducedForceMagn, 1.5);
+                }
+
+                // Apply forces
+                state.balloon.vx += forceX;
+                state.balloon.vy += forceY;
+                
+                // Apply damping/air friction
+                state.balloon.vx *= 0.92;
+                state.balloon.vy *= 0.92;
+                
+                state.balloon.x += state.balloon.vx;
+                state.balloon.y += state.balloon.vy;
+                
+                // Boundary collisions
+                if (state.balloon.x - state.balloon.radiusX < 0) { state.balloon.x = state.balloon.radiusX; state.balloon.vx *= -0.5; }
+                if (state.balloon.y - state.balloon.radiusY < 0) { state.balloon.y = state.balloon.radiusY; state.balloon.vy *= -0.5; }
+                if (state.balloon.y + state.balloon.radiusY > canvas.height) { state.balloon.y = canvas.height - state.balloon.radiusY; state.balloon.vy *= -0.5; }
+                // Stop at wall
+                if (state.balloon.x + state.balloon.radiusX > state.wall.x) {
+                    state.balloon.x = state.wall.x - state.balloon.radiusX;
+                    state.balloon.vx = 0;
+                }
+            }
+
+            // 2. Wall Induction Logic
+            for (let charge of state.wall.charges) {
+                if (charge.type === '-' && charge.isMobile) {
+                    let absChargeX = state.wall.x + charge.homeX;
+                    let absChargeY = state.wall.y + charge.homeY;
+                    
+                    let dxB = absChargeX - state.balloon.x;
+                    let dyB = absChargeY - state.balloon.y;
+                    let distSq = dxB*dxB + dyB*dyB;
+                    
+                    // Repulsion from balloon's negative charges
+                    let repulsionX = 0;
+                    if (netBalloonCharge > 0 && distSq < 150000) {
+                        let force = (netBalloonCharge * 3000) / distSq;
+                        repulsionX = force; // Push right
+                    }
+                    
+                    // Cap repulsion distance
+                    let targetX = charge.homeX + Math.min(repulsionX, 60);
+                    
+                    // Smooth move to target
+                    charge.currentX += (targetX - charge.currentX) * 0.2;
+                }
+            }
+        }
+
+        // ---------------------------------------------------------
+        // Rendering
+        // ---------------------------------------------------------
+        function drawCharge(x, y, type) {
+            ctx.beginPath();
+            ctx.arc(x, y, 8, 0, Math.PI * 2);
+            ctx.fillStyle = type === '+' ? '#ef4444' : '#3b82f6';
+            ctx.fill();
+            
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x - 4, y);
+            ctx.lineTo(x + 4, y);
+            if (type === '+') {
+                ctx.moveTo(x, y - 4);
+                ctx.lineTo(x, y + 4);
+            }
+            ctx.stroke();
+        }
+
+        function drawSweater() {
+            ctx.save();
+            ctx.translate(state.sweater.x, state.sweater.y);
+            
+            // Draw a stylized sweater shape
+            ctx.fillStyle = '#10b981'; // Emerald green
+            ctx.beginPath();
+            // Neck
+            ctx.moveTo(-30, -120);
+            ctx.quadraticCurveTo(0, -100, 30, -120);
+            // Right shoulder/arm
+            ctx.lineTo(100, -80);
+            ctx.lineTo(130, -30);
+            ctx.lineTo(90, 0);
+            // Right torso
+            ctx.lineTo(70, -30);
+            ctx.lineTo(70, 120);
+            // Bottom
+            ctx.lineTo(-70, 120);
+            // Left torso
+            ctx.lineTo(-70, -30);
+            // Left arm
+            ctx.lineTo(-90, 0);
+            ctx.lineTo(-130, -30);
+            ctx.lineTo(-100, -80);
+            ctx.closePath();
+            
+            ctx.shadowColor = 'rgba(0,0,0,0.2)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetY = 5;
+            ctx.fill();
+            
+            // Texture lines
+            ctx.strokeStyle = '#059669';
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(-50, -50); ctx.lineTo(-50, 100); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, -70); ctx.lineTo(0, 100); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(50, -50); ctx.lineTo(50, 100); ctx.stroke();
+            
+            // Draw Charges
+            if (state.visibilityMode === 'all' || state.visibilityMode === 'diff') {
+                state.sweater.charges.forEach(c => {
+                    // If 'diff' mode, only draw unmatched positive charges (approximate visualization)
+                    // For simplicity, we just draw what's in the array. Since we removed -, the + are left.
+                    // If mode is 'diff', we skip drawing paired charges.
+                    let draw = true;
+                    if (state.visibilityMode === 'diff' && c.type === '+') {
+                        // Check if it still has its pair
+                        let hasPair = state.sweater.charges.some(nc => nc.type === '-' && nc.pairId === c.pairId);
+                        if (hasPair) draw = false;
+                    } else if (state.visibilityMode === 'diff' && c.type === '-') {
+                        draw = false; // Mobile charges still on sweater are paired
+                    }
+                    
+                    if(draw) drawCharge(c.x, c.y, c.type);
+                });
+            }
+            
+            ctx.restore();
+        }
+
+        function drawWall() {
+            ctx.save();
+            ctx.translate(state.wall.x, state.wall.y);
+            
+            // Wall background
+            ctx.fillStyle = '#cbd5e1';
+            ctx.fillRect(0, -state.wall.height/2, state.wall.width, state.wall.height);
+            
+            // Wall pattern (bricks)
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 2;
+            for(let y = -state.wall.height/2; y < state.wall.height/2; y += 30) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(state.wall.width, y); ctx.stroke();
+                let offset = (y % 60 === 0) ? 0 : 25;
+                for(let x = offset; x < state.wall.width; x += 50) {
+                    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y+30); ctx.stroke();
+                }
+            }
+            
+            // Draw Charges
+            if (state.visibilityMode === 'all' || state.visibilityMode === 'diff') {
+                state.wall.charges.forEach(c => {
+                    let draw = true;
+                    if(state.visibilityMode === 'diff') {
+                        // In diff mode on the wall, if the '-' has moved away from '+', show both
+                        if (c.type === '+') {
+                            let pair = state.wall.charges.find(nc => nc.type === '-' && nc.homeY === c.homeY && nc.homeX === c.homeX + 10);
+                            if (pair && Math.abs(pair.currentX - pair.homeX) < 2) draw = false;
+                        }
+                        if (c.type === '-') {
+                            if (Math.abs(c.currentX - c.homeX) < 2) draw = false;
+                        }
+                    }
+                    
+                    if(draw) {
+                        drawCharge(c.currentX || c.homeX, c.currentY || c.homeY, c.type);
+                    }
+                });
+            }
+            
+            ctx.restore();
+        }
+
+        function drawBalloon() {
+            ctx.save();
+            ctx.translate(state.balloon.x, state.balloon.y);
+            
+            // Balloon body
+            ctx.fillStyle = '#fde047'; // Yellow
+            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetY = 5;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, state.balloon.radiusX, state.balloon.radiusY, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Tie
+            ctx.beginPath();
+            ctx.moveTo(-10, state.balloon.radiusY - 5);
+            ctx.lineTo(10, state.balloon.radiusY - 5);
+            ctx.lineTo(15, state.balloon.radiusY + 10);
+            ctx.lineTo(-15, state.balloon.radiusY + 10);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.shadowColor = 'transparent';
+            
+            // Highlight
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.beginPath();
+            ctx.ellipse(-20, -30, 15, 25, Math.PI/4, 0, Math.PI*2);
+            ctx.fill();
+            
+            // Draw charges collected on balloon
+            if (state.visibilityMode === 'all' || state.visibilityMode === 'diff') {
+                state.balloon.charges.forEach(c => {
+                    drawCharge(c.relX, c.relY, c.type);
+                });
+            }
+            
+            ctx.restore();
+        }
+
+        function renderFrame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawSweater();
+            drawWall();
+            drawBalloon();
+        }
+
+        function updateDashboard() {
+            let bCharge = state.balloon.charges.length;
+            
+            let pCount = 0; let nCount = 0;
+            state.sweater.charges.forEach(c => c.type === '+' ? pCount++ : nCount++);
+            let sCharge = pCount - nCount;
+
+            UI.balloonCharge.textContent = bCharge > 0 ? `-${bCharge}` : `0`;
+            UI.sweaterCharge.textContent = sCharge > 0 ? `+${sCharge}` : `0`;
+
+            if (bCharge > 0) {
+                if (state.balloon.x + state.balloon.radiusX > state.wall.x - 20) {
+                    UI.statusBadge.textContent = "กำแพงถูกเหนี่ยวนำ ลูกโป่งติดหนึบ!";
+                    UI.statusBadge.className = "mt-3 text-center py-2 rounded-md font-bold text-xs bg-amber-100 text-amber-700 border border-amber-300 shadow-inner transition-colors";
+                } else {
+                    UI.statusBadge.textContent = "ประจุลบผลักกัน หาที่จับใหม่";
+                    UI.statusBadge.className = "mt-3 text-center py-2 rounded-md font-bold text-xs bg-blue-100 text-blue-700 border border-blue-300 shadow-inner transition-colors";
+                }
+            } else {
+                UI.statusBadge.textContent = "ถูลูกโป่งกับเสื้อเพื่อรับประจุลบ";
+                UI.statusBadge.className = "mt-3 text-center py-2 rounded-md font-bold text-xs bg-slate-100 text-slate-600 border border-slate-300 shadow-inner transition-colors";
+            }
+        }
+
+        // ---------------------------------------------------------
+        // UI Controls
+        // ---------------------------------------------------------
+        UI.visBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                UI.visBtns.forEach(b => {
+                    b.classList.remove('bg-amber-100', 'text-amber-700', 'border-amber-500');
+                    b.classList.add('bg-slate-100', 'text-slate-600', 'border-transparent');
+                });
+                const t = e.target;
+                t.classList.remove('bg-slate-100', 'text-slate-600', 'border-transparent');
+                t.classList.add('bg-amber-100', 'text-amber-700', 'border-amber-500');
+                
+                state.visibilityMode = t.dataset.mode;
+            });
+        });
+
+        UI.btnReset.addEventListener('click', () => {
+            initCharges();
+            state.balloon.vx = 0;
+            state.balloon.vy = 0;
+            state.balloon.x = canvas.width * 0.6;
+            state.balloon.y = canvas.height / 2;
+            updateDashboard();
+        });
+
+        // ---------------------------------------------------------
+        // Main Loop
+        // ---------------------------------------------------------
+        function loop() {
+            updatePhysics();
+            renderFrame();
+            updateDashboard();
+            requestAnimationFrame(loop);
+        }
+
+        // Init
+        resizeCanvas();
+        initCharges();
+        loop();
+
+    </script>
+</body>
+</html>

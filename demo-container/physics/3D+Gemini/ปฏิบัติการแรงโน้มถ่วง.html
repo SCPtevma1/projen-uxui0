@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gravity Force Lab Simulation</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+    <style>
+        body { font-family: 'Kanit', sans-serif; background-color: #f8fafc; margin: 0; overflow: hidden; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        
+        /* Custom Slider Styling */
+        .slider-m1 { -webkit-appearance: none; width: 100%; height: 8px; border-radius: 5px; background: #bfdbfe; outline: none; }
+        .slider-m1::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #3b82f6; cursor: pointer; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: transform 0.1s; }
+        .slider-m1::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+        .slider-m2 { -webkit-appearance: none; width: 100%; height: 8px; border-radius: 5px; background: #fecaca; outline: none; }
+        .slider-m2::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #ef4444; cursor: pointer; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: transform 0.1s; }
+        .slider-m2::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        #canvas-container {
+            background: linear-gradient(to bottom, #0f172a 0%, #1e293b 100%); /* Space-like dark background */
+            cursor: default;
+        }
+
+        /* Superscript styling for scientific notation in HTML */
+        .sci-not { font-family: 'Courier New', Courier, monospace; }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col md:flex-row text-slate-800">
+
+    <main class="flex-1 relative flex flex-col items-center overflow-hidden h-full" id="canvas-container">
+        
+        <!-- Live Data Dashboard (Overlay) -->
+        <div class="absolute top-4 left-4 z-10 bg-white/95 p-4 rounded-xl shadow-lg border border-slate-200 min-w-[280px] backdrop-blur-sm pointer-events-none">
+            <h3 class="font-bold text-slate-800 border-b pb-2 mb-3 flex items-center gap-2">
+                <i data-lucide="magnet" class="w-5 h-5 text-indigo-500"></i> ค่าแรงดึงดูด (Gravity Force)
+            </h3>
+            
+            <div class="space-y-3 text-sm">
+                <!-- Force 1 on 2 -->
+                <div>
+                    <div class="flex justify-between text-xs text-slate-500 mb-1">
+                        <span>แรงที่ m<sub>1</sub> ดึงดูด m<sub>2</sub> (F<sub>12</sub>)</span>
+                    </div>
+                    <div class="bg-blue-50 border border-blue-100 px-3 py-2 rounded-lg flex justify-between items-center">
+                        <span class="text-blue-800 font-bold">F<sub>12</sub> =</span>
+                        <span id="disp-f12" class="font-black text-blue-600 sci-not tracking-wide">0.00 x 10<sup>0</sup> N</span>
+                    </div>
+                </div>
+
+                <!-- Force 2 on 1 -->
+                <div>
+                    <div class="flex justify-between text-xs text-slate-500 mb-1">
+                        <span>แรงที่ m<sub>2</sub> ดึงดูด m<sub>1</sub> (F<sub>21</sub>)</span>
+                    </div>
+                    <div class="bg-red-50 border border-red-100 px-3 py-2 rounded-lg flex justify-between items-center">
+                        <span class="text-red-800 font-bold">F<sub>21</sub> =</span>
+                        <span id="disp-f21" class="font-black text-red-600 sci-not tracking-wide">0.00 x 10<sup>0</sup> N</span>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-slate-200 flex justify-between items-center text-xs">
+                    <span class="text-slate-500">ระยะห่าง (r):</span>
+                    <span id="disp-r" class="font-bold text-slate-700 text-sm">4.00 m</span>
+                </div>
+            </div>
+            
+            <div id="status-badge" class="mt-4 text-center py-2 rounded-md font-bold text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-inner flex items-center justify-center gap-2">
+                <i data-lucide="info" class="w-4 h-4"></i> แรงคู่ปฏิกิริยามีขนาดเท่ากันเสมอ
+            </div>
+        </div>
+
+        <!-- HTML5 Canvas for Simulation -->
+        <canvas id="simCanvas" class="w-full h-full absolute inset-0"></canvas>
+        
+        <!-- Interactive Hint -->
+        <div id="interaction-hint" class="absolute bottom-8 z-10 bg-slate-800/80 text-white px-6 py-3 rounded-full shadow-lg backdrop-blur pointer-events-none animate-bounce flex items-center gap-4 text-sm font-light">
+            <span class="flex items-center gap-2"><i data-lucide="hand" class="w-4 h-4 text-blue-400"></i> ลากมวลเพื่อเปลี่ยนระยะห่าง (r)</span>
+            <div class="w-px h-4 bg-slate-500"></div>
+            <span class="flex items-center gap-2"><i data-lucide="ruler" class="w-4 h-4 text-yellow-400"></i> ลากไม้บรรทัดเพื่อวัดระยะ</span>
+        </div>
+    </main>
+
+    <aside class="w-full md:w-[420px] glass-panel h-full overflow-y-auto border-l border-slate-200 shadow-2xl flex flex-col z-20">
+        <!-- Header -->
+        <div class="bg-indigo-700 text-white p-5 shadow-md">
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <i data-lucide="globe-2"></i> Gravity Force Lab
+            </h1>
+            <p class="text-indigo-200 text-sm mt-1">จำลองแรงดึงดูดระหว่างมวลของนิวตัน</p>
+        </div>
+
+        <div class="p-6 space-y-6 flex-1 bg-slate-50">
+            <!-- Controls Section -->
+            <section class="space-y-5 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-lg font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
+                    <i data-lucide="sliders-horizontal" class="w-5 h-5 text-indigo-500"></i> ตั้งค่าตัวแปร (Inputs)
+                </h2>
+
+                <!-- Mass 1 Control -->
+                <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                    <label class="flex justify-between text-sm font-bold text-blue-800 mb-2">
+                        <span class="flex items-center gap-1"><div class="w-3 h-3 rounded-full bg-blue-500"></div> มวล m<sub>1</sub></span>
+                        <span id="val-m1" class="text-blue-600 bg-white px-2 py-0.5 rounded shadow-sm border border-blue-200">100 kg</span>
+                    </label>
+                    <input type="range" id="input-m1" min="10" max="1000" step="10" value="100" class="slider-m1">
+                </div>
+
+                <!-- Mass 2 Control -->
+                <div class="bg-red-50 p-3 rounded-lg border border-red-100">
+                    <label class="flex justify-between text-sm font-bold text-red-800 mb-2">
+                        <span class="flex items-center gap-1"><div class="w-3 h-3 rounded-full bg-red-500"></div> มวล m<sub>2</sub></span>
+                        <span id="val-m2" class="text-red-600 bg-white px-2 py-0.5 rounded shadow-sm border border-red-200">400 kg</span>
+                    </label>
+                    <input type="range" id="input-m2" min="10" max="1000" step="10" value="400" class="slider-m2">
+                </div>
+                
+                <!-- Display Option -->
+                <div class="flex items-center justify-between pt-2">
+                    <span class="text-sm font-semibold text-slate-700">รูปแบบตัวเลข:</span>
+                    <select id="display-format" class="text-sm border border-slate-300 rounded p-1 bg-slate-50 outline-none focus:ring-1 focus:ring-indigo-500">
+                        <option value="scientific">สัญกรณ์วิทย์ (Scientific)</option>
+                        <option value="decimal">ทศนิยม (Decimal)</option>
+                    </select>
+                </div>
+            </section>
+
+            <section class="space-y-4 bg-indigo-50/50 p-5 rounded-xl border border-indigo-100 text-sm">
+                <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2 border-b-2 border-indigo-200 pb-2">
+                    <i data-lucide="book-open" class="w-5 h-5 text-indigo-600"></i> หลักการฟิสิกส์
+                </h2>
+                
+                <div class="space-y-4 text-slate-700 h-64 overflow-y-auto pr-2 custom-scrollbar">
+                    
+                    <div>
+                        <strong class="text-slate-900 text-base text-indigo-700"><i data-lucide="function-square" class="inline w-4 h-4 mr-1"></i>กฎความโน้มถ่วงสากล</strong>
+                        <div class="bg-white p-2 mt-2 rounded border border-slate-200 shadow-sm text-center font-serif text-lg font-bold text-slate-800 tracking-wider">
+                            F = G <span class="fraction"><span class="top">m<sub>1</sub>m<sub>2</sub></span><span class="bottom">r<sup>2</sup></span></span>
+                        </div>
+                        <p class="mt-2 leading-relaxed text-xs">
+                            - <b>G</b> (ค่านิจโน้มถ่วงสากล) &approx; 6.67 &times; 10<sup>-11</sup> N&middot;m&sup2;/kg&sup2;<br>
+                            - แรงดึงดูดแปรผันตรงกับผลคูณของมวล และแปรผกผันกับระยะทางยกกำลังสอง
+                        </p>
+                    </div>
+
+                    <div>
+                        <strong class="text-slate-900 text-base text-emerald-700"><i data-lucide="arrow-left-right" class="inline w-4 h-4 mr-1"></i>กฎข้อที่ 3 ของนิวตัน (Force Pairs)</strong>
+                        <p class="mt-1 leading-relaxed text-xs">
+                            สังเกตขนาดของแรง (F<sub>12</sub> และ F<sub>21</sub>) ไม่ว่าคุณจะปรับมวล m<sub>1</sub> ให้ใหญ่กว่า m<sub>2</sub> แค่ไหน <b>แรงที่กระทำต่อกันจะมีขนาดเท่ากันเป๊ะ แต่ทิศทางตรงข้ามเสมอ!</b> (Action = Reaction)
+                        </p>
+                    </div>
+
+                    <div>
+                        <strong class="text-slate-900 text-base text-amber-600"><i data-lucide="minimize-2" class="inline w-4 h-4 mr-1"></i>กฎกำลังสองผกผัน (Inverse Square Law)</strong>
+                        <p class="mt-1 leading-relaxed text-xs">
+                            <span class="font-semibold text-amber-700">💡 ลองทำดู:</span> ลากมวลให้ถอยห่างออกไปเป็น 2 เท่า คุณจะพบว่าแรงดึงดูดไม่ได้ลดลงครึ่งหนึ่ง แต่ลดลงฮวบฮาบเหลือเพียง <b>1/4</b> ของค่าเดิม! นี่คือความหมายของการหารด้วย r<sup>2</sup>
+                        </p>
+                    </div>
+                    
+                    <div class="bg-slate-100 p-3 rounded-lg border border-slate-200">
+                        <strong class="text-slate-800 text-sm">การหาค่าคงตัว (G)</strong>
+                        <p class="mt-1 text-xs text-slate-600 leading-relaxed">
+                            คาเวนดิช (Cavendish) เป็นนักวิทยาศาสตร์คนแรกที่ทดลองวัดแรงที่น้อยมากๆ นี้ได้สำเร็จโดยใช้เครื่องมือ "ตาชั่งบิด" (Torsion Balance) ทำให้เราสามารถคำนวณมวลของโลกได้เป็นครั้งแรก!
+                        </p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </aside>
+
+    <style>
+        /* CSS specific for the fraction rendering in physics explanation */
+        .fraction { display: inline-block; vertical-align: middle; margin: 0 0.2em 0.4ex; text-align: center; }
+        .fraction > span { display: block; padding-top: 0.15em; }
+        .fraction span.top { border-bottom: 2px solid #1e293b; }
+        .fraction span.bottom { display: block; }
+    </style>
+
+    <script>
+        // Initialize Icons
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        // ---------------------------------------------------------
+        // Physics & App State
+        // ---------------------------------------------------------
+        const G = 6.67430e-11; // Gravitational constant
+        
+        // Render scaling: 1 meter = 60 pixels
+        const PIXELS_PER_METER = 60;
+
+        const state = {
+            m1: 100, // kg
+            m2: 400, // kg
+            
+            // X coordinates in meters (relative to an origin)
+            x1_m: -2.0, 
+            x2_m: 2.0,
+            
+            // Evaluated values
+            r_m: 4.0, // Distance in meters
+            Force: 0, // Force in Newtons
+            
+            // UI State
+            format: 'scientific', // 'scientific' or 'decimal'
+            
+            // Dragging Flags
+            isDraggingM1: false,
+            isDraggingM2: false,
+            isDraggingRuler: false,
+            
+            // Ruler State (Coordinates in pixels)
+            ruler: {
+                x: 0,
+                y: 0,
+                width: PIXELS_PER_METER * 10, // 10 meters long ruler
+                height: 40,
+                offsetX: 0, // For smooth dragging
+                offsetY: 0
+            }
+        };
+
+        // DOM Elements
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const ui = {
+            inputM1: document.getElementById('input-m1'),
+            valM1: document.getElementById('val-m1'),
+            inputM2: document.getElementById('input-m2'),
+            valM2: document.getElementById('val-m2'),
+            formatSelect: document.getElementById('display-format'),
+            
+            dispF12: document.getElementById('disp-f12'),
+            dispF21: document.getElementById('disp-f21'),
+            dispR: document.getElementById('disp-r'),
+            
+            hint: document.getElementById('interaction-hint')
+        };
+
+        let cx, cy; // Canvas center
+
+        // ---------------------------------------------------------
+        // Initialization & Resizing
+        // ---------------------------------------------------------
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            
+            cx = canvas.width / 2;
+            cy = canvas.height / 2;
+            
+            // Initialize ruler position at bottom center on first load
+            if (state.ruler.y === 0) {
+                state.ruler.x = cx - state.ruler.width / 2;
+                state.ruler.y = canvas.height - 100;
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // ---------------------------------------------------------
+        // Event Listeners (UI Controls)
+        // ---------------------------------------------------------
+        ui.inputM1.addEventListener('input', (e) => {
+            state.m1 = parseFloat(e.target.value);
+            ui.valM1.textContent = `${state.m1} kg`;
+            updatePhysics();
+        });
+
+        ui.inputM2.addEventListener('input', (e) => {
+            state.m2 = parseFloat(e.target.value);
+            ui.valM2.textContent = `${state.m2} kg`;
+            updatePhysics();
+        });
+
+        ui.formatSelect.addEventListener('change', (e) => {
+            state.format = e.target.value;
+            updateDashboard();
+        });
+
+        // ---------------------------------------------------------
+        // Input Handling (Canvas Dragging)
+        // ---------------------------------------------------------
+        function getMousePos(evt) {
+            const rect = canvas.getBoundingClientRect();
+            let clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+            let clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        // Helper to get pixel coordinates of masses
+        function getMassPixels() {
+            // We set an origin for rendering: let origin x=0 meter be at cx
+            const x1_px = cx + (state.x1_m * PIXELS_PER_METER);
+            const x2_px = cx + (state.x2_m * PIXELS_PER_METER);
+            const y_px = cy - 50; // slightly above center to leave room for ruler
+            
+            const r1 = getRadius(state.m1);
+            const r2 = getRadius(state.m2);
+            
+            return { x1_px, x2_px, y_px, r1, r2 };
+        }
+
+        function handlePointerDown(e) {
+            const pos = getMousePos(e);
+            const { x1_px, x2_px, y_px, r1, r2 } = getMassPixels();
+            
+            // Check Mass 1
+            if (Math.hypot(pos.x - x1_px, pos.y - y_px) <= r1) {
+                state.isDraggingM1 = true;
+                ui.hint.style.opacity = '0'; // hide hint on first interact
+                return;
+            }
+            
+            // Check Mass 2
+            if (Math.hypot(pos.x - x2_px, pos.y - y_px) <= r2) {
+                state.isDraggingM2 = true;
+                ui.hint.style.opacity = '0';
+                return;
+            }
+            
+            // Check Ruler
+            if (pos.x >= state.ruler.x && pos.x <= state.ruler.x + state.ruler.width &&
+                pos.y >= state.ruler.y && pos.y <= state.ruler.y + state.ruler.height) {
+                state.isDraggingRuler = true;
+                state.ruler.offsetX = pos.x - state.ruler.x;
+                state.ruler.offsetY = pos.y - state.ruler.y;
+                ui.hint.style.opacity = '0';
+                return;
+            }
+        }
+
+        function handlePointerMove(e) {
+            const pos = getMousePos(e);
+            const { x1_px, x2_px, y_px, r1, r2 } = getMassPixels();
+            
+            // Cursor changing
+            let hover = false;
+            if (Math.hypot(pos.x - x1_px, pos.y - y_px) <= r1) hover = true;
+            if (Math.hypot(pos.x - x2_px, pos.y - y_px) <= r2) hover = true;
+            if (pos.x >= state.ruler.x && pos.x <= state.ruler.x + state.ruler.width &&
+                pos.y >= state.ruler.y && pos.y <= state.ruler.y + state.ruler.height) hover = true;
+                
+            canvas.style.cursor = hover ? 'grab' : 'default';
+            if (state.isDraggingM1 || state.isDraggingM2 || state.isDraggingRuler) {
+                canvas.style.cursor = 'grabbing';
+            }
+
+            // Dragging Logic
+            if (state.isDraggingM1) {
+                // Convert mouse pixel back to meters relative to cx
+                let newX_m = (pos.x - cx) / PIXELS_PER_METER;
+                // Constraints: don't cross m2, keep minimum 0.5m distance
+                if (newX_m > state.x2_m - 0.5) newX_m = state.x2_m - 0.5;
+                state.x1_m = newX_m;
+                updatePhysics();
+            }
+            else if (state.isDraggingM2) {
+                let newX_m = (pos.x - cx) / PIXELS_PER_METER;
+                if (newX_m < state.x1_m + 0.5) newX_m = state.x1_m + 0.5;
+                state.x2_m = newX_m;
+                updatePhysics();
+            }
+            else if (state.isDraggingRuler) {
+                state.ruler.x = pos.x - state.ruler.offsetX;
+                state.ruler.y = pos.y - state.ruler.offsetY;
+            }
+        }
+
+        function handlePointerUp() {
+            state.isDraggingM1 = false;
+            state.isDraggingM2 = false;
+            state.isDraggingRuler = false;
+            canvas.style.cursor = 'default';
+        }
+
+        canvas.addEventListener('mousedown', handlePointerDown);
+        window.addEventListener('mousemove', handlePointerMove);
+        window.addEventListener('mouseup', handlePointerUp);
+        
+        canvas.addEventListener('touchstart', handlePointerDown, {passive: false});
+        window.addEventListener('touchmove', handlePointerMove, {passive: false});
+        window.addEventListener('touchend', handlePointerUp);
+
+        // ---------------------------------------------------------
+        // Physics Engine
+        // ---------------------------------------------------------
+        function updatePhysics() {
+            state.r_m = Math.abs(state.x2_m - state.x1_m);
+            
+            // F = G * (m1 * m2) / r^2
+            state.Force = G * ((state.m1 * state.m2) / (state.r_m * state.r_m));
+            
+            updateDashboard();
+        }
+
+        function formatSciNotation(value) {
+            if (value === 0) return `0.00 x 10<sup>0</sup> N`;
+            let exp = Math.floor(Math.log10(value));
+            let mantissa = value / Math.pow(10, exp);
+            return `${mantissa.toFixed(2)} x 10<sup>${exp}</sup> N`;
+        }
+        
+        function formatDecimal(value) {
+            // For tiny numbers, standard toFixed might just show 0.00000000
+            // We use standard string conversion to avoid massive strings if possible
+            let dec = value.toFixed(12); // e.g. 0.000000041743
+            return `${dec} N`;
+        }
+
+        function updateDashboard() {
+            let displayStr = "";
+            if (state.format === 'scientific') {
+                displayStr = formatSciNotation(state.Force);
+            } else {
+                displayStr = formatDecimal(state.Force);
+            }
+            
+            ui.dispF12.innerHTML = displayStr;
+            ui.dispF21.innerHTML = displayStr;
+            ui.dispR.textContent = `${state.r_m.toFixed(2)} m`;
+        }
+
+        // ---------------------------------------------------------
+        // Rendering Graphics
+        // ---------------------------------------------------------
+        function getRadius(mass) {
+            // Base radius 25px, scales logarithmically with mass to look reasonable
+            return 25 + Math.log10(mass) * 12;
+        }
+
+        function drawMass(x, y, r, colorStart, colorEnd, label) {
+            // Draw gradient sphere
+            const grad = ctx.createRadialGradient(x - r/3, y - r/3, r/4, x, y, r);
+            grad.addColorStop(0, colorStart);
+            grad.addColorStop(1, colorEnd);
+            
+            // Shadow
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetY = 5;
+            
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fillStyle = grad;
+            ctx.fill();
+            
+            // Reset Shadow
+            ctx.shadowColor = 'transparent';
+            
+            // Text Label
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 16px Kanit";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(label, x, y);
+        }
+
+        function drawForceArrow(startX, startY, magnitude, direction, color, labelText) {
+            // Scale arrow length for visual representation.
+            // Force ranges roughly from 10^-11 to 10^-5.
+            // Using a logarithmic mapping to keep arrows visible but show growth.
+            // Base length: 20px, max length ~200px
+            let logForce = Math.log10(magnitude);
+            // Example mapping: 10^-11 -> 20px, 10^-5 -> 200px
+            // Normalized: (logForce - (-11)) / (-5 - (-11)) = (logForce + 11) / 6
+            let normalized = (logForce + 11) / 6;
+            if (normalized < 0.1) normalized = 0.1;
+            if (normalized > 1.2) normalized = 1.2;
+            
+            const arrowLen = 20 + (normalized * 150);
+            const endX = startX + (arrowLen * direction);
+            
+            const headlen = 15; // arrow head length
+
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            // Main Line
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(endX, startY);
+            ctx.stroke();
+
+            // Arrow Head
+            ctx.beginPath();
+            ctx.moveTo(endX, startY);
+            ctx.lineTo(endX - headlen * direction, startY - headlen/1.5);
+            ctx.lineTo(endX - headlen * direction, startY + headlen/1.5);
+            ctx.fill();
+            
+            // Label
+            ctx.fillStyle = color;
+            ctx.font = "bold 14px Kanit";
+            ctx.textAlign = direction > 0 ? "left" : "right";
+            const textOffset = direction > 0 ? 10 : -10;
+            ctx.fillText(labelText, endX + textOffset, startY - 15);
+        }
+
+        function drawTrack(y_px) {
+            // Draw a subtle line indicating the track
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 10]);
+            ctx.beginPath();
+            ctx.moveTo(0, y_px);
+            ctx.lineTo(canvas.width, y_px);
+            ctx.stroke();
+            ctx.setLineDash([]); // reset
+        }
+
+        function drawRuler() {
+            const r = state.ruler;
+            
+            // Ruler Background (Wood/Yellowish)
+            ctx.fillStyle = "#fbbf24";
+            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            ctx.shadowBlur = 5;
+            ctx.shadowOffsetY = 3;
+            ctx.fillRect(r.x, r.y, r.width, r.height);
+            ctx.shadowColor = 'transparent';
+            
+            // Border
+            ctx.strokeStyle = "#b45309";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(r.x, r.y, r.width, r.height);
+
+            // Tick Marks and Numbers
+            ctx.fillStyle = "#78350f";
+            ctx.strokeStyle = "#78350f";
+            ctx.font = "bold 12px Kanit";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "top";
+            
+            for (let i = 0; i <= 10; i++) {
+                let px = r.x + (i * PIXELS_PER_METER);
+                
+                // Major tick
+                ctx.beginPath();
+                ctx.moveTo(px, r.y);
+                ctx.lineTo(px, r.y + 15);
+                ctx.stroke();
+                
+                ctx.fillText(i + "m", px, r.y + 18);
+                
+                // Minor ticks
+                if (i < 10) {
+                    for(let j=1; j<=4; j++) {
+                        let subPx = px + (j * (PIXELS_PER_METER/5));
+                        ctx.beginPath();
+                        ctx.moveTo(subPx, r.y);
+                        ctx.lineTo(subPx, r.y + 8);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function renderFrame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const { x1_px, x2_px, y_px, r1, r2 } = getMassPixels();
+
+            drawTrack(y_px);
+            
+            // Draw Ruler (render below spheres if they overlap)
+            drawRuler();
+
+            // Draw Force Vectors (Originate from center, slightly offset up to not overlap labels)
+            const arrowStartY = y_px - Math.max(r1, r2) - 10;
+            
+            // Arrow on M1 (Points right, direction = 1)
+            drawForceArrow(x1_px, arrowStartY, state.Force, 1, "#60a5fa", "F₁₂");
+            
+            // Arrow on M2 (Points left, direction = -1)
+            drawForceArrow(x2_px, arrowStartY, state.Force, -1, "#f87171", "F₂₁");
+
+            // Draw Centers indicators
+            ctx.strokeStyle = "rgba(255,255,255,0.3)";
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(x1_px, y_px); ctx.lineTo(x1_px, canvas.height); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(x2_px, y_px); ctx.lineTo(x2_px, canvas.height); ctx.stroke();
+
+            // Draw Masses
+            drawMass(x1_px, y_px, r1, "#93c5fd", "#1d4ed8", "m₁");
+            drawMass(x2_px, y_px, r2, "#fca5a5", "#b91c1c", "m₂");
+            
+            // Draw Distance Dimension Line
+            const dimY = y_px + Math.max(r1, r2) + 20;
+            ctx.strokeStyle = "#cbd5e1";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            // Horizontal line
+            ctx.moveTo(x1_px, dimY);
+            ctx.lineTo(x2_px, dimY);
+            // End caps
+            ctx.moveTo(x1_px, dimY - 5); ctx.lineTo(x1_px, dimY + 5);
+            ctx.moveTo(x2_px, dimY - 5); ctx.lineTo(x2_px, dimY + 5);
+            ctx.stroke();
+            
+            // Distance Label on Canvas
+            ctx.fillStyle = "#f8fafc";
+            ctx.font = "14px Kanit";
+            ctx.textAlign = "center";
+            ctx.fillText(`r = ${state.r_m.toFixed(2)} m`, (x1_px + x2_px)/2, dimY - 10);
+
+            requestAnimationFrame(renderFrame);
+        }
+
+        // Initialize and Start
+        updatePhysics();
+        renderFrame();
+
+    </script>
+</body>
+</html>

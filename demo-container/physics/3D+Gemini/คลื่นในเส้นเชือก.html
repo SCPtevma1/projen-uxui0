@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>คลื่นในเส้นเชือกและโมเดลแท่งไม้ (Wave on a String & Wave Machine)</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        panelBg: 'rgba(30, 41, 59, 0.85)',
+                        accent: '#06b6d4', // Cyan
+                        nodeNormal: '#3b82f6',
+                        nodeHeavy: '#f43f5e',
+                        machineWood: '#d4a373',
+                        machineClay: '#e07a5f'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Sarabun', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- MathJax for Formulas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        input[type=range] { accent-color: #06b6d4; }
+        input[type=checkbox] { accent-color: #06b6d4; }
+        
+        .math-display { font-size: 0.85rem; color: #cffafe; }
+
+        /* Custom Toggle Switch */
+        .toggle-checkbox:checked { right: 0; border-color: #06b6d4; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #06b6d4; }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col">
+
+    <header class="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 z-20 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                <i class="fa-solid fa-water text-white text-sm"></i>
+            </div>
+            <a href="../physics.html">
+                <h1 class="text-base font-semibold tracking-wide flex items-center gap-2">
+                แบบจำลองคลื่นในเส้นเชือก
+                <span class="text-xs font-normal text-slate-400 bg-slate-800 px-2 py-0.5 rounded">Waves Simulation</span>
+            </h1>
+            </a>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="btn-camera" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-video text-cyan-400"></i> มุมมองเริ่มต้น
+            </button>
+            <button id="btn-info" class="bg-indigo-600 hover:bg-indigo-500 text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-book-open text-white"></i> ทฤษฎี & คู่มือ
+            </button>
+        </div>
+    </header>
+
+    <div class="flex-1 relative overflow-hidden flex">
+        
+        <!-- ThreeJS Canvas -->
+        <div id="canvas-container" class="absolute inset-0 w-full h-full z-0 cursor-crosshair">
+            <canvas id="three-canvas"></canvas>
+        </div>
+        
+        <!-- Interactive Drag Overlay Instruction -->
+        <div id="drag-hint" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/50 text-xl font-semibold pointer-events-none transition-opacity duration-500 hidden">
+            คลิกค้างแล้วลากขึ้น-ลง เพื่อสร้างคลื่นด้วยมือ
+        </div>
+
+        <!-- Left HUD: Controls -->
+        <aside class="absolute top-4 left-4 w-[22rem] glass-panel rounded-xl flex flex-col z-10 max-h-[calc(100vh-6rem)] overflow-y-auto">
+            <div class="p-4 border-b border-slate-700/50">
+                <h2 class="text-sm font-semibold text-cyan-400 flex items-center gap-2 uppercase tracking-wide">
+                    <i class="fa-solid fa-sliders"></i> ควบคุมตัวแปร
+                </h2>
+            </div>
+            
+            <div class="p-4 space-y-5">
+                
+                <!-- Model Type -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-2">เลือกรูปแบบโมเดล (Model Type)</label>
+                    <div class="flex rounded-lg overflow-hidden border border-slate-600">
+                        <button id="btn-model-string" class="flex-1 py-2 text-xs bg-cyan-600 text-white font-medium shadow-inner transition-colors">เส้นเชือก (String)</button>
+                        <button id="btn-model-machine" class="flex-1 py-2 text-xs bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors">แท่งไม้ (Wave Machine)</button>
+                    </div>
+                </div>
+
+                <!-- Oscillation Controls -->
+                <div class="bg-slate-900/50 p-3 rounded-lg border border-slate-700 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-semibold text-slate-200"><i class="fa-solid fa-motor-pwm text-amber-400"></i> เครื่องสั่น (Oscillator)</span>
+                        <button id="btn-toggle-motor" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1 rounded transition-colors">
+                            เปิด (ON)
+                        </button>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-400">แอมพลิจูด (Amplitude)</span>
+                            <span id="val-amplitude" class="font-mono text-cyan-300">0.75</span>
+                        </div>
+                        <input type="range" id="sl-amplitude" min="0.0" max="1.5" step="0.05" value="0.75" class="w-full h-1.5 bg-slate-600 rounded-lg cursor-pointer">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-400">ความถี่ (Frequency)</span>
+                            <span id="val-frequency" class="font-mono text-cyan-300">1.50 Hz</span>
+                        </div>
+                        <input type="range" id="sl-frequency" min="0.1" max="3.0" step="0.1" value="1.5" class="w-full h-1.5 bg-slate-600 rounded-lg cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- Medium Properties -->
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-300">การทำให้หน่วง (Damping)</span>
+                            <span id="val-damping" class="font-mono text-slate-400">น้อย</span>
+                        </div>
+                        <input type="range" id="sl-damping" min="0" max="50" step="1" value="5" class="w-full h-1.5 bg-slate-700 rounded-lg cursor-pointer">
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-300">ความตึงเชือก (Tension)</span>
+                            <span id="val-tension" class="font-mono text-slate-400">ปานกลาง</span>
+                        </div>
+                        <input type="range" id="sl-tension" min="10" max="100" step="5" value="50" class="w-full h-1.5 bg-slate-700 rounded-lg cursor-pointer">
+                        <p class="text-[9px] text-slate-500 mt-1">ส่งผลต่อความเร็วคลื่น $v = \sqrt{T/\mu}$</p>
+                    </div>
+                </div>
+
+                <!-- Boundaries and Medium Split -->
+                <div class="pt-3 border-t border-slate-700/50 space-y-3">
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1">ลักษณะปลาย (Boundary Condition)</label>
+                        <select id="select-boundary" class="w-full bg-slate-800 border border-slate-600 rounded-md p-1.5 text-xs text-slate-200">
+                            <option value="fixed">ปลายตรึง (Fixed End) - สะท้อนกลับเฟสตรงข้าม</option>
+                            <option value="loose">ปลายอิสระ (Loose End) - สะท้อนกลับเฟสเดิม</option>
+                            <option value="none">ปลายเปิด / ไร้ขอบเขต (No End)</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-slate-200">ทดสอบตัวกลางต่างชนิดกัน<br><span class="text-[9px] text-slate-400 font-normal">เชือก 2 เส้นต่อกัน (เส้นเล็กต่อเส้นใหญ่)</span></span>
+                        <div class="relative inline-block w-10 align-middle select-none">
+                            <input type="checkbox" id="chk-medium" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 transition-all duration-300 left-0 checked:left-5"/>
+                            <label for="chk-medium" class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-600 cursor-pointer transition-colors duration-300"></label>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- Right HUD: Real-time Data -->
+        <aside class="absolute top-4 right-4 w-72 glass-panel rounded-xl flex flex-col z-10 pointer-events-none">
+            <div class="p-4 border-b border-slate-700/50">
+                <h2 class="text-sm font-semibold text-emerald-400 flex items-center gap-2 uppercase tracking-wide">
+                    <i class="fa-solid fa-chart-line"></i> การวิเคราะห์คลื่น
+                </h2>
+            </div>
+            
+            <div class="p-4 space-y-4">
+                
+                <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 space-y-3">
+                    <div class="flex justify-between items-end border-b border-slate-700 pb-1">
+                        <div class="text-[10px] text-slate-400">อัตราเร็วคลื่น (Wave Speed, $v$)</div>
+                        <div class="font-mono text-sm text-cyan-300" id="readout-speed">0.0 m/s</div>
+                    </div>
+                    
+                    <div class="flex justify-between items-end">
+                        <div class="text-[10px] text-slate-400">ความยาวคลื่น (Wavelength, $\lambda$)</div>
+                        <div class="font-mono text-sm text-fuchsia-300" id="readout-lambda">0.0 m</div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900/80 rounded-lg p-3 border border-slate-600">
+                    <h3 class="text-[11px] font-semibold text-slate-300 mb-2">สมการที่เกี่ยวข้อง</h3>
+                    <div class="math-display text-center mb-2">$$v = f \times \lambda$$</div>
+                    <div class="math-display text-center">$$v = \sqrt{\frac{T}{\mu}}$$</div>
+                    <div class="text-[9px] text-slate-400 mt-2">
+                        $T$ = ความตึงเชือก, $\mu$ = มวลต่อความยาว
+                    </div>
+                </div>
+
+                <!-- Analysis Text -->
+                <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                    <div class="text-[10px] font-semibold text-slate-300 mb-1">สังเกตการณ์:</div>
+                    <p id="analysis-text" class="text-[10px] text-slate-400 leading-relaxed min-h-[50px]">
+                        เริ่มจำลองคลื่น... ลองปรับความถี่เพื่อให้เกิด "คลื่นนิ่ง (Standing Wave)"
+                    </p>
+                </div>
+
+            </div>
+        </aside>
+
+        <div id="theory-modal" class="hidden absolute inset-0 bg-slate-900/90 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+            <div class="bg-slate-800 border border-slate-600 rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl pointer-events-auto">
+                <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50 rounded-t-xl shrink-0">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-book-open text-cyan-400"></i> ทฤษฎีคลื่นกล (Mechanical Waves)</h2>
+                    <button id="btn-close-modal" class="text-slate-400 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                
+                <div class="p-6 overflow-y-auto space-y-6 text-sm text-slate-300 leading-relaxed">
+                    
+                    <section>
+                        <h3 class="text-cyan-400 font-semibold mb-2 text-base">1. แบบโมเดลกายภาพ (Physical Model)</h3>
+                        <p class="mb-2"><strong>โมเดลเส้นเชือก (String Model):</strong> เป็นการจำลองคลื่นตามขวางที่เห็นภาพได้ง่ายที่สุด เช่น การสะบัดเชือก ในห้องเรียนมักใช้เชือกที่มีน้ำหนักและยืดหยุ่นต่ำ และใช้ <strong>เครื่องสั่นสัญญาณ (Mechanical Wave Vibrator)</strong> ដើម្បីสร้างคลื่นต่อเนื่องให้เกิด "คลื่นนิ่ง (Standing Wave)"</p>
+                        <p class="mb-2"><strong>โมเดลแท่งไม้ (Wave Machine Model):</strong> โมเดลคลาสสิกที่ใช้แกนกลางเป็นเทปหรือเชือก แล้วติดแท่งไม้ (เช่น ไม้ไอติม) ในแนวขวาง พร้อมถ่วงน้ำหนักที่ปลาย เมื่อบิดแท่งแรกจะเกิด "คลื่นบิด (Torsional Wave)" ซึ่งเคลื่อนที่ช้าและเห็นรูปร่างคลื่นได้ชัดเจนมาก</p>
+                    </section>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <section class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                            <h3 class="text-amber-400 font-semibold mb-2">คำศัพท์สำคัญ (Key Concepts)</h3>
+                            <ul class="text-[12px] space-y-2">
+                                <li><strong>แอมพลิจูด (Amplitude):</strong> ความสูงของสันคลื่น บ่งบอกถึง "พลังงาน" ของคลื่น</li>
+                                <li><strong>ความถี่ (Frequency):</strong> จำนวนรอบของการสั่นใน 1 วินาที ยิ่งสั่นเร็ว ความถี่สูง ความยาวคลื่นจะสั้นลง</li>
+                                <li><strong>การทำให้หน่วง (Damping):</strong> การสูญเสียพลังงานจากการเสียดสี ทำให้แอมพลิจูดค่อยๆ ลดลงจนหยุดนิ่ง</li>
+                            </ul>
+                        </section>
+                        
+                        <section class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                            <h3 class="text-emerald-400 font-semibold mb-2">พฤติกรรมเมื่อผ่านตัวกลางต่างชนิดกัน</h3>
+                            <p class="text-[11px] mb-2">หากนำเชือกเส้นเล็ก (มวลน้อย) มาต่อกับเชือกเส้นใหญ่ (มวลมาก) และสร้างคลื่น:</p>
+                            <ul class="text-[11px] space-y-1 list-disc pl-4 text-slate-400">
+                                <li><strong>รอยต่อ:</strong> จะเกิดทั้งการ "สะท้อน (Reflection)" กลับไป และ "ทะลุผ่าน (Transmission)" ไปยังอีกเส้น</li>
+                                <li><strong>ความเร็ว (v):</strong> คลื่นจะวิ่งเร็วในเชือกเบา และวิ่งช้าลงเมื่อเข้าสู่เชือกหนัก</li>
+                                <li><strong>ความถี่ (f):</strong> คงที่เสมอ (ถูกกำหนดจากแหล่งกำเนิด)</li>
+                                <li><strong>ความยาวคลื่น ($\lambda$):</strong> จะสั้นลงเมื่อคลื่นเข้าสู่ตัวกลางที่เคลื่อนที่ได้ช้ากว่า (เชือกหนัก)</li>
+                            </ul>
+                        </section>
+                    </div>
+
+                    <section class="border-t border-slate-700 pt-4">
+                        <h3 class="text-white font-semibold mb-2 text-sm">การใช้งาน Simulation นี้</h3>
+                        <p class="text-[11px] text-slate-400">
+                            - สามารถปิดเครื่องสั่น (Oscillator) แล้ว <strong>ใช้เมาส์คลิกค้างที่ตัวแรกด้านซ้ายเพื่อลากขึ้นลง (Drag)</strong> สร้างคลื่นแบบ Pulse ด้วยตนเอง<br>
+                            - ลองเปิดฟังก์ชัน <strong>"ตัวกลางต่างชนิดกัน"</strong> สังเกตสีที่เปลี่ยนไปครึ่งหลัง (สีแดงแทนเชือกที่หนักขึ้น) และดูคลื่นที่สะท้อนกลับมาระหว่างรอยต่อ
+                        </p>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. State & Physics Variables ---
+        const NUM_NODES = 80;
+        const STRING_LENGTH = 40.0;
+        const DX = STRING_LENGTH / NUM_NODES;
+        const DT = 0.005; // Physics timestep (seconds)
+
+        let nodes = [];
+        let isOscillating = true;
+        let modelType = 'string'; // 'string' or 'machine'
+        
+        // Physics Parameters
+        let amplitude = 0.75; // meters or radians depending on model
+        let frequency = 1.5; // Hz
+        let damping = 5.0; 
+        let tension = 50.0; // N
+        let boundaryCond = 'fixed'; // 'fixed', 'loose', 'none'
+        let hasSplitMedium = false;
+
+        let simTime = 0;
+        let isDragging = false;
+        let dragY = 0;
+        let accumulator = 0;
+
+        // Visual Colors
+        const COLOR_NORMAL = 0x3b82f6; // Blue
+        const COLOR_HEAVY = 0xf43f5e;  // Rose
+        const COLOR_WOOD = 0xd4a373;
+        const COLOR_CLAY = 0xe07a5f;
+
+        // --- 2. Three.js Setup ---
+        let scene, camera, renderer, controls;
+        let clock = new THREE.Clock();
+        let stringGroup, machineGroup;
+        let lineMesh; // For string visualization
+        let dummyPlane; // For mouse interaction
+        
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+
+        // UI Map
+        const ui = {
+            btnString: document.getElementById('btn-model-string'),
+            btnMachine: document.getElementById('btn-model-machine'),
+            btnMotor: document.getElementById('btn-toggle-motor'),
+            
+            slAmp: document.getElementById('sl-amplitude'),
+            slFreq: document.getElementById('sl-frequency'),
+            slDamp: document.getElementById('sl-damping'),
+            slTens: document.getElementById('sl-tension'),
+            
+            valAmp: document.getElementById('val-amplitude'),
+            valFreq: document.getElementById('val-frequency'),
+            valDamp: document.getElementById('val-damping'),
+            valTens: document.getElementById('val-tension'),
+            
+            selBound: document.getElementById('select-boundary'),
+            chkMedium: document.getElementById('chk-medium'),
+            
+            readSpeed: document.getElementById('readout-speed'),
+            readLambda: document.getElementById('readout-lambda'),
+            txtAnalysis: document.getElementById('analysis-text'),
+            
+            hint: document.getElementById('drag-hint'),
+            
+            btnCam: document.getElementById('btn-camera'),
+            modal: document.getElementById('theory-modal'),
+            btnInfo: document.getElementById('btn-info'),
+            btnClose: document.getElementById('btn-close-modal')
+        };
+
+        init();
+        animate();
+
+        function init() {
+            const container = document.getElementById('canvas-container');
+            
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color('#0f172a');
+            scene.fog = new THREE.FogExp2('#0f172a', 0.015);
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 200);
+            camera.position.set(0, 5, 25);
+
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three-canvas'), antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.target.set(0, 0, 0);
+            
+            // Limit pan/zoom
+            controls.maxDistance = 60;
+            controls.minDistance = 5;
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 20, 10);
+            dirLight.castShadow = true;
+            scene.add(dirLight);
+
+            // Interaction Plane (invisible)
+            const planeGeo = new THREE.PlaneGeometry(100, 100);
+            const planeMat = new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide });
+            dummyPlane = new THREE.Mesh(planeGeo, planeMat);
+            scene.add(dummyPlane);
+
+            initPhysicsNodes();
+            buildStringVisuals();
+            buildMachineVisuals();
+            
+            // Setup Initial Visibility
+            stringGroup.visible = true;
+            machineGroup.visible = false;
+
+            setupEvents();
+            updateCalculations();
+            
+            window.addEventListener('resize', onWindowResize);
+            
+            // Mouse Events for Dragging
+            renderer.domElement.addEventListener('pointerdown', onPointerDown);
+            window.addEventListener('pointermove', onPointerMove);
+            window.addEventListener('pointerup', onPointerUp);
+        }
+
+        function initPhysicsNodes() {
+            nodes = [];
+            const startX = -STRING_LENGTH / 2;
+            
+            for (let i = 0; i < NUM_NODES; i++) {
+                nodes.push({
+                    x: startX + (i * DX), // Rest X position
+                    y: 0, // Displacement
+                    v: 0, // Velocity
+                    a: 0, // Acceleration
+                    m: 1.0 // Mass (per unit length multiplier)
+                });
+            }
+        }
+
+        function applySplitMedium() {
+            for (let i = 0; i < NUM_NODES; i++) {
+                if (hasSplitMedium && i >= NUM_NODES / 2) {
+                    nodes[i].m = 4.0; // 4x heavier
+                } else {
+                    nodes[i].m = 1.0;
+                }
+            }
+            updateVisualColors();
+        }
+
+        function buildStringVisuals() {
+            stringGroup = new THREE.Group();
+            scene.add(stringGroup);
+
+            // Beads
+            const sphereGeo = new THREE.SphereGeometry(0.15, 16, 16);
+            const matNormal = new THREE.MeshStandardMaterial({ color: COLOR_NORMAL, metalness: 0.2, roughness: 0.5 });
+            const matHeavy = new THREE.MeshStandardMaterial({ color: COLOR_HEAVY, metalness: 0.2, roughness: 0.5 });
+
+            for (let i = 0; i < NUM_NODES; i++) {
+                const bead = new THREE.Mesh(sphereGeo, matNormal); // Color updated later
+                bead.position.set(nodes[i].x, 0, 0);
+                
+                // Keep reference to mesh in node
+                nodes[i].stringMesh = bead;
+                stringGroup.add(bead);
+            }
+
+            // Connecting Line
+            const lineGeo = new THREE.BufferGeometry();
+            const positions = new Float32Array(NUM_NODES * 3);
+            lineGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            
+            const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, linewidth: 2 });
+            lineMesh = new THREE.Line(lineGeo, lineMat);
+            stringGroup.add(lineMesh);
+            
+            // Oscillator / Fixed Ends visual hints
+            const endGeo = new THREE.BoxGeometry(0.5, 2, 0.5);
+            const endMat = new THREE.MeshStandardMaterial({ color: 0x475569 });
+            const leftMount = new THREE.Mesh(endGeo, endMat);
+            leftMount.position.set(nodes[0].x - 0.25, 0, 0);
+            stringGroup.add(leftMount);
+            
+            const rightMount = new THREE.Mesh(endGeo, endMat);
+            rightMount.position.set(nodes[NUM_NODES-1].x + 0.25, 0, 0);
+            rightMount.userData.isRightMount = true;
+            stringGroup.add(rightMount);
+        }
+
+        function buildMachineVisuals() {
+            machineGroup = new THREE.Group();
+            scene.add(machineGroup);
+
+            // Central spine wire
+            const spineGeo = new THREE.CylinderGeometry(0.05, 0.05, STRING_LENGTH);
+            const spineMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8 });
+            const spine = new THREE.Mesh(spineGeo, spineMat);
+            spine.rotation.z = Math.PI / 2;
+            machineGroup.add(spine);
+
+            // Sticks and Weights
+            const stickLength = 4.0;
+            const stickGeo = new THREE.BoxGeometry(0.1, 0.1, stickLength);
+            const stickMat = new THREE.MeshStandardMaterial({ color: COLOR_WOOD, roughness: 0.9 });
+            
+            const weightGeo = new THREE.SphereGeometry(0.2, 16, 16);
+            const weightMatNormal = new THREE.MeshStandardMaterial({ color: COLOR_CLAY, roughness: 0.9 });
+            const weightMatHeavy = new THREE.MeshStandardMaterial({ color: COLOR_HEAVY, roughness: 0.9 });
+
+            for (let i = 0; i < NUM_NODES; i++) {
+                const pivot = new THREE.Group();
+                pivot.position.set(nodes[i].x, 0, 0);
+                
+                const stick = new THREE.Mesh(stickGeo, stickMat);
+                
+                const w1 = new THREE.Mesh(weightGeo, weightMatNormal);
+                w1.position.z = stickLength / 2;
+                
+                const w2 = new THREE.Mesh(weightGeo, weightMatNormal);
+                w2.position.z = -stickLength / 2;
+                
+                pivot.add(stick, w1, w2);
+                
+                nodes[i].machineMesh = pivot;
+                nodes[i].w1 = w1; // Reference for color changing
+                nodes[i].w2 = w2;
+                
+                machineGroup.add(pivot);
+            }
+        }
+
+        function updateVisualColors() {
+            const matNormal = new THREE.MeshStandardMaterial({ color: COLOR_NORMAL, metalness: 0.2, roughness: 0.5 });
+            const matHeavy = new THREE.MeshStandardMaterial({ color: COLOR_HEAVY, metalness: 0.2, roughness: 0.5 });
+            
+            const weightMatNormal = new THREE.MeshStandardMaterial({ color: COLOR_CLAY, roughness: 0.9 });
+            const weightMatHeavy = new THREE.MeshStandardMaterial({ color: COLOR_HEAVY, roughness: 0.9 });
+
+            for (let i = 0; i < NUM_NODES; i++) {
+                const isHeavy = nodes[i].m > 1.0;
+                
+                if (nodes[i].stringMesh) {
+                    nodes[i].stringMesh.material = isHeavy ? matHeavy : matNormal;
+                }
+                if (nodes[i].machineMesh) {
+                    nodes[i].w1.material = isHeavy ? weightMatHeavy : weightMatNormal;
+                    nodes[i].w2.material = isHeavy ? weightMatHeavy : weightMatNormal;
+                }
+            }
+        }
+
+        function setupEvents() {
+            // Model Toggle
+            ui.btnString.addEventListener('click', () => {
+                modelType = 'string';
+                ui.btnString.className = "flex-1 py-2 text-xs bg-cyan-600 text-white font-medium shadow-inner transition-colors";
+                ui.btnMachine.className = "flex-1 py-2 text-xs bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors";
+                stringGroup.visible = true;
+                machineGroup.visible = false;
+                
+                // Adjust camera slightly for better view
+                camera.position.set(0, 5, 25);
+            });
+            
+            ui.btnMachine.addEventListener('click', () => {
+                modelType = 'machine';
+                ui.btnMachine.className = "flex-1 py-2 text-xs bg-cyan-600 text-white font-medium shadow-inner transition-colors";
+                ui.btnString.className = "flex-1 py-2 text-xs bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors";
+                stringGroup.visible = false;
+                machineGroup.visible = true;
+                
+                // Angled view for machine to see torsion
+                camera.position.set(10, 10, 20);
+            });
+
+            // Oscillator Toggle
+            ui.btnMotor.addEventListener('click', () => {
+                isOscillating = !isOscillating;
+                if (isOscillating) {
+                    ui.btnMotor.textContent = "เปิด (ON)";
+                    ui.btnMotor.classList.replace('bg-rose-600', 'bg-emerald-600');
+                    ui.btnMotor.classList.replace('hover:bg-rose-500', 'hover:bg-emerald-500');
+                    ui.hint.classList.add('hidden');
+                } else {
+                    ui.btnMotor.textContent = "ปิด (OFF)";
+                    ui.btnMotor.classList.replace('bg-emerald-600', 'bg-rose-600');
+                    ui.btnMotor.classList.replace('hover:bg-emerald-500', 'hover:bg-rose-500');
+                    ui.hint.classList.remove('hidden');
+                    // Hide hint after 3 seconds
+                    setTimeout(() => ui.hint.classList.add('hidden'), 3000);
+                }
+            });
+
+            // Sliders
+            ui.slAmp.addEventListener('input', (e) => {
+                amplitude = parseFloat(e.target.value);
+                ui.valAmp.textContent = amplitude.toFixed(2);
+            });
+            ui.slFreq.addEventListener('input', (e) => {
+                frequency = parseFloat(e.target.value);
+                ui.valFreq.textContent = frequency.toFixed(2) + " Hz";
+                updateCalculations();
+            });
+            ui.slDamp.addEventListener('input', (e) => {
+                damping = parseFloat(e.target.value);
+                let txt = "ปานกลาง";
+                if(damping < 10) txt = "น้อย (Low)";
+                if(damping > 30) txt = "มาก (High)";
+                ui.valDamp.textContent = txt;
+            });
+            ui.slTens.addEventListener('input', (e) => {
+                tension = parseFloat(e.target.value);
+                let txt = "ปานกลาง";
+                if(tension < 30) txt = "หย่อน (Low)";
+                if(tension > 70) txt = "ตึงมาก (High)";
+                ui.valTens.textContent = txt;
+                updateCalculations();
+            });
+
+            // Medium & Boundary
+            ui.selBound.addEventListener('change', (e) => {
+                boundaryCond = e.target.value;
+                // Update visual mount
+                stringGroup.children.forEach(c => {
+                    if (c.userData.isRightMount) {
+                        c.visible = (boundaryCond === 'fixed');
+                    }
+                });
+            });
+            
+            ui.chkMedium.addEventListener('change', (e) => {
+                hasSplitMedium = e.target.checked;
+                applySplitMedium();
+                updateCalculations();
+            });
+
+            // Utils
+            ui.btnCam.addEventListener('click', () => {
+                if (modelType === 'string') {
+                    camera.position.set(0, 5, 25);
+                } else {
+                    camera.position.set(10, 10, 20);
+                }
+                controls.target.set(0,0,0);
+            });
+
+            // Modals
+            ui.btnInfo.addEventListener('click', () => ui.modal.classList.remove('hidden'));
+            ui.btnClose.addEventListener('click', () => ui.modal.classList.add('hidden'));
+        }
+
+        function onPointerDown(event) {
+            if (isOscillating) return; // Only drag when motor is OFF
+            
+            // Normalize mouse coords
+            mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+            mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+            
+            raycaster.setFromCamera(mouse, camera);
+            
+            // Check if user clicked near the first node (oscillator)
+            const intersects = raycaster.intersectObject(dummyPlane);
+            if (intersects.length > 0) {
+                const pt = intersects[0].point;
+                // If clicked near the left edge
+                if (Math.abs(pt.x - nodes[0].x) < 5.0) {
+                    isDragging = true;
+                    controls.enabled = false; // Disable orbit while dragging
+                    dragY = pt.y;
+                }
+            }
+        }
+
+        function onPointerMove(event) {
+            if (!isDragging) return;
+            
+            mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+            mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+            
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObject(dummyPlane);
+            
+            if (intersects.length > 0) {
+                dragY = intersects[0].point.y;
+                // Limit drag amplitude
+                if (dragY > 3.0) dragY = 3.0;
+                if (dragY < -3.0) dragY = -3.0;
+            }
+        }
+
+        function onPointerUp() {
+            isDragging = false;
+            controls.enabled = true;
+        }
+
+        function updateCalculations() {
+            // Speed v = sqrt(T / mu). 
+            // In our discrete model: v = sqrt( K * dx^2 / m ). 
+            // We set K = tension, dx = DX, m = 1.0 (base)
+            
+            const v1 = Math.sqrt(tension * (DX*DX) / 1.0) / DX; // Approx continuous speed visually
+            // Simplified display calculation matching physics parameters
+            const displaySpeed = Math.sqrt(tension / 1.0); 
+            
+            ui.readSpeed.textContent = `${displaySpeed.toFixed(1)} m/s`;
+            
+            if (hasSplitMedium) {
+                const v2 = Math.sqrt(tension / 4.0);
+                ui.readSpeed.textContent = `${displaySpeed.toFixed(1)} -> ${v2.toFixed(1)} m/s`;
+            }
+
+            // Wavelength = v / f
+            const lambda = displaySpeed / frequency;
+            ui.readLambda.textContent = `${lambda.toFixed(2)} m`;
+
+            // Analysis Text Update
+            if (hasSplitMedium) {
+                ui.txtAnalysis.textContent = "คลื่นผ่านรอยต่อ: ความเร็วลดลงครึ่งหนึ่งในเชือกเส้นใหญ่ (ขวา) ทำให้ความยาวคลื่นสั้นลง และมีคลื่นสะท้อนบางส่วนกลับมา";
+            } else if (boundaryCond === 'fixed') {
+                ui.txtAnalysis.textContent = "ปลายตรึง: คลื่นสะท้อนกลับมี 'เฟสตรงข้าม' (กลับหัว) หากความถี่พอเหมาะจะเกิดคลื่นนิ่งที่สวยงาม";
+            } else if (boundaryCond === 'loose') {
+                ui.txtAnalysis.textContent = "ปลายอิสระ: คลื่นสะท้อนกลับมี 'เฟสเดิม' (ไม่กลับหัว) ท้องคลื่นสะท้อนเป็นท้องคลื่น สันเป็นสัน";
+            } else {
+                ui.txtAnalysis.textContent = "ปลายเปิด: พลังงานคลื่นสลายไปที่ขอบด้านขวา เสมือนคลื่นเดินทางไปเรื่อยๆ ไม่มีที่สิ้นสุด";
+            }
+        }
+
+        // Physics Integration (Verlet/Euler)
+        
+        function updatePhysicsLoop(delta) {
+            // Cap delta to prevent explosion on lag
+            if (delta > 0.1) delta = 0.1;
+            
+            accumulator += delta;
+            
+            // Sub-stepping for numerical stability
+            while (accumulator >= DT) {
+                
+                // 1. Calculate Forces (Accelerations)
+                for (let i = 1; i < NUM_NODES - 1; i++) {
+                    // Hooke's Law between adjacent nodes: F = k * dx
+                    // Using tension as stiffness K
+                    let force = tension * (nodes[i+1].y - 2*nodes[i].y + nodes[i-1].y);
+                    
+                    // Damping: F_damp = -c * v
+                    force -= damping * nodes[i].v;
+                    
+                    nodes[i].a = force / nodes[i].m;
+                }
+
+                // 2. Integration
+                for (let i = 1; i < NUM_NODES - 1; i++) {
+                    nodes[i].v += nodes[i].a * DT;
+                    nodes[i].y += nodes[i].v * DT;
+                }
+
+                // 3. Boundary Conditions
+                // Right Boundary
+                if (boundaryCond === 'fixed') {
+                    nodes[NUM_NODES-1].y = 0;
+                    nodes[NUM_NODES-1].v = 0;
+                } else if (boundaryCond === 'loose') {
+                    // Force pulls the end node to match the previous node, but it has mass
+                    let force = tension * (nodes[NUM_NODES-2].y - nodes[NUM_NODES-1].y);
+                    force -= damping * nodes[NUM_NODES-1].v;
+                    nodes[NUM_NODES-1].a = force / nodes[NUM_NODES-1].m;
+                    nodes[NUM_NODES-1].v += nodes[NUM_NODES-1].a * DT;
+                    nodes[NUM_NODES-1].y += nodes[NUM_NODES-1].v * DT;
+                } else if (boundaryCond === 'none') {
+                    // Absorbing boundary (Perfect Matched Layer approx)
+                    // Heavily damp the last few nodes to kill reflection
+                    for(let i=NUM_NODES-5; i<NUM_NODES; i++) {
+                        nodes[i].v *= 0.8;
+                        nodes[i].y *= 0.9;
+                    }
+                }
+
+                // Left Boundary (Driver)
+                if (isOscillating) {
+                    simTime += DT;
+                    // For Wave Machine (Torsion), amplitude should be scaled down to radians (e.g. max PI/2)
+                    let effectiveAmp = modelType === 'machine' ? amplitude * (Math.PI/3) : amplitude * 2.0; 
+                    nodes[0].y = effectiveAmp * Math.sin(2 * Math.PI * frequency * simTime);
+                    // Velocity is derivative
+                    nodes[0].v = effectiveAmp * 2 * Math.PI * frequency * Math.cos(2 * Math.PI * frequency * simTime);
+                } else {
+                    if (isDragging) {
+                        // User manual control
+                        let targetY = modelType === 'machine' ? dragY * (Math.PI/4) : dragY;
+                        nodes[0].y = targetY;
+                        nodes[0].v = 0; // rough approx
+                    } else {
+                        // Damp to 0 if left alone
+                        nodes[0].v += (-tension * nodes[0].y - damping * nodes[0].v) * DT;
+                        nodes[0].y += nodes[0].v * DT;
+                    }
+                }
+
+                accumulator -= DT;
+            }
+        }
+
+        function updateVisuals() {
+            // Update String positions
+            if (modelType === 'string') {
+                const positions = lineMesh.geometry.attributes.position.array;
+                
+                for (let i = 0; i < NUM_NODES; i++) {
+                    nodes[i].stringMesh.position.y = nodes[i].y;
+                    
+                    // Update Line
+                    positions[i * 3] = nodes[i].x;
+                    positions[i * 3 + 1] = nodes[i].y;
+                    positions[i * 3 + 2] = 0;
+                }
+                
+                lineMesh.geometry.attributes.position.needsUpdate = true;
+            }
+            // Update Machine rotations
+            else if (modelType === 'machine') {
+                for (let i = 0; i < NUM_NODES; i++) {
+                    // For machine, y represents angle in radians
+                    nodes[i].machineMesh.rotation.x = nodes[i].y;
+                }
+            }
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const delta = clock.getDelta();
+            controls.update();
+
+            updatePhysicsLoop(delta);
+            updateVisuals();
+
+            renderer.render(scene, camera);
+        }
+
+    </script>
+</body>
+</html>

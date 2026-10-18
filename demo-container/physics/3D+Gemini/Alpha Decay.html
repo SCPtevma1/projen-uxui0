@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alpha Decay Simulation</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+    <!-- Three.js for 3D View -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        body { font-family: 'Kanit', sans-serif; background-color: #0f172a; margin: 0; overflow: hidden; color: #f8fafc; }
+        .glass-panel { background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        #canvas-container {
+            background: radial-gradient(circle at 50% 50%, #1e293b 0%, #020617 100%);
+            position: relative;
+        }
+
+        .tab-active { background-color: #f59e0b; color: white; border-color: #d97706; }
+        .tab-inactive { background-color: #1e293b; color: #94a3b8; border-color: #334155; }
+        .tab-inactive:hover { background-color: #334155; }
+        
+        .atom-label { font-family: 'Courier New', Courier, monospace; }
+        
+        /* Flashing effect for Alpha emission */
+        @keyframes flash-alpha {
+            0% { background-color: rgba(253, 230, 138, 0.5); }
+            100% { background-color: transparent; }
+        }
+        .flash-overlay {
+            position: absolute; inset: 0; pointer-events: none; z-index: 50;
+            animation: flash-alpha 0.6s ease-out forwards; display: none;
+        }
+
+        /* Math formula formatting */
+        .math-eq { font-family: 'Times New Roman', Times, serif; font-size: 1.1rem; }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col md:flex-row">
+
+    <main class="flex-1 relative flex flex-col h-full overflow-hidden">
+        
+        <!-- Flash Overlay -->
+        <div id="flash-fx" class="flash-overlay"></div>
+
+        <!-- View Controls (2D/3D & Single/Multi) -->
+        <div class="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex flex-col gap-2 items-center">
+            <!-- 2D / 3D Toggle -->
+            <div class="bg-slate-800/80 p-1 rounded-xl backdrop-blur border border-slate-600 shadow-lg flex gap-1">
+                <button id="btn-2d" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-blue-500 text-white shadow transition-colors">2D View</button>
+                <button id="btn-3d" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-transparent text-slate-400 hover:bg-slate-700 transition-colors">3D View</button>
+            </div>
+            
+            <!-- Single / Multi Toggle -->
+            <div class="bg-slate-800/80 p-1 rounded-xl backdrop-blur border border-slate-600 shadow-lg flex gap-1">
+                <button id="tab-single" class="px-5 py-2 rounded-lg text-sm font-bold tab-active transition-all flex items-center gap-2">
+                    <i data-lucide="target" class="w-4 h-4"></i> อะตอมเดี่ยว (Single)
+                </button>
+                <button id="tab-multi" class="px-5 py-2 rounded-lg text-sm font-bold tab-inactive transition-all flex items-center gap-2">
+                    <i data-lucide="bar-chart-2" class="w-4 h-4"></i> กลุ่มอะตอม (Multiple)
+                </button>
+            </div>
+        </div>
+
+        <!-- Single Atom Status Overlay -->
+        <div id="single-status" class="absolute top-28 left-1/2 -translate-x-1/2 z-20 bg-slate-800/90 px-8 py-4 rounded-2xl border border-slate-600 shadow-xl text-center backdrop-blur flex flex-col items-center min-w-[280px]">
+            <span class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">ธาตุปัจจุบัน (Current Element)</span>
+            
+            <div id="element-display" class="flex items-center gap-4 transition-all duration-500">
+                <!-- Parent Atom (Po) -->
+                <div class="flex flex-col items-center">
+                    <div id="parent-name" class="text-4xl font-black text-amber-500 tracking-wider atom-label flex items-center gap-2">
+                        <div class="flex flex-col text-sm text-right leading-none text-amber-400">
+                            <span id="mass-num">211</span>
+                            <span id="atomic-num">84</span>
+                        </div>
+                        <span id="symbol-text">Po</span>
+                    </div>
+                    <span id="element-full" class="text-xs text-amber-300 mt-1 font-bold">พอโลเนียม (Polonium)</span>
+                </div>
+                
+                <!-- Alpha Particle Result (Hidden initially) -->
+                <div id="alpha-result" class="hidden items-center gap-4 animate-fade-in">
+                    <i data-lucide="arrow-right" class="w-6 h-6 text-slate-400"></i>
+                    
+                    <!-- Daughter Atom (Pb) -->
+                    <div class="flex flex-col items-center">
+                        <div class="text-3xl font-black text-slate-300 tracking-wider atom-label flex items-center gap-2">
+                            <div class="flex flex-col text-xs text-right leading-none text-slate-400">
+                                <span>207</span>
+                                <span>82</span>
+                            </div>
+                            Pb
+                        </div>
+                        <span class="text-[10px] text-slate-400 mt-1">ตะกั่ว (Lead)</span>
+                    </div>
+                    
+                    <span class="text-xl font-bold text-slate-500">+</span>
+                    
+                    <!-- Alpha Particle -->
+                    <div class="flex flex-col items-center">
+                        <div class="text-3xl font-black text-rose-500 tracking-wider atom-label flex items-center gap-2">
+                            <div class="flex flex-col text-xs text-right leading-none text-rose-400">
+                                <span>4</span>
+                                <span>2</span>
+                            </div>
+                            He
+                        </div>
+                        <span class="text-[10px] text-rose-400 mt-1">&alpha; (Alpha)</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="decay-msg" class="text-xs font-bold text-rose-400 mt-3 h-4 opacity-0 transition-opacity">เกิดการสลายอัลฟา! (Alpha Decay)</div>
+        </div>
+
+        <!-- Multiple Atoms Graph Overlay -->
+        <div id="multi-status" class="absolute top-28 left-4 z-20 bg-slate-800/90 p-4 rounded-xl border border-slate-600 shadow-xl backdrop-blur hidden flex-col gap-3 w-[260px]">
+            <h3 class="text-sm font-bold text-slate-300 border-b border-slate-700 pb-2 flex items-center gap-2">
+                <i data-lucide="activity" class="w-4 h-4 text-amber-500"></i> กราฟการสลายตัว
+            </h3>
+            
+            <div class="space-y-2 text-xs font-mono">
+                <div class="flex justify-between items-center text-amber-400">
+                    <span class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-amber-500"></div> Po-211 (ตั้งต้น)</span>
+                    <span id="count-parent" class="font-bold text-sm">100</span>
+                </div>
+                <div class="flex justify-between items-center text-slate-400">
+                    <span class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-slate-400"></div> Pb-207 (ผลลัพธ์)</span>
+                    <span id="count-daughter" class="font-bold text-sm">0</span>
+                </div>
+            </div>
+            
+            <!-- Mini Exponential Graph Canvas -->
+            <div class="w-full h-24 mt-2 bg-slate-900 rounded border border-slate-700 relative">
+                <canvas id="graphCanvas" class="w-full h-full absolute inset-0"></canvas>
+            </div>
+        </div>
+
+        <!-- Main Simulation Container -->
+        <div id="canvas-container" class="flex-1 relative w-full h-full">
+            <!-- 2D Canvas -->
+            <canvas id="simCanvas" class="w-full h-full absolute inset-0 z-10"></canvas>
+            <!-- 3D WebGL Container -->
+            <div id="sim-3d" class="absolute inset-0 z-10 hidden"></div>
+        </div>
+
+        <!-- Timeline & Controls -->
+        <div class="h-32 bg-slate-900 border-t border-slate-700 p-4 flex flex-col z-20 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.3)]">
+            
+            <!-- Timeline (Half-life Chart) -->
+            <div class="flex-1 relative mx-8 mt-2 mb-4">
+                <div class="absolute inset-x-0 bottom-0 h-px bg-slate-500"></div>
+                
+                <!-- Markers -->
+                <div class="absolute bottom-0 left-0 h-3 w-px bg-slate-400"></div>
+                <div class="absolute bottom-[-20px] left-0 text-[10px] text-slate-400 font-mono -translate-x-1/2">0s</div>
+                
+                <div class="absolute bottom-0 left-1/3 h-3 w-px bg-amber-500"></div>
+                <div class="absolute bottom-[-20px] left-1/3 text-[10px] text-amber-400 font-bold font-mono -translate-x-1/2">1 ครึ่งชีวิต (0.5s)</div>
+                
+                <div class="absolute bottom-0 left-2/3 h-3 w-px bg-amber-500"></div>
+                <div class="absolute bottom-[-20px] left-2/3 text-[10px] text-amber-400 font-bold font-mono -translate-x-1/2">2 ครึ่งชีวิต (1.0s)</div>
+                
+                <div class="absolute bottom-0 right-0 h-3 w-px bg-slate-400"></div>
+                <div class="absolute bottom-[-20px] right-0 text-[10px] text-slate-400 font-mono translate-x-1/2">1.5s</div>
+                
+                <!-- Time Cursor -->
+                <div id="time-cursor" class="absolute bottom-0 h-full w-px bg-sky-400 z-10 transition-all duration-75" style="left: 0%;">
+                    <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-sky-500 text-white text-[10px] px-2 py-0.5 rounded font-bold shadow whitespace-nowrap">
+                        <span id="disp-time">0.00</span> s
+                    </div>
+                    <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-3 h-3 bg-sky-400 rounded-full"></div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex justify-center items-center gap-4 mt-auto">
+                <button id="btn-play" class="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-1.5 rounded-full font-bold flex justify-center items-center gap-2 transition shadow-lg border border-emerald-400">
+                    <i data-lucide="play" class="w-4 h-4"></i> เริ่ม (Play)
+                </button>
+                <button id="btn-reset" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-1.5 rounded-full font-bold transition flex justify-center items-center gap-2 border border-slate-500">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i> รีเซ็ต
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Sidebar Educational Panel -->
+    <aside class="w-full md:w-[420px] glass-panel h-full overflow-y-auto border-l border-slate-700 shadow-2xl flex flex-col z-30">
+        <div class="bg-gradient-to-r from-amber-600 to-orange-700 text-white p-5 shadow-md">
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <i data-lucide="radio"></i> Alpha Decay Lab
+            </h1>
+            <p class="text-amber-200 text-sm mt-1">ฟิสิกส์นิวเคลียร์: การสลายตัวของอนุภาคอัลฟา</p>
+        </div>
+
+        <div class="p-6 space-y-5 flex-1 text-sm text-slate-300 custom-scrollbar">
+            
+            <section class="space-y-3 bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-600 pb-2">
+                    <i data-lucide="lightbulb" class="text-yellow-400"></i> กลไกฟิสิกส์นิวเคลียร์
+                </h2>
+                <p class="leading-relaxed text-xs">
+                    หัวใจสำคัญคือ <b>"การลดลงของจำนวนอนุภาคแบบคงที่"</b> ตามสมการการสลายตัว:
+                </p>
+                <ul class="list-disc pl-4 space-y-2 text-xs">
+                    <li><strong class="text-amber-400">อนุภาคแอลฟา (&alpha;):</strong> คือนิวเคลียสของฮีเลียม (<sup>4</sup><sub>2</sub>He) ประกอบด้วย 2 โปรตอน + 2 นิวตรอน เกาะกลุ่มกันพุ่งออกมา</li>
+                    <li><strong class="text-sky-400">ผลลัพธ์ต่อธาตุตั้งต้น:</strong> เมื่อปล่อยแอลฟาออกไป นิวเคลียสเดิมจะเปลี่ยนเป็นธาตุใหม่ โดยที่:
+                        <ul class="list-circle pl-5 mt-1 text-slate-400">
+                            <li>เลขมวล (ด้านบน) ลดลง 4</li>
+                            <li>เลขอะตอม (ด้านล่าง) ลดลง 2</li>
+                        </ul>
+                    </li>
+                </ul>
+                <div class="bg-slate-900 p-3 rounded font-mono text-center text-white border border-slate-600 shadow-inner mt-3">
+                    <div class="math-eq tracking-wide">
+                        <sup>211</sup><sub>84</sub>Po &rarr; <sup>207</sup><sub>82</sub>Pb + <sup>4</sup><sub>2</sub>He
+                    </div>
+                </div>
+            </section>
+
+            <section class="space-y-3 bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-600 pb-2">
+                    <i data-lucide="monitor-play" class="text-emerald-400"></i> กลไกในแบบจำลอง (Simulation)
+                </h2>
+                <ul class="space-y-3 text-xs">
+                    <li>
+                        <strong class="text-white block mb-1">แอนิเมชันนิวเคลียสสั่นดุ๊กดิ๊ก (Instability):</strong>
+                        <span class="text-slate-400">นิวเคลียสขนาดใหญ่ (กลุ่มก้อนโปรตอน-นิวตรอน) จะสั่นไหวไปมา เพื่อแสดงถึงสถานะความไม่เสถียร</span>
+                    </li>
+                    <li>
+                        <strong class="text-white block mb-1">จังหวะการหลุดลอย (Quantum Tunneling):</strong>
+                        <span class="text-slate-400">สุ่มเวลาการสลายตัวตามหลักครึ่งชีวิต (Half-life) เมื่อถึงเวลา กลุ่มก้อน 4 ลูก (2p, 2n) จะระเบิดพุ่งกระเด็นออกไปด้วยความเร็วสูง</span>
+                    </li>
+                    <li>
+                        <strong class="text-white block mb-1">เอฟเฟกต์แรงดีดกลับ (Recoil Effect):</strong>
+                        <span class="text-slate-400">เพื่อความสมจริงตามกฎการอนุรักษ์โมเมนตัม เมื่ออัลฟาพุ่งไปทางขวา ตัวนิวเคลียสหลักจะ <b>กระตุกขยับถอยหลัง</b> ไปทางซ้ายเล็กน้อย</span>
+                    </li>
+                    <li>
+                        <strong class="text-white block mb-1">กราฟครึ่งชีวิต (Half-life Chart):</strong>
+                        <span class="text-slate-400">ในโหมดกลุ่มอะตอม จะวาดกราฟเส้นโค้ง Exponential Decay แสดงจำนวนอะตอมตั้งต้นที่ลดลงทีละครึ่งเมื่อเวลาผ่านไป</span>
+                    </li>
+                </ul>
+            </section>
+
+        </div>
+    </aside>
+
+    <script>
+        // Init Icons
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        // ---------------------------------------------------------
+        // State & Physics Constants
+        // ---------------------------------------------------------
+        const HALF_LIFE = 0.5; // seconds (scaled for quick simulation)
+        const MAX_TIME = 1.5;  // 3 Half-lives timeline
+        const DECAY_CONSTANT = Math.LN2 / HALF_LIFE;
+
+        const state = {
+            mode: 'single', // 'single' or 'multi'
+            viewMode: '2D', // '2D' or '3D'
+            isRunning: false,
+            time: 0,
+            
+            // Single Atom Mode
+            singleDecayTime: 0,
+            hasDecayed: false,
+            nucleusPos2D: { x: 0, y: 0 },
+            nucleusVel2D: { x: 0, y: 0 },
+            nucleons: [],    // Array of {type, ox, oy} (ox/oy = offset from center)
+            alphaPos2D: { x: 0, y: 0 },
+            alphaVel2D: { x: 0, y: 0 },
+            alphaActive: false,
+            alphaNucleons: [], // 4 nucleons for the alpha particle
+
+            // Multi Atom Mode
+            atoms: [],
+            parentCount: 100,
+            daughterCount: 0,
+            graphHistory: [] // Array of {t, parents}
+        };
+
+        // UI References
+        const UI = {
+            tabSingle: document.getElementById('tab-single'),
+            tabMulti: document.getElementById('tab-multi'),
+            btn2D: document.getElementById('btn-2d'),
+            btn3D: document.getElementById('btn-3d'),
+            
+            singleStatus: document.getElementById('single-status'),
+            multiStatus: document.getElementById('multi-status'),
+            parentName: document.getElementById('parent-name'),
+            elementFull: document.getElementById('element-full'),
+            alphaResult: document.getElementById('alpha-result'),
+            decayMsg: document.getElementById('decay-msg'),
+            flashFx: document.getElementById('flash-fx'),
+            
+            countParent: document.getElementById('count-parent'),
+            countDaughter: document.getElementById('count-daughter'),
+            timeCursor: document.getElementById('time-cursor'),
+            dispTime: document.getElementById('disp-time'),
+            
+            btnPlay: document.getElementById('btn-play'),
+            btnReset: document.getElementById('btn-reset'),
+            
+            canvas2D: document.getElementById('simCanvas'),
+            container3D: document.getElementById('sim-3d'),
+            graphCanvas: document.getElementById('graphCanvas')
+        };
+
+        const ctx = UI.canvas2D.getContext('2d');
+        const graphCtx = UI.graphCanvas.getContext('2d');
+        let cx, cy;
+
+        // ---------------------------------------------------------
+        // Core Logic
+        // ---------------------------------------------------------
+
+        // Inverse Transform Sampling for Exponential Decay
+        function getRandomDecayTime() {
+            let u = Math.random();
+            if (u === 0) u = 0.0001;
+            return -Math.log(u) / DECAY_CONSTANT;
+        }
+
+        function initSingle() {
+            state.time = 0;
+            state.hasDecayed = false;
+            state.alphaActive = false;
+            state.nucleusPos2D = { x: 0, y: 0 };
+            state.nucleusVel2D = { x: 0, y: 0 };
+            
+            // UI Reset
+            UI.alphaResult.classList.add('hidden');
+            UI.alphaResult.classList.remove('flex');
+            UI.decayMsg.style.opacity = '0';
+            document.getElementById('mass-num').textContent = '211';
+            document.getElementById('atomic-num').textContent = '84';
+            document.getElementById('symbol-text').textContent = 'Po';
+            UI.parentName.className = "text-4xl font-black text-amber-500 tracking-wider atom-label flex items-center gap-2";
+            UI.elementFull.textContent = "พอโลเนียม (Polonium)";
+            UI.elementFull.className = "text-xs text-amber-300 mt-1 font-bold";
+
+            // Force decay within visible timeline (0 to 1.5s) for better UX
+            state.singleDecayTime = Math.random() * (MAX_TIME * 0.8) + 0.1;
+
+            // Generate representative nucleons (Not exactly 211, maybe ~60 for visual cluster)
+            state.nucleons = [];
+            state.alphaNucleons = [];
+            const numNucleons = 60;
+            
+            // Sphere packing (Phyllotaxis logic)
+            for (let i = 0; i < numNucleons; i++) {
+                const theta = i * 2.39996; 
+                const r = 8 * Math.sqrt(i);
+                state.nucleons.push({
+                    type: Math.random() > 0.4 ? 'n' : 'p', // mix
+                    ox: r * Math.cos(theta),
+                    oy: r * Math.sin(theta)
+                });
+            }
+
+            // Pick 4 specific ones on the right edge to become the Alpha particle
+            // Sort by X position descending
+            state.nucleons.sort((a, b) => b.ox - a.ox);
+            
+            // Extract the right-most 4
+            let alphaGroup = state.nucleons.splice(0, 4);
+            // Ensure exactly 2p, 2n
+            alphaGroup[0].type = 'p'; alphaGroup[1].type = 'p';
+            alphaGroup[2].type = 'n'; alphaGroup[3].type = 'n';
+            
+            // Cluster them together tightly
+            alphaGroup[0].ox = 0; alphaGroup[0].oy = -6;
+            alphaGroup[1].ox = 0; alphaGroup[1].oy = 6;
+            alphaGroup[2].ox = 6; alphaGroup[2].oy = 0;
+            alphaGroup[3].ox = -6; alphaGroup[3].oy = 0;
+            
+            state.alphaNucleons = alphaGroup;
+
+            if(state.viewMode === '3D') rebuild3D();
+            updateTimeline();
+        }
+
+        function initMulti() {
+            state.time = 0;
+            state.parentCount = 100;
+            state.daughterCount = 0;
+            state.atoms = [];
+            state.graphHistory = [];
+            
+            // Generate 100 atoms
+            const cols = 10; const rows = 10;
+            const w = UI.canvas2D.width * 0.7;
+            const h = UI.canvas2D.height * 0.7;
+            const sx = (UI.canvas2D.width - w)/2 + w/cols/2;
+            const sy = (UI.canvas2D.height - h)/2 + h/rows/2;
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    state.atoms.push({
+                        x: sx + c * (w/cols) + (Math.random()-0.5)*20,
+                        y: sy + r * (h/rows) + (Math.random()-0.5)*20,
+                        decayTime: getRandomDecayTime(),
+                        state: 'parent', // 'parent' or 'daughter'
+                        hasEjected: false,
+                        alpha: null // {x,y,vx,vy}
+                    });
+                }
+            }
+
+            state.graphHistory.push({ t: 0, p: 100 });
+            
+            if(state.viewMode === '3D') rebuild3D();
+            updateTimeline();
+            drawGraph();
+        }
+
+        function triggerSingleDecay() {
+            state.hasDecayed = true;
+            state.alphaActive = true;
+            
+            // Alpha Particle starts at right edge of nucleus
+            state.alphaPos2D = { 
+                x: state.nucleusPos2D.x + 30, 
+                y: state.nucleusPos2D.y 
+            };
+            
+            // Shoot right (Quantum tunneling high speed)
+            state.alphaVel2D = { x: 300, y: (Math.random()-0.5)*20 }; // px per second
+            
+            // Recoil effect on main nucleus (Conservation of momentum)
+            // Nucleus is ~50x heavier than alpha, so recoils slower
+            state.nucleusVel2D = { x: -30, y: -state.alphaVel2D.y * 0.1 };
+
+            // UI Effects
+            UI.flashFx.style.display = 'block';
+            setTimeout(() => { UI.flashFx.style.display = 'none'; }, 600);
+            
+            UI.alphaResult.classList.remove('hidden');
+            UI.alphaResult.classList.add('flex');
+            
+            document.getElementById('mass-num').textContent = '207';
+            document.getElementById('atomic-num').textContent = '82';
+            document.getElementById('symbol-text').textContent = 'Pb';
+            UI.parentName.className = "text-4xl font-black text-slate-300 tracking-wider atom-label flex items-center gap-2";
+            UI.elementFull.textContent = "ตะกั่ว (Lead)";
+            UI.elementFull.className = "text-xs text-slate-400 mt-1 font-bold";
+            
+            UI.decayMsg.style.opacity = '1';
+        }
+
+        // ---------------------------------------------------------
+        // UI & Event Listeners
+        // ---------------------------------------------------------
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            UI.canvas2D.width = container.clientWidth;
+            UI.canvas2D.height = container.clientHeight;
+            cx = UI.canvas2D.width / 2;
+            cy = UI.canvas2D.height / 2;
+            
+            // Fix graph canvas size
+            const gw = UI.graphCanvas.parentElement.clientWidth;
+            const gh = UI.graphCanvas.parentElement.clientHeight;
+            UI.graphCanvas.width = gw;
+            UI.graphCanvas.height = gh;
+            
+            if (camera3D && renderer3D) {
+                camera3D.aspect = container.clientWidth / container.clientHeight;
+                camera3D.updateProjectionMatrix();
+                renderer3D.setSize(container.clientWidth, container.clientHeight);
+            }
+            if(!state.isRunning && state.viewMode === '2D') render2D(0);
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        UI.tabSingle.addEventListener('click', () => switchMode('single'));
+        UI.tabMulti.addEventListener('click', () => switchMode('multi'));
+        UI.btn2D.addEventListener('click', () => switchView('2D'));
+        UI.btn3D.addEventListener('click', () => switchView('3D'));
+
+        function switchMode(mode) {
+            state.mode = mode;
+            state.isRunning = false;
+            syncPlayBtn();
+            
+            if (mode === 'single') {
+                UI.tabSingle.className = "px-5 py-2 rounded-lg text-sm font-bold tab-active transition-all flex items-center gap-2";
+                UI.tabMulti.className = "px-5 py-2 rounded-lg text-sm font-bold tab-inactive transition-all flex items-center gap-2";
+                UI.singleStatus.classList.remove('hidden');
+                UI.multiStatus.classList.add('hidden');
+                UI.multiStatus.classList.remove('flex');
+                initSingle();
+            } else {
+                UI.tabMulti.className = "px-5 py-2 rounded-lg text-sm font-bold tab-active transition-all flex items-center gap-2";
+                UI.tabSingle.className = "px-5 py-2 rounded-lg text-sm font-bold tab-inactive transition-all flex items-center gap-2";
+                UI.singleStatus.classList.add('hidden');
+                UI.multiStatus.classList.remove('hidden');
+                UI.multiStatus.classList.add('flex');
+                initMulti();
+            }
+        }
+
+        function switchView(view) {
+            state.viewMode = view;
+            if (view === '2D') {
+                UI.btn2D.className = "px-4 py-1.5 rounded-lg text-xs font-bold bg-blue-500 text-white shadow transition-colors";
+                UI.btn3D.className = "px-4 py-1.5 rounded-lg text-xs font-bold bg-transparent text-slate-400 hover:bg-slate-700 transition-colors";
+                UI.canvas2D.classList.remove('hidden');
+                UI.container3D.classList.add('hidden');
+            } else {
+                UI.btn3D.className = "px-4 py-1.5 rounded-lg text-xs font-bold bg-blue-500 text-white shadow transition-colors";
+                UI.btn2D.className = "px-4 py-1.5 rounded-lg text-xs font-bold bg-transparent text-slate-400 hover:bg-slate-700 transition-colors";
+                UI.canvas2D.classList.add('hidden');
+                UI.container3D.classList.remove('hidden');
+                if (!scene3D) init3D();
+                rebuild3D();
+            }
+        }
+
+        UI.btnPlay.addEventListener('click', () => {
+            state.isRunning = !state.isRunning;
+            syncPlayBtn();
+        });
+
+        UI.btnReset.addEventListener('click', () => {
+            state.isRunning = false;
+            syncPlayBtn();
+            if (state.mode === 'single') initSingle();
+            else initMulti();
+        });
+
+        function syncPlayBtn() {
+            if (state.isRunning) {
+                UI.btnPlay.innerHTML = `<i data-lucide="pause" class="w-4 h-4"></i> หยุด (Pause)`;
+                UI.btnPlay.className = "bg-amber-500 hover:bg-amber-400 text-white px-6 py-1.5 rounded-full font-bold flex justify-center items-center gap-2 transition shadow-lg border border-amber-300";
+            } else {
+                UI.btnPlay.innerHTML = `<i data-lucide="play" class="w-4 h-4"></i> เริ่ม (Play)`;
+                UI.btnPlay.className = "bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-1.5 rounded-full font-bold flex justify-center items-center gap-2 transition shadow-lg border border-emerald-400";
+            }
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function updateTimeline() {
+            let p = (state.time / MAX_TIME) * 100;
+            if (p > 100) p = 100;
+            UI.timeCursor.style.left = `${p}%`;
+            UI.dispTime.textContent = state.time.toFixed(2);
+        }
+
+        function drawGraph() {
+            graphCtx.clearRect(0, 0, UI.graphCanvas.width, UI.graphCanvas.height);
+            
+            // Draw Axis
+            graphCtx.strokeStyle = '#475569';
+            graphCtx.lineWidth = 1;
+            graphCtx.beginPath();
+            graphCtx.moveTo(0, UI.graphCanvas.height);
+            graphCtx.lineTo(UI.graphCanvas.width, UI.graphCanvas.height);
+            graphCtx.stroke();
+
+            if (state.graphHistory.length < 2) return;
+
+            // Plot Exponential Curve (Parent Atoms)
+            graphCtx.beginPath();
+            graphCtx.strokeStyle = '#f59e0b'; // Amber
+            graphCtx.lineWidth = 2;
+            
+            for (let i = 0; i < state.graphHistory.length; i++) {
+                let pt = state.graphHistory[i];
+                let x = (pt.t / MAX_TIME) * UI.graphCanvas.width;
+                let y = UI.graphCanvas.height - (pt.p / 100) * UI.graphCanvas.height;
+                
+                if (i === 0) graphCtx.moveTo(x, y);
+                else graphCtx.lineTo(x, y);
+            }
+            graphCtx.stroke();
+
+            // Plot Daughter Atoms (Lead)
+            graphCtx.beginPath();
+            graphCtx.strokeStyle = '#94a3b8'; // Slate
+            graphCtx.lineWidth = 2;
+            
+            for (let i = 0; i < state.graphHistory.length; i++) {
+                let pt = state.graphHistory[i];
+                let x = (pt.t / MAX_TIME) * UI.graphCanvas.width;
+                let daughter = 100 - pt.p;
+                let y = UI.graphCanvas.height - (daughter / 100) * UI.graphCanvas.height;
+                
+                if (i === 0) graphCtx.moveTo(x, y);
+                else graphCtx.lineTo(x, y);
+            }
+            graphCtx.stroke();
+        }
+
+        // ---------------------------------------------------------
+        // Render 2D
+        // ---------------------------------------------------------
+        function render2D(timestamp) {
+            ctx.clearRect(0, 0, UI.canvas2D.width, UI.canvas2D.height);
+            
+            if (state.mode === 'single') {
+                // Vibration (Instability)
+                let jitterX = 0, jitterY = 0;
+                if (!state.hasDecayed) {
+                    const vibAmp = 1.5;
+                    jitterX = Math.sin(timestamp * 0.05) * vibAmp + (Math.random()-0.5)*0.5;
+                    jitterY = Math.cos(timestamp * 0.04) * vibAmp + (Math.random()-0.5)*0.5;
+                }
+
+                const nX = cx + state.nucleusPos2D.x + jitterX;
+                const nY = cy + state.nucleusPos2D.y + jitterY;
+
+                // Draw Main Nucleus (Pb/Po)
+                const nucleonRadius = 6;
+                for (let n of state.nucleons) {
+                    ctx.beginPath();
+                    ctx.arc(nX + n.ox, nY + n.oy, nucleonRadius, 0, 2*Math.PI);
+                    
+                    // Colors change after decay
+                    if (state.hasDecayed) {
+                        ctx.fillStyle = n.type === 'p' ? '#64748b' : '#334155'; // Lead (Grey)
+                    } else {
+                        ctx.fillStyle = n.type === 'p' ? '#f59e0b' : '#b45309'; // Polonium (Amber)
+                    }
+                    ctx.fill();
+                    
+                    // Highlight
+                    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                    ctx.beginPath(); ctx.arc(nX + n.ox - 2, nY + n.oy - 2, 2, 0, Math.PI*2); ctx.fill();
+                }
+
+                // Draw Alpha Particle (if pre-decay, stick it to nucleus; if active, fly)
+                let aX = state.hasDecayed ? cx + state.alphaPos2D.x : nX;
+                let aY = state.hasDecayed ? cy + state.alphaPos2D.y : nY;
+                
+                // Draw Alpha nucleons
+                for (let n of state.alphaNucleons) {
+                    ctx.beginPath();
+                    ctx.arc(aX + n.ox, aY + n.oy, nucleonRadius, 0, Math.PI*2);
+                    ctx.fillStyle = n.type === 'p' ? '#ef4444' : '#9ca3af'; // Red/Grey for Helium
+                    ctx.fill();
+                    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                    ctx.beginPath(); ctx.arc(aX + n.ox - 2, aY + n.oy - 2, 2, 0, Math.PI*2); ctx.fill();
+                }
+
+                // Draw label for Alpha
+                if (state.alphaActive && aX < UI.canvas2D.width + 50) {
+                    ctx.fillStyle = '#ef4444';
+                    ctx.font = 'bold 14px Kanit';
+                    ctx.fillText('Alpha (α)', aX - 15, aY - 20);
+                    
+                    // Speed lines
+                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(aX - 20, aY); ctx.lineTo(aX - 50, aY); ctx.stroke();
+                }
+
+            } else {
+                // Multi Atom Mode
+                for (let atom of state.atoms) {
+                    ctx.beginPath();
+                    ctx.arc(atom.x, atom.y, 8, 0, 2*Math.PI);
+                    if (atom.state === 'parent') {
+                        ctx.fillStyle = '#f59e0b';
+                        ctx.shadowColor = 'rgba(245, 158, 11, 0.5)';
+                    } else {
+                        ctx.fillStyle = '#64748b';
+                        ctx.shadowColor = 'transparent';
+                    }
+                    ctx.shadowBlur = atom.state === 'parent' ? 10 : 0;
+                    ctx.fill();
+                    
+                    // Draw tiny flying alpha if just ejected
+                    if (atom.alpha) {
+                        ctx.shadowBlur = 0;
+                        ctx.beginPath();
+                        ctx.arc(atom.alpha.x, atom.alpha.y, 3, 0, 2*Math.PI);
+                        ctx.fillStyle = '#ef4444';
+                        ctx.fill();
+                        
+                        // Move alpha
+                        if (state.isRunning) {
+                            atom.alpha.x += atom.alpha.vx;
+                            atom.alpha.y += atom.alpha.vy;
+                            // Kill if far away
+                            if(Math.abs(atom.alpha.x - atom.x) > 100) atom.alpha = null;
+                        }
+                    }
+                }
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        // ---------------------------------------------------------
+        // 3D Engine (Three.js)
+        // ---------------------------------------------------------
+        let scene3D, camera3D, renderer3D, controls3D;
+        let nucleusGroup3D, alphaGroup3D;
+        let multiAtoms3D = []; // Array of meshes
+
+        function init3D() {
+            const container = UI.container3D;
+            scene3D = new THREE.Scene();
+            
+            camera3D = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera3D.position.set(0, 20, 150);
+            
+            renderer3D = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer3D.setSize(container.clientWidth, container.clientHeight);
+            renderer3D.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer3D.domElement);
+            
+            controls3D = new THREE.OrbitControls(camera3D, renderer3D.domElement);
+            controls3D.enableDamping = true;
+            controls3D.dampingFactor = 0.05;
+            
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            scene3D.add(ambient);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(50, 100, 50);
+            scene3D.add(dirLight);
+
+            nucleusGroup3D = new THREE.Group();
+            alphaGroup3D = new THREE.Group();
+            scene3D.add(nucleusGroup3D);
+            scene3D.add(alphaGroup3D);
+        }
+
+        function rebuild3D() {
+            if (!scene3D) return;
+            
+            // Clear existing
+            while(nucleusGroup3D.children.length) nucleusGroup3D.remove(nucleusGroup3D.children[0]);
+            while(alphaGroup3D.children.length) alphaGroup3D.remove(alphaGroup3D.children[0]);
+            for(let m of multiAtoms3D) scene3D.remove(m);
+            multiAtoms3D = [];
+
+            if (state.mode === 'single') {
+                const geo = new THREE.SphereGeometry(2, 16, 16);
+                
+                // Colors based on state
+                const pColor = state.hasDecayed ? 0x64748b : 0xf59e0b; // Grey / Amber
+                const nColor = state.hasDecayed ? 0x334155 : 0xb45309;
+                const matP = new THREE.MeshPhongMaterial({color: pColor});
+                const matN = new THREE.MeshPhongMaterial({color: nColor});
+
+                // Build main nucleus
+                for(let n of state.nucleons) {
+                    let mesh = new THREE.Mesh(geo, n.type==='p' ? matP : matN);
+                    // Scatter in 3D (Z is random based on 2D r)
+                    let z = (Math.random()-0.5)*15;
+                    mesh.position.set(n.ox, n.oy, z);
+                    nucleusGroup3D.add(mesh);
+                }
+
+                // Build Alpha
+                const matAlphaP = new THREE.MeshPhongMaterial({color: 0xef4444}); // Red
+                const matAlphaN = new THREE.MeshPhongMaterial({color: 0x9ca3af}); // Light grey
+                for(let n of state.alphaNucleons) {
+                    let mesh = new THREE.Mesh(geo, n.type==='p' ? matAlphaP : matAlphaN);
+                    // Arrange tightly
+                    mesh.position.set(n.ox, n.oy, (Math.random()-0.5)*4);
+                    alphaGroup3D.add(mesh);
+                }
+                
+                // Position Alpha
+                alphaGroup3D.position.set(0, 0, 0);
+
+            } else {
+                // Multi Mode
+                const geo = new THREE.SphereGeometry(3, 16, 16);
+                const matParent = new THREE.MeshPhongMaterial({color: 0xf59e0b, emissive: 0x451a03});
+                const matDaughter = new THREE.MeshPhongMaterial({color: 0x64748b});
+                
+                for (let i=0; i<state.atoms.length; i++) {
+                    let atom = state.atoms[i];
+                    let mesh = new THREE.Mesh(geo, atom.state === 'parent' ? matParent : matDaughter);
+                    // Map 2D coords to 3D roughly
+                    mesh.position.set(atom.x - cx, -(atom.y - cy), (Math.random()-0.5)*20);
+                    scene3D.add(mesh);
+                    multiAtoms3D.push(mesh);
+                }
+            }
+        }
+
+        function render3D(timestamp) {
+            if (!scene3D) return;
+
+            if (state.mode === 'single') {
+                if (!state.hasDecayed) {
+                    // Vibration
+                    const v = 0.5;
+                    nucleusGroup3D.position.set(
+                        Math.sin(timestamp * 0.05) * v,
+                        Math.cos(timestamp * 0.04) * v,
+                        Math.sin(timestamp * 0.06) * v
+                    );
+                    alphaGroup3D.position.copy(nucleusGroup3D.position);
+                    // Color is handled in rebuild, but if we wanted real-time color swap we'd do it here
+                } else {
+                    nucleusGroup3D.position.set(state.nucleusPos2D.x, -state.nucleusPos2D.y, 0);
+                    alphaGroup3D.position.set(state.alphaPos2D.x, -state.alphaPos2D.y, 0);
+                    
+                    // Rotate alpha for visual effect
+                    alphaGroup3D.rotation.z += 0.1;
+                    alphaGroup3D.rotation.x += 0.05;
+                }
+            } else {
+                // Multi Mode updates
+                const matParent = new THREE.MeshPhongMaterial({color: 0xf59e0b});
+                const matDaughter = new THREE.MeshPhongMaterial({color: 0x64748b});
+                
+                for(let i=0; i<state.atoms.length; i++) {
+                    if (state.atoms[i].state === 'daughter' && multiAtoms3D[i].material.color.getHex() === 0xf59e0b) {
+                        // Change material on decay
+                        multiAtoms3D[i].material = matDaughter;
+                    }
+                }
+            }
+
+            if (controls3D) controls3D.update();
+            renderer3D.render(scene3D, camera3D);
+        }
+
+        // ---------------------------------------------------------
+        // Main Update Loop
+        // ---------------------------------------------------------
+        let lastTime = performance.now();
+        
+        function loop(timestamp) {
+            let dt = (timestamp - lastTime) / 1000;
+            if (dt > 0.1) dt = 0.1;
+            lastTime = timestamp;
+
+            if (state.isRunning) {
+                // Adjust speed: 1 real second = 1 second in sim
+                state.time += dt;
+                
+                if (state.time >= MAX_TIME) {
+                    state.isRunning = false; // Stop at end of timeline
+                    syncPlayBtn();
+                }
+
+                if (state.mode === 'single') {
+                    if (!state.hasDecayed && state.time >= state.singleDecayTime) {
+                        triggerSingleDecay();
+                        if (state.viewMode === '3D') rebuild3D(); // Refresh colors
+                    }
+                    
+                    // Move objects
+                    if (state.hasDecayed) {
+                        state.alphaPos2D.x += state.alphaVel2D.x * dt;
+                        state.alphaPos2D.y += state.alphaVel2D.y * dt;
+                        
+                        // Apply recoil and damping
+                        state.nucleusPos2D.x += state.nucleusVel2D.x * dt;
+                        state.nucleusPos2D.y += state.nucleusVel2D.y * dt;
+                        state.nucleusVel2D.x *= 0.95; // damp
+                        state.nucleusVel2D.y *= 0.95;
+                    }
+                } 
+                else if (state.mode === 'multi') {
+                    let newDaughter = 0;
+                    for (let atom of state.atoms) {
+                        if (atom.state === 'parent' && state.time >= atom.decayTime) {
+                            atom.state = 'daughter';
+                            // Eject tiny alpha visually in 2D
+                            atom.alpha = {
+                                x: atom.x, y: atom.y,
+                                vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10
+                            };
+                        }
+                        if (atom.state === 'daughter') newDaughter++;
+                    }
+                    
+                    if (newDaughter !== state.daughterCount) {
+                        state.daughterCount = newDaughter;
+                        state.parentCount = 100 - newDaughter;
+                        UI.countParent.textContent = state.parentCount;
+                        UI.countDaughter.textContent = state.daughterCount;
+                        
+                        // Save data for graph (throttle to avoid too many points)
+                        state.graphHistory.push({ t: state.time, p: state.parentCount });
+                        drawGraph();
+                    }
+                }
+                
+                updateTimeline();
+            }
+
+            if (state.viewMode === '2D') render2D(timestamp);
+            else render3D(timestamp);
+
+            requestAnimationFrame(loop);
+        }
+
+        // Initialize
+        resizeCanvas();
+        switchMode('single');
+        requestAnimationFrame(loop);
+
+    </script>
+</body>
+</html>

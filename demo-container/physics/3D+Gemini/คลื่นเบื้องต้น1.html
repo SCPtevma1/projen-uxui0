@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wave Basics Simulation</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        body { font-family: 'Kanit', sans-serif; background-color: #0f172a; margin: 0; overflow: hidden; color: #f8fafc; }
+        .glass-panel { background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+        
+        /* Custom Slider Styling */
+        .slider-custom { -webkit-appearance: none; width: 100%; height: 6px; border-radius: 4px; background: #334155; outline: none; margin-top: 8px; }
+        .slider-custom::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #38bdf8; cursor: pointer; border: 2px solid #0f172a; transition: transform 0.1s; }
+        .slider-custom::-webkit-slider-thumb:hover { transform: scale(1.2); }
+        .slider-custom::-webkit-slider-thumb:active { background: #0ea5e9; }
+        
+        .slider-red::-webkit-slider-thumb { background: #f43f5e; }
+        .slider-red::-webkit-slider-thumb:active { background: #e11d48; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        #canvas-container {
+            background: radial-gradient(circle at 50% 50%, #1e293b 0%, #0f172a 100%);
+            position: relative;
+        }
+        
+        /* Math formatting */
+        .math-eq { font-family: 'Courier New', Courier, monospace; background: #1e293b; padding: 2px 6px; border-radius: 4px; color: #38bdf8; font-weight: bold;}
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col md:flex-row">
+
+    <main class="flex-1 relative flex flex-col h-full overflow-hidden">
+        
+        <!-- Simulation Canvas -->
+        <div id="canvas-container" class="flex-1 relative w-full h-full cursor-crosshair">
+            
+            <!-- View Mode Toggle -->
+            <div class="absolute top-4 right-4 z-30 bg-slate-800/80 p-1 rounded-lg shadow-md border border-slate-600 flex gap-1 backdrop-blur">
+                <button id="btn-2d" class="px-3 py-1.5 rounded text-sm font-bold bg-sky-500 text-white shadow transition-colors">2D View</button>
+                <button id="btn-3d" class="px-3 py-1.5 rounded text-sm font-bold bg-transparent text-slate-400 hover:bg-slate-700 transition-colors">3D View</button>
+            </div>
+
+            <!-- Grid Background Overlay (2D) -->
+            <div id="bg-grid-2d" class="absolute inset-0 z-0 opacity-20 pointer-events-none transition-opacity" 
+                 style="background-image: linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px); background-size: 50px 50px; background-position: center;">
+            </div>
+            
+            <!-- Center Reference Line (2D) -->
+            <div id="center-line-2d" class="absolute w-full h-px bg-slate-500/50 top-1/2 left-0 z-0 pointer-events-none border-dashed border-b border-slate-500 transition-opacity"></div>
+
+            <!-- 2D Canvas -->
+            <canvas id="simCanvas" class="w-full h-full absolute inset-0 z-10"></canvas>
+            
+            <!-- 3D Container -->
+            <div id="sim-3d" class="absolute inset-0 z-10 hidden"></div>
+            
+            <!-- Live Data Badge -->
+            <div class="absolute top-4 left-4 z-20 bg-slate-800/80 backdrop-blur border border-slate-600 p-3 rounded-lg shadow-lg font-mono text-sm">
+                <div class="flex items-center gap-2 mb-1 text-sky-400 font-bold">
+                    <i data-lucide="activity" class="w-4 h-4"></i> ข้อมูลคลื่น (Wave Data)
+                </div>
+                <div class="text-slate-300">แอมพลิจูด (A): <span id="disp-amp" class="text-white">0.00</span> cm</div>
+                <div class="text-slate-300">ความถี่ (f): <span id="disp-freq" class="text-white">0.00</span> Hz</div>
+                <div class="text-slate-300">อัตราเร็ว (v): <span id="disp-speed" class="text-white">0.0</span> cm/s</div>
+            </div>
+        </div>
+
+        <!-- Bottom Controls Panel -->
+        <div class="h-auto bg-slate-900 border-t border-slate-700 p-4 flex flex-col md:flex-row gap-6 z-20 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.3)]">
+            
+            <!-- Left: Source Controls (ตัวควบคุมต้นกำเนิด) -->
+            <div class="flex-1 bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                <h3 class="text-sky-400 font-bold mb-3 flex items-center gap-2">
+                    <i data-lucide="radio-tower" class="w-5 h-5"></i> ต้นกำเนิดคลื่น (Wave Source)
+                </h3>
+                
+                <div class="flex gap-2 mb-4">
+                    <button class="mode-btn flex-1 py-1.5 text-sm font-semibold rounded bg-sky-600 text-white shadow" data-mode="oscillate">ต่อเนื่อง (Oscillate)</button>
+                    <button class="mode-btn flex-1 py-1.5 text-sm font-semibold rounded bg-slate-700 text-slate-300 hover:bg-slate-600" data-mode="pulse">สะบัด 1 ครั้ง (Pulse)</button>
+                    <button class="mode-btn flex-1 py-1.5 text-sm font-semibold rounded bg-slate-700 text-slate-300 hover:bg-slate-600" data-mode="manual">ปรับเอง (Manual)</button>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="flex justify-between text-sm text-slate-300">
+                            <span>แอมพลิจูด (Amplitude)</span>
+                            <span id="val-amp" class="font-mono text-white">50 cm</span>
+                        </label>
+                        <input type="range" id="input-amp" min="0" max="100" value="50" class="slider-custom">
+                    </div>
+                    <div>
+                        <label class="flex justify-between text-sm text-slate-300">
+                            <span>ความถี่ (Frequency)</span>
+                            <span id="val-freq" class="font-mono text-white">1.50 Hz</span>
+                        </label>
+                        <input type="range" id="input-freq" min="0.1" max="3.0" step="0.1" value="1.5" class="slider-custom">
+                    </div>
+                </div>
+                
+                <!-- Play/Pause -->
+                <div class="mt-4 flex gap-2">
+                    <button id="btn-play" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded font-bold flex justify-center items-center gap-1 transition">
+                        <i data-lucide="play" class="w-4 h-4"></i> เล่น (Play)
+                    </button>
+                    <button id="btn-step" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded font-bold transition">
+                        <i data-lucide="step-forward" class="w-4 h-4"></i>
+                    </button>
+                    <button id="btn-reset" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded font-bold transition">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right: Environment Controls (สภาพแวดล้อม) -->
+            <div class="flex-1 bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                <h3 class="text-rose-400 font-bold mb-3 flex items-center gap-2">
+                    <i data-lucide="settings-2" class="w-5 h-5"></i> สภาพแวดล้อม (Environment)
+                </h3>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="flex justify-between text-sm text-slate-300">
+                            <span>การหน่วง (Damping)</span>
+                            <span id="val-damp" class="font-mono text-white">ปานกลาง</span>
+                        </label>
+                        <input type="range" id="input-damp" min="0" max="100" value="20" class="slider-custom slider-red">
+                    </div>
+                    <div>
+                        <label class="flex justify-between text-sm text-slate-300">
+                            <span>ความตึง (Tension / Wave Speed)</span>
+                            <span id="val-tension" class="font-mono text-white">สูง</span>
+                        </label>
+                        <input type="range" id="input-tension" min="1" max="3" step="1" value="3" class="slider-custom slider-red">
+                        <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                            <span>ช้า (ความยาวคลื่นสั้น)</span>
+                            <span>เร็ว (ความยาวคลื่นยาว)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-slate-700">
+                    <label class="block text-sm text-slate-300 mb-2">ปลายเชือก (Boundary Condition)</label>
+                    <div class="flex gap-2">
+                        <button class="bound-btn flex-1 py-1.5 text-xs font-semibold rounded bg-rose-600 text-white shadow" data-bound="fixed">ตรึงแน่น (Fixed)</button>
+                        <button class="bound-btn flex-1 py-1.5 text-xs font-semibold rounded bg-slate-700 text-slate-300 hover:bg-slate-600" data-bound="loose">อิสระ (Loose)</button>
+                        <button class="bound-btn flex-1 py-1.5 text-xs font-semibold rounded bg-slate-700 text-slate-300 hover:bg-slate-600" data-bound="infinite">ไม่มีที่สิ้นสุด (No End)</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Educational Physics Sidebar -->
+    <aside class="w-full md:w-[400px] glass-panel h-full overflow-y-auto border-l border-slate-700 shadow-2xl flex flex-col z-30">
+        <div class="bg-gradient-to-r from-sky-700 to-blue-800 text-white p-5 shadow-md">
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <i data-lucide="waves"></i> คลื่นเบื้องต้น
+            </h1>
+            <p class="text-sky-200 text-sm mt-1">Introduction to Waves</p>
+        </div>
+
+        <div class="p-6 space-y-6 flex-1 text-sm text-slate-300 custom-scrollbar">
+            
+            <!-- Section 1: Properties -->
+            <section class="space-y-3 bg-slate-800 p-4 rounded-xl border border-slate-700">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-600 pb-2">
+                    <i data-lucide="ruler" class="text-sky-400"></i> 4 ส่วนประกอบสำคัญของคลื่น
+                </h2>
+                <ul class="space-y-2">
+                    <li><strong class="text-sky-300">1. แอมพลิจูด (Amplitude, A):</strong> ความสูงของสันคลื่นจากแนวสมดุล บ่งบอกถึง "พลังงาน" ของคลื่น</li>
+                    <li><strong class="text-sky-300">2. ความยาวคลื่น (Wavelength, &lambda;):</strong> ระยะทางระหว่างสันคลื่นถึงสันคลื่นติดกัน</li>
+                    <li><strong class="text-sky-300">3. ความถี่ (Frequency, f):</strong> จำนวนลอนคลื่นที่เกิดใน 1 วินาที (Hz)</li>
+                    <li><strong class="text-sky-300">4. คาบ (Period, T):</strong> เวลาที่ใช้ครบ 1 รอบ <span class="math-eq">T = 1/f</span></li>
+                </ul>
+            </section>
+
+            <!-- Section 2: Equations -->
+            <section class="space-y-3 bg-slate-800 p-4 rounded-xl border border-slate-700">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-600 pb-2">
+                    <i data-lucide="function-square" class="text-rose-400"></i> สมการคลื่น
+                </h2>
+                
+                <div>
+                    <strong class="text-white block mb-1">สมการอัตราเร็วคลื่น (Wave Speed)</strong>
+                    <div class="text-center my-2"><span class="math-eq text-lg">v = f &times; &lambda;</span></div>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        ลองปรับ "ความตึง" (Tension) ดูสิ! เชือกที่ตึงกว่าจะทำให้อัตราเร็วคลื่น (v) สูงขึ้น เมื่อความถี่ (f) คงที่ จะส่งผลให้ความยาวคลื่น (&lambda;) ยาวขึ้นตามสมการ!
+                    </p>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-slate-700">
+                    <strong class="text-white block mb-1">สมการคลื่นไซน์ (Sine Wave Equation)</strong>
+                    <div class="text-center my-2"><span class="math-eq">y(x,t) = A sin(kx - &omega;t)</span></div>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        อธิบายตำแหน่ง (y) ของอนุภาคตัวกลาง ณ ตำแหน่ง x และเวลา t ใดๆ 
+                    </p>
+                </div>
+            </section>
+
+            <!-- Section 3: Real world examples -->
+            <section class="space-y-3 bg-slate-800 p-4 rounded-xl border border-slate-700">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-600 pb-2">
+                    <i data-lucide="globe" class="text-emerald-400"></i> คลื่นในธรรมชาติ
+                </h2>
+                <div class="space-y-3">
+                    <div class="flex gap-3">
+                        <i data-lucide="volume-2" class="text-slate-400 w-5 h-5 shrink-0"></i>
+                        <div>
+                            <strong class="text-white">เสียง (Sound)</strong>
+                            <p class="text-xs mt-1 text-slate-400">เป็นคลื่นกลตามยาว (Longitudinal) ต้องใช้ตัวกลางในการเคลื่อนที่ แอมพลิจูดคือความดัง ความถี่คือระดับเสียงทุ้มแหลม</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <i data-lucide="droplets" class="text-slate-400 w-5 h-5 shrink-0"></i>
+                        <div>
+                            <strong class="text-white">น้ำ (Water)</strong>
+                            <p class="text-xs mt-1 text-slate-400">คลื่นผิวน้ำเป็นการผสมกันระหว่างคลื่นตามยาวและตามขวาง อนุภาคน้ำจะหมุนเป็นวงกลมขณะคลื่นเคลื่อนผ่าน</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <i data-lucide="sun" class="text-slate-400 w-5 h-5 shrink-0"></i>
+                        <div>
+                            <strong class="text-white">แสง (Light)</strong>
+                            <p class="text-xs mt-1 text-slate-400">คลื่นแม่เหล็กไฟฟ้า (EM Wave) อัตราเร็วสูงสุดในจักรวาล ความถี่กำหนดสีของแสง และสามารถเดินทางผ่านสุญญากาศได้</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </aside>
+
+    <script>
+        // Load Icons
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        // Canvas Setup
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let cx, cy;
+        let scale = 1;
+
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            cx = canvas.width / 2;
+            cy = canvas.height / 2;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // ---------------------------------------------------------
+        // Physics State & Constants
+        // ---------------------------------------------------------
+        const NUM_BEADS = 60; // Number of points in the string
+        const SPACING = 15;   // Base pixel spacing between beads
+        
+        const state = {
+            viewMode: '2D', // '2D' or '3D'
+            isRunning: true,
+            time: 0,
+            
+            // Generator Source
+            mode: 'oscillate', // 'oscillate', 'pulse', 'manual'
+            amplitude: 50,     // pixels
+            frequency: 1.5,    // Hz
+            
+            // Environment
+            tensionLevel: 3,   // 1 (Low), 2 (Med), 3 (High)
+            dampingVal: 20,    // 0 to 100
+            endType: 'fixed',  // 'fixed', 'loose', 'infinite'
+            
+            // Interaction
+            isDraggingStart: false,
+            manualY: 0,
+            
+            // Wave data measurement
+            waveSpeed: 0
+        };
+
+        // Spring-mass array: y = pos, v = velocity
+        let beads = Array(NUM_BEADS).fill(0).map(() => ({ y: 0, v: 0 }));
+
+        // ---------------------------------------------------------
+        // Input Controls Setup
+        // ---------------------------------------------------------
+        const UI = {
+            ampSlider: document.getElementById('input-amp'),
+            ampVal: document.getElementById('val-amp'),
+            freqSlider: document.getElementById('input-freq'),
+            freqVal: document.getElementById('val-freq'),
+            dampSlider: document.getElementById('input-damp'),
+            dampVal: document.getElementById('val-damp'),
+            tensionSlider: document.getElementById('input-tension'),
+            tensionVal: document.getElementById('val-tension'),
+            
+            dispAmp: document.getElementById('disp-amp'),
+            dispFreq: document.getElementById('disp-freq'),
+            dispSpeed: document.getElementById('disp-speed'),
+            
+            btnPlay: document.getElementById('btn-play'),
+            btnStep: document.getElementById('btn-step'),
+            btnReset: document.getElementById('btn-reset'),
+            
+            modeBtns: document.querySelectorAll('.mode-btn'),
+            boundBtns: document.querySelectorAll('.bound-btn'),
+            
+            btn2D: document.getElementById('btn-2d'),
+            btn3D: document.getElementById('btn-3d'),
+            grid2D: document.getElementById('bg-grid-2d'),
+            line2D: document.getElementById('center-line-2d'),
+            sim3D: document.getElementById('sim-3d')
+        };
+
+        // View Mode Switching
+        UI.btn2D.addEventListener('click', () => switchMode('2D'));
+        UI.btn3D.addEventListener('click', () => switchMode('3D'));
+
+        function switchMode(mode) {
+            state.viewMode = mode;
+            if (mode === '2D') {
+                UI.btn2D.className = "px-3 py-1.5 rounded text-sm font-bold bg-sky-500 text-white shadow transition-colors";
+                UI.btn3D.className = "px-3 py-1.5 rounded text-sm font-bold bg-transparent text-slate-400 hover:bg-slate-700 transition-colors";
+                canvas.classList.remove('hidden');
+                UI.grid2D.classList.remove('opacity-0');
+                UI.line2D.classList.remove('opacity-0');
+                UI.sim3D.classList.add('hidden');
+            } else {
+                UI.btn3D.className = "px-3 py-1.5 rounded text-sm font-bold bg-sky-500 text-white shadow transition-colors";
+                UI.btn2D.className = "px-3 py-1.5 rounded text-sm font-bold bg-transparent text-slate-400 hover:bg-slate-700 transition-colors";
+                canvas.classList.add('hidden');
+                UI.grid2D.classList.add('opacity-0');
+                UI.line2D.classList.add('opacity-0');
+                UI.sim3D.classList.remove('hidden');
+                
+                if (!scene3D) init3D();
+            }
+        }
+
+        // --- Event Listeners ---
+        UI.ampSlider.addEventListener('input', (e) => {
+            state.amplitude = parseInt(e.target.value);
+            UI.ampVal.textContent = state.amplitude + ' cm';
+            UI.dispAmp.textContent = state.amplitude.toFixed(2);
+        });
+
+        UI.freqSlider.addEventListener('input', (e) => {
+            state.frequency = parseFloat(e.target.value);
+            UI.freqVal.textContent = state.frequency.toFixed(2) + ' Hz';
+            UI.dispFreq.textContent = state.frequency.toFixed(2);
+        });
+
+        UI.dampSlider.addEventListener('input', (e) => {
+            state.dampingVal = parseInt(e.target.value);
+            let label = "ปานกลาง";
+            if (state.dampingVal === 0) label = "ไม่มี (None)";
+            else if (state.dampingVal < 30) label = "น้อย (Low)";
+            else if (state.dampingVal > 70) label = "มาก (High)";
+            UI.dampVal.textContent = label;
+        });
+
+        UI.tensionSlider.addEventListener('input', (e) => {
+            state.tensionLevel = parseInt(e.target.value);
+            const labels = ["ต่ำ (Low)", "ปานกลาง (Med)", "สูง (High)"];
+            UI.tensionVal.textContent = labels[state.tensionLevel - 1];
+        });
+
+        // Mode Switching
+        UI.modeBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                UI.modeBtns.forEach(b => {
+                    b.classList.remove('bg-sky-600', 'text-white');
+                    b.classList.add('bg-slate-700', 'text-slate-300');
+                });
+                const t = e.target;
+                t.classList.remove('bg-slate-700', 'text-slate-300');
+                t.classList.add('bg-sky-600', 'text-white');
+                state.mode = t.dataset.mode;
+                
+                // Trigger pulse
+                if (state.mode === 'pulse') {
+                    triggerPulse();
+                }
+            });
+        });
+
+        // Boundary Switching
+        UI.boundBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                UI.boundBtns.forEach(b => {
+                    b.classList.remove('bg-rose-600', 'text-white');
+                    b.classList.add('bg-slate-700', 'text-slate-300');
+                });
+                const t = e.target;
+                t.classList.remove('bg-slate-700', 'text-slate-300');
+                t.classList.add('bg-rose-600', 'text-white');
+                state.endType = t.dataset.bound;
+            });
+        });
+
+        // Play/Pause/Reset
+        UI.btnPlay.addEventListener('click', () => {
+            state.isRunning = !state.isRunning;
+            if (state.isRunning) {
+                UI.btnPlay.innerHTML = `<i data-lucide="pause" class="w-4 h-4"></i> หยุด (Pause)`;
+                UI.btnPlay.classList.replace('bg-emerald-600', 'bg-amber-600');
+                UI.btnPlay.classList.replace('hover:bg-emerald-500', 'hover:bg-amber-500');
+            } else {
+                UI.btnPlay.innerHTML = `<i data-lucide="play" class="w-4 h-4"></i> เล่น (Play)`;
+                UI.btnPlay.classList.replace('bg-amber-600', 'bg-emerald-600');
+                UI.btnPlay.classList.replace('hover:bg-amber-500', 'hover:bg-emerald-500');
+            }
+            lucide.createIcons();
+        });
+
+        UI.btnStep.addEventListener('click', () => {
+            if (state.isRunning) UI.btnPlay.click(); // pause if running
+            simulatePhysics(0.016); // step 1 frame (~60fps)
+        });
+
+        UI.btnReset.addEventListener('click', () => {
+            state.time = 0;
+            beads = Array(NUM_BEADS).fill(0).map(() => ({ y: 0, v: 0 }));
+            if (!state.isRunning) UI.btnPlay.click(); // Auto start
+        });
+
+        // Initial UI sync
+        UI.dispAmp.textContent = state.amplitude.toFixed(2);
+        UI.dispFreq.textContent = state.frequency.toFixed(2);
+        UI.btnPlay.click(); // Start in playing state
+        UI.btnPlay.click(); // Toggle back to correct styling
+
+        // ---------------------------------------------------------
+        // Physics Engine (1D String Simulation)
+        // ---------------------------------------------------------
+        
+        let pulseTime = 0;
+        let isPulsing = false;
+
+        function triggerPulse() {
+            isPulsing = true;
+            pulseTime = 0;
+        }
+
+        // Manual Wiggle Interaction
+        const interactionContainer = document.getElementById('canvas-container');
+
+        function handlePointerDown(clientX, clientY) {
+            if (state.mode === 'manual') {
+                const rect = interactionContainer.getBoundingClientRect();
+                
+                if (state.viewMode === '2D') {
+                    const mouseX = clientX - rect.left;
+                    const startX = canvas.width/2 - (NUM_BEADS*SPACING)/2;
+                    if (Math.abs(mouseX - startX) < 60) {
+                        state.isDraggingStart = true;
+                    }
+                } else if (state.viewMode === '3D' && camera3D && dragPlane3D) {
+                    mouse3D.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+                    mouse3D.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+                    raycaster3D.setFromCamera(mouse3D, camera3D);
+                    const intersects = raycaster3D.intersectObject(dragPlane3D);
+                    if (intersects.length > 0) {
+                        const startX = -(NUM_BEADS * SPACING) / 2;
+                        if (Math.abs(intersects[0].point.x - startX) < 60) {
+                            state.isDraggingStart = true;
+                            if (controls3D) controls3D.enabled = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        function handlePointerMove(clientX, clientY) {
+            if (state.isDraggingStart) {
+                const rect = interactionContainer.getBoundingClientRect();
+                
+                if (state.viewMode === '2D') {
+                    const mouseY = clientY - rect.top;
+                    state.manualY = mouseY - (rect.height / 2); 
+                } else if (state.viewMode === '3D' && camera3D && dragPlane3D) {
+                    mouse3D.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+                    mouse3D.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+                    raycaster3D.setFromCamera(mouse3D, camera3D);
+                    const intersects = raycaster3D.intersectObject(dragPlane3D);
+                    if (intersects.length > 0) {
+                        // Map 3D Y directly to state.manualY (inverted to match 2D visual layout convention)
+                        state.manualY = -intersects[0].point.y; 
+                    }
+                }
+                
+                // Clamp manual Y
+                if (state.manualY > 150) state.manualY = 150;
+                if (state.manualY < -150) state.manualY = -150;
+            }
+        }
+
+        function handlePointerUp() {
+            state.isDraggingStart = false;
+            if (controls3D) controls3D.enabled = true;
+        }
+
+        interactionContainer.addEventListener('mousedown', (e) => handlePointerDown(e.clientX, e.clientY));
+        window.addEventListener('mousemove', (e) => handlePointerMove(e.clientX, e.clientY));
+        window.addEventListener('mouseup', handlePointerUp);
+        
+        interactionContainer.addEventListener('touchstart', (e) => handlePointerDown(e.touches[0].clientX, e.touches[0].clientY), {passive: false});
+        window.addEventListener('touchmove', (e) => {
+            if (state.isDraggingStart) e.preventDefault();
+            handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
+        }, {passive: false});
+        window.addEventListener('touchend', handlePointerUp);
+
+
+        function simulatePhysics(dt) {
+            // Map UI settings to physics constants
+            // Tension -> Spring Constant (k)
+            let k = 0;
+            if (state.tensionLevel === 1) k = 1500;
+            else if (state.tensionLevel === 2) k = 4000;
+            else if (state.tensionLevel === 3) k = 10000;
+            
+            // Map Damping
+            let damp = state.dampingVal * 0.05; 
+            
+            // Estimate wave speed for UI (v = sqrt(T/mu) approx proportional to sqrt(k))
+            state.waveSpeed = Math.sqrt(k) * 0.5;
+            UI.dispSpeed.textContent = state.waveSpeed.toFixed(1);
+
+            // Substepping for stable physics integration (Euler-Cromer)
+            const substeps = 20; 
+            const sub_dt = dt / substeps;
+
+            for (let s = 0; s < substeps; s++) {
+                
+                // 1. Update Source (Bead 0)
+                if (state.mode === 'oscillate') {
+                    beads[0].y = -state.amplitude * Math.sin(2 * Math.PI * state.frequency * state.time);
+                    beads[0].v = 0;
+                } 
+                else if (state.mode === 'pulse') {
+                    if (isPulsing) {
+                        const pulseDuration = 0.5;
+                        if (pulseTime < pulseDuration) {
+                            // Gaussian-like pulse using sin^2
+                            beads[0].y = -state.amplitude * Math.sin(Math.PI * (pulseTime / pulseDuration));
+                            pulseTime += sub_dt;
+                        } else {
+                            beads[0].y = 0;
+                            isPulsing = false;
+                        }
+                    } else {
+                        beads[0].y = 0;
+                    }
+                    beads[0].v = 0;
+                }
+                else if (state.mode === 'manual') {
+                    if (state.isDraggingStart) {
+                        beads[0].y = state.manualY;
+                        beads[0].v = 0;
+                    } else {
+                        // Spring back to center slowly if not dragged
+                        beads[0].v -= k * 0.1 * beads[0].y * sub_dt;
+                        beads[0].v -= 5 * beads[0].v * sub_dt; // heavy damp
+                        beads[0].y += beads[0].v * sub_dt;
+                    }
+                }
+
+                // 2. Calculate Forces and Update Velocities
+                for (let i = 1; i < NUM_BEADS - 1; i++) {
+                    let force = k * (beads[i - 1].y + beads[i + 1].y - 2 * beads[i].y);
+                    force -= damp * beads[i].v;
+                    beads[i].v += force * sub_dt;
+                }
+
+                // 3. Boundary Conditions (Last Bead)
+                let last = NUM_BEADS - 1;
+                if (state.endType === 'fixed') {
+                    beads[last].y = 0;
+                    beads[last].v = 0;
+                } 
+                else if (state.endType === 'loose') {
+                    // Loose ring on a pole (feels force from left only)
+                    let force = k * (beads[last - 1].y - beads[last].y);
+                    force -= damp * beads[last].v;
+                    beads[last].v += force * sub_dt;
+                } 
+                else if (state.endType === 'infinite') {
+                    // Perfectly Matched Layer (Absorbing window)
+                    // Apply heavy damping to the last few beads to prevent reflection
+                    let force = k * (beads[last - 1].y - beads[last].y);
+                    beads[last].v += force * sub_dt;
+                    
+                    const windowSize = 15;
+                    for (let i = NUM_BEADS - windowSize; i < NUM_BEADS; i++) {
+                        let strength = (i - (NUM_BEADS - windowSize)) / windowSize;
+                        beads[i].v -= (200 * strength) * beads[i].v * sub_dt; // aggressive damping
+                        beads[i].y -= (10 * strength) * beads[i].y * sub_dt;  // pull to center
+                    }
+                }
+
+                // 4. Integrate Positions
+                for (let i = 1; i < NUM_BEADS; i++) {
+                    beads[i].y += beads[i].v * sub_dt;
+                }
+                
+                state.time += sub_dt;
+            }
+        }
+
+        // ---------------------------------------------------------
+        // Graphics Rendering
+        // ---------------------------------------------------------
+        
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const startX = cx - (NUM_BEADS * SPACING) / 2;
+            
+            // Draw Window/Infinite fade out zone
+            if (state.endType === 'infinite') {
+                const fadeStartX = startX + (NUM_BEADS - 15) * SPACING;
+                const grad = ctx.createLinearGradient(fadeStartX, 0, fadeStartX + 15*SPACING, 0);
+                grad.addColorStop(0, "rgba(15, 23, 42, 0)");
+                grad.addColorStop(1, "rgba(15, 23, 42, 1)");
+                ctx.fillStyle = grad;
+                ctx.fillRect(fadeStartX, 0, canvas.width - fadeStartX, canvas.height);
+            }
+
+            // Draw connecting string line
+            ctx.beginPath();
+            ctx.moveTo(startX, cy + beads[0].y);
+            for (let i = 1; i < NUM_BEADS; i++) {
+                ctx.lineTo(startX + i * SPACING, cy + beads[i].y);
+            }
+            ctx.strokeStyle = '#38bdf8'; // Sky blue
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Draw Beads (Dot representation of medium particles)
+            for (let i = 0; i < NUM_BEADS; i++) {
+                const x = startX + i * SPACING;
+                const y = cy + beads[i].y;
+                
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                
+                // Color specific beads for tracking movement
+                if (i === 0) {
+                    ctx.fillStyle = '#10b981'; // Green for source
+                    ctx.arc(x, y, 6, 0, Math.PI * 2);
+                } else if (i === NUM_BEADS - 1) {
+                    ctx.fillStyle = '#f43f5e'; // Red for end
+                    ctx.arc(x, y, 6, 0, Math.PI * 2);
+                } else if (i % 10 === 0) {
+                    ctx.fillStyle = '#f59e0b'; // Yellow markers
+                } else {
+                    ctx.fillStyle = '#ffffff'; // White default
+                }
+                
+                ctx.fill();
+            }
+
+            // Draw Generator Tool (Left side)
+            drawGenerator(startX, cy + beads[0].y);
+
+            // Draw Boundary Tool (Right side)
+            drawBoundary(startX + (NUM_BEADS - 1) * SPACING, cy + beads[NUM_BEADS - 1].y);
+        }
+
+        function drawGenerator(x, y) {
+            // Piston/Wrench visual holding the first bead
+            ctx.fillStyle = '#64748b';
+            ctx.fillRect(x - 20, y - 5, 20, 10);
+            
+            if (state.mode === 'oscillate') {
+                // Draw a simple wheel mechanism to indicate oscillation
+                const wheelX = x - 40;
+                const wheelY = cy;
+                const radius = 20;
+                
+                // Wheel
+                ctx.beginPath();
+                ctx.arc(wheelX, wheelY, radius, 0, Math.PI * 2);
+                ctx.strokeStyle = '#475569';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+                
+                // Connecting rod
+                const armY = wheelY - radius * Math.sin(2 * Math.PI * state.frequency * state.time);
+                ctx.beginPath();
+                ctx.moveTo(wheelX, armY);
+                ctx.lineTo(x - 20, y);
+                ctx.strokeStyle = '#94a3b8';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+            else if (state.mode === 'manual') {
+                // Draw hand icon or glow if grabbing
+                if (state.isDraggingStart) {
+                    ctx.beginPath();
+                    ctx.arc(x, y, 20, 0, Math.PI*2);
+                    ctx.fillStyle = 'rgba(16, 185, 129, 0.3)';
+                    ctx.fill();
+                }
+            }
+        }
+
+        function drawBoundary(x, y) {
+            if (state.endType === 'fixed') {
+                // Draw a C-clamp holding the bead firmly at y=0
+                ctx.fillStyle = '#f43f5e';
+                ctx.fillRect(x, cy - 15, 10, 30);
+                
+                // Wall
+                ctx.fillStyle = '#334155';
+                ctx.fillRect(x + 10, cy - 50, 20, 100);
+            } 
+            else if (state.endType === 'loose') {
+                // Draw a vertical rod that the bead slides on
+                ctx.strokeStyle = '#cbd5e1';
+                ctx.lineWidth = 6;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(x, cy - 100);
+                ctx.lineTo(x, cy + 100);
+                ctx.stroke();
+                
+                // Draw the sliding ring
+                ctx.strokeStyle = '#f43f5e';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.ellipse(x, y, 12, 6, 0, 0, Math.PI*2);
+                ctx.stroke();
+            }
+            // Infinite does not draw anything specific, it fades out.
+        }
+
+        // ---------------------------------------------------------
+        // 3D Rendering Engine (Three.js)
+        // ---------------------------------------------------------
+        let scene3D, camera3D, renderer3D, controls3D;
+        let beadMeshes = [];
+        let lineMesh3D, lineGeo3D;
+        let boundaryMesh3D;
+        let raycaster3D = new THREE.Raycaster();
+        let mouse3D = new THREE.Vector2();
+        let dragPlane3D;
+
+        function init3D() {
+            const container = UI.sim3D;
+            scene3D = new THREE.Scene();
+            
+            // Camera
+            const aspect = container.clientWidth / container.clientHeight;
+            camera3D = new THREE.PerspectiveCamera(45, aspect, 1, 2000);
+            camera3D.position.set(0, 150, 600); // Isometric-ish view
+            
+            // Renderer
+            renderer3D = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer3D.setSize(container.clientWidth, container.clientHeight);
+            renderer3D.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer3D.domElement);
+            
+            // Controls
+            controls3D = new THREE.OrbitControls(camera3D, renderer3D.domElement);
+            controls3D.enableDamping = true;
+            controls3D.dampingFactor = 0.05;
+            
+            // Lighting
+            const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+            scene3D.add(ambient);
+            const directional = new THREE.DirectionalLight(0xffffff, 0.8);
+            directional.position.set(100, 200, 100);
+            scene3D.add(directional);
+
+            // Drag Plane (Invisible, at Z=0 for manual mode raycasting)
+            const planeGeo = new THREE.PlaneGeometry(2000, 2000);
+            const planeMat = new THREE.MeshBasicMaterial({ visible: false });
+            dragPlane3D = new THREE.Mesh(planeGeo, planeMat);
+            scene3D.add(dragPlane3D);
+
+            // Materials
+            const matNormal = new THREE.MeshPhongMaterial({ color: 0xffffff });
+            const matSource = new THREE.MeshPhongMaterial({ color: 0x10b981 });
+            const matEnd = new THREE.MeshPhongMaterial({ color: 0xf43f5e });
+            const matMarker = new THREE.MeshPhongMaterial({ color: 0xf59e0b });
+            
+            // Create Beads
+            const sphereGeo = new THREE.SphereGeometry(6, 16, 16);
+            const startX = -(NUM_BEADS * SPACING) / 2;
+            
+            for (let i = 0; i < NUM_BEADS; i++) {
+                let mat = matNormal;
+                if (i === 0) mat = matSource;
+                else if (i === NUM_BEADS - 1) mat = matEnd;
+                else if (i % 10 === 0) mat = matMarker;
+                
+                let mesh = new THREE.Mesh(sphereGeo, mat.clone());
+                mesh.position.x = startX + i * SPACING;
+                scene3D.add(mesh);
+                beadMeshes.push(mesh);
+            }
+            
+            // Create Line connecting beads
+            lineGeo3D = new THREE.BufferGeometry();
+            const positions = new Float32Array(NUM_BEADS * 3);
+            lineGeo3D.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const lineMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 });
+            lineMesh3D = new THREE.Line(lineGeo3D, lineMat);
+            scene3D.add(lineMesh3D);
+            
+            // Boundary indicator object
+            boundaryMesh3D = new THREE.Group();
+            scene3D.add(boundaryMesh3D);
+
+            // Handle Resize
+            window.addEventListener('resize', () => {
+                if (!camera3D || !renderer3D) return;
+                camera3D.aspect = container.clientWidth / container.clientHeight;
+                camera3D.updateProjectionMatrix();
+                renderer3D.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+
+        function render3D() {
+            if (!scene3D) return;
+            
+            const positions = lineGeo3D.attributes.position.array;
+            
+            // Update bead positions and line geometry
+            for (let i = 0; i < NUM_BEADS; i++) {
+                // Invert y so it looks like the 2D canvas 
+                const yPos = -beads[i].y; 
+                beadMeshes[i].position.y = yPos;
+                
+                positions[i * 3] = beadMeshes[i].position.x;
+                positions[i * 3 + 1] = yPos;
+                positions[i * 3 + 2] = 0;
+                
+                // Infinite boundary fading effect
+                if (state.endType === 'infinite') {
+                    const windowSize = 15;
+                    if (i >= NUM_BEADS - windowSize) {
+                        let opacity = 1.0 - ((i - (NUM_BEADS - windowSize)) / windowSize);
+                        beadMeshes[i].material.transparent = true;
+                        beadMeshes[i].material.opacity = Math.max(0, opacity);
+                    } else {
+                        beadMeshes[i].material.transparent = false;
+                        beadMeshes[i].material.opacity = 1.0;
+                    }
+                } else {
+                    beadMeshes[i].material.transparent = false;
+                    beadMeshes[i].material.opacity = 1.0;
+                }
+            }
+            lineGeo3D.attributes.position.needsUpdate = true;
+            
+            // Update Boundary Visuals
+            while (boundaryMesh3D.children.length) {
+                boundaryMesh3D.remove(boundaryMesh3D.children[0]);
+            }
+            
+            const endX = beadMeshes[NUM_BEADS - 1].position.x;
+            const endY = beadMeshes[NUM_BEADS - 1].position.y;
+            
+            if (state.endType === 'fixed') {
+                const wallGeo = new THREE.BoxGeometry(20, 100, 40);
+                const wallMat = new THREE.MeshPhongMaterial({ color: 0x334155 });
+                const wall = new THREE.Mesh(wallGeo, wallMat);
+                wall.position.set(endX + 10, 0, 0);
+                boundaryMesh3D.add(wall);
+                
+                const clampGeo = new THREE.BoxGeometry(10, 30, 10);
+                const clampMat = new THREE.MeshPhongMaterial({ color: 0xf43f5e });
+                const clamp = new THREE.Mesh(clampGeo, clampMat);
+                clamp.position.set(endX, 0, 0);
+                boundaryMesh3D.add(clamp);
+            } 
+            else if (state.endType === 'loose') {
+                const rodGeo = new THREE.CylinderGeometry(3, 3, 200, 8);
+                const rodMat = new THREE.MeshPhongMaterial({ color: 0xcbd5e1 });
+                const rod = new THREE.Mesh(rodGeo, rodMat);
+                rod.position.set(endX, 0, 0);
+                boundaryMesh3D.add(rod);
+                
+                const ringGeo = new THREE.TorusGeometry(8, 2, 8, 16);
+                const ringMat = new THREE.MeshPhongMaterial({ color: 0xf43f5e });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.position.set(endX, endY, 0);
+                ring.rotation.x = Math.PI / 2;
+                boundaryMesh3D.add(ring);
+            }
+            
+            if (controls3D) controls3D.update();
+            renderer3D.render(scene3D, camera3D);
+        }
+
+        // ---------------------------------------------------------
+        // Main Loop
+        // ---------------------------------------------------------
+        let lastTime = performance.now();
+        
+        function loop(timestamp) {
+            let dt = (timestamp - lastTime) / 1000;
+            if (dt > 0.05) dt = 0.05; // clamp delta time for stability if tab is inactive
+            lastTime = timestamp;
+
+            if (state.isRunning) {
+                simulatePhysics(dt);
+            }
+            
+            if (state.viewMode === '2D') {
+                render();
+            } else {
+                render3D();
+            }
+            
+            requestAnimationFrame(loop);
+        }
+
+        // Start
+        requestAnimationFrame(loop);
+
+    </script>
+</body>
+</html>

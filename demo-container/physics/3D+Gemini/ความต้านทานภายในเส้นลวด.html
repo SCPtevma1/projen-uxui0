@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resistance in a Wire Simulation</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Jost:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        body { font-family: 'Kanit', sans-serif; background-color: #f8fafc; margin: 0; overflow: hidden; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        
+        /* Custom Sliders for each variable */
+        .slider { -webkit-appearance: none; width: 100%; height: 8px; border-radius: 5px; outline: none; transition: 0.2s; margin-top: 10px; }
+        .slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: transform 0.1s; }
+        .slider::-webkit-slider-thumb:hover { transform: scale(1.15); }
+        
+        .slider-rho { background: #e9d5ff; }
+        .slider-rho::-webkit-slider-thumb { background: #9333ea; } /* Purple */
+        
+        .slider-l { background: #bbf7d0; }
+        .slider-l::-webkit-slider-thumb { background: #16a34a; } /* Green */
+        
+        .slider-a { background: #fed7aa; }
+        .slider-a::-webkit-slider-thumb { background: #ea580c; } /* Orange */
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        #canvas-container {
+            background: linear-gradient(to bottom, #f8fafc 0%, #e2e8f0 100%);
+            position: relative;
+        }
+
+        /* Math Font for dynamic text */
+        .math-font { font-family: 'Jost', sans-serif; display: inline-block; transition: font-size 0.1s ease-out, transform 0.1s; line-height: 1; }
+        .math-r { color: #dc2626; font-weight: 700; }
+        .math-rho { color: #9333ea; font-weight: 600; }
+        .math-l { color: #16a34a; font-weight: 600; }
+        .math-a { color: #ea580c; font-weight: 600; }
+        
+        /* Layout for dynamic equation */
+        #dynamic-equation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .fraction {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .fraction-line {
+            width: 100%;
+            height: 4px;
+            background-color: #475569;
+            margin: 4px 0;
+            border-radius: 2px;
+            transition: width 0.1s;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col md:flex-row text-slate-800">
+
+    <main class="flex-1 relative flex flex-col items-center overflow-hidden h-full" id="canvas-container">
+        
+        <!-- View Mode Toggle -->
+        <div class="absolute top-4 right-4 z-30 bg-white/90 p-1 rounded-lg shadow-md border border-slate-200 flex gap-1 backdrop-blur">
+            <button id="btn-2d" class="px-3 py-1.5 rounded text-sm font-bold bg-red-500 text-white shadow transition-colors">2D View</button>
+            <button id="btn-3d" class="px-3 py-1.5 rounded text-sm font-bold bg-transparent text-slate-500 hover:bg-slate-200 transition-colors">3D View</button>
+        </div>
+
+        <!-- Live Data Dashboard -->
+        <div class="absolute top-4 left-4 z-10 bg-white/95 p-4 rounded-xl shadow-lg border border-slate-200 min-w-[260px] backdrop-blur-sm">
+            <h3 class="font-bold text-slate-800 border-b pb-2 mb-2 flex items-center gap-2">
+                <i data-lucide="activity" class="w-5 h-5 text-red-500"></i> ค่าความต้านทาน (Resistance)
+            </h3>
+            
+            <div class="space-y-2 text-sm font-mono mt-3">
+                <div class="flex justify-between items-center bg-red-50 px-3 py-3 rounded-lg border-2 border-red-200 shadow-inner">
+                    <span class="text-red-800 font-bold text-lg">R =</span>
+                    <div class="text-right flex items-baseline gap-1">
+                        <span id="disp-val-r" class="font-black text-red-600 text-2xl">0.500</span>
+                        <span class="text-red-700 text-sm font-bold">Ω</span>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-slate-100 text-xs text-slate-600">
+                    <div class="flex flex-col">
+                        <span>ρ: <span id="disp-val-rho" class="font-bold text-purple-600">0.50</span> Ω·cm</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span>L: <span id="disp-val-l" class="font-bold text-green-600">10.00</span> cm</span>
+                    </div>
+                    <div class="flex flex-col col-span-2">
+                        <span>A: <span id="disp-val-a" class="font-bold text-orange-600">10.00</span> cm²</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HTML5 Canvas for Simulation (2D) -->
+        <canvas id="simCanvas" class="w-full h-full absolute inset-0 z-10"></canvas>
+        
+        <!-- 3D Container -->
+        <div id="sim-3d" class="absolute inset-0 z-10 hidden"></div>
+        
+    </main>
+
+    <aside class="w-full md:w-[420px] glass-panel h-full overflow-y-auto border-l border-slate-200 shadow-2xl flex flex-col z-30">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-red-600 to-rose-700 text-white p-5 shadow-md">
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <i data-lucide="cable"></i> ความต้านทานลวด
+            </h1>
+            <p class="text-red-100 text-sm mt-1">Resistance in a Wire: R = ρL/A</p>
+        </div>
+
+        <div class="p-6 space-y-6 flex-1 bg-slate-50">
+            <!-- Controls Section -->
+            <section class="space-y-5 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-lg font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
+                    <i data-lucide="sliders-horizontal" class="w-5 h-5 text-red-500"></i> ปรับค่าตัวแปร
+                </h2>
+
+                <!-- Resistivity (rho) -->
+                <div class="bg-purple-50 p-4 rounded-xl border border-purple-100">
+                    <label class="flex justify-between text-sm font-bold text-purple-800">
+                        <span class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-purple-500"></div> สภาพต้านทาน (ρ)</span>
+                        <span id="label-rho" class="text-purple-700 bg-white px-2 py-0.5 rounded shadow-sm border border-purple-200">0.50 Ω·cm</span>
+                    </label>
+                    <input type="range" id="input-rho" min="0.01" max="1.00" step="0.01" value="0.50" class="slider slider-rho">
+                    <div class="flex justify-between text-[10px] text-purple-400 mt-1 font-semibold">
+                        <span>เงิน/ทองแดง (นำไฟดี)</span>
+                        <span>ตะกั่ว/คาร์บอน (ต้านไฟ)</span>
+                    </div>
+                </div>
+
+                <!-- Length (L) -->
+                <div class="bg-green-50 p-4 rounded-xl border border-green-100">
+                    <label class="flex justify-between text-sm font-bold text-green-800">
+                        <span class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-green-500"></div> ความยาวลวด (L)</span>
+                        <span id="label-l" class="text-green-700 bg-white px-2 py-0.5 rounded shadow-sm border border-green-200">10.0 cm</span>
+                    </label>
+                    <input type="range" id="input-l" min="0.1" max="20.0" step="0.1" value="10.0" class="slider slider-l">
+                    <div class="flex justify-between text-[10px] text-green-400 mt-1 font-semibold">
+                        <span>สั้น</span>
+                        <span>ยาว</span>
+                    </div>
+                </div>
+                
+                <!-- Area (A) -->
+                <div class="bg-orange-50 p-4 rounded-xl border border-orange-100">
+                    <label class="flex justify-between text-sm font-bold text-orange-800">
+                        <span class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-orange-500"></div> พื้นที่หน้าตัด (A)</span>
+                        <span id="label-a" class="text-orange-700 bg-white px-2 py-0.5 rounded shadow-sm border border-orange-200">10.0 cm²</span>
+                    </label>
+                    <input type="range" id="input-a" min="0.1" max="15.0" step="0.1" value="10.0" class="slider slider-a">
+                    <div class="flex justify-between text-[10px] text-orange-400 mt-1 font-semibold">
+                        <span>เส้นเล็ก (ผอม)</span>
+                        <span>เส้นใหญ่ (อวบ)</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Physics Concepts -->
+            <section class="space-y-4 bg-red-50/50 p-5 rounded-xl border border-red-100 text-sm">
+                <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2 border-b-2 border-red-200 pb-2">
+                    <i data-lucide="book-open" class="w-5 h-5 text-red-600"></i> หลักการฟิสิกส์
+                </h2>
+                
+                <div class="space-y-4 text-slate-700 h-64 overflow-y-auto pr-2 custom-scrollbar">
+                    
+                    <div>
+                        <strong class="text-slate-900 text-base text-purple-700 block mb-1">1. สภาพต้านทาน (ρ - Resistivity)</strong>
+                        <p class="leading-relaxed text-xs">
+                            คือ <b>"สมบัติเฉพาะตัวของเนื้อวัสดุ"</b> (จุดสีดำในภาพ) ยิ่งมีค่ามาก แสดงว่าวัสดุนั้นมีสิ่งกีดขวางทางไฟฟ้าเยอะ อิเล็กตรอนไหลผ่านยาก (เช่น ยาง มีค่า ρ สูงมาก, ส่วน ทองแดง มีค่า ρ ต่ำมาก)
+                        </p>
+                    </div>
+
+                    <div>
+                        <strong class="text-slate-900 text-base text-green-700 block mb-1">2. ความยาว (L)</strong>
+                        <p class="leading-relaxed text-xs">
+                            <span class="font-semibold text-green-800">R แปรผันตรงกับ L (R ∝ L):</span> ยิ่งลวด "ยาว" อิเล็กตรอนยิ่งต้องเดินทางไกลและชนกับสิ่งกีดขวางมากขึ้น ทำให้ความต้านทาน (R) รวม <b>เพิ่มขึ้น</b> (สังเกตตัวอักษร R ใหญ่ขึ้นตาม L)
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <strong class="text-slate-900 text-base text-orange-600 block mb-1">3. พื้นที่หน้าตัด (A)</strong>
+                        <p class="leading-relaxed text-xs">
+                            <span class="font-semibold text-orange-700">R แปรผกผันกับ A (R ∝ 1/A):</span> ยิ่งลวด "อวบหนา" ช่องทางให้อิเล็กตรอนไหลจะยิ่งกว้างขึ้น ทำให้ไหลสะดวก ความต้านทาน (R) รวมจึง <b>ลดลง</b> (สังเกตว่าถ้าเพิ่ม A ตัวอักษร R จะเล็กลง!)
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-3 mt-3 rounded-lg border border-slate-200 shadow-sm text-xs">
+                        <strong class="text-slate-800 text-sm">💡 ความต้านทาน (R) vs สภาพต้านทาน (ρ)</strong>
+                        <p class="mt-1 text-slate-600 leading-relaxed">
+                            อย่าจำสับสน! <b>ความต้านทาน (R)</b> เปลี่ยนแปลงได้ตามการตัดต่อรูปร่างลวด (L, A) แต่ <b>สภาพต้านทาน (ρ)</b> จะเปลี่ยนได้ก็ต่อเมื่อ "เปลี่ยนชนิดวัสดุ" เท่านั้น
+                        </p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </aside>
+
+    <script>
+        // Init Icons
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        // ---------------------------------------------------------
+        // State & Physics Variables
+        // ---------------------------------------------------------
+        const state = {
+            viewMode: '2D', // '2D' or '3D'
+            rho: 0.50, // Resistivity (Ohm-cm)
+            l: 10.0,   // Length (cm)
+            a: 10.0,   // Area (cm^2)
+            r: 0.50,   // Calculated Resistance (Ohms)
+            
+            // Min/Max for dynamic scaling mapping
+            minRho: 0.01, maxRho: 1.00,
+            minL: 0.1,    maxL: 20.0,
+            minA: 0.1,    maxA: 15.0,
+            // R max = (1.0 * 20) / 0.1 = 200
+            // R min = (0.01 * 0.1) / 15.0 = 0.00006
+            
+            // Visualization mappings
+            baseSize: 30, // Base font size
+            maxSizeAdd: 100 // Maximum pixels to add to font size
+        };
+
+        // DOM Elements
+        const UI = {
+            inputRho: document.getElementById('input-rho'),
+            labelRho: document.getElementById('label-rho'),
+            dispRho: document.getElementById('disp-val-rho'),
+            
+            inputL: document.getElementById('input-l'),
+            labelL: document.getElementById('label-l'),
+            dispL: document.getElementById('disp-val-l'),
+
+            inputA: document.getElementById('input-a'),
+            labelA: document.getElementById('label-a'),
+            dispA: document.getElementById('disp-val-a'),
+            
+            dispR: document.getElementById('disp-val-r'),
+            
+            btn2D: document.getElementById('btn-2d'),
+            btn3D: document.getElementById('btn-3d'),
+            canvas2D: document.getElementById('simCanvas'),
+            container3D: document.getElementById('sim-3d')
+        };
+
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        let cx, cy; 
+        
+        // Dot generation (Impurities)
+        let impurities = [];
+        const MAX_DOTS = 1500; // Generate a pool of normalized dot positions
+        for(let i=0; i<MAX_DOTS; i++) {
+            impurities.push({
+                nx: Math.random(), // normalized x (0 to 1)
+                ny: Math.random()  // normalized y (0 to 1)
+            });
+        }
+
+        // ---------------------------------------------------------
+        // Event Listeners & Logic Updates
+        // ---------------------------------------------------------
+        
+        // Mode Toggles
+        UI.btn2D.addEventListener('click', () => switchMode('2D'));
+        UI.btn3D.addEventListener('click', () => switchMode('3D'));
+
+        function switchMode(mode) {
+            state.viewMode = mode;
+            if (mode === '2D') {
+                UI.btn2D.className = "px-3 py-1.5 rounded text-sm font-bold bg-red-500 text-white shadow transition-colors";
+                UI.btn3D.className = "px-3 py-1.5 rounded text-sm font-bold bg-transparent text-slate-500 hover:bg-slate-200 transition-colors";
+                UI.canvas2D.classList.remove('hidden');
+                UI.container3D.classList.add('hidden');
+            } else {
+                UI.btn3D.className = "px-3 py-1.5 rounded text-sm font-bold bg-red-500 text-white shadow transition-colors";
+                UI.btn2D.className = "px-3 py-1.5 rounded text-sm font-bold bg-transparent text-slate-500 hover:bg-slate-200 transition-colors";
+                UI.canvas2D.classList.add('hidden');
+                UI.container3D.classList.remove('hidden');
+                
+                if (typeof init3D === 'function' && !scene3D) {
+                    init3D();
+                }
+                if (typeof update3DVisuals === 'function') update3DVisuals();
+            }
+        }
+
+        UI.inputRho.addEventListener('input', (e) => {
+            state.rho = parseFloat(e.target.value);
+            UI.labelRho.textContent = `${state.rho.toFixed(2)} Ω·cm`;
+            UI.dispRho.textContent = state.rho.toFixed(2);
+            updatePhysics();
+        });
+
+        UI.inputL.addEventListener('input', (e) => {
+            state.l = parseFloat(e.target.value);
+            UI.labelL.textContent = `${state.l.toFixed(1)} cm`;
+            UI.dispL.textContent = state.l.toFixed(2);
+            updatePhysics();
+        });
+        
+        UI.inputA.addEventListener('input', (e) => {
+            state.a = parseFloat(e.target.value);
+            UI.labelA.textContent = `${state.a.toFixed(1)} cm²`;
+            UI.dispA.textContent = state.a.toFixed(2);
+            updatePhysics();
+        });
+
+        function updatePhysics() {
+            // Calculate Resistance: R = rho * L / A
+            state.r = (state.rho * state.l) / state.a;
+            
+            // Format display value depending on magnitude
+            if (state.r >= 100) UI.dispR.textContent = state.r.toFixed(1);
+            else if (state.r >= 10) UI.dispR.textContent = state.r.toFixed(2);
+            else if (state.r >= 1) UI.dispR.textContent = state.r.toFixed(3);
+            else UI.dispR.textContent = state.r.toFixed(4);
+
+            drawCanvas();
+            if (typeof update3DVisuals === 'function' && scene3D) update3DVisuals();
+        }
+
+        // ---------------------------------------------------------
+        // Canvas Graphics
+        // ---------------------------------------------------------
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            cx = canvas.width / 2;
+            cy = canvas.height / 2;
+            drawCanvas();
+            
+            // Resize 3D renderer if active
+            if (typeof camera3D !== 'undefined' && renderer3D) {
+                camera3D.aspect = container.clientWidth / container.clientHeight;
+                camera3D.updateProjectionMatrix();
+                renderer3D.setSize(container.clientWidth, container.clientHeight);
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function drawCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Visual Mappings:
+            // L (0.1 to 20) -> Width (20px to 600px)
+            // A (0.1 to 15) -> Height (10px to 250px)
+            
+            // Determine max dimensions based on screen size
+            const maxWidth = canvas.width * 0.8;
+            const maxHeight = canvas.height * 0.5;
+            
+            const wireWidth = (state.l / state.maxL) * maxWidth + 20; // +20 ensures it's never 0
+            const wireHeight = (state.a / state.maxA) * maxHeight + 10;
+            
+            const leftX = cx - wireWidth / 2;
+            const topY = cy - wireHeight / 2 + 50; // offset slightly down
+            
+            // 1. Draw Wire Base (Gradient to simulate 3D cylinder)
+            const gradient = ctx.createLinearGradient(0, topY, 0, topY + wireHeight);
+            gradient.addColorStop(0, '#94a3b8'); // Slate 400
+            gradient.addColorStop(0.2, '#f1f5f9'); // Light reflection
+            gradient.addColorStop(0.5, '#cbd5e1'); // Slate 300
+            gradient.addColorStop(1, '#475569'); // Slate 600
+
+            ctx.shadowColor = 'rgba(0,0,0,0.4)';
+            ctx.shadowBlur = 15;
+            ctx.shadowOffsetY = 10;
+            
+            ctx.fillStyle = gradient;
+            
+            // Draw cylinder shape with rounded ends (caps)
+            const capRadius = wireHeight / 2;
+            ctx.beginPath();
+            ctx.moveTo(leftX, topY);
+            ctx.lineTo(leftX + wireWidth, topY);
+            // Right cap
+            ctx.ellipse(leftX + wireWidth, topY + capRadius, capRadius * 0.3, capRadius, 0, -Math.PI/2, Math.PI/2);
+            ctx.lineTo(leftX, topY + wireHeight);
+            // Left cap
+            ctx.ellipse(leftX, topY + capRadius, capRadius * 0.3, capRadius, 0, Math.PI/2, -Math.PI/2);
+            ctx.fill();
+            
+            // Reset shadow
+            ctx.shadowColor = 'transparent';
+            
+            // Outline
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Left inner cap (to give 3D depth)
+            ctx.beginPath();
+            ctx.ellipse(leftX, topY + capRadius, capRadius * 0.3, capRadius, 0, 0, Math.PI*2);
+            ctx.fillStyle = '#e2e8f0';
+            ctx.fill();
+            ctx.stroke();
+
+            // 2. Draw Impurities (Resistivity)
+            // Number of dots proportional to rho. Max dots ~ 1000
+            let targetDots = Math.floor((state.rho / state.maxRho) * MAX_DOTS);
+            
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            
+            // Calculate a dot size that scales slightly with Area, but doesn't get too big
+            let dotRadius = 1.5 + (state.a / state.maxA) * 2;
+            
+            for(let i=0; i<targetDots; i++) {
+                let imp = impurities[i];
+                
+                // Map normalized pos to current wire bounds
+                // Avoid drawing exactly on the edges
+                let rx = leftX + (imp.nx * wireWidth * 0.95) + (wireWidth * 0.025);
+                
+                // Distribute Y using an ellipse profile to stay inside the 3D cylinder illusion
+                // This prevents dots from sticking out of the curved caps
+                let hOffset = (imp.ny - 0.5); // -0.5 to 0.5
+                let ry = topY + capRadius + (hOffset * wireHeight * 0.9);
+                
+                ctx.beginPath();
+                ctx.arc(rx, ry, dotRadius, 0, Math.PI*2);
+                ctx.fill();
+            }
+            
+            // 3. Draw Extension Wires (connecting to the circuit)
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            // Left wire out
+            ctx.moveTo(leftX, topY + capRadius);
+            ctx.lineTo(0, topY + capRadius);
+            // Right wire out
+            ctx.moveTo(leftX + wireWidth, topY + capRadius);
+            ctx.lineTo(canvas.width, topY + capRadius);
+            ctx.stroke();
+            
+            // Label dimension lines
+            drawDimensionLines(leftX, topY, wireWidth, wireHeight);
+        }
+
+        function drawDimensionLines(x, y, w, h) {
+            ctx.strokeStyle = '#16a34a'; // Green for L
+            ctx.fillStyle = '#16a34a';
+            ctx.lineWidth = 2;
+            ctx.font = 'bold 16px Kanit';
+            ctx.textAlign = 'center';
+            
+            // L Dimension
+            const dimY = y - 20;
+            ctx.beginPath();
+            ctx.moveTo(x, dimY);
+            ctx.lineTo(x + w, dimY);
+            ctx.stroke();
+            // Ends
+            ctx.beginPath(); ctx.moveTo(x, dimY - 5); ctx.lineTo(x, dimY + 5); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(x + w, dimY - 5); ctx.lineTo(x + w, dimY + 5); ctx.stroke();
+            ctx.fillText(`L = ${state.l.toFixed(1)} cm`, x + w/2, dimY - 10);
+            
+            // A Dimension (Height)
+            ctx.strokeStyle = '#ea580c'; // Orange for A
+            ctx.fillStyle = '#ea580c';
+            const dimX = x + w + 30;
+            ctx.beginPath();
+            ctx.moveTo(dimX, y);
+            ctx.lineTo(dimX, y + h);
+            ctx.stroke();
+            // Ends
+            ctx.beginPath(); ctx.moveTo(dimX - 5, y); ctx.lineTo(dimX + 5, y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(dimX - 5, y + h); ctx.lineTo(dimX + 5, y + h); ctx.stroke();
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`A`, dimX + 10, y + h/2);
+            ctx.textBaseline = 'alphabetic'; // reset
+        }
+
+        // ---------------------------------------------------------
+        // 3D Rendering Engine (Three.js)
+        // ---------------------------------------------------------
+        let scene3D, camera3D, renderer3D, controls3D;
+        let wireGroup, wireMesh, impuritiesMesh;
+
+        function init3D() {
+            const container = UI.container3D;
+            scene3D = new THREE.Scene();
+            
+            // Camera
+            camera3D = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera3D.position.set(0, 10, 25);
+            
+            // Renderer
+            renderer3D = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer3D.setSize(container.clientWidth, container.clientHeight);
+            renderer3D.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer3D.domElement);
+            
+            // Controls
+            controls3D = new THREE.OrbitControls(camera3D, renderer3D.domElement);
+            controls3D.enableDamping = true;
+            controls3D.dampingFactor = 0.05;
+            
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene3D.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 15, 10);
+            scene3D.add(dirLight);
+            
+            // Wire Group
+            wireGroup = new THREE.Group();
+            scene3D.add(wireGroup);
+            
+            // The Glassy Cylinder
+            const wireGeo = new THREE.CylinderGeometry(1, 1, 1, 32);
+            const wireMat = new THREE.MeshPhysicalMaterial({
+                color: 0x94a3b8,
+                transmission: 0.6,
+                opacity: 1,
+                roughness: 0.15,
+                ior: 1.5,
+                transparent: true,
+                side: THREE.DoubleSide
+            });
+            wireMesh = new THREE.Mesh(wireGeo, wireMat);
+            wireGroup.add(wireMesh);
+            
+            // Instanced Impurities (Dots)
+            const dotGeo = new THREE.SphereGeometry(0.12, 8, 8);
+            const dotMat = new THREE.MeshPhongMaterial({color: 0x1e293b});
+            impuritiesMesh = new THREE.InstancedMesh(dotGeo, dotMat, MAX_DOTS);
+            wireGroup.add(impuritiesMesh);
+            
+            // Wire Extensions (Ends connecting to circuit)
+            const extGeo = new THREE.CylinderGeometry(0.15, 0.15, 50, 16);
+            const extMat = new THREE.MeshPhongMaterial({color: 0x334155});
+            const extWire = new THREE.Mesh(extGeo, extMat);
+            wireGroup.add(extWire); 
+            
+            // Align along X axis
+            wireGroup.rotation.z = Math.PI / 2;
+            
+            requestAnimationFrame(animate3D);
+        }
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+            if (controls3D) controls3D.update();
+            if (renderer3D && scene3D && camera3D && state.viewMode === '3D') {
+                renderer3D.render(scene3D, camera3D);
+            }
+        }
+
+        function update3DVisuals() {
+            if (!scene3D) return;
+            
+            // Calculate 3D scales based on inputs
+            const radius = Math.sqrt(state.a / Math.PI) * 1.2; // Visual scaling factor
+            const length = state.l * 1.2; 
+            
+            // Update Wire Cylinder Geometry
+            wireMesh.geometry.dispose();
+            wireMesh.geometry = new THREE.CylinderGeometry(radius, radius, length, 32);
+            
+            // Update Impurities
+            let targetDots = Math.floor((state.rho / state.maxRho) * MAX_DOTS);
+            impuritiesMesh.count = targetDots;
+            
+            const dummy = new THREE.Object3D();
+            for (let i = 0; i < targetDots; i++) {
+                const imp = impurities[i];
+                
+                // Map the pre-generated normalized values to 3D cylinder bounds
+                // Use a slightly reduced radius so dots don't clip outside the glass
+                const r = radius * Math.sqrt(imp.ny) * 0.85; 
+                const theta = imp.nx * Math.PI * 2 * 15; // Swirl distribution
+                
+                // Note: Cylinder is aligned along its local Y axis before we rotated the group.
+                const localY = (imp.nx - 0.5) * length;
+                const localX = r * Math.cos(theta);
+                const localZ = r * Math.sin(theta);
+                
+                dummy.position.set(localX, localY, localZ);
+                dummy.updateMatrix();
+                impuritiesMesh.setMatrixAt(i, dummy.matrix);
+            }
+            impuritiesMesh.instanceMatrix.needsUpdate = true;
+        }
+
+        // Init
+        resizeCanvas();
+        updatePhysics();
+
+    </script>
+</body>
+</html>

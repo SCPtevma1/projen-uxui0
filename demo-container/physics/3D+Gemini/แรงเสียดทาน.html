@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Friction Physics Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    
+    <style>
+        body { font-family: 'Kanit', sans-serif; background-color: #f8fafc; margin: 0; overflow: hidden; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        
+        .slider-custom { -webkit-appearance: none; width: 100%; height: 8px; border-radius: 5px; background: #e2e8f0; outline: none; }
+        .slider-custom::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #22c55e; cursor: pointer; transition: transform .1s; }
+        .slider-custom::-webkit-slider-thumb:hover { transform: scale(1.2); }
+        .slider-custom::-webkit-slider-thumb:active { background: #16a34a; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Canvas Container */
+        #canvas-container {
+            background: linear-gradient(to bottom, #e0f2fe 0%, #bae6fd 60%, #cbd5e1 60%, #94a3b8 100%);
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col md:flex-row text-slate-800">
+
+    <main class="flex-1 relative flex flex-col items-center bg-slate-100 overflow-hidden h-full" id="canvas-container">
+        
+        <!-- Live Data Dashboard (Overlay on Canvas) -->
+        <div class="absolute top-4 left-4 z-10 bg-white/90 p-4 rounded-xl shadow-md border border-slate-200 min-w-[250px] backdrop-blur-sm">
+            <h3 class="font-bold text-slate-700 border-b pb-2 mb-2 flex items-center gap-2">
+                <i data-lucide="activity" class="w-5 h-5 text-blue-500"></i> ข้อมูลแบบเรียลไทม์ (Live Data)
+            </h3>
+            <div class="space-y-1 text-sm font-mono">
+                <div class="flex justify-between">
+                    <span class="text-slate-500">มวล (m):</span>
+                    <span id="disp-m" class="font-semibold text-slate-800">10 kg</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">แรงแนวฉาก (N):</span>
+                    <span id="disp-N" class="font-semibold text-slate-800">98.10 N</span>
+                </div>
+                <div class="flex justify-between border-t border-slate-100 pt-1 mt-1">
+                    <span class="text-slate-500">f<sub>s,max</sub> (สถิตสูงสุด):</span>
+                    <span id="disp-fs" class="font-semibold text-red-600">39.24 N</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">f<sub>k</sub> (จลน์):</span>
+                    <span id="disp-fk" class="font-semibold text-red-500">19.62 N</span>
+                </div>
+                <div class="flex justify-between border-t border-slate-100 pt-1 mt-1">
+                    <span class="text-slate-500">แรงผลัก (F):</span>
+                    <span id="disp-Fapp" class="font-semibold text-green-600">0.00 N</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">แรงเสียดทาน (f):</span>
+                    <span id="disp-fric" class="font-semibold text-red-500">0.00 N</span>
+                </div>
+                <div class="flex justify-between border-t border-slate-200 pt-2 mt-2">
+                    <span class="font-bold text-slate-700">ความเร่ง (a):</span>
+                    <span id="disp-a" class="font-bold text-blue-600">0.00 m/s²</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="font-bold text-slate-700">ความเร็ว (v):</span>
+                    <span id="disp-v" class="font-bold text-indigo-600">0.00 m/s</span>
+                </div>
+            </div>
+            
+            <!-- State Indicator -->
+            <div id="state-badge" class="mt-3 text-center py-1.5 rounded-md font-bold text-sm bg-slate-100 text-slate-500 border border-slate-200 transition-colors">
+                วัตถุหยุดนิ่ง (Stationary)
+            </div>
+        </div>
+
+        <!-- HTML5 Canvas for Simulation -->
+        <canvas id="simCanvas" class="w-full h-full absolute inset-0"></canvas>
+        
+    </main>
+
+    <aside class="w-full md:w-[450px] glass-panel h-full overflow-y-auto border-l border-slate-200 shadow-2xl flex flex-col z-20">
+        <!-- Header -->
+        <div class="bg-slate-800 text-white p-5 shadow-md">
+<a href="../physics.html">
+                <h1 class="text-2xl font-bold flex items-center gap-2">
+                <i data-lucide="box"></i> Friction Dynamics
+            </h1>
+</a>
+            <p class="text-slate-300 text-sm mt-1">การจำลองแรงเสียดทานสถิตและแรงเสียดทานจลน์</p>
+        </div>
+
+        <div class="p-6 space-y-6 flex-1">
+            <!-- Controls -->
+            <section class="space-y-5 bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
+                <h2 class="text-lg font-bold text-slate-700 border-b pb-2 flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-5 h-5 text-green-500"></i> ตัวแปรนำเข้า (Inputs)
+                </h2>
+
+                <!-- Mass -->
+                <div>
+                    <label class="flex justify-between text-sm font-semibold mb-2">
+                        <span>น้ำหนักวัตถุ (Mass, m)</span>
+                        <span id="mass-label" class="text-blue-600 font-bold">10 kg</span>
+                    </label>
+                    <input type="range" id="input-mass" min="1" max="50" step="1" value="10" class="slider-custom">
+                </div>
+
+                <!-- Surface Material (Mu) -->
+                <div>
+                    <label class="flex justify-between text-sm font-semibold mb-2">
+                        <span>สภาพพื้นผิว (Surface, &mu;)</span>
+                    </label>
+                    <select id="input-surface" class="w-full p-2 border border-slate-300 rounded-lg bg-slate-50 text-sm focus:ring-2 focus:ring-green-500 outline-none">
+                        <option value="wood">พื้นไม้ (Wood on Wood) - &mu;s: 0.4, &mu;k: 0.2</option>
+                        <option value="ice">พื้นน้ำแข็ง (Ice) - &mu;s: 0.1, &mu;k: 0.05</option>
+                        <option value="rubber">พื้นยาง/ยางมะตอย (Rubber on Road) - &mu;s: 0.9, &mu;k: 0.7</option>
+                        <option value="sand">พื้นทรายหยาบ (Sand) - &mu;s: 0.6, &mu;k: 0.4</option>
+                    </select>
+                </div>
+
+                <!-- Applied Force -->
+                <div class="bg-green-50 p-3 rounded-lg border border-green-200">
+                    <label class="flex justify-between text-sm font-semibold mb-2 text-green-800">
+                        <span>แรงผลัก (Applied Force, F)</span>
+                        <span id="force-label" class="text-green-700 font-bold">0 N</span>
+                    </label>
+                    <input type="range" id="input-force" min="0" max="500" step="1" value="0" class="slider-custom">
+                    <p class="text-xs text-green-600 mt-2">* ลากสไลเดอร์เพื่อออกแรงผลักกล่องไปข้างหน้า</p>
+                </div>
+            </section>
+
+            <section class="space-y-4 bg-blue-50/50 p-5 rounded-xl border border-blue-100 text-sm">
+                <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2 border-b-2 border-blue-200 pb-2">
+                    <i data-lucide="book-open" class="w-5 h-5 text-indigo-600"></i> สมการและหลักการฟิสิกส์
+                </h2>
+                
+                <div class="space-y-4 text-slate-700 h-64 overflow-y-auto pr-2 custom-scrollbar">
+                    <div>
+                        <strong class="text-slate-900 text-base block mb-1">1. แรงเสียดทานสถิต (Static Friction, f<sub>s</sub>)</strong>
+                        <p class="leading-relaxed text-slate-600">
+                            เกิดขึ้นตอนที่วัตถุ <b>"ยังไม่เคลื่อนที่"</b> แรงนี้จะมีค่าเพิ่มขึ้นเรื่อย ๆ ตามแรงที่คุณผลัก เพื่อต้านไม่ให้วัตถุขยับ จนกระทั่งถึงจุดสูงสุดก่อนที่วัตถุจะไถล:
+                        </p>
+                        <div class="bg-white px-3 py-2 rounded border border-slate-200 mt-2 font-mono text-center text-red-600 font-semibold shadow-sm">
+                            f<sub>s,max</sub> = &mu;<sub>s</sub>N
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <strong class="text-slate-900 text-base block mb-1">2. แรงเสียดทานจลน์ (Kinetic Friction, f<sub>k</sub>)</strong>
+                        <p class="leading-relaxed text-slate-600">
+                            เกิดขึ้นตอนที่วัตถุ <b>"กำลังเคลื่อนที่"</b> ไปแล้ว แรงเสียดทานจะลดลงและมีค่าคงที่เสมอ (สังเกตว่าตอนผลักของหนักๆ ตอนเริ่มขยับจะยากสุด แต่พอไถลไปแล้วจะผลักง่ายขึ้น)
+                        </p>
+                        <div class="bg-white px-3 py-2 rounded border border-slate-200 mt-2 font-mono text-center text-red-500 font-semibold shadow-sm">
+                            f<sub>k</sub> = &mu;<sub>k</sub>N
+                        </div>
+                    </div>
+
+                    <div>
+                        <strong class="text-slate-900 text-base block mb-1">3. แรงกดแนวฉาก (N) & กฎของนิวตัน</strong>
+                        <ul class="list-disc pl-5 space-y-2 mt-1 text-slate-600">
+                            <li>บนพื้นราบ แรงกดแนวฉาก <b>N = mg</b> (มวล x 9.81)</li>
+                            <li>กฎข้อที่ 2 ของนิวตัน: <b>a = (F - f) / m</b><br>
+                                ถ้าระบบมีแรงผลักชนะแรงเสียดทาน (F > f<sub>k</sub>) กล่องจะมีความเร่งและเคลื่อนที่เร็วขึ้นเรื่อยๆ
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100">
+                        <strong class="text-indigo-900 text-sm">💡 ลองทดสอบดูสิ:</strong>
+                        <p class="mt-1 text-xs text-indigo-700 leading-relaxed">
+                            ตั้งค่ามวล 10 kg บนพื้นไม้ ค่อยๆ เลื่อนแรงผลักทีละนิด คุณจะเห็นเวกเตอร์แรงเสียดทาน (สีแดง) ยืดต้านแรงผลัก (สีเขียว) เท่ากันเป๊ะ! จนกว่าแรงผลักจะเกิน f<sub>s,max</sub> (39.24 N) กล่องถึงจะหลุดและพุ่งไปข้างหน้า และแรงเสียดทานสีแดงจะหดสั้นลงเหลือค่า f<sub>k</sub>
+                        </p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </aside>
+
+    <script>
+        // Load Icons safely
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        // ---------------------------------------------------------
+        // State & Physics Variables
+        // ---------------------------------------------------------
+        const g = 9.81; // m/s^2 (Gravity)
+
+        const materials = {
+            wood: { name: 'Wood', mu_s: 0.4, mu_k: 0.2 },
+            ice: { name: 'Ice', mu_s: 0.1, mu_k: 0.05 },
+            rubber: { name: 'Rubber', mu_s: 0.9, mu_k: 0.7 },
+            sand: { name: 'Sand', mu_s: 0.6, mu_k: 0.4 }
+        };
+
+        const state = {
+            mass: 10,       // kg
+            mu_s: 0.4,
+            mu_k: 0.2,
+            F_app: 0,       // Applied force (N)
+            
+            // Physics Kinematics
+            v: 0,           // Velocity (m/s)
+            a: 0,           // Acceleration (m/s^2)
+            x: 0,           // Position (m) - visual only, we loop it
+            
+            // Evaluated current forces
+            f_friction: 0,  // Current friction acting on the box
+            fs_max: 0,
+            fk: 0,
+            N: 0,
+            
+            isMoving: false
+        };
+
+        // DOM Elements
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const ui = {
+            massInput: document.getElementById('input-mass'),
+            massLabel: document.getElementById('mass-label'),
+            surfaceInput: document.getElementById('input-surface'),
+            forceInput: document.getElementById('input-force'),
+            forceLabel: document.getElementById('force-label'),
+            
+            // Dashboard
+            dispM: document.getElementById('disp-m'),
+            dispN: document.getElementById('disp-N'),
+            dispFs: document.getElementById('disp-fs'),
+            dispFk: document.getElementById('disp-fk'),
+            dispFapp: document.getElementById('disp-Fapp'),
+            dispFric: document.getElementById('disp-fric'),
+            dispA: document.getElementById('disp-a'),
+            dispV: document.getElementById('disp-v'),
+            stateBadge: document.getElementById('state-badge')
+        };
+
+        // ---------------------------------------------------------
+        // Event Listeners
+        // ---------------------------------------------------------
+        ui.massInput.addEventListener('input', (e) => {
+            state.mass = parseFloat(e.target.value);
+            ui.massLabel.textContent = `${state.mass} kg`;
+        });
+
+        ui.surfaceInput.addEventListener('change', (e) => {
+            const mat = materials[e.target.value];
+            state.mu_s = mat.mu_s;
+            state.mu_k = mat.mu_k;
+        });
+
+        ui.forceInput.addEventListener('input', (e) => {
+            state.F_app = parseFloat(e.target.value);
+            ui.forceLabel.textContent = `${state.F_app} N`;
+        });
+
+        // Resize Canvas dynamically
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // ---------------------------------------------------------
+        // Physics Engine Update Loop
+        // ---------------------------------------------------------
+        let lastTime = performance.now();
+        
+        function updatePhysics(time) {
+            // Calculate delta time in seconds
+            let dt = (time - lastTime) / 1000;
+            if (dt > 0.1) dt = 0.1; // Limit dt to prevent huge jumps if tab was inactive
+            lastTime = time;
+
+            // 1. Calculate Limits
+            state.N = state.mass * g;
+            state.fs_max = state.mu_s * state.N;
+            state.fk = state.mu_k * state.N;
+
+            let netForce = 0;
+
+            // 2. Determine State & Friction
+            if (!state.isMoving && Math.abs(state.v) < 0.01) {
+                // Object is stationary
+                if (state.F_app <= state.fs_max) {
+                    // Applied force isn't strong enough. Static friction balances it perfectly.
+                    state.f_friction = state.F_app;
+                    netForce = 0;
+                    state.a = 0;
+                    state.v = 0;
+                } else {
+                    // Breakaway! Applied force overcame fs_max.
+                    state.isMoving = true;
+                    state.f_friction = state.fk; // Drops to kinetic friction
+                    netForce = state.F_app - state.f_friction;
+                    state.a = netForce / state.mass;
+                }
+            } else {
+                // Object is moving
+                state.isMoving = true;
+                state.f_friction = state.fk; // Kinetic friction always acts against motion
+                
+                netForce = state.F_app - state.f_friction;
+                state.a = netForce / state.mass;
+
+                // Stop logic: If we stop pushing (or F_app < fk), 'a' is negative.
+                // We must catch the exact moment velocity drops to zero or below.
+                if (netForce < 0) {
+                    if (state.v + (state.a * dt) <= 0) {
+                        state.v = 0;
+                        state.a = 0;
+                        state.isMoving = false;
+                        // Reset friction to match applied force to keep it perfectly balanced at v=0
+                        state.f_friction = state.F_app <= state.fs_max ? state.F_app : state.fk; 
+                    }
+                }
+            }
+
+            // 3. Integrate Velocity and Position
+            if (state.isMoving) {
+                state.v += state.a * dt;
+                state.x += state.v * dt;
+            }
+
+            // Update UI Dashboard
+            updateDashboard();
+
+            // Render Frame
+            renderGraphics();
+
+            // Loop
+            requestAnimationFrame(updatePhysics);
+        }
+
+        // ---------------------------------------------------------
+        // Rendering & Graphics
+        // ---------------------------------------------------------
+        
+        function updateDashboard() {
+            ui.dispM.textContent = `${state.mass} kg`;
+            ui.dispN.textContent = `${state.N.toFixed(2)} N`;
+            ui.dispFs.textContent = `${state.fs_max.toFixed(2)} N`;
+            ui.dispFk.textContent = `${state.fk.toFixed(2)} N`;
+            ui.dispFapp.textContent = `${state.F_app.toFixed(2)} N`;
+            ui.dispFric.textContent = `${state.f_friction.toFixed(2)} N`;
+            ui.dispA.textContent = `${state.a.toFixed(2)} m/s²`;
+            ui.dispV.textContent = `${state.v.toFixed(2)} m/s`;
+
+            if (state.isMoving) {
+                ui.stateBadge.textContent = "วัตถุกำลังเคลื่อนที่ (Kinetic Mode)";
+                ui.stateBadge.className = "mt-3 text-center py-1.5 rounded-md font-bold text-sm bg-green-100 text-green-700 border border-green-200 transition-colors";
+            } else {
+                if (state.F_app > 0 && state.F_app === state.f_friction) {
+                    ui.stateBadge.textContent = "ผลักไม่ไป! (Static Friction)";
+                    ui.stateBadge.className = "mt-3 text-center py-1.5 rounded-md font-bold text-sm bg-orange-100 text-orange-700 border border-orange-200 transition-colors";
+                } else {
+                    ui.stateBadge.textContent = "วัตถุหยุดนิ่ง (Stationary)";
+                    ui.stateBadge.className = "mt-3 text-center py-1.5 rounded-md font-bold text-sm bg-slate-100 text-slate-500 border border-slate-200 transition-colors";
+                }
+            }
+        }
+
+        function drawArrow(ctx, fromX, fromY, length, angle, color, label, isTop) {
+            if (Math.abs(length) < 1) return; // Too small to draw
+            
+            // Scale length for visual representation (Max ~200px for 500N)
+            const visualLength = Math.min(250, (length / 500) * 200) + 30; // base length
+            
+            const toX = fromX + visualLength * Math.cos(angle);
+            const toY = fromY + visualLength * Math.sin(angle);
+            const headlen = 15; // head size
+
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            
+            // Main Line
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+
+            // Arrow Head
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.fill();
+
+            // Text Label
+            ctx.font = "bold 16px Kanit";
+            ctx.textAlign = (angle === 0) ? "left" : "right";
+            const textY = isTop ? fromY - 20 : fromY + 30;
+            const textX = toX;
+            ctx.fillText(label, textX, textY);
+        }
+
+        function renderGraphics() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const boxSize = 100 + (state.mass * 0.5); // Box size scales slightly with mass
+            const groundY = canvas.height * 0.6; // Floor level
+            
+            // To create infinite floor illusion, we move the floor pattern opposite to velocity
+            // We use state.x to calculate a modulo offset
+            const pixelsPerMeter = 50; 
+            const floorOffset = (state.x * pixelsPerMeter) % 100;
+
+            // Draw Ground Base
+            ctx.fillStyle = "#64748b"; // slate-500
+            ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+
+            // Draw Ground Lines (Grid) to show motion
+            ctx.strokeStyle = "#475569"; // slate-600
+            ctx.lineWidth = 2;
+            for(let i = -100; i < canvas.width + 100; i += 100) {
+                const lineX = i - floorOffset;
+                ctx.beginPath();
+                ctx.moveTo(lineX, groundY);
+                ctx.lineTo(lineX - 20, canvas.height); // angle them slightly for pseudo-3D
+                ctx.stroke();
+            }
+
+            // Draw Object (Box)
+            // Fix box horizontally in center of screen
+            const boxX = canvas.width / 2 - boxSize / 2;
+            const boxY = groundY - boxSize;
+
+            ctx.fillStyle = "#eab308"; // yellow-500
+            ctx.strokeStyle = "#ca8a04"; // yellow-600
+            ctx.lineWidth = 4;
+            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            ctx.shadowBlur = 15;
+            ctx.shadowOffsetY = 10;
+            ctx.fillRect(boxX, boxY, boxSize, boxSize);
+            ctx.shadowColor = 'transparent'; // reset
+            ctx.strokeRect(boxX, boxY, boxSize, boxSize);
+
+            // Box Label
+            ctx.fillStyle = "#854d0e";
+            ctx.font = "bold 24px Kanit";
+            ctx.textAlign = "center";
+            ctx.fillText(`${state.mass} kg`, boxX + boxSize/2, boxY + boxSize/2 + 8);
+
+            // Draw Force Vectors
+            const centerX = boxX + boxSize/2;
+            const centerY = boxY + boxSize/2;
+            
+            // Friction Vector (Red) pointing left
+            if (state.f_friction > 0) {
+                drawArrow(ctx, boxX, centerY + 20, state.f_friction, Math.PI, "#ef4444", `f = ${state.f_friction.toFixed(1)}N`, false);
+            }
+            
+            // Applied Force Vector (Green) pointing right
+            if (state.F_app > 0) {
+                drawArrow(ctx, boxX + boxSize, centerY - 20, state.F_app, 0, "#22c55e", `F = ${state.F_app.toFixed(1)}N`, true);
+            }
+        }
+
+        // Start Physics Engine
+        requestAnimationFrame(updatePhysics);
+
+    </script>
+</body>
+</html>

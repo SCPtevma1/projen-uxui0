@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>John Travoltage - Static Electricity</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    
+    <!-- Tone.js for Sound Effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+    <style>
+        body { font-family: 'Kanit', sans-serif; background-color: #f8fafc; margin: 0; overflow: hidden; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        #canvas-container {
+            background: radial-gradient(circle at center, #fef08a 0%, #fef9c3 40%, #e2e8f0 100%);
+            cursor: default; /* Changed dynamically in JS */
+            touch-action: none; /* Prevent scrolling while dragging on mobile */
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col md:flex-row text-slate-800">
+
+    <main class="flex-1 relative flex flex-col items-center overflow-hidden h-full" id="canvas-container">
+        
+        <!-- Live Data Dashboard -->
+        <div class="absolute top-4 left-4 z-10 bg-white/95 p-4 rounded-xl shadow-lg border border-slate-200 min-w-[250px] backdrop-blur-sm pointer-events-none">
+            <h3 class="font-bold text-slate-800 border-b pb-2 mb-2 flex items-center gap-2">
+                <i data-lucide="zap" class="w-5 h-5 text-yellow-500"></i> สถานะประจุไฟฟ้า
+            </h3>
+            
+            <div class="space-y-2 text-sm font-mono">
+                <div class="flex justify-between items-center bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                    <span class="text-blue-800 font-semibold">จำนวนอิเล็กตรอน:</span>
+                    <span id="disp-electrons" class="font-bold text-blue-600 text-lg">0</span>
+                </div>
+                
+                <div class="mt-3">
+                    <div class="flex justify-between text-xs text-slate-500 mb-1">
+                        <span>ความต่างศักย์ (Voltage)</span>
+                        <span id="disp-voltage-text">0 V</span>
+                    </div>
+                    <!-- Voltage Bar -->
+                    <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                        <div id="voltage-bar" class="bg-yellow-400 h-2.5 rounded-full transition-all duration-100" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="status-badge" class="mt-4 text-center py-2 rounded-md font-bold text-sm bg-slate-100 text-slate-600 border border-slate-300 shadow-inner transition-colors">
+                ถูเท้าที่พรมเพื่อสร้างประจุลบ
+            </div>
+        </div>
+
+        <!-- Instructional Overlay (Disappears on interaction) -->
+        <div id="instruction-overlay" class="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 bg-slate-800/80 text-white px-6 py-3 rounded-full shadow-lg backdrop-blur pointer-events-none animate-bounce flex gap-4">
+            <span class="flex items-center gap-2"><i data-lucide="mouse-pointer-2" class="w-4 h-4"></i> ลากเท้าถูพรม</span>
+            <span class="flex items-center gap-2"><i data-lucide="hand" class="w-4 h-4"></i> ลากแขนไปที่ลูกบิด</span>
+        </div>
+
+        <!-- HTML5 Canvas for Simulation -->
+        <canvas id="simCanvas" class="w-full h-full absolute inset-0"></canvas>
+        
+        <!-- Sound Enable Button -->
+        <button id="btn-sound" class="absolute top-4 right-4 z-20 bg-white p-2 rounded-full shadow-md border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors">
+            <i data-lucide="volume-2" id="icon-sound"></i>
+        </button>
+    </main>
+
+    <aside class="w-full md:w-[450px] glass-panel h-full overflow-y-auto border-l border-slate-200 shadow-2xl flex flex-col z-20">
+        <!-- Header -->
+        <div class="bg-yellow-500 text-slate-900 p-5 shadow-md">
+            <h1 class="text-2xl font-black flex items-center gap-2">
+                <i data-lucide="zap"></i> ความต่างศักย์ของจอห์น
+            </h1>
+            <p class="text-yellow-900 font-medium text-sm mt-1">แบบจำลองไฟฟ้าสถิต (Static Electricity)</p>
+        </div>
+
+        <div class="p-6 space-y-6 flex-1 bg-slate-50">
+            <!-- Controls Section -->
+            <section class="space-y-4 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-lg font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-5 h-5 text-blue-500"></i> การควบคุม (Controls)
+                </h2>
+                <div class="space-y-3">
+                    <button id="btn-discharge" class="w-full py-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 border border-yellow-300 rounded-lg text-sm font-bold transition-colors shadow-sm flex justify-center items-center gap-2">
+                        <i data-lucide="zap-off" class="w-4 h-4"></i> คายประจุทันที (Discharge)
+                    </button>
+                    <button id="btn-reset" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg text-sm font-bold transition-colors shadow-sm">
+                        เริ่มใหม่ (Reset)
+                    </button>
+                </div>
+            </section>
+
+            <!-- Physics Principles Section -->
+            <section class="space-y-4 bg-blue-50/50 p-5 rounded-xl border border-blue-100 text-sm">
+                <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2 border-b-2 border-blue-200 pb-2">
+                    <i data-lucide="book-open" class="w-5 h-5 text-blue-600"></i> แนวคิดทั่วไปเกี่ยวกับไฟฟ้าสถิต
+                </h2>
+                
+                <div class="space-y-4 text-slate-700 h-64 overflow-y-auto pr-2 custom-scrollbar">
+                    
+                    <div>
+                        <strong class="text-slate-900 text-base text-blue-700"><i data-lucide="footprints" class="inline w-4 h-4 mr-1"></i>1. การเคลื่อนย้ายประจุ (Charge Transfer)</strong>
+                        <p class="mt-1 leading-relaxed text-sm">
+                            เมื่อเราถูเท้ากับพรม (Friction) จะเกิดการเสียดสี ทำให้ <b>อิเล็กตรอน (ประจุลบ)</b> หลุดจากพรมและถ่ายเทเข้าสู่ร่างกายของเรา ร่างกายเราจะสะสมประจุลบมากขึ้นเรื่อยๆ 
+                        </p>
+                    </div>
+
+                    <div>
+                        <strong class="text-slate-900 text-base text-red-600"><i data-lucide="scaling" class="inline w-4 h-4 mr-1"></i>2. การผลักกันของประจุ (Repulsion)</strong>
+                        <p class="mt-1 leading-relaxed text-sm">
+                            สังเกตจุดสีน้ำเงินในตัวจอห์น! ประจุชนิดเดียวกัน (ลบกับลบ) <b>จะออกแรงผลักกัน</b> ตามกฎคูลอมบ์ (Coulomb's Law) ทำให้อิเล็กตรอนกระจายตัวออกไปทั่วร่างกายเพื่อรักษาระยะห่างระหว่างกันให้มากที่สุด
+                        </p>
+                    </div>
+
+                    <div>
+                        <strong class="text-slate-900 text-base text-yellow-600"><i data-lucide="zap" class="inline w-4 h-4 mr-1"></i>3. ความต่างศักย์และการคายประจุ (Discharge)</strong>
+                        <p class="mt-1 leading-relaxed text-sm">
+                            เมื่อมีประจุสะสมมาก ร่างกายจะมี <b>ความต่างศักย์ไฟฟ้า (Voltage)</b> สูงขึ้นเมื่อเทียบกับวัตถุที่เป็นกลาง (เช่น ลูกบิดประตูโลหะ)
+                        </p>
+                        <div class="bg-white p-3 mt-2 rounded border border-slate-200 shadow-sm text-xs leading-relaxed">
+                            <span class="font-semibold text-yellow-600">⚡ เกิดอะไรขึ้นเมื่อเอานิ้วเข้าใกล้ลูกบิด?</span><br>
+                            หากระยะห่างใกล้พอที่ความต่างศักย์จะเอาชนะความเป็นฉนวนของอากาศได้ อิเล็กตรอนจะกระโดดข้ามอากาศไปยังลูกบิดประตู (ตัวนำ) เพื่อไหลลงสู่พื้นดิน (Ground) ทำให้เกิด <b>ประกายไฟ (Spark)</b> และเสียงดังเปรี๊ยะ!
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </aside>
+
+    <script>
+        // Initialize Icons
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        // ---------------------------------------------------------
+        // Audio Setup (Tone.js)
+        // ---------------------------------------------------------
+        let isAudioEnabled = false;
+        let noiseSynth = null;
+
+        const btnSound = document.getElementById('btn-sound');
+        const iconSound = document.getElementById('icon-sound');
+
+        btnSound.addEventListener('click', async () => {
+            if (!isAudioEnabled) {
+                await Tone.start();
+                
+                // Create a noise synth for the "zap" sound
+                noiseSynth = new Tone.NoiseSynth({
+                    noise: { type: 'white' },
+                    envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 }
+                }).toDestination();
+                
+                // Add a bit of distortion and filter for a sharper zap
+                const dist = new Tone.Distortion(0.8).toDestination();
+                const filter = new Tone.Filter(5000, "highpass").connect(dist);
+                noiseSynth.disconnect();
+                noiseSynth.connect(filter);
+
+                isAudioEnabled = true;
+                iconSound.setAttribute('data-lucide', 'volume-2');
+                lucide.createIcons();
+                btnSound.classList.replace('text-slate-600', 'text-blue-600');
+            }
+        });
+
+        function playZapSound(intensity) {
+            if (!isAudioEnabled || !noiseSynth) return;
+            // Louder/longer zap based on intensity (electron count)
+            const decay = Math.min(0.5, 0.05 + (intensity * 0.002));
+            noiseSynth.envelope.decay = decay;
+            noiseSynth.triggerAttackRelease(decay);
+        }
+
+        // ---------------------------------------------------------
+        // Physics and State Variables
+        // ---------------------------------------------------------
+        const state = {
+            electrons: [],       // Array of {x, y, vx, vy}
+            maxElectrons: 150,
+            
+            // Interaction States
+            armAngle: -30,       // Degrees (Relative to shoulder)
+            legAngle: 0,         // Degrees (Relative to hip)
+            
+            isDraggingArm: false,
+            isDraggingLeg: false,
+            
+            lastFootX: 0,        // For detecting friction movement
+            
+            isDischarging: false,
+            dischargePath: []    // Points for the lightning arc
+        };
+
+        // ---------------------------------------------------------
+        // Canvas Setup & Geometry
+        // ---------------------------------------------------------
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let cx, cy; // Canvas center
+        
+        // Character Body Nodes (Circles representing body volume for electrons to roam)
+        // Scaled dynamically based on canvas size
+        let nodes = []; 
+        let points = {
+            shoulder: {x: 0, y: 0},
+            hip: {x: 0, y: 0},
+            finger: {x: 0, y: 0},
+            foot: {x: 0, y: 0},
+            doorknob: {x: 0, y: 0},
+            rugCenter: {x: 0, y: 0}
+        };
+
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            
+            cx = canvas.width / 2;
+            cy = canvas.height / 2;
+            
+            updateGeometry();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // ---------------------------------------------------------
+        // Geometry Definitions
+        // ---------------------------------------------------------
+        function updateGeometry() {
+            const scale = Math.min(canvas.width / 800, canvas.height / 600);
+            
+            // Base positions relative to center
+            const bodyX = cx;
+            const bodyY = cy;
+            
+            points.shoulder = { x: bodyX, y: bodyY - 80 * scale };
+            points.hip = { x: bodyX - 10 * scale, y: bodyY + 60 * scale };
+            
+            // Door and Doorknob
+            points.doorknob = { x: bodyX + 250 * scale, y: bodyY - 100 * scale };
+            
+            // Rug
+            points.rugCenter = { x: bodyX - 150 * scale, y: bodyY + 220 * scale };
+            
+            // Calculate dynamic extremities based on angles
+            updateExtremities(scale);
+            
+            // Define body bounding circles [x, y, radius] for electrons to bounce inside
+            nodes = [
+                { x: bodyX, y: bodyY - 160 * scale, r: 40 * scale }, // Head
+                { x: bodyX, y: bodyY - 90 * scale, r: 50 * scale },  // Upper Chest
+                { x: bodyX, y: bodyY - 20 * scale, r: 55 * scale },  // Belly
+                { x: bodyX - 10 * scale, y: bodyY + 40 * scale, r: 45 * scale }, // Pelvis
+                
+                // Static Left Leg
+                { x: bodyX + 40 * scale, y: bodyY + 120 * scale, r: 25 * scale }, 
+                { x: bodyX + 50 * scale, y: bodyY + 190 * scale, r: 20 * scale }, 
+                
+                // Static Left Arm (pointing up/disco)
+                { x: bodyX - 60 * scale, y: bodyY - 120 * scale, r: 20 * scale },
+                { x: bodyX - 90 * scale, y: bodyY - 180 * scale, r: 15 * scale }
+            ];
+            
+            // Add dynamic Arm and Leg nodes based on current angles
+            const armLen = 120 * scale;
+            const legLen = 140 * scale;
+            
+            const armRad = state.armAngle * Math.PI / 180;
+            const legRad = state.legAngle * Math.PI / 180;
+            
+            // Right Arm Nodes
+            for(let i=0.2; i<=1.0; i+=0.4) {
+                nodes.push({
+                    x: points.shoulder.x + Math.cos(armRad) * armLen * i,
+                    y: points.shoulder.y + Math.sin(armRad) * armLen * i,
+                    r: 20 * scale * (1.2 - i*0.2)
+                });
+            }
+            
+            // Right Leg Nodes
+            for(let i=0.2; i<=1.0; i+=0.4) {
+                nodes.push({
+                    x: points.hip.x + Math.sin(legRad) * legLen * i,
+                    y: points.hip.y + Math.cos(legRad) * legLen * i,
+                    r: 25 * scale * (1.2 - i*0.2)
+                });
+            }
+        }
+
+        function updateExtremities(scale = Math.min(canvas.width / 800, canvas.height / 600)) {
+            const armLen = 130 * scale;
+            const legLen = 150 * scale;
+            
+            const armRad = state.armAngle * Math.PI / 180;
+            const legRad = state.legAngle * Math.PI / 180;
+            
+            points.finger = {
+                x: points.shoulder.x + Math.cos(armRad) * armLen,
+                y: points.shoulder.y + Math.sin(armRad) * armLen
+            };
+            
+            points.foot = {
+                x: points.hip.x + Math.sin(legRad) * legLen,
+                y: points.hip.y + Math.cos(legRad) * legLen
+            };
+        }
+
+        // ---------------------------------------------------------
+        // Interaction Logic
+        // ---------------------------------------------------------
+        function getMousePos(evt) {
+            const rect = canvas.getBoundingClientRect();
+            let clientX, clientY;
+            
+            if (evt.touches) {
+                clientX = evt.touches[0].clientX;
+                clientY = evt.touches[0].clientY;
+            } else {
+                clientX = evt.clientX;
+                clientY = evt.clientY;
+            }
+            
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        function handlePointerDown(e) {
+            if (state.isDischarging) return;
+            const pos = getMousePos(e);
+            
+            // Check if near finger (Arm grab)
+            const dArm = Math.hypot(pos.x - points.finger.x, pos.y - points.finger.y);
+            if (dArm < 50) {
+                state.isDraggingArm = true;
+                document.getElementById('instruction-overlay').style.display = 'none';
+                return;
+            }
+            
+            // Check if near foot (Leg grab)
+            const dLeg = Math.hypot(pos.x - points.foot.x, pos.y - points.foot.y);
+            if (dLeg < 50) {
+                state.isDraggingLeg = true;
+                state.lastFootX = points.foot.x;
+                document.getElementById('instruction-overlay').style.display = 'none';
+                return;
+            }
+        }
+
+        function handlePointerMove(e) {
+            const pos = getMousePos(e);
+            
+            // Change cursor
+            const dArm = Math.hypot(pos.x - points.finger.x, pos.y - points.finger.y);
+            const dLeg = Math.hypot(pos.x - points.foot.x, pos.y - points.foot.y);
+            
+            if (dArm < 50 || dLeg < 50) canvas.style.cursor = 'grab';
+            else canvas.style.cursor = 'default';
+            
+            if (state.isDraggingArm) {
+                canvas.style.cursor = 'grabbing';
+                // Calculate angle from shoulder to mouse
+                let angle = Math.atan2(pos.y - points.shoulder.y, pos.x - points.shoulder.x) * 180 / Math.PI;
+                // Constrain Arm Angle (-90 to 90)
+                if (angle > 90 && angle < 180) angle = 90;
+                if (angle < -180 || (angle > 180 && angle < 270)) angle = -90;
+                
+                state.armAngle = angle;
+                updateGeometry();
+            }
+            
+            if (state.isDraggingLeg) {
+                canvas.style.cursor = 'grabbing';
+                // Calculate angle from hip to mouse (using y down, x right)
+                // We want 0 degrees to be straight down.
+                let angle = Math.atan2(pos.x - points.hip.x, pos.y - points.hip.y) * 180 / Math.PI;
+                
+                // Constrain Leg Angle (-60 to 10)
+                if (angle < -70) angle = -70;
+                if (angle > 20) angle = 20;
+                
+                state.legAngle = angle;
+                updateGeometry();
+                
+                // --- Friction Logic ---
+                // If foot moves while low enough (touching rug), generate electrons
+                if (points.foot.y > points.rugCenter.y - 30) {
+                    let dx = Math.abs(points.foot.x - state.lastFootX);
+                    if (dx > 5) {
+                        generateElectron(points.foot.x, points.foot.y);
+                        state.lastFootX = points.foot.x;
+                    }
+                }
+            }
+        }
+
+        function handlePointerUp() {
+            state.isDraggingArm = false;
+            state.isDraggingLeg = false;
+            canvas.style.cursor = 'default';
+        }
+
+        canvas.addEventListener('mousedown', handlePointerDown);
+        window.addEventListener('mousemove', handlePointerMove);
+        window.addEventListener('mouseup', handlePointerUp);
+        
+        canvas.addEventListener('touchstart', handlePointerDown, {passive: false});
+        window.addEventListener('touchmove', handlePointerMove, {passive: false});
+        window.addEventListener('touchend', handlePointerUp);
+
+        // ---------------------------------------------------------
+        // Physics Engine: Electrons & Discharge
+        // ---------------------------------------------------------
+        
+        function generateElectron(x, y) {
+            if (state.electrons.length >= state.maxElectrons || state.isDischarging) return;
+            
+            state.electrons.push({
+                x: x + (Math.random() - 0.5) * 10,
+                y: y + (Math.random() - 0.5) * 10,
+                vx: 0,
+                vy: 0
+            });
+            updateDashboard();
+        }
+
+        function triggerDischarge() {
+            if (state.electrons.length === 0 || state.isDischarging) return;
+            
+            state.isDischarging = true;
+            playZapSound(state.electrons.length);
+            
+            // Generate lightning path
+            state.dischargePath = generateLightning(points.finger, points.doorknob);
+            
+            // Rapidly remove electrons
+            const dischargeInterval = setInterval(() => {
+                if (state.electrons.length > 0) {
+                    // Remove 5-10 electrons per frame
+                    state.electrons.splice(0, Math.min(10, state.electrons.length));
+                    updateDashboard();
+                } else {
+                    clearInterval(dischargeInterval);
+                    state.isDischarging = false;
+                    state.dischargePath = [];
+                    updateDashboard();
+                }
+            }, 50);
+        }
+
+        function generateLightning(start, end) {
+            const path = [start];
+            const dist = Math.hypot(end.x - start.x, end.y - start.y);
+            const segments = Math.floor(dist / 15);
+            
+            let current = {x: start.x, y: start.y};
+            for (let i = 1; i < segments; i++) {
+                const t = i / segments;
+                const nextX = start.x + (end.x - start.x) * t + (Math.random() - 0.5) * 30;
+                const nextY = start.y + (end.y - start.y) * t + (Math.random() - 0.5) * 30;
+                path.push({x: nextX, y: nextY});
+            }
+            path.push(end);
+            return path;
+        }
+
+        function updatePhysics() {
+            if (state.isDischarging) {
+                // Pull remaining electrons quickly to finger
+                for (let e of state.electrons) {
+                    e.x += (points.finger.x - e.x) * 0.2;
+                    e.y += (points.finger.y - e.y) * 0.2;
+                }
+                return;
+            }
+
+            // 1. Electron Repulsion (Coulomb-like)
+            for (let i = 0; i < state.electrons.length; i++) {
+                let e1 = state.electrons[i];
+                let fx = 0, fy = 0;
+                
+                for (let j = 0; j < state.electrons.length; j++) {
+                    if (i === j) continue;
+                    let e2 = state.electrons[j];
+                    let dx = e1.x - e2.x;
+                    let dy = e1.y - e2.y;
+                    let distSq = dx*dx + dy*dy;
+                    
+                    if (distSq > 0 && distSq < 10000) { // Only repel if somewhat close
+                        let force = 200 / distSq;
+                        let dist = Math.sqrt(distSq);
+                        fx += (dx / dist) * force;
+                        fy += (dy / dist) * force;
+                    }
+                }
+                
+                // Add jitter
+                fx += (Math.random() - 0.5) * 0.5;
+                fy += (Math.random() - 0.5) * 0.5;
+                
+                e1.vx = (e1.vx + fx) * 0.8; // Apply drag
+                e1.vy = (e1.vy + fy) * 0.8;
+                
+                e1.x += e1.vx;
+                e1.y += e1.vy;
+                
+                // 2. Containment (Keep inside nodes)
+                let insideAny = false;
+                let closestNode = null;
+                let minPenetration = -Infinity; // Distance from center - radius (negative means inside)
+                
+                for (let node of nodes) {
+                    let dx = e1.x - node.x;
+                    let dy = e1.y - node.y;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    let pen = dist - node.r;
+                    
+                    if (pen < 0) {
+                        insideAny = true;
+                        break;
+                    }
+                    if (pen > minPenetration || closestNode === null) {
+                        // Actually we want the closest node if it's outside
+                        if (closestNode === null || pen < minPenetration) {
+                            minPenetration = pen;
+                            closestNode = {node: node, dx: dx, dy: dy, dist: dist};
+                        }
+                    }
+                }
+                
+                // If outside, pull it into the closest node
+                if (!insideAny && closestNode) {
+                    let n = closestNode.node;
+                    let d = closestNode.dist;
+                    if (d === 0) d = 1;
+                    e1.x = n.x + (closestNode.dx / d) * (n.r - 2);
+                    e1.y = n.y + (closestNode.dy / d) * (n.r - 2);
+                }
+            }
+
+            // 3. Discharge Check
+            if (state.electrons.length > 0) {
+                const distToKnob = Math.hypot(points.finger.x - points.doorknob.x, points.finger.y - points.doorknob.y);
+                // Threshold grows linearly with charge
+                // If 150 electrons, threshold is ~180px
+                const sparkThreshold = 30 + (state.electrons.length * 1.2);
+                
+                if (distToKnob < sparkThreshold) {
+                    triggerDischarge();
+                }
+            }
+        }
+
+        // ---------------------------------------------------------
+        // Rendering
+        // ---------------------------------------------------------
+        
+        function drawCapsule(ctx, x1, y1, x2, y2, r, color) {
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = r * 2;
+            ctx.lineCap = "round";
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        function drawCharacter() {
+            const scale = Math.min(canvas.width / 800, canvas.height / 600);
+            
+            // Left Arm (Back)
+            drawCapsule(ctx, points.shoulder.x, points.shoulder.y, cx - 60*scale, cy - 120*scale, 15*scale, "#334155");
+            drawCapsule(ctx, cx - 60*scale, cy - 120*scale, cx - 90*scale, cy - 180*scale, 12*scale, "#334155");
+            
+            // Left Leg (Back)
+            drawCapsule(ctx, points.hip.x, points.hip.y, cx + 40*scale, cy + 120*scale, 20*scale, "#f8fafc");
+            drawCapsule(ctx, cx + 40*scale, cy + 120*scale, cx + 50*scale, cy + 190*scale, 15*scale, "#f8fafc");
+            // Left Shoe
+            ctx.fillStyle = "#1e293b";
+            ctx.beginPath(); ctx.arc(cx + 55*scale, cy + 195*scale, 18*scale, 0, Math.PI*2); ctx.fill();
+
+            // Right Leg (Front - Interactive)
+            const kneeX = points.hip.x + (points.foot.x - points.hip.x)/2;
+            const kneeY = points.hip.y + (points.foot.y - points.hip.y)/2 + 20*scale; // Bend knee slightly
+            drawCapsule(ctx, points.hip.x, points.hip.y, kneeX, kneeY, 22*scale, "#ffffff");
+            drawCapsule(ctx, kneeX, kneeY, points.foot.x, points.foot.y, 16*scale, "#ffffff");
+            // Leg stroke
+            drawCapsule(ctx, points.hip.x, points.hip.y, kneeX, kneeY, 22*scale, "transparent");
+            ctx.lineWidth = 2; ctx.strokeStyle = "#cbd5e1"; ctx.stroke();
+            
+            // Right Shoe
+            ctx.fillStyle = "#1e293b";
+            ctx.beginPath(); ctx.arc(points.foot.x + 10*scale, points.foot.y + 5*scale, 20*scale, 0, Math.PI*2); ctx.fill();
+
+            // Torso (White suit jacket over black shirt)
+            drawCapsule(ctx, points.shoulder.x, points.shoulder.y, points.hip.x, points.hip.y, 40*scale, "#1e293b"); // Shirt
+            // Jacket left/right flaps
+            drawCapsule(ctx, points.shoulder.x - 20*scale, points.shoulder.y, points.hip.x - 15*scale, points.hip.y, 20*scale, "#ffffff");
+            drawCapsule(ctx, points.shoulder.x + 20*scale, points.shoulder.y, points.hip.x + 15*scale, points.hip.y, 20*scale, "#ffffff");
+
+            // Head
+            ctx.fillStyle = "#fcd34d"; // Skin tone
+            ctx.beginPath(); ctx.arc(cx, cy - 160*scale, 35*scale, 0, Math.PI*2); ctx.fill();
+            // Hair (Disco afro)
+            ctx.fillStyle = "#1e293b";
+            ctx.beginPath(); ctx.arc(cx, cy - 180*scale, 40*scale, 0, Math.PI); ctx.fill();
+
+            // Right Arm (Front - Interactive)
+            const elbowX = points.shoulder.x + (points.finger.x - points.shoulder.x)/2;
+            const elbowY = points.shoulder.y + (points.finger.y - points.shoulder.y)/2 + 20*scale;
+            drawCapsule(ctx, points.shoulder.x, points.shoulder.y, elbowX, elbowY, 16*scale, "#ffffff");
+            drawCapsule(ctx, elbowX, elbowY, points.finger.x, points.finger.y, 12*scale, "#ffffff");
+            
+            // Hand/Finger
+            ctx.fillStyle = "#fcd34d";
+            ctx.beginPath(); ctx.arc(points.finger.x, points.finger.y, 10*scale, 0, Math.PI*2); ctx.fill();
+        }
+
+        function drawElectrons() {
+            ctx.fillStyle = "#3b82f6";
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 1;
+            
+            for (let e of state.electrons) {
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, 4, 0, Math.PI*2);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Draw minus sign
+                ctx.strokeStyle = "#ffffff";
+                ctx.beginPath();
+                ctx.moveTo(e.x - 2, e.y);
+                ctx.lineTo(e.x + 2, e.y);
+                ctx.stroke();
+            }
+        }
+
+        function drawEnvironment() {
+            const scale = Math.min(canvas.width / 800, canvas.height / 600);
+            
+            // Wall line
+            ctx.strokeStyle = "#94a3b8";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, cy + 150*scale);
+            ctx.lineTo(canvas.width, cy + 150*scale);
+            ctx.stroke();
+
+            // Door edge
+            ctx.fillStyle = "#78350f";
+            ctx.fillRect(points.doorknob.x - 20*scale, cy - 300*scale, 80*scale, 450*scale);
+
+            // Doorknob
+            ctx.fillStyle = "#94a3b8"; // Metal base
+            ctx.beginPath(); ctx.arc(points.doorknob.x + 30*scale, points.doorknob.y, 15*scale, 0, Math.PI*2); ctx.fill();
+            
+            // Doorknob Knob
+            ctx.fillStyle = "#cbd5e1";
+            ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 10; ctx.shadowOffsetX = 5;
+            ctx.beginPath(); ctx.arc(points.doorknob.x, points.doorknob.y, 20*scale, 0, Math.PI*2); ctx.fill();
+            ctx.shadowColor = "transparent"; // Reset
+
+            // Rug
+            ctx.fillStyle = "#be123c"; // Crimson red rug
+            ctx.beginPath();
+            ctx.ellipse(points.rugCenter.x, points.rugCenter.y, 180*scale, 40*scale, 0, 0, Math.PI*2);
+            ctx.fill();
+            
+            // Rug texture
+            ctx.strokeStyle = "#9f1239";
+            ctx.lineWidth = 3;
+            for(let i=0; i<5; i++) {
+                ctx.beginPath();
+                ctx.ellipse(points.rugCenter.x, points.rugCenter.y, (180 - i*30)*scale, (40 - i*6)*scale, 0, 0, Math.PI*2);
+                ctx.stroke();
+            }
+        }
+
+        function drawLightning() {
+            if (!state.isDischarging || state.dischargePath.length === 0) return;
+            
+            ctx.shadowColor = "#60a5fa"; // Blue glow
+            ctx.shadowBlur = 15;
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 4;
+            ctx.lineJoin = "miter";
+            
+            ctx.beginPath();
+            ctx.moveTo(state.dischargePath[0].x, state.dischargePath[0].y);
+            for (let i = 1; i < state.dischargePath.length; i++) {
+                ctx.lineTo(state.dischargePath[i].x, state.dischargePath[i].y);
+            }
+            ctx.stroke();
+            
+            // Inner core
+            ctx.shadowBlur = 0;
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = "#bfdbfe";
+            ctx.stroke();
+        }
+
+        function renderFrame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawEnvironment();
+            drawCharacter();
+            drawElectrons();
+            drawLightning();
+            
+            // Draw debug nodes (uncomment to see containment zones)
+            /*
+            ctx.strokeStyle = "rgba(255,0,0,0.2)";
+            ctx.lineWidth = 1;
+            for(let n of nodes) {
+                ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI*2); ctx.stroke();
+            }
+            */
+        }
+
+        // ---------------------------------------------------------
+        // UI Dashboard Updates
+        // ---------------------------------------------------------
+        const ui = {
+            electrons: document.getElementById('disp-electrons'),
+            voltageText: document.getElementById('disp-voltage-text'),
+            voltageBar: document.getElementById('voltage-bar'),
+            badge: document.getElementById('status-badge')
+        };
+
+        function updateDashboard() {
+            ui.electrons.textContent = state.electrons.length;
+            
+            // Map electron count to a hypothetical voltage
+            let voltage = state.electrons.length * 125; 
+            ui.voltageText.textContent = `${voltage.toLocaleString()} V`;
+            
+            let percent = (state.electrons.length / state.maxElectrons) * 100;
+            ui.voltageBar.style.width = `${percent}%`;
+            
+            if (percent > 80) {
+                ui.voltageBar.className = "bg-red-500 h-2.5 rounded-full transition-all duration-100";
+            } else if (percent > 40) {
+                ui.voltageBar.className = "bg-orange-500 h-2.5 rounded-full transition-all duration-100";
+            } else {
+                ui.voltageBar.className = "bg-yellow-400 h-2.5 rounded-full transition-all duration-100";
+            }
+
+            if (state.isDischarging) {
+                ui.badge.textContent = "⚡ คายประจุ! (Discharging)";
+                ui.badge.className = "mt-4 text-center py-2 rounded-md font-bold text-sm bg-red-100 text-red-700 border border-red-300 shadow-inner";
+            } else if (state.electrons.length === 0) {
+                ui.badge.textContent = "ถูเท้าที่พรมเพื่อสร้างประจุลบ";
+                ui.badge.className = "mt-4 text-center py-2 rounded-md font-bold text-sm bg-slate-100 text-slate-600 border border-slate-300 shadow-inner";
+            } else if (state.electrons.length >= state.maxElectrons) {
+                ui.badge.textContent = "ประจุเต็ม! ระวังไฟช็อต";
+                ui.badge.className = "mt-4 text-center py-2 rounded-md font-bold text-sm bg-orange-100 text-orange-700 border border-orange-300 shadow-inner animate-pulse";
+            } else {
+                ui.badge.textContent = "ประจุลบสะสม... ผลักกันไปทั่วตัว";
+                ui.badge.className = "mt-4 text-center py-2 rounded-md font-bold text-sm bg-blue-100 text-blue-700 border border-blue-300 shadow-inner";
+            }
+        }
+
+        // ---------------------------------------------------------
+        // Button Listeners
+        // ---------------------------------------------------------
+        document.getElementById('btn-discharge').addEventListener('click', () => {
+            if(state.electrons.length > 0 && !state.isDischarging) {
+                // Ensure arm points roughly towards doorknob before discharging via button
+                state.armAngle = 0; 
+                updateGeometry();
+                triggerDischarge();
+            }
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            state.electrons = [];
+            state.armAngle = -30;
+            state.legAngle = 0;
+            state.isDischarging = false;
+            updateGeometry();
+            updateDashboard();
+        });
+        function gameLoop() {
+            updatePhysics();
+            renderFrame();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initialize
+        resizeCanvas();
+        updateDashboard();
+        gameLoop();
+
+    </script>
+</body>
+</html>

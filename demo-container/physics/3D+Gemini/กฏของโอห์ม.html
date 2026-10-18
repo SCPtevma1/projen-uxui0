@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ohm's Law Simulation</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Jost:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+    <style>
+        body { font-family: 'Kanit', sans-serif; background-color: #f8fafc; margin: 0; overflow: hidden; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        
+        /* Custom Sliders */
+        .slider-v { -webkit-appearance: none; width: 100%; height: 8px; border-radius: 5px; background: #bfdbfe; outline: none; transition: 0.2s; }
+        .slider-v::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; border-radius: 50%; background: #3b82f6; cursor: pointer; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: transform 0.1s; }
+        .slider-v::-webkit-slider-thumb:hover { transform: scale(1.15); }
+        
+        .slider-r { -webkit-appearance: none; width: 100%; height: 8px; border-radius: 5px; background: #fecaca; outline: none; transition: 0.2s; }
+        .slider-r::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; border-radius: 50%; background: #ef4444; cursor: pointer; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: transform 0.1s; }
+        .slider-r::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        #canvas-container {
+            background: linear-gradient(to bottom, #f0fdf4 0%, #dcfce7 60%, #cbd5e1 100%);
+            position: relative;
+        }
+
+        /* Math Font for dynamic text */
+        .math-font { font-family: 'Jost', sans-serif; display: inline-block; transition: font-size 0.2s ease-out, transform 0.2s; }
+        .math-v { color: #2563eb; font-weight: 700; }
+        .math-i { color: #16a34a; font-weight: 600; }
+        .math-r { color: #dc2626; font-weight: 700; }
+        
+        /* Layout for dynamic equation */
+        #dynamic-equation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col md:flex-row text-slate-800">
+
+    <main class="flex-1 relative flex flex-col items-center overflow-hidden h-full" id="canvas-container">
+        
+        <!-- Live Data Dashboard -->
+        <div class="absolute top-4 left-4 z-10 bg-white/95 p-4 rounded-xl shadow-lg border border-slate-200 min-w-[260px] backdrop-blur-sm">
+            <h3 class="font-bold text-slate-800 border-b pb-2 mb-2 flex items-center gap-2">
+                <i data-lucide="zap" class="w-5 h-5 text-yellow-500"></i> ค่าไฟฟ้าในวงจร
+            </h3>
+            
+            <div class="space-y-2 text-sm font-mono mt-3">
+                <div class="flex justify-between items-center bg-blue-50 px-2 py-1.5 rounded border border-blue-100">
+                    <span class="text-blue-800 font-semibold">V (ความต่างศักย์):</span>
+                    <span id="disp-val-v" class="font-bold text-blue-600">4.5 V</span>
+                </div>
+                
+                <div class="flex justify-between items-center bg-red-50 px-2 py-1.5 rounded border border-red-100">
+                    <span class="text-red-800 font-semibold">R (ความต้านทาน):</span>
+                    <span id="disp-val-r" class="font-bold text-red-600">500 Ω</span>
+                </div>
+
+                <div class="flex justify-between items-center bg-green-50 px-2 py-2 rounded-lg border-2 border-green-200 mt-2 shadow-inner">
+                    <span class="text-green-800 font-bold">I (กระแสไฟฟ้า):</span>
+                    <div class="text-right">
+                        <span id="disp-val-i" class="font-black text-green-600 text-lg">9.0</span>
+                        <span class="text-green-700 text-xs font-bold">mA</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dynamic Equation Overlay -->
+        <div class="absolute top-8 left-1/2 -translate-x-1/2 z-20 pointer-events-none w-full text-center">
+            <div id="dynamic-equation" class="bg-white/40 px-10 py-4 rounded-3xl backdrop-blur-sm border border-white/50 inline-flex shadow-xl">
+                <div class="flex flex-col items-center">
+                    <span id="txt-v" class="math-font math-v">V</span>
+                </div>
+                <span class="text-4xl font-bold text-slate-400">=</span>
+                <div class="flex flex-col items-center">
+                    <span id="txt-i" class="math-font math-i">I</span>
+                </div>
+                <span class="text-4xl font-bold text-slate-400">×</span>
+                <div class="flex flex-col items-center">
+                    <span id="txt-r" class="math-font math-r">R</span>
+                </div>
+            </div>
+            <p class="text-xs font-bold text-slate-500 mt-2 bg-white/70 inline-block px-3 py-1 rounded-full">ขนาดตัวอักษรเปลี่ยนตามปริมาณจริง</p>
+        </div>
+
+        <!-- HTML5 Canvas for Simulation -->
+        <canvas id="simCanvas" class="w-full h-full absolute inset-0"></canvas>
+        
+    </main>
+
+    <aside class="w-full md:w-[420px] glass-panel h-full overflow-y-auto border-l border-slate-200 shadow-2xl flex flex-col z-30">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-700 to-indigo-800 text-white p-5 shadow-md">
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <i data-lucide="plug-2"></i> กฎของโอห์ม
+            </h1>
+            <p class="text-blue-200 text-sm mt-1">Ohm's Law: V = I × R</p>
+        </div>
+
+        <div class="p-6 space-y-6 flex-1 bg-slate-50">
+            <!-- Controls Section -->
+            <section class="space-y-5 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-lg font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
+                    <i data-lucide="sliders-horizontal" class="w-5 h-5 text-indigo-500"></i> ปรับค่าตัวแปร
+                </h2>
+
+                <!-- Voltage (V) -->
+                <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                    <label class="flex justify-between text-sm font-bold text-blue-800 mb-2">
+                        <span class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-blue-500"></div> ความต่างศักย์ (V)</span>
+                        <span id="label-v" class="text-blue-700 bg-white px-2 py-0.5 rounded shadow-sm border border-blue-200">4.5 V</span>
+                    </label>
+                    <input type="range" id="input-v" min="0.1" max="9.0" step="0.1" value="4.5" class="slider-v mt-2">
+                    <div class="flex justify-between text-[10px] text-blue-400 mt-1 font-semibold">
+                        <span>0.1 V (น้อย)</span>
+                        <span>9.0 V (มาก)</span>
+                    </div>
+                </div>
+
+                <!-- Resistance (R) -->
+                <div class="bg-red-50/50 p-4 rounded-xl border border-red-100">
+                    <label class="flex justify-between text-sm font-bold text-red-800 mb-2">
+                        <span class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-red-500"></div> ความต้านทาน (R)</span>
+                        <span id="label-r" class="text-red-700 bg-white px-2 py-0.5 rounded shadow-sm border border-red-200">500 Ω</span>
+                    </label>
+                    <input type="range" id="input-r" min="10" max="1000" step="10" value="500" class="slider-r mt-2">
+                    <div class="flex justify-between text-[10px] text-red-400 mt-1 font-semibold">
+                        <span>10 Ω (ลื่นไหล)</span>
+                        <span>1000 Ω (ขรุขระ)</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Physics Concepts -->
+            <section class="space-y-4 bg-indigo-50/50 p-5 rounded-xl border border-indigo-100 text-sm">
+                <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2 border-b-2 border-indigo-200 pb-2">
+                    <i data-lucide="lightbulb" class="w-5 h-5 text-yellow-500"></i> ทำนายและสังเกตผล
+                </h2>
+                
+                <div class="space-y-4 text-slate-700 h-64 overflow-y-auto pr-2 custom-scrollbar">
+                    
+                    <div>
+                        <strong class="text-slate-900 text-base text-blue-700 block mb-1">1. หากปรับ V เพิ่มขึ้น (คงค่า R ไว้)</strong>
+                        <p class="leading-relaxed text-xs">
+                            <span class="font-semibold">คำทำนาย:</span> กระแสไฟฟ้า (I) จะ <span class="text-green-600 font-bold">เพิ่มขึ้น</span><br>
+                            <span class="font-semibold">เหตุผล:</span> V คือ "แรงดัน" ยิ่งมีแบตเตอรี่มาก แรงผลักประจุยิ่งเยอะ ทำให้อิเล็กตรอนไหลเร็วขึ้น (ตัวอักษร I ใหญ่ขึ้น, จุดสีน้ำเงินวิ่งไวขึ้น)
+                        </p>
+                    </div>
+
+                    <div>
+                        <strong class="text-slate-900 text-base text-red-600 block mb-1">2. หากปรับ R เพิ่มขึ้น (คงค่า V ไว้)</strong>
+                        <p class="leading-relaxed text-xs">
+                            <span class="font-semibold">คำทำนาย:</span> กระแสไฟฟ้า (I) จะ <span class="text-red-600 font-bold">ลดลง</span><br>
+                            <span class="font-semibold">เหตุผล:</span> R คือ "สิ่งกีดขวาง" (จุดสีดำในท่อ) ยิ่งมีจุดสีดำมาก อิเล็กตรอนจะชนและเคลื่อนที่ผ่านยากขึ้น ทำให้กระแสไหลช้าลง (ตัวอักษร I เล็กลง)
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-3 mt-3 rounded-lg border border-slate-200 shadow-sm">
+                        <strong class="text-slate-800 text-sm flex items-center gap-1"><i data-lucide="refresh-cw" class="w-4 h-4"></i> ความสัมพันธ์</strong>
+                        <ul class="list-disc pl-5 mt-2 text-xs space-y-1 text-slate-600 font-medium">
+                            <li><span class="text-blue-600">I แปรผันตรงกับ V</span> (I ∝ V)</li>
+                            <li><span class="text-red-600">I แปรผกผันกับ R</span> (I ∝ 1/R)</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </aside>
+
+    <script>
+        // Init Icons
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        // ---------------------------------------------------------
+        // State & Physics Variables
+        // ---------------------------------------------------------
+        const state = {
+            v: 4.5,    // Voltage (Volts)
+            r: 500,    // Resistance (Ohms)
+            i_mA: 9.0, // Current in milliamperes for better display (I = V/R * 1000)
+            
+            // Visual mapping scales
+            maxV: 9.0, minV: 0.1,
+            maxR: 1000, minR: 10,
+            maxI_mA: 900, minI_mA: 0.1
+        };
+
+        // DOM Elements
+        const UI = {
+            inputV: document.getElementById('input-v'),
+            labelV: document.getElementById('label-v'),
+            dispV: document.getElementById('disp-val-v'),
+            
+            inputR: document.getElementById('input-r'),
+            labelR: document.getElementById('label-r'),
+            dispR: document.getElementById('disp-val-r'),
+            
+            dispI: document.getElementById('disp-val-i'),
+            
+            txtV: document.getElementById('txt-v'),
+            txtI: document.getElementById('txt-i'),
+            txtR: document.getElementById('txt-r')
+        };
+
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let cx, cy; 
+        
+        // ---------------------------------------------------------
+        // Event Listeners & UI Updates
+        // ---------------------------------------------------------
+        UI.inputV.addEventListener('input', (e) => {
+            state.v = parseFloat(e.target.value);
+            UI.labelV.textContent = `${state.v.toFixed(1)} V`;
+            UI.dispV.textContent = `${state.v.toFixed(1)} V`;
+            updatePhysics();
+        });
+
+        UI.inputR.addEventListener('input', (e) => {
+            state.r = parseFloat(e.target.value);
+            UI.labelR.textContent = `${state.r.toFixed(0)} Ω`;
+            UI.dispR.textContent = `${state.r.toFixed(0)} Ω`;
+            updatePhysics();
+        });
+
+        function updatePhysics() {
+            // I = V / R (in Amperes) -> Convert to mA
+            state.i_mA = (state.v / state.r) * 1000;
+            
+            // Display Current
+            UI.dispI.textContent = state.i_mA.toFixed(1);
+            
+            // Update Dynamic Font Sizes (PhET Style Trick)
+            // Base size 30px, max size 110px
+            const baseSize = 25;
+            const sizeRange = 85;
+            
+            // V scales linearly
+            const scaleV = state.v / state.maxV;
+            const fontV = baseSize + (scaleV * sizeRange);
+            
+            // R scales linearly
+            const scaleR = state.r / state.maxR;
+            const fontR = baseSize + (scaleR * sizeRange);
+            
+            // I scales based on actual value relative to max possible I
+            const scaleI = state.i_mA / state.maxI_mA;
+            const fontI = baseSize + (scaleI * sizeRange);
+            
+            UI.txtV.style.fontSize = `${fontV}px`;
+            UI.txtR.style.fontSize = `${fontR}px`;
+            UI.txtI.style.fontSize = `${fontI}px`;
+
+            generateImpurities();
+        }
+
+        // ---------------------------------------------------------
+        // Canvas Graphics Setup
+        // ---------------------------------------------------------
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            cx = canvas.width / 2;
+            cy = canvas.height / 2;
+            generateImpurities();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // Simulation Entities
+        let impurities = [];
+        let electrons = [];
+        const numElectrons = 60; // Keep electron count constant, change speed
+
+        // Initialize particles
+        for(let i=0; i<numElectrons; i++) {
+            // Progress around the circuit (0.0 to 1.0)
+            electrons.push({
+                progress: Math.random()
+            });
+        }
+
+        function generateImpurities() {
+            impurities = [];
+            // Number of impurities proportional to Resistance
+            // Max R (1000) -> 200 dots, Min R (10) -> 2 dots
+            const count = Math.floor((state.r / state.maxR) * 150) + 5;
+            
+            const resistorWidth = 300;
+            const resistorHeight = 60;
+            
+            for(let i=0; i<count; i++) {
+                // Random position inside the resistor bounds
+                // Resistor is centered at cx, cy+50
+                impurities.push({
+                    x: (cx - resistorWidth/2) + Math.random() * resistorWidth,
+                    y: (cy + 50 - resistorHeight/2) + 5 + Math.random() * (resistorHeight - 10)
+                });
+            }
+        }
+
+        function getPathPoint(progress) {
+            // Define the circuit as a rectangle
+            const w = 400; // Width of circuit
+            const h = 200; // Height of circuit
+            const left = cx - w/2;
+            const right = cx + w/2;
+            const top = cy + 50 - h;
+            const bottom = cy + 50;
+
+            const perimeter = 2*w + 2*h;
+            let d = (progress % 1.0) * perimeter;
+            if(d < 0) d += perimeter;
+
+            // Segment 1: Bottom wire (Left to Right through Resistor)
+            if (d <= w) {
+                return { x: left + d, y: bottom, seg: 'bottom' };
+            }
+            d -= w;
+            // Segment 2: Right wire (Bottom to Top)
+            if (d <= h) {
+                return { x: right, y: bottom - d, seg: 'right' };
+            }
+            d -= h;
+            // Segment 3: Top wire (Right to Left)
+            if (d <= w) {
+                return { x: right - d, y: top, seg: 'top' };
+            }
+            d -= w;
+            // Segment 4: Left wire (Top to Bottom through Battery)
+            return { x: left, y: top + d, seg: 'left' };
+        }
+
+        function drawCircuitBase() {
+            const w = 400;
+            const h = 200;
+            const left = cx - w/2;
+            const right = cx + w/2;
+            const top = cy + 50 - h;
+            const bottom = cy + 50;
+
+            // Draw Wires
+            ctx.strokeStyle = '#94a3b8'; // Slate wire
+            ctx.lineWidth = 12;
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            ctx.moveTo(left, bottom);
+            ctx.lineTo(right, bottom);
+            ctx.lineTo(right, top);
+            ctx.lineTo(left, top);
+            ctx.closePath();
+            ctx.stroke();
+            
+            // Wire inner highlight
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 6;
+            ctx.stroke();
+
+            // Draw Resistor (Macroscopic view)
+            const rw = 300;
+            const rh = 60;
+            const rx = cx - rw/2;
+            const ry = bottom - rh/2;
+            
+            ctx.fillStyle = '#fca5a5'; // Light red body
+            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetY = 5;
+            ctx.fillRect(rx, ry, rw, rh);
+            ctx.shadowColor = 'transparent';
+            
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(rx, ry, rw, rh);
+
+            // Draw Impurities (Resistance)
+            ctx.fillStyle = '#1e293b';
+            impurities.forEach(imp => {
+                ctx.beginPath();
+                ctx.arc(imp.x, imp.y, 3.5, 0, Math.PI*2);
+                ctx.fill();
+            });
+
+            // Draw Battery Stack (Left wire)
+            // Determine number of batteries based on voltage (1.5V per visual battery)
+            let numBats = Math.ceil(state.v / 1.5);
+            if (numBats < 1) numBats = 1;
+            
+            const batW = 40;
+            const batH = 25;
+            const totalBatH = numBats * batH;
+            let startY = (top + h/2) - (totalBatH/2); // Center on left wire
+            
+            ctx.fillStyle = '#f8fafc'; // Background to hide wire
+            ctx.fillRect(left - batW/2 - 5, startY - 10, batW + 10, totalBatH + 20);
+            
+            for(let i=0; i<numBats; i++) {
+                let by = startY + (i * batH);
+                
+                // Battery Body
+                ctx.fillStyle = '#3b82f6'; // Blue battery
+                ctx.fillRect(left - batW/2, by, batW, batH - 2);
+                
+                // Battery Top (Positive tip)
+                ctx.fillStyle = '#1e293b';
+                if(i === 0) { // Only draw bump on top-most battery
+                    ctx.fillRect(left - 8, by - 4, 16, 4);
+                }
+                
+                // Plus / Minus Labels
+                if (i === 0) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 14px Kanit';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('+', left, by + 14);
+                }
+                if (i === numBats - 1) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 16px Kanit';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('-', left, by + 14);
+                }
+            }
+        }
+
+        let lastTime = performance.now();
+        
+        function renderLoop(time) {
+            let dt = (time - lastTime) / 1000;
+            if (dt > 0.1) dt = 0.1;
+            lastTime = time;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawCircuitBase();
+
+            // Animate Electrons
+            // Speed relates directly to Current (I). 
+            // base speed * I_mA.
+            // If I_mA is 900, it's very fast. If 0.1, it's a crawl.
+            let speed = (state.i_mA / state.maxI_mA) * 1.5; 
+            
+            ctx.fillStyle = '#60a5fa'; // Electron color
+            ctx.strokeStyle = '#1e3a8a';
+            ctx.lineWidth = 1.5;
+            
+            electrons.forEach(el => {
+                // Move particle
+                el.progress += speed * dt;
+                if (el.progress >= 1.0) el.progress -= 1.0;
+                
+                // Get pos
+                const pos = getPathPoint(el.progress);
+                
+                // Add jitter when passing through resistor (bottom segment)
+                let renderY = pos.y;
+                let renderX = pos.x;
+                
+                if (pos.seg === 'bottom') {
+                    // Spread them out vertically in the pipe
+                    // Pseudo-random offset based on their initial identity hash
+                    let hash = (el.progress * 1000) % 40; 
+                    renderY += (hash - 20);
+                }
+
+                // Draw Electron
+                ctx.beginPath();
+                ctx.arc(renderX, renderY, 5, 0, Math.PI*2);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Minus sign inside electron
+                ctx.strokeStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.moveTo(renderX - 2, renderY);
+                ctx.lineTo(renderX + 2, renderY);
+                ctx.stroke();
+                ctx.strokeStyle = '#1e3a8a'; // reset
+            });
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        // Init
+        resizeCanvas();
+        updatePhysics();
+        requestAnimationFrame(renderLoop);
+
+    </script>
+</body>
+</html>
