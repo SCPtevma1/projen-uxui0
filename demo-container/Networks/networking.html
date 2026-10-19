@@ -1,20 +1,492 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Networking | รายวิชาสำหรับนักเรียน</title>
-  <link rel="stylesheet" href="../../css/student-demo.css">
-  <link rel="stylesheet" href="../../css/popo/networking.css">
+  <title>ระบบเครือข่ายคอมพิวเตอร์ (Computer Networking) | คลังความรู้รายวิชา</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --primary-light: #e0f2fe;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --bg-page: #f8fafc;
+      --card-bg: #ffffff;
+      --border-color: #e2e8f0;
+      --radius: 16px;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Prompt', sans-serif;
+    }
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.6;
+    }
+    .top-navbar {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--primary-dark);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      background: var(--primary-light);
+      transition: all 0.2s;
+    }
+    .back-btn:hover {
+      background: #bae6fd;
+      transform: translateX(-3px);
+    }
+    .page-tag {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--primary-dark);
+      background: #f0f9ff;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      border: 1px solid #bae6fd;
+    }
+    .hero {
+      background: linear-gradient(135deg, #0c4a6e 0%, #0369a1 50%, #0284c7 100%);
+      color: #ffffff;
+      padding: 3.5rem 1.5rem 4rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -20%;
+      width: 140%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .hero-container {
+      max-width: 900px;
+      margin: 0 auto;
+      position: relative;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(8px);
+      padding: 0.35rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 1rem;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 4vw, 2.75rem);
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.02em;
+    }
+    .hero p {
+      font-size: 1.1rem;
+      opacity: 0.95;
+      max-width: 650px;
+      margin: 0 auto 1.75rem;
+      font-weight: 300;
+    }
+    .hero-stats {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255, 255, 255, 0.12);
+      padding: 0.5rem 1.25rem;
+      border-radius: 12px;
+      font-size: 0.9rem;
+    }
+    .container {
+      max-width: 1100px;
+      margin: -2rem auto 4rem;
+      padding: 0 1.5rem;
+      position: relative;
+      z-index: 10;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .topic-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 1.75rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border-color);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .topic-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 30px -8px rgba(0, 0, 0, 0.08);
+      border-color: #7dd3fc;
+    }
+    .topic-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .topic-icon {
+      width: 48px;
+      height: 48px;
+      background: #f0f9ff;
+      color: var(--primary);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+    .topic-header h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .topic-card p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+    }
+    .highlight-list {
+      list-style: none;
+      border-top: 1px dashed var(--border-color);
+      padding-top: 0.75rem;
+    }
+    .highlight-list li {
+      position: relative;
+      padding-left: 1.25rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+      color: #334155;
+    }
+    .highlight-list li::before {
+      content: '🌐';
+      position: absolute;
+      left: 0;
+      font-size: 0.85rem;
+    }
+    .interactive-box {
+      background: #ffffff;
+      border-radius: var(--radius);
+      padding: 2rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border-color);
+      margin-bottom: 3rem;
+    }
+    .interactive-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .interactive-header h2 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    /* OSI Layers Visualizer */
+    .osi-layers {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .osi-row {
+      display: flex;
+      align-items: center;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 0.65rem 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .osi-row:hover {
+      background: #e0f2fe;
+      border-color: #38bdf8;
+      transform: translateX(5px);
+    }
+    .osi-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: #0284c7;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-right: 1rem;
+      flex-shrink: 0;
+    }
+    .osi-info {
+      flex: 1;
+    }
+    .osi-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #1e293b;
+    }
+    .osi-proto {
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+    .summary-banner {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border: 1px solid #bae6fd;
+      border-radius: var(--radius);
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+    .summary-text h3 {
+      font-size: 1.25rem;
+      color: #0c4a6e;
+      margin-bottom: 0.4rem;
+    }
+    .summary-text p {
+      color: #0369a1;
+      font-size: 0.95rem;
+    }
+    .btn-action {
+      background: var(--primary);
+      color: #ffffff;
+      text-decoration: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+    .btn-action:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+    }
+  </style>
 </head>
 <body>
-  <main class="subject-page">
-    <a class="subject-page__back" href="../student.html">← กลับไปหน้ารวมรายวิชา</a>
-    <article class="subject-page__content">
-      <p class="course-eyebrow">รายวิชา</p>
-      <h1>Networking</h1>
-      <p>เรียนรู้พื้นฐานเครือข่ายคอมพิวเตอร์และเทคโนโลยีการเชื่อมต่อ</p>
-    </article>
+
+  <header class="top-navbar">
+    <a href="../student.html" class="back-btn">
+      <i class="ph ph-arrow-left"></i> กลับไปหน้ารวมรายวิชา
+    </a>
+    <span class="page-tag">ระดับ 3 • เทคโนโลยีและทักษะอาชีพ</span>
+  </header>
+
+  <section class="hero">
+    <div class="hero-container">
+      <div class="hero-badge">
+        <i class="ph ph-tree-structure"></i> โครงสร้างพื้นฐาน อินเทอร์เน็ต และความปลอดภัยเครือข่าย
+      </div>
+      <h1>ระบบเครือข่ายคอมพิวเตอร์ (Networking)</h1>
+      <p>ทำความเข้าใจการเชื่อมต่อของโลกดิจิทัล การเดินทางของแพ็กเก็ตข้อมูล IP Address, Router, โมเดล OSI 7 ชั้น สู่ระบบ Cloud และ Cyber Security</p>
+      
+      <div class="hero-stats">
+        <div class="stat-pill"><i class="ph ph-network"></i> LAN / WAN / Internet</div>
+        <div class="stat-pill"><i class="ph ph-stack"></i> OSI 7 Layers & TCP/IP</div>
+        <div class="stat-pill"><i class="ph ph-shield-check"></i> Cyber Security & SSL/TLS</div>
+      </div>
+    </div>
+  </section>
+
+  <main class="container">
+
+    <div class="grid-2">
+
+      <article class="topic-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="ph ph-hard-drives"></i>
+          </div>
+          <div>
+            <h3>1. โครงสร้างพื้นฐานและอุปกรณ์เน็ตเวิร์ก</h3>
+          </div>
+        </div>
+        <p>องค์ประกอบกายภาพและอุปกรณ์เชื่อมต่อที่ส่งต่อข้อมูลทั่วโลกในเสี้ยววินาที</p>
+        <ul class="highlight-list">
+          <li><strong>Router:</strong> ค้นหาเส้นทางที่ดีที่สุด (Routing) เพื่อส่งข้อมูลข้ามเครือข่าย เช่น เชื่อมบ้านเราเข้าสู่อินเทอร์เน็ต</li>
+          <li><strong>Switch:</strong> กระจายสัญญาณและเชื่อมต่ออุปกรณ์ภายในเครือข่ายท้องถิ่น (LAN) ผ่านสาย LAN / MAC Address</li>
+          <li><strong>Access Point & Wi-Fi:</strong> ส่งต่อข้อมูลผ่านคลื่นวิทยุความถี่ 2.4 GHz, 5 GHz และ 6 GHz (Wi-Fi 6/7)</li>
+        </ul>
+      </article>
+
+      <article class="topic-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="ph ph-identification-card"></i>
+          </div>
+          <div>
+            <h3>2. ที่อยู่ดิจิทัล: IP Address & DNS</h3>
+          </div>
+        </div>
+        <p>รหัสประจำตัวของอุปกรณ์ในโลกไซเบอร์และการแปลงชื่อเว็บเป็นตัวเลข</p>
+        <ul class="highlight-list">
+          <li><strong>IPv4 vs IPv6:</strong> จากระบบ 32-bit (เช่น 192.168.1.1) สู่ 128-bit รองรับอุปกรณ์ IoT มหาศาล</li>
+          <li><strong>Public vs Private IP:</strong> ไอพีจริงที่มองเห็นจากทั่วโลก vs ไอพีภายในบ้านผ่านระบบ NAT</li>
+          <li><strong>DNS (Domain Name System):</strong> สมุดโทรศัพท์อินเทอร์เน็ต แปลงชื่อเว็บ เช่น google.com ให้เป็น IP Address</li>
+        </ul>
+      </article>
+
+      <article class="topic-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="ph ph-arrows-merge"></i>
+          </div>
+          <div>
+            <h3>3. โปรโตคอลหลัก: TCP vs UDP</h3>
+          </div>
+        </div>
+        <p>วิธีการขนส่งข้อมูลที่มีจุดเด่นและความเร็วแตกต่างกันตามประเภทการใช้งาน</p>
+        <ul class="highlight-list">
+          <li><strong>TCP (Transmission Control Protocol):</strong> แม่นยำและตรวจสอบความสมบูรณ์ เหมาะสำหรับเว็บเพจ (HTTP/HTTPS), อีเมล, และดาวน์โหลดไฟล์</li>
+          <li><strong>UDP (User Datagram Protocol):</strong> รวดเร็วแบบเรียลไทม์ ไม่รอตรวจเช็กแพ็กเก็ต เหมาะสำหรับวิดีโอคอล สตรีมมิง และเกมออนไลน์</li>
+          <li><strong>HTTP/HTTPS:</strong> โปรโตคอลหน้าเว็บ โดย HTTPS มีการเข้ารหัสข้อมูลด้วย SSL/TLS อย่างปลอดภัย</li>
+        </ul>
+      </article>
+
+      <article class="topic-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="ph ph-shield-check"></i>
+          </div>
+          <div>
+            <h3>4. ความปลอดภัยเครือข่าย (Cybersecurity)</h3>
+          </div>
+        </div>
+        <p>การปกป้องข้อมูลและการป้องกันการโจมตีทางไซเบอร์ในยุคที่ทุกอย่างออนไลน์</p>
+        <ul class="highlight-list">
+          <li><strong>Firewall:</strong> ปราการด่านแรกคอยกรองทราฟฟิกที่ไม่พึงประสงค์เข้าหรือออกจากเครือข่าย</li>
+          <li><strong>VPN (Virtual Private Network):</strong> การสร้างอุโมงค์เข้ารหัสข้อมูลเพื่อความปลอดภัยบน Wi-Fi สาธารณะ</li>
+          <li><strong>Zero Trust Architecture:</strong> แนวคิดความปลอดภัยยุคใหม่ "ไม่ไว้ใจใคร ต้องตรวจสอบเสมอ"</li>
+        </ul>
+      </article>
+
+    </div>
+
+    <!-- Interactive OSI Visualizer -->
+    <section class="interactive-box">
+      <div class="interactive-header">
+        <h2><i class="ph ph-layers" style="color: var(--primary);"></i> โมเดลอ้างอิง OSI 7 Layers (จากบนลงล่าง)</h2>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">ทำความเข้าใจ 7 ขั้นตอนของการเดินทางข้อมูล</span>
+      </div>
+
+      <div class="osi-layers">
+        <div class="osi-row">
+          <div class="osi-badge">7</div>
+          <div class="osi-info">
+            <div class="osi-name">Application Layer</div>
+            <div class="osi-proto">โปรโตคอลที่ใกล้ชิดผู้ใช้ที่สุด เช่น HTTP, HTTPS, FTP, DNS</div>
+          </div>
+        </div>
+        <div class="osi-row">
+          <div class="osi-badge">6</div>
+          <div class="osi-info">
+            <div class="osi-name">Presentation Layer</div>
+            <div class="osi-proto">แปลงรูปแบบข้อมูล, การเข้ารหัส (Encryption), และการบีบอัดข้อมูล</div>
+          </div>
+        </div>
+        <div class="osi-row">
+          <div class="osi-badge">5</div>
+          <div class="osi-info">
+            <div class="osi-name">Session Layer</div>
+            <div class="osi-proto">ควบคุมการเปิด ปิด และรักษาสถานะการเชื่อมต่อระหว่างเครื่อง</div>
+          </div>
+        </div>
+        <div class="osi-row">
+          <div class="osi-badge">4</div>
+          <div class="osi-info">
+            <div class="osi-name">Transport Layer</div>
+            <div class="osi-proto">การรับส่งข้อมูลระหว่างต้นทาง-ปลายทาง (TCP ควบคุมความถูกต้อง / UDP เน้นความเร็ว)</div>
+          </div>
+        </div>
+        <div class="osi-row">
+          <div class="osi-badge">3</div>
+          <div class="osi-info">
+            <div class="osi-name">Network Layer</div>
+            <div class="osi-proto">การหาเส้นทางและการกำหนดที่อยู่ IP (Routing, IP Address, ICMP)</div>
+          </div>
+        </div>
+        <div class="osi-row">
+          <div class="osi-badge">2</div>
+          <div class="osi-info">
+            <div class="osi-name">Data Link Layer</div>
+            <div class="osi-proto">การส่งต่อเฟรมข้อมูลระดับฮาร์ดแวร์ท้องถิ่น (MAC Address, Switch, Ethernet)</div>
+          </div>
+        </div>
+        <div class="osi-row">
+          <div class="osi-badge">1</div>
+          <div class="osi-info">
+            <div class="osi-name">Physical Layer</div>
+            <div class="osi-proto">การส่งสัญญาณบิตไฟฟ้า แสง หรือคลื่นวิทยุ (สาย Fiber, สาย LAN, เสาสัญญาณ)</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Summary Box -->
+    <section class="summary-banner">
+      <div class="summary-text">
+        <h3><i class="ph ph-broadcast"></i> หัวใจของ Networking</h3>
+        <p>เครือข่ายคือสะพานเชื่อมระหว่างโค้ดและผู้คนทั่วโลก การเข้าใจระบบเน็ตเวิร์กทำให้คุณเป็นนักพัฒนาและวิศวกรที่เข้าใจระบบรอบด้าน</p>
+      </div>
+      <div class="summary-actions">
+        <a href="../student.html" class="btn-action">
+          <i class="ph ph-squares-four"></i> ดูรายวิชาอื่นในระดับนี้
+        </a>
+      </div>
+    </section>
+
   </main>
+
 </body>
 </html>

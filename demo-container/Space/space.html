@@ -1,20 +1,473 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>อวกาศ | รายวิชาสำหรับนักเรียน</title>
-  <link rel="stylesheet" href="../../css/student-demo.css">
-  <link rel="stylesheet" href="../../css/popo/space.css">
+  <title>อวกาศและดาราศาสตร์ (Space & Astronomy) | คลังความรู้รายวิชา</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --primary-light: #e0e7ff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --bg-page: #f8fafc;
+      --card-bg: #ffffff;
+      --border-color: #e2e8f0;
+      --radius: 16px;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Prompt', sans-serif;
+    }
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.6;
+    }
+    .top-navbar {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--primary-dark);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      background: var(--primary-light);
+      transition: all 0.2s;
+    }
+    .back-btn:hover {
+      background: #c7d2fe;
+      transform: translateX(-3px);
+    }
+    .page-tag {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--primary);
+      background: #eef2ff;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      border: 1px solid #c7d2fe;
+    }
+    .hero {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+      color: #ffffff;
+      padding: 3.5rem 1.5rem 4rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+      background-size: 24px 24px;
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    .hero-container {
+      max-width: 900px;
+      margin: 0 auto;
+      position: relative;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(8px);
+      padding: 0.35rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 1rem;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 4vw, 2.75rem);
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.02em;
+    }
+    .hero p {
+      font-size: 1.1rem;
+      opacity: 0.95;
+      max-width: 650px;
+      margin: 0 auto 1.75rem;
+      font-weight: 300;
+    }
+    .hero-stats {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255, 255, 255, 0.12);
+      padding: 0.5rem 1.25rem;
+      border-radius: 12px;
+      font-size: 0.9rem;
+    }
+    .container {
+      max-width: 1100px;
+      margin: -2rem auto 4rem;
+      padding: 0 1.5rem;
+      position: relative;
+      z-index: 10;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .topic-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 1.75rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border-color);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .topic-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 30px -8px rgba(0, 0, 0, 0.08);
+      border-color: #a5b4fc;
+    }
+    .topic-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .topic-icon {
+      width: 48px;
+      height: 48px;
+      background: #eef2ff;
+      color: var(--primary);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+    .topic-header h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .topic-card p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+    }
+    .highlight-list {
+      list-style: none;
+      border-top: 1px dashed var(--border-color);
+      padding-top: 0.75rem;
+    }
+    .highlight-list li {
+      position: relative;
+      padding-left: 1.25rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+      color: #334155;
+    }
+    .highlight-list li::before {
+      content: '✦';
+      position: absolute;
+      left: 0;
+      color: var(--primary);
+      font-size: 0.9rem;
+    }
+    .interactive-box {
+      background: #ffffff;
+      border-radius: var(--radius);
+      padding: 2rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border-color);
+      margin-bottom: 3rem;
+    }
+    .interactive-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .interactive-header h2 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    /* Planet Cards Mini Explorer */
+    .planet-selector {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .planet-btn {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      padding: 0.75rem;
+      border-radius: 12px;
+      cursor: pointer;
+      text-align: center;
+      font-weight: 600;
+      color: #334155;
+      transition: all 0.2s;
+    }
+    .planet-btn:hover, .planet-btn.active {
+      background: #e0e7ff;
+      border-color: #6366f1;
+      color: #312e81;
+    }
+    .planet-detail {
+      background: #1e1b4b;
+      color: #ffffff;
+      padding: 1.5rem;
+      border-radius: 14px;
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .planet-detail-icon {
+      font-size: 3.5rem;
+      color: #818cf8;
+    }
+    .planet-detail-text h4 {
+      font-size: 1.3rem;
+      margin-bottom: 0.35rem;
+    }
+    .planet-detail-text p {
+      font-size: 0.95rem;
+      color: #c7d2fe;
+    }
+    .summary-banner {
+      background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+      border: 1px solid #c7d2fe;
+      border-radius: var(--radius);
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+    .summary-text h3 {
+      font-size: 1.25rem;
+      color: #312e81;
+      margin-bottom: 0.4rem;
+    }
+    .summary-text p {
+      color: #4338ca;
+      font-size: 0.95rem;
+    }
+    .btn-action {
+      background: var(--primary);
+      color: #ffffff;
+      text-decoration: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+    .btn-action:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+    }
+  </style>
 </head>
 <body>
-  <main class="subject-page">
-    <a class="subject-page__back" href="../student.html">← กลับไปหน้ารวมรายวิชา</a>
-    <article class="subject-page__content">
-      <p class="course-eyebrow">รายวิชา</p>
-      <h1>อวกาศ</h1>
-      <p>เรียนรู้เกี่ยวกับระบบสุริยะ ดวงดาว และการสำรวจอวกาศ พร้อมทำความเข้าใจตำแหน่งของโลกในจักรวาล</p>
-    </article>
+
+  <header class="top-navbar">
+    <a href="../student.html" class="back-btn">
+      <i class="ph ph-arrow-left"></i> กลับไปหน้ารวมรายวิชา
+    </a>
+    <span class="page-tag">ระดับ 2 • วิทยาศาสตร์และโลก</span>
+  </header>
+
+  <section class="hero">
+    <div class="hero-container">
+      <div class="hero-badge">
+        <i class="ph ph-planet"></i> ดาราศาสตร์ ระบบสุริยะ และเอกภพวิทยา
+      </div>
+      <h1>อวกาศ (Space & Astronomy)</h1>
+      <p>ออกเดินทางสำรวจระบบสุริยะ ค้นหาต้นกำเนิดของดวงดาว ไขปริศนาหลุมดำ และติดตามภารกิจสำรวจอวกาศยุคใหม่แห่งมนุษยชาติ</p>
+      
+      <div class="hero-stats">
+        <div class="stat-pill"><i class="ph ph-sun"></i> 8 ดาวเคราะห์ในระบบสุริยะ</div>
+        <div class="stat-pill"><i class="ph ph-telescope"></i> กล้องโทรทรรศน์อวกาศ & ดาวเทียม</div>
+        <div class="stat-pill"><i class="ph ph-rocket-launch"></i> โครงการ Artemis สู่ดวงจันทร์</div>
+      </div>
+    </div>
+  </section>
+
+  <main class="container">
+
+    <div class="grid-2">
+
+      <article class="topic-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="ph ph-sun-dim"></i>
+          </div>
+          <div>
+            <h3>1. ดวงอาทิตย์และระบบสุริยะ</h3>
+          </div>
+        </div>
+        <p>ระบบสุริยะของเรามีดวงอาทิตย์เป็นจุดศูนย์กลางยึดเหนี่ยวดาวเคราะห์ด้วยแรงโน้มถ่วง</p>
+        <ul class="highlight-list">
+          <li><strong>ดาวเคราะห์หิน (Terrestrial Planets):</strong> พุธ, ศุกร์, โลก, อังคาร มีพื้นผิวแข็งและหนาแน่น</li>
+          <li><strong>ดาวแก๊สยักษ์ (Gas Giants):</strong> พฤหัสบดี และเสาร์ ประกอบด้วยไฮโดรเจนและฮีเลียมเป็นหลัก</li>
+          <li><strong>ดาวยักษ์น้ำแข็ง (Ice Giants):</strong> ยูเรนัส และเนปจูน หนาวเหน็บและมีชั้นบรรยากาศมีเทน</li>
+        </ul>
+      </article>
+
+      <article class="topic-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="ph ph-sparkle"></i>
+          </div>
+          <div>
+            <h3>2. วิวัฒนาการดาวฤกษ์และหลุมดำ</h3>
+          </div>
+        </div>
+        <p>ดาวฤกษ์เกิดจากเนบิวลา ผ่านกระบวนการฟิวชันนิวเคลียร์ และมีจุดจบตามขนาดมวล</p>
+        <ul class="highlight-list">
+          <li><strong>ดาวแคระขาว (White Dwarf):</strong> จุดจบของดาวมวลเท่าดวงอาทิตย์อย่างสงบ</li>
+          <li><strong>ซูเปอร์โนวา (Supernova):</strong> การระเบิดครั้งรุนแรงของดาวฤกษ์มวลมหาศาล สร้างธาตุหนักให้จักรวาล</li>
+          <li><strong>หลุมดำ (Black Hole):</strong> วัตถุที่มีความหนาแน่นและแรงดึงดูดมหาศาลจนแม้กระทั่งแสงก็หนีออกมาไม่ได้</li>
+        </ul>
+      </article>
+
+      <article class="topic-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="ph ph-rocket"></i>
+          </div>
+          <div>
+            <h3>3. การสำรวจอวกาศยุคใหม่</h3>
+          </div>
+        </div>
+        <p>ก้าวสำคัญของมนุษยชาติในการขยายขอบเขตความรู้และการตั้งถิ่นฐานนอกโลก</p>
+        <ul class="highlight-list">
+          <li><strong>James Webb Space Telescope (JWST):</strong> ส่องลึกถึงกาแล็กซียุคแรกเริ่มของเอกภพ</li>
+          <li><strong>ยานสำรวจดาวอังคาร (Perseverance & Curiosity):</strong> ค้นหาร่องรอยของสิ่งมีชีวิตและน้ำในอดีต</li>
+          <li><strong>โครงการ Artemis:</strong> ส่งมนุษย์กลับสู่ดวงจันทร์เพื่อสร้างฐานทดลองสู่อนาคต</li>
+        </ul>
+      </article>
+
+      <article class="topic-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="ph ph-spiral"></i>
+          </div>
+          <div>
+            <h3>4. กาแล็กซีทางช้างเผือกและบิกแบง</h3>
+          </div>
+        </div>
+        <p>จุดกำเนิดของกาล-อวกาศ และตำแหน่งของโลกในจักรวาลอันไพศาล</p>
+        <ul class="highlight-list">
+          <li><strong>ทฤษฎีบิกแบง (The Big Bang):</strong> เอกภพเริ่มต้นขึ้นเมื่อราว 13,800 ล้านปีก่อนและกำลังขยายตัวอย่างต่อเนื่อง</li>
+          <li><strong>กาแล็กซีทางช้างเผือก (Milky Way):</strong> กาแล็กซีกังหันมีคานที่มีดาวฤกษ์นับแสนล้านดวง</li>
+          <li><strong>สสารมืดและพลังงานมืด (Dark Matter & Dark Energy):</strong> องค์ประกอบกว่า 95% ของจักรวาลที่ยังคงเป็นปริศนา</li>
+        </ul>
+      </article>
+
+    </div>
+
+    <!-- Planet Explorer Widget -->
+    <section class="interactive-box">
+      <div class="interactive-header">
+        <h2><i class="ph ph-compass" style="color: var(--primary);"></i> Interactive Solar Explorer: สำรวจดาวเคราะห์</h2>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">คลิกเลือกดาวเคราะห์เพื่อดูข้อมูลสำคัญ</span>
+      </div>
+
+      <div class="planet-selector">
+        <button class="planet-btn active" onclick="showPlanet('mercury')">พุธ</button>
+        <button class="planet-btn" onclick="showPlanet('venus')">ศุกร์</button>
+        <button class="planet-btn" onclick="showPlanet('earth')">โลก</button>
+        <button class="planet-btn" onclick="showPlanet('mars')">อังคาร</button>
+        <button class="planet-btn" onclick="showPlanet('jupiter')">พฤหัสบดี</button>
+        <button class="planet-btn" onclick="showPlanet('saturn')">เสาร์</button>
+      </div>
+
+      <div class="planet-detail" id="planet-info">
+        <div class="planet-detail-icon"><i class="ph ph-planet"></i></div>
+        <div class="planet-detail-text">
+          <h4 id="planet-name">ดาวพุธ (Mercury)</h4>
+          <p id="planet-desc">ดาวเคราะห์ที่อยู่ใกล้ดวงอาทิตย์ที่สุด ไม่มีชั้นบรรยากาศกักเก็บความร้อน ทำให้อุณหภูมิกลางวันร้อนจัดถึง 430°C และกลางคืนหนาวจัดถึง -180°C</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Summary Box -->
+    <section class="summary-banner">
+      <div class="summary-text">
+        <h3><i class="ph ph-sparkle"></i> สรุปใจความสำคัญ</h3>
+        <p>การมองดูดวงดาวเตือนใจให้เราเห็นว่าโลกของเราคือบ้านหลังเดียวที่ล้ำค่าในเอกภพอันกว้างใหญ่</p>
+      </div>
+      <div class="summary-actions">
+        <a href="../student.html" class="btn-action">
+          <i class="ph ph-squares-four"></i> ดูรายวิชาอื่นในระดับนี้
+        </a>
+      </div>
+    </section>
+
   </main>
+
+  <script>
+    const planets = {
+      mercury: { name: 'ดาวพุธ (Mercury)', desc: 'ดาวเคราะห์ที่อยู่ใกล้ดวงอาทิตย์ที่สุด ไม่มีชั้นบรรยากาศกักเก็บความร้อน อุณหภูมิกลางวัน 430°C กลางคืน -180°C' },
+      venus: { name: 'ดาวศุกร์ (Venus)', desc: 'ฝาแฝดของโลกที่มีเรือนกระจกขั้นรุนแรง บรรยากาศเต็มไปด้วย CO2 หนาแน่น เป็นดาวเคราะห์ที่ร้อนที่สุดในระบบสุริยะ (~465°C)' },
+      earth: { name: 'โลก (Earth)', desc: 'โอเอซิสแห่งสิ่งมีชีวิต มีน้ำในสถานะของเหลว สนามแม่เหล็กปกป้องรังสี และชั้นโอโซนที่เอื้อต่อวิวัฒนาการสิ่งมีชีวิต' },
+      mars: { name: 'ดาวอังคาร (Mars)', desc: 'ดาวเคราะห์สีแดงที่เต็มไปด้วยออกไซด์ของเหล็ก มีภูเขาไฟโอลิมปัสสูงที่สุดในระบบสุริยะ และเป็นเป้าหมายหลักในการตั้งถิ่นฐาน' },
+      jupiter: { name: 'ดาวพฤหัสบดี (Jupiter)', desc: 'พี่ใหญ่แห่งระบบสุริยะ มวลรวมมากกว่าดาวเคราะห์อื่นรวมกัน 2.5 เท่า มีจุดแดงใหญ่ (Great Red Spot) พายุขนาดยักษ์' },
+      saturn: { name: 'ดาวเสาร์ (Saturn)', desc: 'ดาวเคราะห์ที่มีระบบวงแหวนน้ำแข็งที่งดงามที่สุด และมีความหนาแน่นเฉลี่ยน้อยกว่าน้ำ สามารถลอยน้ำได้ในทางทฤษฎี' }
+    };
+
+    function showPlanet(key) {
+      document.querySelectorAll('.planet-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('planet-name').innerText = planets[key].name;
+      document.getElementById('planet-desc').innerText = planets[key].desc;
+    }
+  </script>
+
 </body>
 </html>

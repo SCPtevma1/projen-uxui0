@@ -1,20 +1,459 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ภาษาต่างประเทศ | รายวิชาสำหรับนักเรียน</title>
-  <link rel="stylesheet" href="../../css/student-demo.css">
-  <link rel="stylesheet" href="../../css/popo/languages.css">
+  <title>ภาษาต่างประเทศเพื่อการสื่อสาร (Foreign Languages) | คลังความรู้รายวิชา</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --primary-light: #e0f2fe;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --bg-page: #f8fafc;
+      --card-bg: #ffffff;
+      --border-color: #e2e8f0;
+      --radius: 16px;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Prompt', sans-serif;
+    }
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.6;
+    }
+    .top-navbar {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--primary-dark);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      background: var(--primary-light);
+      transition: all 0.2s;
+    }
+    .back-btn:hover {
+      background: #bae6fd;
+      transform: translateX(-3px);
+    }
+    .page-tag {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--primary-dark);
+      background: #f0f9ff;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      border: 1px solid #bae6fd;
+    }
+    .hero {
+      background: linear-gradient(135deg, #075985 0%, #0284c7 50%, #38bdf8 100%);
+      color: #ffffff;
+      padding: 3.5rem 1.5rem 4rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -20%;
+      width: 140%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .hero-container {
+      max-width: 900px;
+      margin: 0 auto;
+      position: relative;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(8px);
+      padding: 0.35rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 1rem;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 4vw, 2.75rem);
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.02em;
+    }
+    .hero p {
+      font-size: 1.1rem;
+      opacity: 0.95;
+      max-width: 650px;
+      margin: 0 auto 1.75rem;
+      font-weight: 300;
+    }
+    .hero-stats {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255, 255, 255, 0.12);
+      padding: 0.5rem 1.25rem;
+      border-radius: 12px;
+      font-size: 0.9rem;
+    }
+    .container {
+      max-width: 1100px;
+      margin: -2rem auto 4rem;
+      padding: 0 1.5rem;
+      position: relative;
+      z-index: 10;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .topic-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 1.75rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border-color);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .topic-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 30px -8px rgba(0, 0, 0, 0.08);
+      border-color: #7dd3fc;
+    }
+    .topic-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .topic-icon {
+      width: 48px;
+      height: 48px;
+      background: #f0f9ff;
+      color: var(--primary);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+    .topic-header h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .topic-card p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+    }
+    .highlight-list {
+      list-style: none;
+      border-top: 1px dashed var(--border-color);
+      padding-top: 0.75rem;
+    }
+    .highlight-list li {
+      position: relative;
+      padding-left: 1.25rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+      color: #334155;
+    }
+    .highlight-list li::before {
+      content: '💬';
+      position: absolute;
+      left: 0;
+      font-size: 0.85rem;
+    }
+    .interactive-box {
+      background: #ffffff;
+      border-radius: var(--radius);
+      padding: 2rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border-color);
+      margin-bottom: 3rem;
+    }
+    .interactive-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .interactive-header h2 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    /* Phrase Cards */
+    .phrase-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .phrase-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1.25rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .phrase-card:hover {
+      background: #f0f9ff;
+      border-color: #38bdf8;
+      transform: translateY(-2px);
+    }
+    .phrase-flag {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .phrase-original {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #0369a1;
+      margin-bottom: 0.25rem;
+    }
+    .phrase-pronounce {
+      font-size: 0.88rem;
+      color: #64748b;
+      margin-bottom: 0.5rem;
+    }
+    .phrase-thai {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #334155;
+      background: #ffffff;
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+    }
+    .summary-banner {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border: 1px solid #bae6fd;
+      border-radius: var(--radius);
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+    .summary-text h3 {
+      font-size: 1.25rem;
+      color: #075985;
+      margin-bottom: 0.4rem;
+    }
+    .summary-text p {
+      color: #0369a1;
+      font-size: 0.95rem;
+    }
+    .btn-action {
+      background: var(--primary);
+      color: #ffffff;
+      text-decoration: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+    .btn-action:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+    }
+  </style>
 </head>
 <body>
-  <main class="subject-page">
-    <a class="subject-page__back" href="../student.html">← กลับไปหน้ารวมรายวิชา</a>
-    <article class="subject-page__content">
-      <p class="course-eyebrow">รายวิชา</p>
-      <h1>ภาษาต่างประเทศ</h1>
-      <p>ฝึกทักษะการสื่อสาร ฟัง พูด อ่าน และเขียน เพื่อใช้ภาษาต่างประเทศในสถานการณ์ใกล้ตัว</p>
-    </article>
+
+  <header class="top-navbar">
+    <a href="../student.html" class="back-btn">
+      <i class="ph ph-arrow-left"></i> กลับไปหน้ารวมรายวิชา
+    </a>
+    <span class="page-tag">ระดับ 1 • พื้นฐานและทักษะชีวิต</span>
+  </header>
+
+  <section class="hero">
+    <div class="hero-container">
+      <div class="hero-badge">
+        <i class="ph ph-translate"></i> สื่อสารรอบโลก ภาษาอังกฤษ ญี่ปุ่น จีน
+      </div>
+      <h1>ภาษาต่างประเทศ (Foreign Languages)</h1>
+      <p>เปิดประตูสู่โลกกว้างด้วยทักษะการสื่อสารภาษาต่างประเทศ เรียนรู้วลีที่ใช้ได้จริงในชีวิตประจำวัน การสนทนา การเดินทาง และเทคนิคการฝึกภาษาให้พูดได้คล่องอย่างเป็นธรรมชาติ</p>
+      
+      <div class="hero-stats">
+        <div class="stat-pill"><i class="ph ph-chat-circle-dots"></i> บทสนทนาในชีวิตจริง</div>
+        <div class="stat-pill"><i class="ph ph-ear"></i> เทคนิคฝึก Shadowing & ฟัง</div>
+        <div class="stat-pill"><i class="ph ph-cards"></i> คลังคำศัพท์สำคัญ 3 ภาษา</div>
+      </div>
+    </div>
+  </section>
+
+  <main class="container">
+
+    <div class="grid-2">
+
+      <article class="topic-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="ph ph-chat-teardrop-text"></i>
+          </div>
+          <div>
+            <h3>1. วลีทองคำสำหรับการทักทายและแนะนำตัว</h3>
+          </div>
+        </div>
+        <p>สร้างความประทับใจแรกพบอย่างมั่นใจด้วยบทสนทนาภาษาอังกฤษที่เป็นธรรมชาติ</p>
+        <ul class="highlight-list">
+          <li><strong>"It's a pleasure to meet you":</strong> สุภาพและเป็นทางการกว่า Nice to meet you เหมาะทั้งในที่ทำงานและการเรียน</li>
+          <li><strong>"How have you been lately?":</strong> ไถ่ถามสารทุกข์สุกดิบอย่างเป็นกันเองและแสดงความห่วงใย</li>
+          <li><strong>"Could you tell me a little bit about yourself?":</strong> คำถามเปิดบทสนทนาที่ยอดเยี่ยม</li>
+        </ul>
+      </article>
+
+      <article class="topic-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="ph ph-navigation-arrow"></i>
+          </div>
+          <div>
+            <h3>2. การเดินทางและการถามทาง (Travel & Directions)</h3>
+          </div>
+        </div>
+        <p>ท่องเที่ยวต่างประเทศได้อย่างไร้กังวลด้วยประโยคเอาตัวรอด</p>
+        <ul class="highlight-list">
+          <li><strong>"Excuse me, could you point me towards...?":</strong> ขอความช่วยเหลือในการหาทิศทางอย่างสุภาพ</li>
+          <li><strong>"How long does it take to get there on foot?":</strong> ถามระยะเวลาเดินเท้า เพื่อวางแผนการเดินทาง</li>
+          <li><strong>"Is there a subway station nearby?":</strong> ค้นหาสถานีรถไฟใต้ดินที่ใกล้ที่สุด</li>
+        </ul>
+      </article>
+
+      <article class="topic-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="ph ph-shopping-bag"></i>
+          </div>
+          <div>
+            <h3>3. การสั่งอาหารและการซื้อของ (Dining & Shopping)</h3>
+          </div>
+        </div>
+        <p>สนุกกับการชิมอาหารท้องถิ่นและเลือกซื้อสินค้าอย่างมั่นใจ</p>
+        <ul class="highlight-list">
+          <li><strong>"What do you recommend as the house special?":</strong> ขอคำแนะนำเมนูเด็ดประจำร้าน</li>
+          <li><strong>"Could I have the check, please?":</strong> ขอเก็บเงินอย่างสุภาพตามมารยาทสากล</li>
+          <li><strong>"Do you have this in a different color or size?":</strong> สอบถามหาสินค้าสีหรือขนาดอื่นในร้านค้า</li>
+        </ul>
+      </article>
+
+      <article class="topic-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="ph ph-brain"></i>
+          </div>
+          <div>
+            <h3>4. เคล็ดลับการฝึกภาษาให้พูดได้คล่อง (Fluency Secrets)</h3>
+          </div>
+        </div>
+        <p>เทคนิคการเรียนภาษาที่มีผลวิจัยรองรับว่าพัฒนาได้เร็วที่สุด</p>
+        <ul class="highlight-list">
+          <li><strong>Shadowing Technique:</strong> ฟังเสียงเจ้าของภาษาแล้วพูดตามทันทีโดยไม่หยุด เพื่อเลียนแบบสำเนียงและจังหวะ</li>
+          <li><strong>Immersion (การจำลองสิ่งแวดล้อม):</strong> เปลี่ยนภาษาในโทรศัพท์ ดูหนังซับไตเติลภาษาอังกฤษ และคิดเป็นภาษาอังกฤษ</li>
+          <li><strong>Spaced Repetition:</strong> การทบทวนคำศัพท์เป็นช่วงเวลาห่างๆ ช่วยจำศัพท์ลงสู่สมองระยะยาว</li>
+        </ul>
+      </article>
+
+    </div>
+
+    <!-- Interactive Phrase Cards -->
+    <section class="interactive-box">
+      <div class="interactive-header">
+        <h2><i class="ph ph-cards" style="color: var(--primary);"></i> วลียอดนิยม 3 ภาษา (อังกฤษ • ญี่ปุ่น • จีน)</h2>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">วลีที่พบบ่อยในการเดินทางและพบปะเพื่อนใหม่</span>
+      </div>
+
+      <div class="phrase-grid">
+        <div class="phrase-card">
+          <div class="phrase-flag">🇬🇧 English</div>
+          <div class="phrase-original">Could you please help me?</div>
+          <div class="phrase-pronounce">/kʊd juː pliːz hɛlp miː/</div>
+          <div class="phrase-thai">รบกวนช่วยฉันหน่อยได้ไหมครับ/ค่ะ?</div>
+        </div>
+
+        <div class="phrase-card">
+          <div class="phrase-flag">🇯🇵 Japanese</div>
+          <div class="phrase-original">ありがとうございます</div>
+          <div class="phrase-pronounce">Arigatou gozaimasu</div>
+          <div class="phrase-thai">ขอบคุณมากครับ/ค่ะ (สุภาพ)</div>
+        </div>
+
+        <div class="phrase-card">
+          <div class="phrase-flag">🇨🇳 Chinese</div>
+          <div class="phrase-original">很高兴认识你</div>
+          <div class="phrase-pronounce">Hěn gāoxìng rènshí nǐ</div>
+          <div class="phrase-thai">ยินดีที่ได้รู้จักคุณ</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Summary Box -->
+    <section class="summary-banner">
+      <div class="summary-text">
+        <h3><i class="ph ph-globe"></i> พลังของภาษา</h3>
+        <p>การรู้ภาษาใหม่เปรียบเสมือนการได้เปิดหน้าต่างบานใหม่สู่โลกกว้าง อย่ากลัวที่จะพูดผิด เพราะความผิดพลาดคือบันไดสู่ความคล่องแคล่ว</p>
+      </div>
+      <div class="summary-actions">
+        <a href="../student.html" class="btn-action">
+          <i class="ph ph-squares-four"></i> ดูรายวิชาอื่นในระดับนี้
+        </a>
+      </div>
+    </section>
+
   </main>
+
 </body>
 </html>

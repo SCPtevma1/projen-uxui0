@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>วิทยาศาสตร์ของโลก (Earth Science) | คลังความรู้รายวิชา</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <style>
+    :root {
+      --primary: #059669;
+      --primary-dark: #047857;
+      --primary-light: #d1fae5;
+      --accent: #10b981;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --bg-page: #f8fafc;
+      --card-bg: #ffffff;
+      --border-color: #e2e8f0;
+      --radius: 16px;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Prompt', sans-serif;
+    }
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.6;
+    }
+    /* Top Navbar */
+    .top-navbar {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--primary-dark);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      background: var(--primary-light);
+      transition: all 0.2s;
+    }
+    .back-btn:hover {
+      background: #a7f3d0;
+      transform: translateX(-3px);
+    }
+    .page-tag {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #059669;
+      background: #ecfdf5;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      border: 1px solid #a7f3d0;
+    }
+    /* Hero Section */
+    .hero {
+      background: linear-gradient(135deg, #065f46 0%, #047857 50%, #059669 100%);
+      color: #ffffff;
+      padding: 3.5rem 1.5rem 4rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -20%;
+      width: 140%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .hero-container {
+      max-width: 900px;
+      margin: 0 auto;
+      position: relative;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(8px);
+      padding: 0.35rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 1rem;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 4vw, 2.75rem);
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.02em;
+    }
+    .hero p {
+      font-size: 1.1rem;
+      opacity: 0.95;
+      max-width: 650px;
+      margin: 0 auto 1.75rem;
+      font-weight: 300;
+    }
+    .hero-stats {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255, 255, 255, 0.12);
+      padding: 0.5rem 1.25rem;
+      border-radius: 12px;
+      font-size: 0.9rem;
+    }
+    /* Main Layout */
+    .container {
+      max-width: 1100px;
+      margin: -2rem auto 4rem;
+      padding: 0 1.5rem;
+      position: relative;
+      z-index: 10;
+    }
+    /* Knowledge Cards Grid */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .topic-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 1.75rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border-color);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .topic-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 30px -8px rgba(0, 0, 0, 0.08);
+      border-color: #6ee7b7;
+    }
+    .topic-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .topic-icon {
+      width: 48px;
+      height: 48px;
+      background: #ecfdf5;
+      color: var(--primary);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+    .topic-header h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .topic-card p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+    }
+    .highlight-list {
+      list-style: none;
+      border-top: 1px dashed var(--border-color);
+      padding-top: 0.75rem;
+    }
+    .highlight-list li {
+      position: relative;
+      padding-left: 1.25rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+      color: #334155;
+    }
+    .highlight-list li::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      color: var(--primary);
+      font-weight: bold;
+      font-size: 1.2rem;
+      line-height: 1;
+    }
+    /* Interactive Lab / Quiz Section */
+    .interactive-box {
+      background: #ffffff;
+      border-radius: var(--radius);
+      padding: 2rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border-color);
+      margin-bottom: 3rem;
+    }
+    .interactive-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .interactive-header h2 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .quiz-card {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      border: 1px solid #e2e8f0;
+    }
+    .quiz-question {
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      color: #1e293b;
+    }
+    .quiz-options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .quiz-opt {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 0.65rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.92rem;
+      text-align: left;
+      transition: all 0.2s;
+    }
+    .quiz-opt:hover {
+      background: #ecfdf5;
+      border-color: var(--primary);
+    }
+    .quiz-opt.correct {
+      background: #d1fae5 !important;
+      border-color: #059669 !important;
+      color: #065f46;
+      font-weight: 600;
+    }
+    .quiz-opt.wrong {
+      background: #fee2e2 !important;
+      border-color: #dc2626 !important;
+      color: #991b1b;
+    }
+    .quiz-feedback {
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      display: none;
+    }
+    /* Summary & Navigation Box */
+    .summary-banner {
+      background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+      border: 1px solid #a7f3d0;
+      border-radius: var(--radius);
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+    .summary-text h3 {
+      font-size: 1.25rem;
+      color: #065f46;
+      margin-bottom: 0.4rem;
+    }
+    .summary-text p {
+      color: #047857;
+      font-size: 0.95rem;
+    }
+    .summary-actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .btn-action {
+      background: var(--primary);
+      color: #ffffff;
+      text-decoration: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+    .btn-action:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header class="top-navbar">
+    <a href="../student.html" class="back-btn">
+      <i class="ph ph-arrow-left"></i> กลับไปหน้ารวมรายวิชา
+    </a>
+    <span class="page-tag">ระดับ 2 • วิทยาศาสตร์และโลก</span>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-container">
+      <div class="hero-badge">
+        <i class="ph ph-globe-hemisphere-east"></i> โลก ดินฟ้าอากาศ และธรรมชาติวิทยา
+      </div>
+      <h1>วิทยาศาสตร์ของโลก (Earth Science)</h1>
+      <p>ไขความลับของดาวเคราะห์สีน้ำเงิน เรียนรู้โครงสร้างชั้นโลก การแปรสัณฐานแผ่นเปลือกโลก สภาพบรรยากาศ และการเปลี่ยนแปลงสภาพภูมิอากาศ</p>
+      
+      <div class="hero-stats">
+        <div class="stat-pill"><i class="ph ph-book-open"></i> 4 หมวดความรู้หลัก</div>
+        <div class="stat-pill"><i class="ph ph-timer"></i> เวลาเรียน ~2 ชั่วโมง</div>
+        <div class="stat-pill"><i class="ph ph-check-circle"></i> แบบทดสอบวัดความเข้าใจ</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content Container -->
+  <main class="container">
+
+    <!-- Topic Cards Grid -->
+    <div class="grid-2">
+
+      <!-- Card 1 -->
+      <article class="topic-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="ph ph-circles-three"></i>
+          </div>
+          <div>
+            <h3>1. โครงสร้างภายในของโลก</h3>
+          </div>
+        </div>
+        <p>โลกประกอบด้วยชั้นหลัก 3 ชั้น ที่มีความหนาแน่นและสถานะของสารแตกต่างกันอย่างสิ้นเชิง</p>
+        <ul class="highlight-list">
+          <li><strong>เปลือกโลก (Crust):</strong> ชั้นนอกสุดที่เบาและบางที่สุด มีทั้งเปลือกโลกทวีปและมหาสมุทร</li>
+          <li><strong>เนื้อโลก (Mantle):</strong> ชั้นที่มีปริมาตรมากที่สุด ประกอบด้วยหินหนืดที่ไหลเวียนด้วยการพาความร้อน</li>
+          <li><strong>แก่นโลก (Core):</strong> ประกอบด้วยเหล็กและนิกเกิล แก่นโลกชั้นนอกเป็นของเหลวหมุนวนสร้าง "สนามแม่เหล็กโลก"</li>
+        </ul>
+      </article>
+
+      <!-- Card 2 -->
+      <article class="topic-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="ph ph-mountains"></i>
+          </div>
+          <div>
+            <h3>2. การแปรสัณฐานแผ่นธรณี</h3>
+          </div>
+        </div>
+        <p>ทฤษฎีแผ่นเปลือกโลก (Plate Tectonics) อธิบายสาเหตุการเกิดแผ่นดินไหว ภูเขาไฟระเบิด และแนวเทือกเขา</p>
+        <ul class="highlight-list">
+          <li><strong>แผ่นเปลือกโลกชนกัน (Convergent):</strong> มุดตัวและโก่งตัวกลายเป็นเทือกเขา เช่น เทือกเขาหิมาลัย</li>
+          <li><strong>แผ่นเปลือกโลกแยกออกจากกัน (Divergent):</strong> แมกมาประทุเกิดเป็นสันเขาใต้มหาสมุทร</li>
+          <li><strong>แผ่นเลื่อนผ่านกันในแนวราบ (Transform):</strong> ก่อให้เกิดรอยเลื่อนและแผ่นดินไหวรุนแรง เช่น รอยเลื่อนแซนแอนเดรอัส</li>
+        </ul>
+      </article>
+
+      <!-- Card 3 -->
+      <article class="topic-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="ph ph-cloud-rain"></i>
+          </div>
+          <div>
+            <h3>3. ชั้นบรรยากาศและวัฏจักรน้ำ</h3>
+          </div>
+        </div>
+        <p>เกราะคุ้มกันชีวิตของโลกที่ควบคุมอุณหภูมิ กรองรังสีอันตราย และสร้างปรากฏการณ์ลมฟ้าอากาศ</p>
+        <ul class="highlight-list">
+          <li><strong>โทรโพสเฟียร์ (Troposphere):</strong> ชั้นล่างสุดที่มีเมฆ ฝน พายุ และมีออกซิเจนหนาแน่นที่สุด</li>
+          <li><strong>สตราโทสเฟียร์ (Stratosphere):</strong> แหล่งรวม "ชั้นโอโซน (Ozone Layer)" คอยดูดซับรังสี UV</li>
+          <li><strong>วัฏจักรของน้ำ (Hydrological Cycle):</strong> ระเหย ควบแน่น หยาดน้ำฟ้า และซึมลงสู่แหล่งน้ำใต้ดิน</li>
+        </ul>
+      </article>
+
+      <!-- Card 4 -->
+      <article class="topic-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="ph ph-thermometer-hot"></i>
+          </div>
+          <div>
+            <h3>4. สภาพภูมิอากาศและภาวะโลกร้อน</h3>
+          </div>
+        </div>
+        <p>การเข้าใจการเปลี่ยนแปลงสภาพภูมิอากาศ (Climate Change) เพื่อการอนุรักษ์สิ่งแวดล้อมอย่างยั่งยืน</p>
+        <ul class="highlight-list">
+          <li><strong>ปรากฏการณ์เรือนกระจก (Greenhouse Effect):</strong> ก๊าซ CO2, มีเทน กักเก็บความร้อนให้โลกอบอุ่น</li>
+          <li><strong>ผลกระทบโลกร้อน:</strong> น้ำแข็งขั้วโลกละลาย ระดับน้ำทะเลสูงขึ้น สภาพอากาศสุดขั้ว (Extreme Weather)</li>
+          <li><strong>แนวทางแก้ไข:</strong> ลดการเผาไหม้เชื้อเพลิงฟอสซิล ใช้พลังงานสะอาด และฟื้นฟูป่าไม้</li>
+        </ul>
+      </article>
+
+    </div>
+
+    <!-- Interactive Knowledge Check Section -->
+    <section class="interactive-box">
+      <div class="interactive-header">
+        <h2><i class="ph ph-seal-question" style="color: var(--primary);"></i> Quick Knowledge Check: ทดสอบความเข้าใจสั้นๆ</h2>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">คลิกเลือกคำตอบที่ถูกต้องเพื่อดูเฉลยทันที</span>
+      </div>
+
+      <!-- Question 1 -->
+      <div class="quiz-card" id="q1">
+        <div class="quiz-question">คำถามที่ 1: ส่วนใดของโลกที่หมุนวนจนสร้าง "สนามแม่เหล็กโลก" ป้องกันอนุภาคจากดวงอาทิตย์?</div>
+        <div class="quiz-options">
+          <button class="quiz-opt" onclick="checkAnswer('q1', this, false)">ก. เปลือกโลกทวีป</button>
+          <button class="quiz-opt" onclick="checkAnswer('q1', this, true)">ข. แก่นโลกชั้นนอกที่เป็นของเหลว (Outer Core)</button>
+          <button class="quiz-opt" onclick="checkAnswer('q1', this, false)">ค. ชั้นโอโซนในบรรยากาศ</button>
+        </div>
+        <div class="quiz-feedback" id="q1-fb"></div>
+      </div>
+
+      <!-- Question 2 -->
+      <div class="quiz-card" id="q2">
+        <div class="quiz-question">คำถามที่ 2: ชั้นบรรยากาศใดที่เป็นศูนย์กลางการเกิดเมฆ ฝน พายุ และลมฟ้าอากาศทั้งหมด?</div>
+        <div class="quiz-options">
+          <button class="quiz-opt" onclick="checkAnswer('q2', this, true)">ก. โทรโพสเฟียร์ (Troposphere)</button>
+          <button class="quiz-opt" onclick="checkAnswer('q2', this, false)">ข. สตราโทสเฟียร์ (Stratosphere)</button>
+          <button class="quiz-opt" onclick="checkAnswer('q2', this, false)">ค. เทอร์โมสเฟียร์ (Thermosphere)</button>
+        </div>
+        <div class="quiz-feedback" id="q2-fb"></div>
+      </div>
+
+    </section>
+
+    <!-- Summary Box -->
+    <section class="summary-banner">
+      <div class="summary-text">
+        <h3><i class="ph ph-lightbulb-filament"></i> สรุปใจความสำคัญ</h3>
+        <p>โลกเป็นระบบที่มีปฏิสัมพันธ์ระหว่างหิน น้ำ อากาศ และสิ่งมีชีวิตอย่างกลมกลืน การเข้าใจโลกช่วยให้เราอนุรักษ์โลกได้อย่างยั่งยืน</p>
+      </div>
+      <div class="summary-actions">
+        <a href="../student.html" class="btn-action">
+          <i class="ph ph-squares-four"></i> ดูรายวิชาอื่นในระดับนี้
+        </a>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    function checkAnswer(qId, btn, isCorrect) {
+      const parent = document.getElementById(qId);
+      const options = parent.querySelectorAll('.quiz-opt');
+      const feedback = document.getElementById(qId + '-fb');
+      
+      options.forEach(opt => {
+        opt.disabled = true;
+        opt.style.cursor = 'default';
+      });
+
+      if (isCorrect) {
+        btn.classList.add('correct');
+        feedback.innerHTML = '🎉 ถูกต้องแล้ว! ยอดเยี่ยมมากครับ';
+        feedback.style.color = '#059669';
+      } else {
+        btn.classList.add('wrong');
+        feedback.innerHTML = '💡 ยังไม่ถูกต้อง ลองทบทวนเนื้อหาด้านบนดูนะครับ';
+        feedback.style.color = '#dc2626';
+      }
+      feedback.style.display = 'block';
+    }
+  </script>
+
+</body>
+</html>
