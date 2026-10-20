@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,316 +9,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  <style>
-    :root {
-      --primary: #16a34a;
-      --primary-dark: #15803d;
-      --primary-light: #dcfce7;
-      --text-main: #0f172a;
-      --text-muted: #64748b;
-      --bg-page: #f8fafc;
-      --card-bg: #ffffff;
-      --border-color: #e2e8f0;
-      --radius: 16px;
-      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
-    }
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Prompt', sans-serif;
-    }
-    body {
-      background-color: var(--bg-page);
-      color: var(--text-main);
-      line-height: 1.6;
-    }
-    .top-navbar {
-      background: #ffffff;
-      border-bottom: 1px solid var(--border-color);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      padding: 0.75rem 1.5rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .back-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      color: var(--primary-dark);
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 0.95rem;
-      padding: 0.5rem 1rem;
-      border-radius: 9999px;
-      background: var(--primary-light);
-      transition: all 0.2s;
-    }
-    .back-btn:hover {
-      background: #bbf7d0;
-      transform: translateX(-3px);
-    }
-    .page-tag {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--primary);
-      background: #f0fdf4;
-      padding: 0.25rem 0.75rem;
-      border-radius: 9999px;
-      border: 1px solid #bbf7d0;
-    }
-    .hero {
-      background: linear-gradient(135deg, #14532d 0%, #15803d 50%, #16a34a 100%);
-      color: #ffffff;
-      padding: 3.5rem 1.5rem 4rem;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-    .hero::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -20%;
-      width: 140%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 60%);
-      pointer-events: none;
-    }
-    .hero-container {
-      max-width: 900px;
-      margin: 0 auto;
-      position: relative;
-    }
-    .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      background: rgba(255, 255, 255, 0.18);
-      backdrop-filter: blur(8px);
-      padding: 0.35rem 1rem;
-      border-radius: 9999px;
-      font-size: 0.85rem;
-      font-weight: 500;
-      margin-bottom: 1rem;
-    }
-    .hero h1 {
-      font-size: clamp(2rem, 4vw, 2.75rem);
-      font-weight: 700;
-      margin-bottom: 0.75rem;
-      letter-spacing: -0.02em;
-    }
-    .hero p {
-      font-size: 1.1rem;
-      opacity: 0.95;
-      max-width: 650px;
-      margin: 0 auto 1.75rem;
-      font-weight: 300;
-    }
-    .hero-stats {
-      display: flex;
-      justify-content: center;
-      gap: 1.5rem;
-      flex-wrap: wrap;
-    }
-    .stat-pill {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      background: rgba(255, 255, 255, 0.12);
-      padding: 0.5rem 1.25rem;
-      border-radius: 12px;
-      font-size: 0.9rem;
-    }
-    .container {
-      max-width: 1100px;
-      margin: -2rem auto 4rem;
-      padding: 0 1.5rem;
-      position: relative;
-      z-index: 10;
-    }
-    .grid-2 {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 2.5rem;
-    }
-    .topic-card {
-      background: var(--card-bg);
-      border-radius: var(--radius);
-      padding: 1.75rem;
-      box-shadow: var(--shadow);
-      border: 1px solid var(--border-color);
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .topic-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 16px 30px -8px rgba(0, 0, 0, 0.08);
-      border-color: #86efac;
-    }
-    .topic-header {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 1rem;
-    }
-    .topic-icon {
-      width: 48px;
-      height: 48px;
-      background: #f0fdf4;
-      color: var(--primary);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-      flex-shrink: 0;
-    }
-    .topic-header h3 {
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: var(--text-main);
-    }
-    .topic-card p {
-      color: var(--text-muted);
-      font-size: 0.95rem;
-      margin-bottom: 1rem;
-    }
-    .highlight-list {
-      list-style: none;
-      border-top: 1px dashed var(--border-color);
-      padding-top: 0.75rem;
-    }
-    .highlight-list li {
-      position: relative;
-      padding-left: 1.25rem;
-      margin-bottom: 0.5rem;
-      font-size: 0.9rem;
-      color: #334155;
-    }
-    .highlight-list li::before {
-      content: '•';
-      position: absolute;
-      left: 0;
-      color: var(--primary);
-      font-weight: bold;
-      font-size: 1.2rem;
-      line-height: 1;
-    }
-    .interactive-box {
-      background: #ffffff;
-      border-radius: var(--radius);
-      padding: 2rem;
-      box-shadow: var(--shadow);
-      border: 1px solid var(--border-color);
-      margin-bottom: 3rem;
-    }
-    .interactive-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 1.5rem;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-    .interactive-header h2 {
-      font-size: 1.4rem;
-      font-weight: 700;
-      color: var(--text-main);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .quiz-card {
-      background: #f8fafc;
-      border-radius: 12px;
-      padding: 1.25rem;
-      margin-bottom: 1rem;
-      border: 1px solid #e2e8f0;
-    }
-    .quiz-question {
-      font-weight: 600;
-      margin-bottom: 0.75rem;
-      color: #1e293b;
-    }
-    .quiz-options {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-    .quiz-opt {
-      background: #ffffff;
-      border: 1px solid #cbd5e1;
-      padding: 0.65rem 1rem;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.92rem;
-      text-align: left;
-      transition: all 0.2s;
-    }
-    .quiz-opt:hover {
-      background: #f0fdf4;
-      border-color: var(--primary);
-    }
-    .quiz-opt.correct {
-      background: #dcfce7 !important;
-      border-color: #16a34a !important;
-      color: #14532d;
-      font-weight: 600;
-    }
-    .quiz-opt.wrong {
-      background: #fee2e2 !important;
-      border-color: #dc2626 !important;
-      color: #991b1b;
-    }
-    .quiz-feedback {
-      margin-top: 0.5rem;
-      font-size: 0.85rem;
-      font-weight: 500;
-      display: none;
-    }
-    .summary-banner {
-      background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
-      border: 1px solid #86efac;
-      border-radius: var(--radius);
-      padding: 2rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 1.5rem;
-    }
-    .summary-text h3 {
-      font-size: 1.25rem;
-      color: #14532d;
-      margin-bottom: 0.4rem;
-    }
-    .summary-text p {
-      color: #166534;
-      font-size: 0.95rem;
-    }
-    .btn-action {
-      background: var(--primary);
-      color: #ffffff;
-      text-decoration: none;
-      padding: 0.75rem 1.5rem;
-      border-radius: 9999px;
-      font-weight: 600;
-      font-size: 0.95rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: all 0.2s;
-    }
-    .btn-action:hover {
-      background: var(--primary-dark);
-      transform: translateY(-2px);
-    }
-  </style>
+  <link rel="stylesheet" href="/demo-container/biology/cs.css">
 </head>
+
 <body>
 
   <!-- Top Navigation -->
@@ -327,16 +21,15 @@
     </a>
     <span class="page-tag">ระดับ 2 • วิทยาศาสตร์และโลก</span>
   </header>
-
-  <!-- Hero Section -->
   <section class="hero">
     <div class="hero-container">
       <div class="hero-badge">
         <i class="ph ph-dna"></i> สิ่งมีชีวิต รหัสพันธุกรรม และระบบนิเวศ
       </div>
       <h1>ชีววิทยา (Biology)</h1>
-      <p>สำรวจความมหัศจรรย์ของสิ่งมีชีวิต ตั้งแต่ระดับโมเลกุล DNA, เซลล์, ระบบร่างกายของมนุษย์ ไปจนถึงความสัมพันธ์ในระบบนิเวศโลก</p>
-      
+      <p>สำรวจความมหัศจรรย์ของสิ่งมีชีวิต ตั้งแต่ระดับโมเลกุล DNA, เซลล์, ระบบร่างกายของมนุษย์
+        ไปจนถึงความสัมพันธ์ในระบบนิเวศโลก</p>
+
       <div class="hero-stats">
         <div class="stat-pill"><i class="ph ph-book-open"></i> 4 หัวข้อสำคัญ</div>
         <div class="stat-pill"><i class="ph ph-timer"></i> เวลาเรียน ~2.5 ชั่วโมง</div>
@@ -426,39 +119,11 @@
 
     </div>
 
-    <!-- Quick Quiz Section -->
-    <section class="interactive-box">
-      <div class="interactive-header">
-        <h2><i class="ph ph-seal-question" style="color: var(--primary);"></i> Quick Knowledge Check: ทดสอบความรู้ชีววิทยา</h2>
-        <span style="font-size: 0.85rem; color: var(--text-muted);">คลิกเลือกข้อที่ถูกต้องเพื่อตรวจคำตอบ</span>
-      </div>
-
-      <div class="quiz-card" id="bq1">
-        <div class="quiz-question">คำถามที่ 1: ออร์แกเนลล์ใดทำหน้าที่เปรียบเสมือน "โรงไฟฟ้า" ผลิตพลังงาน ATP ให้แก่เซลล์?</div>
-        <div class="quiz-options">
-          <button class="quiz-opt" onclick="checkAnswer('bq1', this, false)">ก. ไรโบโซม (Ribosome)</button>
-          <button class="quiz-opt" onclick="checkAnswer('bq1', this, true)">ข. ไมโทคอนเดรีย (Mitochondria)</button>
-          <button class="quiz-opt" onclick="checkAnswer('bq1', this, false)">ค. กอลจิบอดี (Golgi apparatus)</button>
-        </div>
-        <div class="quiz-feedback" id="bq1-fb"></div>
-      </div>
-
-      <div class="quiz-card" id="bq2">
-        <div class="quiz-question">คำถามที่ 2: ในสายโมเลกุลของ DNA เบส Adenine (A) จะจับคู่กับเบสใดเสมอ?</div>
-        <div class="quiz-options">
-          <button class="quiz-opt" onclick="checkAnswer('bq2', this, true)">ก. Thymine (T)</button>
-          <button class="quiz-opt" onclick="checkAnswer('bq2', this, false)">ข. Cytosine (C)</button>
-          <button class="quiz-opt" onclick="checkAnswer('bq2', this, false)">ค. Guanine (G)</button>
-        </div>
-        <div class="quiz-feedback" id="bq2-fb"></div>
-      </div>
-    </section>
-
-    <!-- Summary Box -->
     <section class="summary-banner">
       <div class="summary-text">
         <h3><i class="ph ph-sparkle"></i> ข้อคิดจากชีววิทยา</h3>
-        <p>ชีวิตทุกรูปแบบเชื่อมโยงถึงกัน การทำความเข้าใจชีววิทยาช่วยให้เรารู้จักดูแลร่างกายตนเองและเคารพธรรมชาติรอบตัว</p>
+        <p>ชีวิตทุกรูปแบบเชื่อมโยงถึงกัน การทำความเข้าใจชีววิทยาช่วยให้เรารู้จักดูแลร่างกายตนเองและเคารพธรรมชาติรอบตัว
+        </p>
       </div>
       <div class="summary-actions">
         <a href="../student.html" class="btn-action">
@@ -474,7 +139,7 @@
       const parent = document.getElementById(qId);
       const options = parent.querySelectorAll('.quiz-opt');
       const feedback = document.getElementById(qId + '-fb');
-      
+
       options.forEach(opt => {
         opt.disabled = true;
         opt.style.cursor = 'default';
@@ -494,4 +159,5 @@
   </script>
 
 </body>
+
 </html>
