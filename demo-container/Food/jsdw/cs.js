@@ -50,13 +50,14 @@ const modalDesc = document.getElementById("modalDesc");
 // Function to open Modal with selected item data
 function openDetailModal(button) {
     const card = button.closest(".card");
+    if (!card) return;
     
     // Extract dataset from card
-    modalImg.src = card.dataset.img;
-    modalTitle.textContent = card.dataset.title;
-    modalPrice.textContent = card.dataset.price;
-    modalCal.innerHTML = `<i class="fa-solid fa-fire"></i> พลังงาน: ${card.dataset.cal}`;
-    modalDesc.textContent = card.dataset.desc;
+    modalImg.src = card.dataset.img || '';
+    modalTitle.textContent = card.dataset.title || '';
+    modalPrice.textContent = card.dataset.price || '';
+    modalCal.innerHTML = `<i class="fa-solid fa-fire"></i> พลังงาน: ${card.dataset.cal || '350 Kcal'}`;
+    modalDesc.textContent = card.dataset.desc || '';
 
     // Show modal
     modal.classList.add("active");
@@ -73,3 +74,37 @@ window.addEventListener("click", (e) => {
         closeDetailModal();
     }
 });
+
+// Initialize Swiper Carousel
+if (typeof Swiper !== 'undefined' && document.querySelector('.card-wrapper')) {
+    new Swiper('.card-wrapper', {  
+        loop: true,  
+        speed: 700,  
+        spaceBetween: 25,  
+        autoplay: {
+            delay: 4000,
+            disableOnInteraction: false,
+            pauseOnMouseEnter: true,
+        },
+        pagination: {  
+            el: '.swiper-pagination',  
+            clickable: true,  
+            dynamicBullets: true,  
+        },  
+        navigation: {  
+            nextEl: '.swiper-button-next',  
+            prevEl: '.swiper-button-prev',  
+        },  
+        breakpoints: { 
+            0: {  
+                slidesPerView: 1  
+            },  
+            768: {  
+                slidesPerView: 2  
+            },  
+            1024: {  
+                slidesPerView: 3  
+            },  
+        }  
+    });
+}  

@@ -9,7 +9,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Swiper CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
     <!-- Custom CSS -->
+    <link rel="stylesheet" href="ccss/food.css">
     <link rel="stylesheet" href="/demo-container/Food/ccss/food.css">
 </head>
 <body>
@@ -285,9 +288,124 @@
             </div>
         </div>
     </div>
-<div class="">
-    
-</div>
-    <script src="/demo-container/อาหาร/jsdw/cs.js"></script>
+    <!-- Swiper Section / เมนูแนะนำพิเศษ & โปรโมชั่นยอดฮิต -->
+    <div class="container swiper">
+        <div class="header-section">
+            <h2><i class="fa-solid fa-star"></i> เมนูแนะนำพิเศษ & โปรโมชั่นยอดฮิต</h2>
+            <p>สัมผัสรสชาติความอร่อยที่เชฟคัดสรรมาเป็นพิเศษ การันตีความสดใหม่และรสชาติระดับพรีเมียม</p>
+        </div>
+
+        <div class="card-wrapper">
+            <ul class="card-list swiper-wrapper">
+                <!-- Slide 1 -->
+                <li class="card card-item swiper-slide"
+                    data-name="main"
+                    data-title="สเต็กเนื้อริบอายย่างเนยกระเทียม"
+                    data-price="฿329"
+                    data-desc="เนื้อริบอายคัดพิเศษระดับพรีเมียม นุ่มชุ่มฉ่ำ ย่างเนยกระเทียมและโรสแมรี่หอมกรุ่น เสิร์ฟคู่กับมันบดเนียนนุ่มและผักย่างสดใหม่"
+                    data-cal="620 Kcal"
+                    data-img="https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80">
+                    <div class="card-link">
+                        <img src="https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80" alt="สเต็กเนื้อริบอาย" class="card-image" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=Steak'">
+                        <span class="badge">เมนูแนะนำ</span>
+                        <h3 class="card-title">สเต็กเนื้อริบอายย่างเนยกระเทียม</h3>
+                        <p class="card-desc">เนื้อริบอายคัดเกรดพรีเมียม นุ่มชุ่มฉ่ำ หอมกลิ่นเนยกระเทียมย่างกระทะร้อน เสิร์ฟพร้อมมันบดสูตรโฮมเมด</p>
+                        <div class="card-footer-row">
+                            <span class="card-price">฿329</span>
+                            <button class="card-button" title="ดูรายละเอียด" onclick="openDetailModal(this)"><i class="fa-solid fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+                </li>
+
+                <!-- Slide 2 -->
+                <li class="card card-item swiper-slide"
+                    data-name="main"
+                    data-title="ต้มยำกุ้งแม่น้ำหม้อไฟโบราณ"
+                    data-price="฿259"
+                    data-desc="ต้มยำน้ำข้นสูตรดั้งเดิม มันกุ้งเยิ้มๆ ปรุงรสด้วยสมุนไพรสด หอมกลิ่นมะนาวแท้และน้ำพริกเผา รสชาติจัดจ้านถึงใจ"
+                    data-cal="450 Kcal"
+                    data-img="https://images.unsplash.com/photo-1555126634-323283e090fa?auto=format&fit=crop&w=600&q=80">
+                    <div class="card-link">
+                        <img src="https://images.unsplash.com/photo-1555126634-323283e090fa?auto=format&fit=crop&w=600&q=80" alt="ต้มยำกุ้งแม่น้ำ" class="card-image" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=TomYum'">
+                        <span class="badge">ซิกเนเจอร์</span>
+                        <h3 class="card-title">ต้มยำกุ้งแม่น้ำหม้อไฟโบราณ</h3>
+                        <p class="card-desc">ต้มยำกุ้งแม่น้ำตัวโต มันกุ้งเยิ้ม รสชาติเข้มข้นจัดจ้าน ครบรส เปรี้ยว เค็ม เผ็ด หวานกลมกล่อม</p>
+                        <div class="card-footer-row">
+                            <span class="card-price">฿259</span>
+                            <button class="card-button" title="ดูรายละเอียด" onclick="openDetailModal(this)"><i class="fa-solid fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+                </li>
+
+                <!-- Slide 3 -->
+                <li class="card card-item swiper-slide"
+                    data-name="dessert"
+                    data-title="ฮันนี่โทสต์ผลไม้สดไอศกรีม"
+                    data-price="฿159"
+                    data-desc="ขนมปังอบเนยแท้ชุ่มฉ่ำ หอมกรอบนอกนุ่มใน ท็อปปิ้งด้วยสตรอว์เบอร์รีและกล้วยหอมสด ราดน้ำผึ้งแท้ เสิร์ฟคู่ไอศกรีมวานิลลา"
+                    data-cal="520 Kcal"
+                    data-img="https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?auto=format&fit=crop&w=600&q=80">
+                    <div class="card-link">
+                        <img src="https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?auto=format&fit=crop&w=600&q=80" alt="ฮันนี่โทสต์ผลไม้สด" class="card-image" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=HoneyToast'">
+                        <span class="badge">ของหวานยอดฮิต</span>
+                        <h3 class="card-title">ฮันนี่โทสต์ผลไม้สดไอศกรีม</h3>
+                        <p class="card-desc">โทสต์อบเนยหอมกรุ่น กรอบนอกนุ่มใน เสิร์ฟคู่ผลไม้สดและไอศกรีมพรีเมียม ราดน้ำผึ้งธรรมชาติแท้ 100%</p>
+                        <div class="card-footer-row">
+                            <span class="card-price">฿159</span>
+                            <button class="card-button" title="ดูรายละเอียด" onclick="openDetailModal(this)"><i class="fa-solid fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+                </li>
+
+                <!-- Slide 4 -->
+                <li class="card card-item swiper-slide"
+                    data-name="drink"
+                    data-title="มัทฉะลาเต้พรีเมียมเกียวโต"
+                    data-price="฿85"
+                    data-desc="ชาเขียวมัทฉะเกรดพิธีการนำเข้าจากอุจิ เกียวโต ตีสดแก้วต่อแก้ว ผสมกับนมสดแท้รสละมุน หอมหวานมันกำลังดี"
+                    data-cal="190 Kcal"
+                    data-img="https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=600&q=80">
+                    <div class="card-link">
+                        <img src="https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=600&q=80" alt="มัทฉะลาเต้" class="card-image" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=Matcha'">
+                        <span class="badge">เครื่องดื่มขายดี</span>
+                        <h3 class="card-title">มัทฉะลาเต้พรีเมียมเกียวโต</h3>
+                        <p class="card-desc">ชาเขียวมัทฉะแท้เกรดพรีเมียม หอมเข้มข้นละมุนลิ้น ผสมนมสดแท้ ดื่มง่าย เติมพลังความสดชื่นได้ตลอดวัน</p>
+                        <div class="card-footer-row">
+                            <span class="card-price">฿85</span>
+                            <button class="card-button" title="ดูรายละเอียด" onclick="openDetailModal(this)"><i class="fa-solid fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+                </li>
+
+                <!-- Slide 5 -->
+                <li class="card card-item swiper-slide"
+                    data-name="main"
+                    data-title="พิซซ่าเตาถ่านซีฟู้ดทรัฟเฟิล"
+                    data-price="฿299"
+                    data-desc="แป้งพิซซ่าโฮมเมดบางกรอบสไตล์อิตาเลียน อบในเตาถ่านความร้อนสูง ท็อปด้วยกุ้ง หมึก หอยแมลงภู่นิวซีแลนด์ และซอสเห็ดทรัฟเฟิล"
+                    data-cal="680 Kcal"
+                    data-img="https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80">
+                    <div class="card-link">
+                        <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80" alt="พิซซ่าเตาถ่านซีฟู้ด" class="card-image" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=Pizza'">
+                        <span class="badge">สเปเชียล</span>
+                        <h3 class="card-title">พิซซ่าเตาถ่านซีฟู้ดทรัฟเฟิล</h3>
+                        <p class="card-desc">พิซซ่าแป้งบางกรอบหอมเตาถ่าน อัดแน่นด้วยอาหารทะเลสดพรีเมียม ผสานความหอมเลอค่าของซอสทรัฟเฟิลเข้มข้น</p>
+                        <div class="card-footer-row">
+                            <span class="card-price">฿299</span>
+                            <button class="card-button" title="ดูรายละเอียด" onclick="openDetailModal(this)"><i class="fa-solid fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+
+            <div class="swiper-pagination"></div>
+            <div class="swiper-slide-button swiper-button-prev"></div>
+            <div class="swiper-slide-button swiper-button-next"></div>
+        </div>
+    </div>
+    <!-- Swiper JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="jsdw/cs.js"></script>
+    <script src="../demo-container/Food/jsdw/cs.js"></script>
 </body>
 </html>

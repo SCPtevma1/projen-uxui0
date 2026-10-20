@@ -479,3 +479,208 @@ body {
         border-radius: 0.75rem;
     }
 }
+
+
+
+/* STREAMING_CHUNK:Container Swiper and Carousel Enhancements */
+.container.swiper {
+    position: relative;
+    margin-top: 3.5rem;
+    margin-bottom: 4rem;
+}
+
+.container.swiper .header-section {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.container.swiper .header-section h2 {
+    font-size: 1.85rem;
+    font-weight: 700;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+}
+
+.container.swiper .header-section h2 i {
+    color: var(--accent-orange);
+}
+
+.card-wrapper {
+    max-width: 1150px;
+    margin: 0 auto 35px;
+    padding: 20px 15px 50px;
+    overflow: hidden;
+    position: relative;
+}
+
+.card-list {
+    display: flex;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.card-list .card-item {
+    list-style: none;
+    height: auto;
+    display: flex;
+}
+
+.card-list .card-item .card-link {
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    background: #1e293b;
+    border: 1px solid #334155;
+    padding: 1.25rem;
+    border-radius: 1rem;
+    text-decoration: none;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 100%;
+    position: relative;
+    cursor: default;
+}
+
+.card-list .card-item .card-link:hover {
+    transform: translateY(-6px);
+    border-color: var(--accent-orange);
+    box-shadow: 0 18px 30px -5px rgba(249, 115, 22, 0.25);
+}
+
+.card-list .card-link .card-image {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    border-radius: 0.75rem;
+    transition: transform 0.4s ease;
+}
+
+.card-list .card-item .card-link:hover .card-image {
+    transform: scale(1.03);
+}
+
+.card-list .card-link .badge {
+    position: static;
+    margin: 1rem 0 0.5rem;
+    padding: 0.3rem 0.85rem;
+    font-weight: 600;
+    font-size: 0.75rem;
+    background: rgba(249, 115, 22, 0.15);
+    color: var(--accent-orange);
+    border: 1px solid rgba(249, 115, 22, 0.3);
+    width: fit-content;
+    border-radius: 50px;
+    box-shadow: none;
+}
+
+.card-list .card-link .card-title {
+    font-size: 1.15rem;
+    color: #f8fafc;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 0.5rem;
+}
+
+.card-list .card-link .card-desc {
+    font-size: 0.875rem;
+    color: #94a3b8;
+    line-height: 1.5;
+    margin-bottom: 1.25rem;
+    flex-grow: 1;
+}
+
+.card-list .card-link .card-footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+    padding-top: 0.85rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.card-list .card-link .card-price {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--accent-orange);
+}
+
+.card-list .card-link .card-button {
+    height: 38px;
+    width: 38px;
+    color: #f8fafc;
+    border-radius: 50%;
+    margin: 0;
+    background: #334155;
+    cursor: pointer;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: none;
+    transition: all 0.3s ease;
+}
+
+.card-list .card-link:hover .card-button {
+    color: #fff;
+    background: var(--accent-orange);
+    transform: translateX(3px);
+}
+
+.card-wrapper .swiper-pagination {
+    bottom: 10px !important;
+}
+
+.card-wrapper .swiper-pagination-bullet {
+    height: 10px;
+    width: 10px;
+    opacity: 0.4;
+    background: #94a3b8;
+    transition: all 0.3s ease;
+}
+
+.card-wrapper .swiper-pagination-bullet-active {
+    opacity: 1;
+    background: var(--accent-orange);
+    width: 26px;
+    border-radius: 8px;
+}
+
+.card-wrapper .swiper-slide-button {
+    color: #f8fafc;
+    background: rgba(30, 41, 59, 0.9);
+    border: 1px solid #334155;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    backdrop-filter: blur(8px);
+    margin-top: -22px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.card-wrapper .swiper-slide-button::after {
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.card-wrapper .swiper-slide-button:hover {
+    background: var(--accent-orange);
+    border-color: var(--accent-orange);
+    color: #ffffff;
+    box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
+}
+
+@media screen and (max-width: 768px) {
+    .card-wrapper {
+        margin: 0 auto 25px;
+        padding: 15px 10px 45px;
+    }
+
+    .card-wrapper .swiper-slide-button {
+        display: none;
+    }
+}
