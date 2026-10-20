@@ -269,3 +269,51 @@
       background: var(--primary-dark);
       transform: translateY(-2px);
   }
+  
+        .cascv {
+            background-color: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 350px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-align: center;
+        }
+
+        /* เอฟเฟกต์ตอนเอาเมาส์ไปชี้ที่การ์ด */
+        .cascv:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+        .lool {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 3px 2px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .lool img {
+            width: 300px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 4px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        .pp {
+            padding: 25px 20px;
+        }
+        .pp h3 {
+            color: #2d3748;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        /* รายละเอียดวิชา (p) */
+        .pp p {
+            color: #718096;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
