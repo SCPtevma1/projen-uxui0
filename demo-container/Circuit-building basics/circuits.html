@@ -5,30 +5,29 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>พื้นฐานการต่อวงจรและ IoT (Circuit-building basics) | คลังความรู้รายวิชา</title>
+
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/demo-container/Circuit-building basics/quizzes1/cmv.css">
 </head>
-
 <body>
-
   <header class="top-navbar">
     <a href="../student.html" class="back-btn">
       <i class="ph ph-arrow-left"></i> กลับไปหน้ารวมรายวิชา
     </a>
     <span class="page-tag">ระดับ 3 • เทคโนโลยีและทักษะอาชีพ</span>
   </header>
-
   <section class="hero">
     <div class="hero-container">
       <div class="hero-badge">
         <i class="ph ph-cpu"></i> ฮาร์ดแวร์ วงจรอิเล็กทรอนิกส์ และ Internet of Things
       </div>
       <h1>พื้นฐานการต่อวงจรและ IoT (Circuits & IoT)</h1>
-      <p>เรียนรู้หัวใจของฮาร์ดแวร์คอมพิวเตอร์ กฎของโอห์ม การใช้อุปกรณ์อิเล็กทรอนิกส์ บอร์ดไมโครคอนโทรลเลอร์ Arduino /
-        ESP32 สู่การสร้างนวัตกรรม Smart Device</p>
+      <p>เรียนรู้หัวใจของฮาร์ดแวร์คอมพิวเตอร์ กฎของโอห์ม การใช้อุปกรณ์อิเล็กทรอนิกส์ บอร์ดไมโครคอนโทรลเลอร์ Arduino / ESP32 สู่การสร้างนวัตกรรม Smart Device</p>
 
       <div class="hero-stats">
         <div class="stat-pill"><i class="ph ph-lightning"></i> กฎของโอห์ม V = I × R</div>
@@ -37,11 +36,8 @@
       </div>
     </div>
   </section>
-
   <main class="container">
-
     <div class="grid-2">
-
       <article class="topic-card">
         <div class="topic-header">
           <div class="topic-icon">
@@ -58,7 +54,6 @@
           <li><strong>ความต้านทาน (Resistance - R):</strong> คุณสมบัติต้านทานการไหลของกระแส มีหน่วยเป็นโอห์ม (Ω)</li>
         </ul>
       </article>
-
       <article class="topic-card">
         <div class="topic-header">
           <div class="topic-icon">
@@ -70,15 +65,13 @@
         </div>
         <p>อุปกรณ์พื้นฐานที่พบในทุกวงจร ตั้งแต่อุปกรณ์พาสซีฟไปจนถึงเซมิคอนดักเตอร์</p>
         <ul class="highlight-list">
-          <li><strong>ตัวต้านทาน (Resistor):</strong> จำกัดปริมาณกระแสเพื่อป้องกันอุปกรณ์อื่นเสียหาย เช่น กันหลอด LED
-            ขาด</li>
+          <li><strong>ตัวต้านทาน (Resistor):</strong> จำกัดปริมาณกระแสเพื่อป้องกันอุปกรณ์อื่นเสียหาย เช่น กันหลอด LED ขาด</li>
           <li><strong>ไดโอดเปล่งแสง (LED):</strong> ยอมให้กระแสไหลทิศทางเดียวและแปลงพลังงานไฟฟ้าเป็นแสง</li>
           <li><strong>ตัวเก็บประจุ (Capacitor):</strong> กักเก็บและคายประจุ กรองสัญญาณรบกวนให้เรียบ</li>
           <li><strong>ทรานซิสเตอร์ (Transistor):</strong> สวิตช์อิเล็กทรอนิกส์ความเร็วสูงและตัวขยายสัญญาณ</li>
         </ul>
       </article>
-
-      <article class="topic-card">
+        <article class="topic-card">
         <div class="topic-header">
           <div class="topic-icon">
             <i class="ph ph-microchip"></i>
@@ -90,12 +83,12 @@
         <p>ก้าวจากการต่อวงจรธรรมดาสู่การเขียนโปรแกรมควบคุมโลกจริง</p>
         <ul class="highlight-list">
           <li><strong>Arduino UNO:</strong> บอร์ดทดลองยอดนิยมสำหรับผู้เริ่มต้น เขียนโปรแกรมด้วยภาษา C/C++</li>
-          <li><strong>ESP32 / ESP8266:</strong> ชิปไมโครคอนโทรลเลอร์ทรงพลังที่มี Wi-Fi & Bluetooth ในตัว เหมาะสำหรับงาน
-            IoT</li>
+          <li><strong>ESP32 / ESP8266:</strong> ชิปไมโครคอนโทรลเลอร์ทรงพลังที่มี Wi-Fi & Bluetooth ในตัว เหมาะสำหรับงาน IoT</li>
           <li><strong>GPIO Pins:</strong> ขาเชื่อมต่อสัญญาณดิจิทัล (Digital In/Out) และสัญญาณอนาล็อก (ADC)</li>
         </ul>
       </article>
 
+      <!-- Card 4 -->
       <article class="topic-card">
         <div class="topic-header">
           <div class="topic-icon">
@@ -107,75 +100,145 @@
         </div>
         <p>การเชื่อมต่อวัตถุในโลกกายภาพเข้ากับเครือข่ายอินเทอร์เน็ตเพื่อส่งข้อมูลและสั่งการอัตโนมัติ</p>
         <ul class="highlight-list">
-          <li><strong>เซนเซอร์ตรวจวัด:</strong> วัดอุณหภูมิ/ความชื้น (DHT22), ตรวจจับความเคลื่อนไหว (PIR), วัดระยะทาง
-            (Ultrasonic)</li>
-          <li><strong>โปรโตคอล MQTT & HTTP:</strong> การส่งข้อมูลแบบเรียลไทม์ที่ประหยัดพลังงานและแบนด์วิดท์</li>
-          <li><strong>แอปพลิเคชันควบคุม:</strong> สร้าง Dashboard แสดงผลและสั่งเปิด-ปิดไฟผ่านสมาร์ตโฟน</li>
+          <li><strong>เซนเซอร์ตรวจวัด:</strong> วัดอุณหภูมิ/ความชื้น (DHT22), ตรวจจับความเคลื่อนไหว (PIR), วัดระยะทาง (Ultrasonic)</li>
+          <li><strong>โปรโตคอล MQTT & HTTP:</strong> การส่งข้อมูลแบบเรียลไทม์ที่ประหยัดพลังงานและแบนด์วิธ</li>
+          <li><strong>แอปพลิเคชันควบคุม:</strong> สร้าง Dashboard แสดงผลและสั่งเปิด-ปิดไฟผ่านสมาร์ทโฟน</li>
         </ul>
       </article>
-
     </div>
-
-    <!-- Ohm Calculator Mini Tool -->
-    <section class="interactive-box">
-      <div class="interactive-header">
-        <h2><i class="ph ph-calculator" style="color: var(--primary);"></i> Interactive Mini-Lab: เครื่องคำนวณกฎของโอห์ม
-          (V = I × R)</h2>
-        <span style="font-size: 0.85rem; color: var(--text-muted);">ป้อนค่า 2 ตัวเพื่อคำนวณหาค่าที่เหลือ</span>
-      </div>
-
-      <div class="calc-grid">
-        <div class="calc-input-group">
-          <label for="vVal">แรงดัน (V) [โวลต์]</label>
-          <input type="number" id="vVal" value="5" step="any" oninput="calcOhm()">
-        </div>
-        <div class="calc-input-group">
-          <label for="rVal">ความต้านทาน (R) [โอห์ม]</label>
-          <input type="number" id="rVal" value="220" step="any" oninput="calcOhm()">
-        </div>
-      </div>
-
-      <div class="calc-result-box">
-        <div>
-          <strong style="color: #78350f;">กระแสไฟฟ้าที่ไหลในวงจร (I = V ÷ R):</strong>
-          <p style="font-size: 0.9rem; color: #92400e;">คำนวณได้ทั้งในหน่วยแอมแปร์ (A) และมิลลิแอมแปร์ (mA)</p>
-        </div>
-        <div class="calc-result-val" id="iResult">
-          0.023 A (22.7 mA)
-        </div>
-      </div>
-    </section>
-
-    <!-- Summary Box -->
-    <section class="summary-banner">
-      <div class="summary-text">
-        <h3><i class="ph ph-lightbulb"></i> ข้อคิดจากวงจรไฟฟ้าและ IoT</h3>
-        <p>เมื่อฮาร์ดแวร์ผสานกับโค้ด คุณสามารถสร้างสรรค์สิ่งประดิษฐ์อัจฉริยะที่เปลี่ยนโลกการทำงานและชีวิตประจำวันได้</p>
-      </div>
-      <div class="summary-actions">
-        <a href="../student.html" class="btn-action">
-          <i class="ph ph-squares-four"></i> ดูรายวิชาอื่นในระดับนี้
-        </a>
-      </div>
-    </section>
-
   </main>
+<div class="img-conrra">
+  <div class="con-rra">
+    <img src="/img/choi-kang-trees-4051288_1920.jpg" alt="ต้นไม้">
+    
 
-  <script>
-    function calcOhm() {
-      const v = parseFloat(document.getElementById('vVal').value);
-      const r = parseFloat(document.getElementById('rVal').value);
-      const res = document.getElementById('iResult');
-      if (!isNaN(v) && !isNaN(r) && r > 0) {
-        const i = v / r;
-        const mA = i * 1000;
-        res.innerText = i.toFixed(3) + ' A (' + mA.toFixed(1) + ' mA)';
-      } else {
-        res.innerText = 'โปรดป้อนค่าที่ถูกต้อง';
-      }
-    }
-  </script>
+    <div class="overlay-text">
+      <h3>ชื่อหัวข้อ / รายวิชา</h3>
+      <p>รายละเอียดอย่างย่อที่ต้องการแสดงเมื่อเอาเมาส์มาชี้...</p>
+    </div>
+  </div>
+  <div class="con-rra">
+    <img src="/img/choi-kang-trees-4051288_1920.jpg" alt="ต้นไม้">
+    
+    <div class="overlay-text">
+      <h3>ชื่อหัวข้อ / รายวิชา</h3>
+      <p>รายละเอียดอย่างย่อที่ต้องการแสดงเมื่อเอาเมาส์มาชี้...</p>
+    </div>
+  </div>
+  <div class="con-rra">
+    <img src="/img/choi-kang-trees-4051288_1920.jpg" alt="ต้นไม้">
+
+    <div class="overlay-text">
+      <h3>ชื่อหัวข้อ / รายวิชา</h3>
+      <p>รายละเอียดอย่างย่อที่ต้องการแสดงเมื่อเอาเมาส์มาชี้...</p>
+    </div>
+  </div>
+</div>
+<div class="all-pro">
+  <h2>รวมโปรแกรมที่ใช้หรือเกี่ยวข้อง</h2>
+  
+  <div class="program-grid">
+    <a href="https://code.visualstudio.com/" class="program-card">
+      <div class="logo-box">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vscode/vscode-original.svg" alt="VS Code Logo">
+      </div>
+      <span class="program-name">VS Code</span>
+    </a>
+    <a href="https://www.figma.com/files/team/1254316313136807826/recents-and-sharing?fuid=1254316308465843281" class="program-card">
+      <div class="logo-box">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/figma/figma-original.svg" alt="Figma Logo">
+      </div>
+      <span class="program-name">Figma</span>
+    </a>
+    <a href="https://git-scm.com/" class="program-card">
+      <div class="logo-box">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg" alt="Git Logo">
+      </div>
+      <span class="program-name">Git</span>
+    </a>
+    <a href="https://www.docker.com/" class="program-card">
+      <div class="logo-box">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg" alt="Docker Logo">
+      </div>
+      <span class="program-name">Docker</span>
+    </a>
+    <a href="https://flows.nodered.org/node/node-red-contrib-image-tools" class="program-card">
+      <div class="logo-box">
+        <img src="https://cdn.phototourl.com/member/2026-10-21-58ccb7ec-006a-4a8b-a47a-c40dee5a6869.png" alt="Docker Logo">
+      </div>
+      <span class="program-name">Docker</span>
+    </a>
+    <a href="https://www.blynk.io/" class="program-card">
+      <div class="logo-box">
+        <img src="/demo-container/Circuit-building basics/download.png" alt="Docker Logo">
+      </div>
+      <span class="program-name">Docker</span>
+    </a>
+    <a href="https://www.home-assistant.io/" class="program-card">
+      <div class="logo-box">
+        <img src="/demo-container/Circuit-building basics/images.jpg" alt="Docker Logo">
+      </div>
+      <span class="program-name">Docker</span>
+    </a>
+    <a href="https://www.arduino.cc/en/software/" class="program-card">
+      <div class="logo-box">
+        <img src="/demo-container/Circuit-building basics/images (1).png" alt="Docker Logo">
+      </div>
+      <span class="program-name">Arduino IDE</span>
+    </a>
+  </div>
+</div>
+
+  <aside class="sidebar">
+    <ul class="nav-menu">
+      <li class="nav-item dropdown">
+        <button class="nav-link dropdown-btn">        
+          <span class="link-text">รวมอุปกรณ์ทุกชนิด</span>
+          <i class="fa-solid fa-chevron-down arrow-icon"></i>
+        </button>
+        <ul class="dropdown-menu">
+          <li><a href="#" class="dropdown-link">ทีมงานผู้พัฒนา</a></li>
+          <li><a href="#" class="dropdown-link">วิสัยทัศน์ & พันธกิจ</a></li>
+          <li><a href="#" class="dropdown-link">ผลงานของเรา</a></li>
+          <li><a href="#" class="dropdown-link">รีวิวจากผู้เรียน</a></li>
+        </ul>
+      </li>
+      <li class="nav-item dropdown">
+        <button class="nav-link dropdown-btn">        
+          <span class="link-text">รวมเว็บไซต์ขายอุปกรณ์ IOT </span>
+          <i class="fa-solid fa-chevron-down arrow-icon"></i>
+        </button>
+        <ul class="dropdown-menu">
+          <li><a href="https://www.cybertice.com/product/tag/iot-module?gad_source=1&gad_campaignid=23047434120&gbraid=0AAAAADc4pmMWaHI8QqOylZBt2KHrF307r&gclid=CjwKCAjwxeHWBhBPEiwAiqtQ-XV7IqO4FnY_BC4cctpdTYFIz9PyatTZCc9qbLjbw7MPskOYw4UorRoC3F0QAvD_BwE" class="dropdown-link">cybertice</a></li>
+          <li><a href="#" class="dropdown-link">ผลงานของเรา</a></li>
+          <li><a href="#" class="dropdown-link">รีวิวจากผู้เรียน</a></li>
+        </ul>
+      </li>
+      <li class="nav-item dropdown">
+        <button class="nav-link dropdown-btn">
+         
+          <span class="link-text">หนังสือเรียน</span>
+          <i class="fa-solid fa-chevron-down arrow-icon"></i>
+        </button>
+        <ul class="dropdown-menu">
+          <li><a href="../index.php" class="dropdown-link">ออกแบบ UX/UI หน้าเว็บ</a></li>
+          <li><a href="Coding/coding.html" class="dropdown-link">คอร์สเรียนเขียนโค้ด</a></li>
+          <li><a href="../hok/pro.html" class="dropdown-link">โปรโมชั่น & แพ็กเกจ</a></li>
+          <li><a href="../html/ass.html" class="dropdown-link">บริการเสริมกราฟิก & เว็บ</a></li>
+        </ul>
+      </li>
+
+      <li class="nav-item">
+        <a href="#" class="nav-link">
+          <span class="link-text">ติดต่อเรา</span>
+        </a>
+      </li>
+<div id="program-grid1">
+  <a href="#program-grid">โปรแกรมพร้อมการเรียนรู้การใช้งาน</a>
+</div>
+    </ul>
+  </aside>
+  <script src="/demo-container/Circuit-building basics/quizzes1/fe.js"></script>
 
 </body>
-
 </html>

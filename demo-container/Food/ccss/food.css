@@ -684,3 +684,158 @@ body {
         display: none;
     }
 }
+.recipe-form {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+    box-shadow: var(--shadow);
+}
+
+.form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.form-group label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+.form-group input, .form-group select {
+    background-color: #0f172a;
+    border: 1px solid var(--border-color);
+    color: #fff;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    outline: none;
+    transition: var(--transition);
+}
+
+.form-group input:focus, .form-group select:focus {
+    border-color: var(--accent-orange);
+}
+
+.form-section {
+    background-color: rgba(15, 23, 42, 0.5);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.section-header h3 {
+    font-size: 1.1rem;
+    color: var(--accent-orange);
+}
+
+.dynamic-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.dynamic-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.dynamic-item input {
+    flex-grow: 1;
+    background-color: #0f172a;
+    border: 1px solid var(--border-color);
+    color: #fff;
+    padding: 0.6rem 0.85rem;
+    border-radius: 0.5rem;
+}
+
+.step-num {
+    background-color: var(--accent-orange);
+    color: #fff;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.btn-add {
+    background-color: #10b981;
+    color: #fff;
+    border: none;
+    padding: 0.4rem 0.85rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.btn-add:hover { background-color: #059669; }
+
+.btn-remove {
+    background-color: #ef4444;
+    color: #fff;
+    border: none;
+    padding: 0.6rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-remove:hover { background-color: #dc2626; }
+
+.btn-submit {
+    width: 100%;
+    background-color: var(--accent-orange);
+    color: #fff;
+    border: none;
+    padding: 0.85rem;
+    border-radius: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-submit:hover { background-color: #ea580c; }
+
+.image-preview {
+    margin-top: 0.5rem;
+    max-height: 200px;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.image-preview img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+@media (max-width: 768px) {
+    .form-grid-2 { grid-template-columns: 1fr; }
+}

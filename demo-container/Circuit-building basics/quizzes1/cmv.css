@@ -119,6 +119,78 @@
         font-weight: 300;
     }
 
+.img-conrra {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  gap: 12px;
+}
+
+/* กล่องการ์ดแนวตั้งยาว */
+.con-rra {
+  position: relative;
+  width: 280px;            /* ความกว้างของกล่องแนวตั้ง */
+  height: 480px;           /* ความสูงแนวตั้งแบบยาว */
+  border-radius: 16px;     /* ขอบโค้งมน */
+  overflow: hidden;        /* ซ่อนส่วนเกินเมื่อรูปขยายหรือข้อความสไลด์ขึ้นมา */
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+
+/* ปรับแต่งรูปภาพ */
+.con-rra img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;       /* คุมสัดส่วนรูปภาพไม่ให้เบี้ยว */
+  display: block;
+  transition: transform 0.5s ease; /* เพิ่มเอฟเฟกต์ซูมรูป */
+}
+
+/* เอฟเฟกต์ซูมรูปภาพเล็กน้อยเมื่อ Hover */
+.con-rra:hover img {
+  transform: scale(1.08);
+}
+
+/* แผ่นเลเยอร์ข้อความซ้อนทับ (Overlay) */
+.con-rra .overlay-text {
+  position: absolute;
+  inset: 0;                /* ขยายเต็มพื้นที่กล่อง (top:0, right:0, bottom:0, left:0) */
+  background: linear-gradient(
+    to top, 
+    rgba(0, 0, 0, 0.85) 0%, 
+    rgba(0, 0, 0, 0.4) 60%, 
+    rgba(0, 0, 0, 0) 100%
+  );                       /* เงาดำไล่เฉดเพื่อให้ข้อความอ่านง่าย */
+  color: #ffffff;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end; /* จัดข้อความให้อยู่ด้านล่าง */
+  
+  /* ตั้งค่าซ่อนข้อความเริ่มต้น */
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.4s ease;
+}
+
+/* แสดงข้อความเมื่อเอาเมาส์ชี้ (Hover) */
+.con-rra:hover .overlay-text {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ตกแต่งตัวหนังสือ */
+.overlay-text h3 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.overlay-text p {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #e2e8f0;
+}
     .hero-stats {
         display: flex;
         justify-content: center;
@@ -135,7 +207,6 @@
         border-radius: 12px;
         font-size: 0.9rem;
     }
-
     .container {
         max-width: 1100px;
         margin: -2rem auto 4rem;
@@ -143,7 +214,6 @@
         position: relative;
         z-index: 10;
     }
-
     .grid-2 {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -218,114 +288,211 @@
         left: 0;
         font-size: 0.85rem;
     }
+.button i {
+  pointer-events: none;
+}
+.button:disabled {
+  color: #b3b3b3;
+  pointer-events: none;
+}
+.button,
+.link {
+  height: 45px;
+  width: 45px;
+  font-size: 20px;
+  color: #666666;
+  background-color: #f2f2f2;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.link {
+  font-weight: 500;
+  text-decoration: none;
+}
+.button:hover,
+.link:hover {
+  color: #fff;
+  background: #4070f4;
+}
+.link.active {
+  color: #fff;
+  background: #4070f4;
+}
 
-    .interactive-box {
-        background: #ffffff;
-        border-radius: var(--radius);
-        padding: 2rem;
-        box-shadow: var(--shadow);
-        border: 1px solid var(--border-color);
-        margin-bottom: 3rem;
-    }
+.sidebar {
+  position: fixed;
+  top: 320px;
+  left: 11px;
+  width: 240px;
+  height: calc(100vh - 40px);
+  background-color: #0f172a;
+  border-radius: 13px;
+  z-index: 1100;
+  padding: 20px 10px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
 
-    .interactive-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 1.5rem;
-        flex-wrap: wrap;
-        gap: 1rem;
-    }
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
 
-    .interactive-header h2 {
-        font-size: 1.4rem;
-        font-weight: 700;
-        color: var(--text-main);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
+.sidebar::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 10px;
+}
 
-    /* Ohm Calculator Box */
-    .calc-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin-bottom: 1.25rem;
-    }
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
 
-    .calc-input-group label {
-        display: block;
-        font-size: 0.88rem;
-        font-weight: 600;
-        margin-bottom: 0.4rem;
-        color: #334155;
-    }
+.nav-menu {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.nav-link {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  color: #cbd5e0;
+  text-decoration: none;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
 
-    .calc-input-group input {
-        width: 100%;
-        padding: 0.65rem 0.9rem;
-        border: 1px solid #cbd5e1;
-        border-radius: 8px;
-        font-size: 1rem;
-    }
+.nav-link:hover {
+  background-color: #2d3748;
+  color: #ffffff;
+}
 
-    .calc-result-box {
-        background: #fffbeb;
-        border: 1px solid #fde68a;
-        border-radius: 12px;
-        padding: 1.25rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 1rem;
-    }
+.icon {
+  width: 20px;
+  margin-right: 12px;
+  text-align: center;
+}
 
-    .calc-result-val {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #b45309;
-    }
+.link-text {
+  flex: 1;
+  text-align: left;
+}
 
-    .summary-banner {
-        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-        border: 1px solid #fde68a;
-        border-radius: var(--radius);
-        padding: 2rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 1.5rem;
-    }
+/* ลูกศรหมุน */
+.arrow-icon {
+  font-size: 0.8rem;
+  transition: transform 0.3s ease;
+}
 
-    .summary-text h3 {
-        font-size: 1.25rem;
-        color: #78350f;
-        margin-bottom: 0.4rem;
-    }
+.dropdown.open .arrow-icon {
+  transform: rotate(180deg);
+}
+.dropdown-menu {
+  list-style: none;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0, 1, 0, 1);
+  border-radius: 8px;
+  margin-top: 4px;
+}
+.dropdown.open .dropdown-menu {
+  max-height: 300px; /* ความสูงสูงสุดเมื่อเปิดออก */
+  transition: max-height 0.3s ease-in-out;
+}
 
-    .summary-text p {
-        color: #92400e;
-        font-size: 0.95rem;
-    }
+.dropdown-link {
+  display: block;
+  padding: 10px 15px 10px 48px;
+  color: #a0aec0;
+  text-decoration: none;
+  font-size: 0.88rem;
+  transition: all 0.2s ease;
+}
 
-    .btn-action {
-        background: var(--primary);
-        color: #ffffff;
-        text-decoration: none;
-        padding: 0.75rem 1.5rem;
-        border-radius: 9999px;
-        font-weight: 600;
-        font-size: 0.95rem;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        transition: all 0.2s;
-    }
+.dropdown-link:hover {
+  color: #63b3ed;
+  background-color: rgba(255, 255, 255, 0.05);
+}
 
-    .btn-action:hover {
-        background: var(--primary-dark);
-        transform: translateY(-2px);
-    }
+/* พื้นที่รวมทั้งหมด */
+.all-pro {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+/* หัวข้อ */
+.all-pro h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 20px;
+  text-align: left;
+}
+.program-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); /* ปรับคอลัมน์อัตโนมัติตามขนาดจอ */
+  gap: 16px;
+}
+html {
+  scroll-behavior: smooth;
+}
+
+.program-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px 16px;
+  text-decoration: none; /* ลบเส้นใต้ลิงก์ */
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+/* เอฟเฟกต์เมื่อเอาเมาส์ชี้ (Hover) */
+.program-card:hover {
+  transform: translateY(-4px); /* ลอยขึ้นเล็กน้อย */
+  border-color: #3b82f6;       /* เปลี่ยนสีขอบเป็นสีฟ้า */
+  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.12); /* เพิ่มเงาสีฟ้าจางๆ */
+}
+
+/* กล่องใส่โลโก้ */
+.logo-box {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.logo-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.program-name {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #334155;
+  text-align: center;
+  transition: color 0.3s ease;
+}
+
+.program-card:hover .program-name {
+  color: #3b82f6; 
+}
