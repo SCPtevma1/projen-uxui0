@@ -1,11 +1,586 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>ระบบจัดการบทความและข่าวสาร - Article Menu & Content Layout</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Prompt', sans-serif; }
+        .toc-link.active {
+            color: #2563eb;
+            font-weight: 600;
+            border-left: 3px solid #2563eb;
+            padding-left: 0.75rem;
+            background-color: #eff6ff;
+        }
+    </style>
 </head>
-<body>
-    
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Reading Progress Bar -->
+    <div class="fixed top-0 left-0 w-full h-1.5 bg-slate-200 z-50">
+        <div id="progress-bar" class="h-full bg-gradient-to-r from-blue-500 to-indigo-600 w-0 transition-all duration-150"></div>
+    </div>
+
+    <!-- Header / Navbar -->
+    <header class="sticky top-0 bg-white/95 backdrop-blur-md border-b border-slate-200/80 z-40 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+                    <i class="fas fa-newspaper text-lg"></i>
+                </div>
+                <div>
+                    <span class="font-bold text-slate-900 text-lg leading-none block">TechNews & Article</span>
+                    <span class="text-xs text-slate-500 font-normal">คลังบทความและข่าวสารไอที</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="hidden sm:flex items-center gap-2 bg-slate-100 text-slate-600 text-xs px-3 py-1.5 rounded-full font-medium">
+                    <i class="far fa-clock text-blue-500"></i>
+                    <span>อ่านไปแล้ว: <strong id="reading-status" class="text-blue-600">0%</strong></span>
+                </div>
+                <button onclick="openCreateModal()" class="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium text-sm px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all active:scale-95">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>+ ข่าวสาร / บทความ</span>
+                </button>
+            </div>
+        </div>
+    </header>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1">
+        <div class="mb-6">
+            <nav class="flex text-sm text-slate-500 mb-3 gap-2 items-center">
+                <a href="/demo-container/Circuit-building basics/circuits.html" class="hover:text-blue-600 transition"><i class="fas fa-home text-xs"></i> หน้าแรก</a>
+                <span>/</span>
+                <a href="#" class="hover:text-blue-600 transition">บทความไอที</a>
+                <span>/</span>
+                <span class="text-slate-800 font-medium truncate">การออกแบบ UX/UI และเมนูบทความ</span>
+            </nav>
+            <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 leading-tight">
+                เทคนิคการออกแบบระบบเมนูบทความ (Article Navigation) และองค์ประกอบสื่อเพื่อ UX ที่ยอดเยี่ยม
+            </h1>
+            <div class="mt-4 flex flex-wrap items-center gap-4 text-xs sm:text-sm text-slate-500 border-b border-slate-200 pb-4">
+                <span class="flex items-center gap-1.5 font-medium text-slate-700">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Author" class="w-6 h-6 rounded-full object-cover">
+                    ทีมงานกองบรรณาธิการ
+                </span>
+                <span>•</span>
+                <span><i class="far fa-calendar-alt text-slate-400"></i> 22 ตุลาคม 2026</span>
+                <span>•</span>
+                <span><i class="far fa-eye text-slate-400"></i> 1.2k เข้าชม</span>
+                <span class="ml-auto bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-md font-medium border border-blue-100">
+                    <i class="fas fa-tag mr-1"></i> Design & Tech
+                </span>
+            </div>
+        </div>
+
+        <!-- 2 Column Grid for Article Body and Sidebar TOC -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+            <!-- Sticky Sidebar Menu (Desktop View) -->
+            <aside class="hidden lg:block lg:col-span-4 sticky top-20 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                    <h2 class="font-bold text-slate-800 flex items-center gap-2 text-base">
+                        <i class="fas fa-list-ul text-blue-600"></i> สารบัญเนื้อหา (TOC)
+                    </h2>
+                    <span class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">เมนูลอย</span>
+                </div>
+                
+                <nav class="space-y-1 text-sm">
+                    <a href="#section-1" class="toc-link block py-2 px-3 text-slate-600 rounded-lg transition hover:bg-slate-50">
+                        1. ทำไมเมนูบทความจึงสำคัญ?
+                    </a>
+                    <a href="#section-2" class="toc-link block py-2 px-3 text-slate-600 rounded-lg transition hover:bg-slate-50">
+                        2. ตัวอย่างการแทรกรูปภาพและสื่อประกอบ
+                    </a>
+                    <a href="#section-3" class="toc-link block py-2 px-3 text-slate-600 rounded-lg transition hover:bg-slate-50 pl-6 text-xs text-slate-500">
+                        • 2.1 ภาพประกอบเดี่ยวพร้อมคำอธิบาย
+                    </a>
+                    <a href="#section-4" class="toc-link block py-2 px-3 text-slate-600 rounded-lg transition hover:bg-slate-50 pl-6 text-xs text-slate-500">
+                        • 2.2 คลังภาพแบบแกลเลอรี (Gallery Grid)
+                    </a>
+                    <a href="#section-5" class="toc-link block py-2 px-3 text-slate-600 rounded-lg transition hover:bg-slate-50">
+                        3. ส่วนเสริมสำหรับเพิ่ม Interaction
+                    </a>
+                    <a href="#section-6" class="toc-link block py-2 px-3 text-slate-600 rounded-lg transition hover:bg-slate-50">
+                        4. สรุปคำแนะนำ
+                    </a>
+                </nav>
+
+                <!-- Quick Actions Panel in Sidebar -->
+                <div class="mt-6 pt-4 border-t border-slate-100">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-3">แบ่งปันบทความนี้</span>
+                    <div class="flex gap-2">
+                        <button onclick="shareArticle('facebook')" class="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-600 py-2 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5">
+                            <i class="fab fa-facebook-f"></i> Facebook
+                        </button>
+                        <button onclick="shareArticle('line')" class="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 py-2 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5">
+                            <i class="fab fa-line"></i> Line
+                        </button>
+                        <button onclick="copyLink()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-xs font-medium transition">
+                            <i class="fas fa-link"></i>
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="lg:col-span-8 bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200/80">
+                
+                <!-- Lead / Summary -->
+                <p class="text-lg text-slate-600 mb-6 border-l-4 border-blue-600 pl-4 py-1 italic bg-blue-50/40 rounded-r-lg">
+                    การสร้างบทความหรือข่าวสารให้น่าอ่าน นอกจากโครงสร้างเมนูที่ใช้งานง่ายแล้ว การเลือกใช้รูปภาพ มัลติมีเดีย และองค์ประกอบเสริมที่เหมาะสม จะช่วยดึงดูดสายตาและเพิ่มระยะเวลาอ่านของผู้ใช้งานได้อย่างก้าวกระโดด
+                </p>
+
+                <!-- Feature Image (รูปปก/รูปหลักของบทความ) -->
+                <div class="mb-8 overflow-hidden rounded-xl border border-slate-200/80 shadow-sm">
+                    <img src="https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=1200&auto=format&fit=crop&q=80" 
+                         alt="บทความเทคโนโลยีและเครื่องมือดีไซน์" 
+                         class="w-full h-64 sm:h-80 object-cover hover:scale-105 transition duration-500"
+                         onerror="this.src='https://placehold.co/800x400/e2e8f0/475569?text=Cover+Image+Placeholder'">
+                    <div class="p-3 bg-slate-50 text-xs text-slate-500 flex items-center justify-between border-t border-slate-100">
+                        <span><i class="fas fa-camera mr-1 text-slate-400"></i> ภาพประกอบหลักบทความ</span>
+                        <span>Source: Unsplash</span>
+                    </div>
+                </div>
+
+                <!-- Collapsible Mobile TOC (Visible on Mobile & Tablet) -->
+                <div class="block lg:hidden bg-blue-50/60 border border-blue-100 rounded-xl p-4 mb-8">
+                    <details class="group">
+                        <summary class="flex justify-between items-center font-semibold text-slate-900 cursor-pointer list-none">
+                            <span class="flex items-center gap-2"><i class="fas fa-list-ul text-blue-600"></i> สารบัญเนื้อหาในบทความ</span>
+                            <span class="transition group-open:rotate-180">
+                                <i class="fas fa-chevron-down text-sm text-slate-500"></i>
+                            </span>
+                        </summary>
+                        <nav class="mt-3 pt-3 border-t border-blue-100/80 space-y-2 text-sm">
+                            <a href="#section-1" class="block text-slate-700 hover:text-blue-600 py-1">1. ทำไมเมนูบทความจึงสำคัญ?</a>
+                            <a href="#section-2" class="block text-slate-700 hover:text-blue-600 py-1">2. ตัวอย่างการแทรกรูปภาพและสื่อประกอบ</a>
+                            <a href="#section-3" class="block text-slate-700 hover:text-blue-600 py-1 pl-4 text-xs text-slate-500">• 2.1 ภาพประกอบเดี่ยวพร้อมคำอธิบาย</a>
+                            <a href="#section-4" class="block text-slate-700 hover:text-blue-600 py-1 pl-4 text-xs text-slate-500">• 2.2 คลังภาพแบบแกลเลอรี</a>
+                            <a href="#section-5" class="block text-slate-700 hover:text-blue-600 py-1">3. ส่วนเสริมสำหรับเพิ่ม Interaction</a>
+                            <a href="#section-6" class="block text-slate-700 hover:text-blue-600 py-1">4. สรุปคำแนะนำ</a>
+                        </nav>
+                    </details>
+                </div>
+
+                <!-- SECTION 1 -->
+                <section id="section-1" class="scroll-mt-24 mb-10">
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
+                        <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 text-sm flex items-center justify-center font-bold">1</span>
+                        ทำไมเมนูบทความจึงสำคัญ?
+                    </h2>
+                    <p class="text-slate-600 leading-relaxed mb-4">
+                        เมื่อบทความหรือข่าวสารมีความยาวเกินกว่า 3-4 หน้าจอ ผู้อ่านมักมองหาจุดเชื่อมโยงไปยังเนื้อหาเฉพาะที่ตนเองสนใจทันที ระบบ <strong>Table of Contents (TOC)</strong> จึงทำหน้าที่เป็นเข็มทิศให้กับผู้ใช้งาน
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-4">
+                        <div class="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                            <h3 class="font-bold text-slate-800 text-sm mb-1 flex items-center gap-2">
+                                <i class="fas fa-check-circle text-emerald-500"></i> ช่วยเรื่อง UX & Engagement
+                            </h3>
+                            <p class="text-xs text-slate-500">ช่วยลด Bounce Rate และทำให้ผู้ใช้งานใช้เวลาเปิดอ่านเนื้อหาในส่วนอื่นๆ ต่อเนื่อง</p>
+                        </div>
+                        <div class="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                            <h3 class="font-bold text-slate-800 text-sm mb-1 flex items-center gap-2">
+                                <i class="fas fa-search-location text-blue-500"></i> ดีต่อโครงสร้าง SEO
+                            </h3>
+                            <p class="text-xs text-slate-500">Search Engine สามารถอ่านโครงสร้าง Anchor Link และนำไปแสดงผลบน Google Snippet ได้ง่ายขึ้น</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION 2 -->
+                <section id="section-2" class="scroll-mt-24 mb-10">
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
+                        <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 text-sm flex items-center justify-center font-bold">2</span>
+                        ตัวอย่างการแทรกรูปภาพและสื่อประกอบ
+                    </h2>
+                    <p class="text-slate-600 leading-relaxed mb-6">
+                        การเลือกใช้รูปภาพคุณภาพสูงที่สอดคล้องกับหัวข้อจะทำให้บทความน่าอ่าน และช่วยเว้นจังหวะสายตาไม่ให้ผู้ใช้น่าเบื่อกับตัวอักษร
+                    </p>
+
+                    <!-- SECTION 3 (Sub 2.1) -->
+                    <div id="section-3" class="scroll-mt-24 mb-8 pl-0 sm:pl-4 border-l-0 sm:border-l-2 border-slate-100">
+                        <h3 class="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
+                            <i class="fas fa-angle-right text-blue-500"></i> 2.1 ภาพประกอบเดี่ยวพร้อมคำอธิบาย (Single Image)
+                        </h3>
+                        <p class="text-slate-600 text-sm leading-relaxed mb-4">
+                            การจัดวางรูปภาพเดี่ยวตรงกลางพร้อมใส่ Caption หรือเครดิตรูปด้านล่าง ช่วยยืนยันบริบทของหัวข้อข่าวสารนั้นๆ
+                        </p>
+                        <figure class="my-4">
+                            <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1000&auto=format&fit=crop&q=80" 
+                                 alt="การวิเคราะห์ข้อมูลเว็บไซต์" 
+                                 class="w-full rounded-xl shadow-sm border border-slate-200/80 object-cover max-h-96"
+                                 onerror="this.src='https://placehold.co/800x450/f1f5f9/64748b?text=Single+Article+Image'">
+                            <figcaption class="text-center text-xs text-slate-500 mt-2 italic">
+                                ภาพที่ 1: ตัวอย่างแดชบอร์ดแสดงผลข้อมูลเชิงลึกของผู้เข้าชมเว็บไซต์
+                            </figcaption>
+                        </figure>
+                    </div>
+
+                    <!-- SECTION 4 (Sub 2.2) -->
+                    <div id="section-4" class="scroll-mt-24 mb-6 pl-0 sm:pl-4 border-l-0 sm:border-l-2 border-slate-100">
+                        <h3 class="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
+                            <i class="fas fa-angle-right text-blue-500"></i> 2.2 คลังภาพแบบแกลเลอรี (Gallery Grid)
+                        </h3>
+                        <p class="text-slate-600 text-sm leading-relaxed mb-4">
+                            หากเป็นบทความรีวิว ข่าวประชาสัมพันธ์ หรือภาพบรรยากาศงาน การใช้เลย์เอาต์ Grid 2-3 คอลัมน์จะช่วยให้เนื้อหากะทัดรัด
+                        </p>
+                        
+                        <!-- Image Gallery Grid -->
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 my-4">
+                            <div class="group relative overflow-hidden rounded-xl aspect-video bg-slate-100 border border-slate-200">
+                                <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=500&auto=format&fit=crop&q=80" 
+                                     alt="Gallery 1" class="w-full h-full object-cover group-hover:scale-110 transition duration-300"
+                                     onerror="this.src='https://placehold.co/300x200/f1f5f9/64748b?text=Gallery+1'">
+                                <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-medium">
+                                    การทำงานร่วมกัน
+                                </div>
+                            </div>
+                            <div class="group relative overflow-hidden rounded-xl aspect-video bg-slate-100 border border-slate-200">
+                                <img src="https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&auto=format&fit=crop&q=80" 
+                                     alt="Gallery 2" class="w-full h-full object-cover group-hover:scale-110 transition duration-300"
+                                     onerror="this.src='https://placehold.co/300x200/f1f5f9/64748b?text=Gallery+2'">
+                                <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-medium">
+                                    วางแผนโปรเจกต์
+                                </div>
+                            </div>
+                            <div class="group relative overflow-hidden rounded-xl aspect-video bg-slate-100 border border-slate-200 col-span-2 sm:col-span-1">
+                                <img src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=500&auto=format&fit=crop&q=80" 
+                                     alt="Gallery 3" class="w-full h-full object-cover group-hover:scale-110 transition duration-300"
+                                     onerror="this.src='https://placehold.co/300x200/f1f5f9/64748b?text=Gallery+3'">
+                                <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-medium">
+                                    การนำเสนอผลงาน
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION 5 -->
+                <section id="section-5" class="scroll-mt-24 mb-10">
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
+                        <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 text-sm flex items-center justify-center font-bold">3</span>
+                        ส่วนเสริมสำหรับเพิ่ม Interaction
+                    </h2>
+                    <p class="text-slate-600 leading-relaxed mb-4">
+                        นอกจากนี้ เรายังสามารถเพิ่มส่วนเสริม (Widgets) ต่างๆ เพื่อให้ผู้อ่านปฏิสัมพันธ์กับหน้าเว็บได้ เช่น กล่อง Quote สรุปประเด็น, ปุ่มคัดลอกลิงก์, แท็กข่าวสาร และกล่องแสดงความคิดเห็น
+                    </p>
+
+                    <!-- Quote Widget -->
+                    <blockquote class="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 text-white my-6 relative overflow-hidden shadow-md">
+                        <i class="fas fa-quote-right absolute -right-3 -bottom-3 text-7xl text-white/5"></i>
+                        <p class="text-sm sm:text-base font-light italic mb-2 relative z-10">
+                            "การนำเสนอข่าวสารและบทความที่ดี ต้องผสานระหว่างเนื้อหาที่ทรงคุณค่า กับการออกแบบลำดับการอ่านที่สะดวกสบายและไม่มีอุปสรรค"
+                        </p>
+                        <cite class="text-xs text-blue-300 font-normal not-italic block">— UX/UI Design Principle 2026</cite>
+                    </blockquote>
+
+                    <!-- Widget: Article Tags -->
+                    <div class="mt-6 flex flex-wrap items-center gap-2">
+                        <span class="text-xs font-semibold text-slate-500 mr-2"><i class="fas fa-tags"></i> แท็กเกี่ยวข้อง:</span>
+                        <a href="#" class="text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-600 px-3 py-1 rounded-full transition">#ออกแบบเว็บไซต์</a>
+                        <a href="#" class="text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-600 px-3 py-1 rounded-full transition">#บทความไอที</a>
+                        <a href="#" class="text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-600 px-3 py-1 rounded-full transition">#UXUI</a>
+                        <a href="#" class="text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-600 px-3 py-1 rounded-full transition">#ข่าวสาร</a>
+                    </div>
+                </section>
+
+                <!-- SECTION 6 -->
+                <section id="section-6" class="scroll-mt-24 mb-6">
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
+                        <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 text-sm flex items-center justify-center font-bold">4</span>
+                        สรุปคำแนะนำ
+                    </h2>
+                    <p class="text-slate-600 leading-relaxed mb-4">
+                        คุณสามารถใช้รูปแบบการจัดวางเมนูบทความร่วมกับรูปภาพประกอบ และปุ่มกด **"+ ข่าวสาร / บทความ"** แบบพร้อมใช้งานนี้ ไปปรับประยุกต์ใช้ในระบบ CMS, เว็บไซต์องค์กร หรือบล็อกส่วนตัวได้อย่างสมบูรณ์แบบ
+                    </p>
+                    <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-800 text-sm flex items-center gap-3">
+                        <i class="fas fa-lightbulb text-xl text-emerald-600 flex-shrink-0"></i>
+                        <span>ทดลองกดปุ่ม <strong>"+ ข่าวสาร / บทความ"</strong> ที่มุมขวาบน เพื่อเปิดฟอร์มสร้างและอัปโหลดรูปภาพตัวอย่างได้เลย!</span>
+                    </div>
+                </section>
+
+                <!-- Author Bio Box -->
+                <div class="mt-10 p-5 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row items-center gap-4">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" alt="Author" class="w-16 h-16 rounded-full object-cover shadow-sm">
+                    <div class="text-center sm:text-left">
+                        <h4 class="font-bold text-slate-800 text-sm">ทีมงานบรรณาธิการ TechNews</h4>
+                        <p class="text-xs text-slate-500 mt-1">มุ่งมั่นแบ่งปันเทคนิคการสร้างนวัตกรรมดิจิทัล การออกแบบ UX/UI และการพัฒนาเว็บแอปพลิเคชันยุคใหม่</p>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Floating Action Buttons (FAB) at Bottom Right -->
+    <div class="fixed bottom-6 right-6 z-40 flex flex-col gap-3 items-end">
+        <!-- Back to Top Button -->
+        <button id="back-to-top" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="w-11 h-11 bg-white text-slate-700 rounded-full shadow-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 hover:text-blue-600 transition-all opacity-0 pointer-events-none transform translate-y-2">
+            <i class="fas fa-arrow-up text-sm"></i>
+        </button>
+
+        <!-- Quick Add News FAB (For Mobile Quick Access) -->
+        <button onclick="openCreateModal()" class="sm:hidden w-13 h-13 bg-indigo-600 text-white rounded-full shadow-xl flex items-center justify-center hover:bg-indigo-700 active:scale-95 transition-all">
+            <i class="fas fa-plus text-lg"></i>
+        </button>
+
+        <!-- TOC Toggle FAB Button -->
+        <button id="toggle-toc-btn" onclick="toggleTocModal()" class="w-14 h-14 bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-full shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all">
+            <i class="fas fa-list-ul text-lg"></i>
+        </button>
+    </div>
+
+    <!-- Slide-over Drawer Menu for Mobile/Tablet TOC -->
+    <div id="toc-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 opacity-0 pointer-events-none transition-opacity duration-200 flex justify-end">
+        <div class="absolute inset-0" onclick="toggleTocModal()"></div>
+        <div id="toc-drawer" class="relative w-full max-w-xs bg-white h-full shadow-2xl p-6 flex flex-col justify-between translate-x-full transition-transform duration-300">
+            <div>
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+                    <h3 class="font-bold text-slate-900 flex items-center gap-2 text-base">
+                        <i class="fas fa-bars-staggered text-blue-600"></i> สารบัญเนื้อหา
+                    </h3>
+                    <button onclick="toggleTocModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+
+                <nav class="space-y-1 text-sm">
+                    <a href="#section-1" onclick="toggleTocModal()" class="block py-2 px-3 text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition">
+                        1. ทำไมเมนูบทความจึงสำคัญ?
+                    </a>
+                    <a href="#section-2" onclick="toggleTocModal()" class="block py-2 px-3 text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition">
+                        2. ตัวอย่างการแทรกรูปภาพและสื่อ
+                    </a>
+                    <a href="#section-3" onclick="toggleTocModal()" class="block py-1.5 px-3 text-xs text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg ml-3 transition">
+                        • 2.1 ภาพประกอบเดี่ยว
+                    </a>
+                    <a href="#section-4" onclick="toggleTocModal()" class="block py-1.5 px-3 text-xs text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg ml-3 transition">
+                        • 2.2 คลังภาพแบบแกลเลอรี
+                    </a>
+                    <a href="#section-5" onclick="toggleTocModal()" class="block py-2 px-3 text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition">
+                        3. ส่วนเสริมสำหรับเพิ่ม Interaction
+                    </a>
+                    <a href="#section-6" onclick="toggleTocModal()" class="block py-2 px-3 text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition">
+                        4. สรุปคำแนะนำ
+                    </a>
+                </nav>
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 text-center">
+                <button onclick="openCreateModal(); toggleTocModal();" class="w-full py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2">
+                    <i class="fas fa-plus-circle"></i> + เพิ่มข่าวสารใหม่
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: + ข่าวสาร / บทความ (Create Article/News Modal) -->
+    <div id="create-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 opacity-0 pointer-events-none transition-opacity duration-200 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 transform scale-95 transition-transform duration-200" id="create-modal-card">
+            
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fas fa-pen-to-square text-blue-600"></i> เพิ่มข่าวสาร / บทความใหม่
+                </h3>
+                <button onclick="closeCreateModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+
+            <form id="create-article-form" onsubmit="handleArticleSubmit(event)" class="space-y-4">
+                <!-- Title -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">หัวข้อข่าวสาร / บทความ <span class="text-red-500">*</span></label>
+                    <input type="text" required placeholder="กรอกชื่อหัวข้อที่ต้องการเผยแพร่..." class="w-full px-3.5 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+                </div>
+
+                <!-- Category -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">หมวดหมู่</label>
+                    <select class="w-full px-3.5 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+                        <option value="tech">บทความไอที & เทคโนโลยี</option>
+                        <option value="news">ข่าวสารประชาสัมพันธ์</option>
+                        <option value="design">UX/UI Design</option>
+                        <option value="general">ทั่วไป</option>
+                    </select>
+                </div>
+
+                <!-- Image Upload Field (ส่วนเสริมการใส่รูปภาพ) -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">รูปภาพประกอบ (Cover Image)</label>
+                    <div class="border-2 border-dashed border-slate-200 hover:border-blue-400 rounded-xl p-4 text-center cursor-pointer bg-slate-50/50 transition relative" id="image-drop-area">
+                        <input type="file" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" onchange="previewSelectedImage(event)">
+                        <div id="upload-preview-container" class="flex flex-col items-center justify-center">
+                            <i class="fas fa-cloud-arrow-up text-3xl text-blue-500 mb-2"></i>
+                            <p class="text-xs text-slate-600 font-medium">คลิกเพื่ออัปโหลด หรือลากไฟล์มาวางที่นี่</p>
+                            <p class="text-[10px] text-slate-400 mt-1">รองรับไฟล์ PNG, JPG, WEBP (สูงสุด 5MB)</p>
+                        </div>
+                        <img id="image-preview" class="hidden w-full h-36 object-cover rounded-lg shadow-sm" alt="Preview Image">
+                    </div>
+                </div>
+
+                <!-- Content Detail -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">เนื้อหาข่าวสารแบบย่อ <span class="text-red-500">*</span></label>
+                    <textarea rows="3" required placeholder="พิมพ์รายละเอียดบทความหรือข่าวสาร..." class="w-full px-3.5 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition"></textarea>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeCreateModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition">
+                        ยกเลิก
+                    </button>
+                    <button type="submit" class="px-5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition flex items-center gap-1.5">
+                        <i class="fas fa-paper-plane"></i> เผยแพร่บทความ
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Toast Alert Container -->
+    <div id="toast" class="fixed top-20 right-6 z-50 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 transition-all duration-300 opacity-0 translate-y-[-10px] pointer-events-none">
+        <i id="toast-icon" class="fas fa-check-circle text-emerald-400"></i>
+        <span id="toast-message">ดำเนินการสำเร็จ</span>
+    </div>
+
+    <script>
+        // 1. Toggle Drawer TOC Modal
+        function toggleTocModal() {
+            const modal = document.getElementById('toc-modal');
+            const drawer = document.getElementById('toc-drawer');
+            
+            if (modal.classList.contains('opacity-0')) {
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                drawer.classList.remove('translate-x-full');
+            } else {
+                modal.classList.add('opacity-0', 'pointer-events-none');
+                drawer.classList.add('translate-x-full');
+            }
+        }
+
+        // 2. Open/Close Create Article Modal
+        function openCreateModal() {
+            const modal = document.getElementById('create-modal');
+            const card = document.getElementById('create-modal-card');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            card.classList.remove('scale-95');
+            card.classList.add('scale-100');
+        }
+
+        function closeCreateModal() {
+            const modal = document.getElementById('create-modal');
+            const card = document.getElementById('create-modal-card');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+        }
+
+        // 3. Image Upload Preview Handler
+        function previewSelectedImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('image-preview');
+                    const uploadContainer = document.getElementById('upload-preview-container');
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                    uploadContainer.classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // 4. Submit Form Handler
+        function handleArticleSubmit(e) {
+            e.preventDefault();
+            closeCreateModal();
+            showToast("เพิ่มข่าวสาร / บทความเรียบร้อยแล้ว!", "success");
+            e.target.reset();
+            
+            // Reset Image Preview
+            document.getElementById('image-preview').classList.add('hidden');
+            document.getElementById('upload-preview-container').classList.remove('hidden');
+        }
+
+        // 5. Toast Notification Helper
+        function showToast(msg, type = "success") {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMsg.innerText = msg;
+            if (type === "success") {
+                toastIcon.className = "fas fa-check-circle text-emerald-400";
+            } else {
+                toastIcon.className = "fas fa-info-circle text-blue-400";
+            }
+
+            toast.classList.remove('opacity-0', 'translate-y-[-10px]', 'pointer-events-none');
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-[-10px]', 'pointer-events-none');
+            }, 3000);
+        }
+
+        // 6. Share & Copy Link Actions
+        function copyLink() {
+            const dummy = document.createElement('input');
+            document.body.appendChild(dummy);
+            dummy.value = window.location.href;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+            showToast("คัดลอกลิงก์บทความเรียบร้อย!", "info");
+        }
+
+        function shareArticle(platform) {
+            showToast("เปิดหน้าต่างแชร์ไปยัง " + platform.toUpperCase(), "info");
+        }
+
+        // 7. Scroll Events (Progress Bar, Back-To-Top, Active TOC Highlight)
+        window.addEventListener('scroll', () => {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            
+            // Reading Progress
+            document.getElementById("progress-bar").style.width = scrolled + "%";
+            document.getElementById("reading-status").innerText = Math.round(scrolled) + "%";
+
+            // Back to top button visibility
+            const backToTopBtn = document.getElementById('back-to-top');
+            if (winScroll > 300) {
+                backToTopBtn.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-2');
+            } else {
+                backToTopBtn.classList.add('opacity-0', 'pointer-events-none', 'translate-y-2');
+            }
+
+            // TOC Active Section Calculation
+            const sections = document.querySelectorAll("section[id], div[id^='section-']");
+            const navLinks = document.querySelectorAll(".toc-link");
+
+            let currentSectionId = "";
+
+            sections.forEach((section) => {
+                const sectionTop = section.offsetTop - 120;
+                if (window.scrollY >= sectionTop) {
+                    currentSectionId = section.getAttribute("id");
+                }
+            });
+
+            navLinks.forEach((link) => {
+                link.classList.remove("active");
+                if (link.getAttribute("href") === "#" + currentSectionId) {
+                    link.classList.add("active");
+                }
+            });
+        });
+    </script>
 </body>
 </html>
