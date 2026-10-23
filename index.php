@@ -94,8 +94,6 @@
                         ดูรายละเอียด <i class="fa-solid fa-arrow-right"></i>
                     </span>
                 </a>
-
-                
                 <a href="demo-container/small-business.html" class="card-item group">
                     <div class="card-icon bg-amber-50 text-amber-600 group-hover:bg-amber-600 group-hover:text-white">
                         <i class="fa-solid fa-store" style="color: rgb(81, 35, 217);" aria-hidden="true"></i>

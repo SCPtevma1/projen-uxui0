@@ -279,14 +279,9 @@
 
             accordionHeaders.forEach(header => {
                 header.addEventListener('click', function () {
-                    // เปิด/ปิด content ของตัวที่คลิก
                     const content = this.nextElementSibling;
                     const icon = this.querySelector('.ph-caret-down');
-
-                    // สลับ class 'open'
                     content.classList.toggle('open');
-
-                    // หมุนไอคอน
                     if (content.classList.contains('open')) {
                         icon.style.transform = 'rotate(180deg)';
                     } else {
