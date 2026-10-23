@@ -273,7 +273,6 @@
 
     </div>
 
-    <!-- JavaScript สำหรับควบคุม Accordion บทเรียน -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const accordionHeaders = document.querySelectorAll('.accordion-header');
@@ -294,17 +293,7 @@
                         icon.style.transform = 'rotate(0deg)';
                     }
 
-                    // ปิด Accordion ตัวอื่นๆ (ถ้าอยากให้เปิดได้ทีละอัน)
-                    /*
-                    accordionHeaders.forEach(otherHeader => {
-                        if (otherHeader !== header) {
-                            const otherContent = otherHeader.nextElementSibling;
-                            const otherIcon = otherHeader.querySelector('.ph-caret-down');
-                            otherContent.classList.remove('open');
-                            otherIcon.style.transform = 'rotate(0deg)';
-                        }
-                    });
-                    */
+      
                 });
             });
 
