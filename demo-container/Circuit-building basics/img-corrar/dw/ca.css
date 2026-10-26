@@ -1,0 +1,201 @@
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--primary-dark, #1e293b);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  
+  background: #f1f5f9; 
+  transition: all 0.2s;
+}
+.back-btn:hover {
+  background: #fde68a; 
+  transform: translateX(-3px);
+}
+
+.top-navbar {
+  background: #ffffff;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  position: sticky;
+  top: 0;
+  text-decoration: none;
+  color: #1e293b;
+  z-index: 100;
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.menu-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+
+  gap: 0.75rem;
+}
+.article-nav .menu-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.article-nav .menu-item {
+  position: relative;
+}
+.dropdown-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--primary-dark, #1e293b);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  background: var(--primary-light, #f1f5f9);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dropdown-btn:hover {
+  background: #fde68a;
+}
+
+.arrow, .arrow-right {
+  font-size: 0.85rem;
+  transition: transform 0.2s ease;
+}
+
+/* --- เมนูย่อย ระดับ 1 --- */
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 220px; /* ปรับความกว้างให้รองรับข้อความยาว */
+  background-color: #ffffff;
+  list-style: none;
+  border-radius: 12px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  padding: 0.5rem 0;
+  margin: 0;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  transition: all 0.2s ease;
+  z-index: 101;
+}
+
+.menu-item.has-dropdown:hover .dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dropdown-item {
+  position: relative;
+}
+
+.dropdown-item a {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 1rem;
+  color: #334155;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.2s, color 0.2s;
+}
+
+.dropdown-item a:hover {
+  background-color: #ffedd5; /* เปลี่ยนเป็นสีส้มอ่อนเข้ากับปุ่ม back-btn */
+  color: #c2410c;
+}
+
+/* --- เมนูย่อย ระดับ 2 (Submenu) --- */
+.submenu {
+  position: absolute;
+  top: -8px;
+  left: calc(100% + 4px);
+  min-width: 200px;
+  background-color: #ffffff;
+  list-style: none;
+  border-radius: 12px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  padding: 0.5rem 0;
+  margin: 0;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(6px);
+  transition: all 0.2s ease;
+  z-index: 102;
+}
+
+.dropdown-item.has-submenu:hover .submenu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+.dropdown-item.has-submenu:hover .arrow-right {
+  transform: translateX(3px);
+}
+.article-content {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 0 1.5rem;
+}
+
+.article-content h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--primary-dark, #1e293b);
+  margin-bottom: 1rem;
+  line-height: 1.3;
+  
+  
+  border-left: 4px solid #c2410c;
+  padding-left: 0.75rem;
+}
+
+.article-content p {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: #475569;
+  margin-bottom: 1.25rem;
+  text-indent: 2rem;  }
+
+.article-image {
+  margin: 1.5rem 0 2rem 0;
+  width: 100%;
+}
+
+.article-image img {
+  width: 100%;
+  height: auto;
+  max-height: 400px;
+  object-fit: cover;
+  border-radius: 12px; /* ทำมุมโค้งมน */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* ใส่เงาบางๆ */
+  display: block;
+}
+
+.article-image figcaption {
+  font-size: 0.875rem;
+  color: #64748b;
+  text-align: center;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
