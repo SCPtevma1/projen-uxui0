@@ -71,6 +71,7 @@
   </header>
   <main class="hero">
     <h1>ออกแบบUXUIหน้าเว็ปพร้อมใช้งาน</h1>
+    <input placeholder="Enter text here" class="input-style" type="text">
   </main>
 
 <div id="demo-container" class="card-container">

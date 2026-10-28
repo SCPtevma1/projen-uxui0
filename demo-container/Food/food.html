@@ -302,8 +302,6 @@
                     </button>
                 </div>
             </div>
-
-            <!-- Item 6: Orange Juice -->
             <div class="card" data-name="drink" data-title="น้ำส้มคั้นสด 100%" data-price="฿45"
                 data-desc="น้ำส้มธรรมชาติคั้นสดใหม่ทุกวัน ไม่ผสมน้ำตาล อุดมด้วยวิตามินซีธรรมชาติ ให้ความสดชื่นคลายร้อนอย่างเต็มที่"
                 data-cal="110 Kcal"
@@ -406,64 +404,8 @@
             </div>
         </div>
     </div>
-    <aside class="sidebar">
-        <ul class="nav-menu">
-            <!-- Menu 1 -->
-            <li class="nav-item dropdown">
-                <button class="nav-link dropdown-btn">
-                    <span class="link-text">หมวดหมู่อาหาร</span>
-                    <i class="fa-solid fa-chevron-down arrow-icon"></i>
-                </button>
-                <ul class="dropdown-menu">
-                    <li><a href="javascript:void(0)" onclick="filterCategory('all')"
-                            class="dropdown-link">เมนูทั้งหมด</a></li>
-                    <li><a href="javascript:void(0)" onclick="filterCategory('main')"
-                            class="dropdown-link">อาหารจานหลัก</a></li>
-                    <li><a href="javascript:void(0)" onclick="filterCategory('dessert')" class="dropdown-link">ของหวาน
-                            &amp; เบเกอรี่</a></li>
-                    <li><a href="javascript:void(0)" onclick="filterCategory('drink')"
-                            class="dropdown-link">เครื่องดื่มสกัดสด</a></li>
-                    <li><a href="javascript:void(0)" onclick="filterCategory('appetizer')"
-                            class="dropdown-link">ของทานเล่น &amp; ทอด</a></li>
-                </ul>
-            </li>
-
-            <!-- Menu 2 -->
-            <li class="nav-item dropdown">
-                <button class="nav-link dropdown-btn">
-                    <span class="link-text">ระบบสูตรอาหาร</span>
-                    <i class="fa-solid fa-chevron-down arrow-icon"></i>
-                </button>
-                <ul class="dropdown-menu">
-                    <li><a href="foote.html" class="dropdown-link">เพิ่มสูตรอาหารใหม่</a></li>
-                    <li><a href="#catalog-section" class="dropdown-link">รายการอาหารยอดนิยม</a></li>
-                </ul>
-            </li>
-
-            <!-- Menu 3 -->
-            <li class="nav-item dropdown">
-                <button class="nav-link dropdown-btn">
-                    <span class="link-text">คลังรายวิชาอื่น</span>
-                    <i class="fa-solid fa-chevron-down arrow-icon"></i>
-                </button>
-                <ul class="dropdown-menu">
-                    <li><a href="../Coding/coding.html" class="dropdown-link">การเขียนโค้ด (Coding)</a></li>
-                    <li><a href="../Circuit-building basics/circuits.html" class="dropdown-link">วงจรไฟฟ้าและ IoT</a>
-                    </li>
-                    <li><a href="../Tourism/travel.html" class="dropdown-link">การท่องเที่ยว &amp; เดินทาง</a></li>
-                    <li><a href="../../index.php" class="dropdown-link">ออกแบบ UX/UI หน้าเว็บ</a></li>
-                    <li><a href="../student.html" class="dropdown-link">กลับหน้ารวมรายวิชา</a></li>
-                </ul>
-            </li>
-
-            <div id="program-grid1">
-                <a href="#catalog-section">ไปยังแคตตาล็อกเมนูอาหาร</a>
-            </div>
-        </ul>
-    </aside>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            // Sidebar Accordion Logic
             const dropdownBtns = document.querySelectorAll(".dropdown-btn");
             dropdownBtns.forEach((btn) => {
                 btn.addEventListener("click", function () {
@@ -476,8 +418,6 @@
                     parentDropdown.classList.toggle("open");
                 });
             });
-
-            // Food Filtering & Live Search
             const filterButtons = document.querySelectorAll("#filter-buttons .btn-filter");
             const filterableCards = document.querySelectorAll("#filterable-cards .card");
             const searchInput = document.getElementById("foodSearchInput");
