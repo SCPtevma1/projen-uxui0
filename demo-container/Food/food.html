@@ -1,250 +1,377 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>รายการอาหาร | เมนูอร่อยพร้อมเสิร์ฟ</title>
-    <!-- Font & FontAwesome Icons -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>อาหารและโภชนาการ (Food & Nutrition) | คลังความรู้รายวิชา</title>
+    <meta name="description" content="เรียนรู้ศาสตร์การปรุงอาหาร คัดสรรวัตถุดิบ คำนวณแคลอรี่ และรวมสูตรเด็ดเมนูยอดนิยม">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
-    <link rel="stylesheet" href="../../demo-container/Food/ccss/food.css">
+    <link rel="stylesheet" href="food.css">
 </head>
+
 <body>
+    <header class="top-navbar">
+        <a href="../student.html" class="back-btn">
+            <i class="ph ph-arrow-left"></i> กลับไปหน้ารวมรายวิชา
+        </a>
+        <span class="page-tag">ระดับ 1 • อาหารและโภชนาการเพื่อสุขภาพ</span>
+    </header>
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-badge">
+                <i class="ph ph-fork-knife"></i> ศิลปะการปรุงอาหารและโภชนาการ (Culinary Arts & Nutrition)
+            </div>
+            <h1>อาหารและโภชนาการเพื่อสุขภาพ (Food & Nutrition)</h1>
+            <p>เรียนรู้ศาสตร์การปรุงอาหาร คัดสรรวัตถุดิบคุณภาพสูง คำนวณคุณค่าทางโภชนาการ
+                และสูตรเด็ดเมนูยอดนิยมทั้งคาวและหวานระดับมืออาชีพ</p>
 
-    <nav class="main-nav">
-        <ul class="navbar">
-            <li><a href="../student.html"><i class="fa-solid fa-house"></i> หน้าแรก</a></li>
-            
-            <li class="dropdown">
-                <a href="#" class="dropbtn"><i class="fa-solid fa-utensils"></i> เมนูอาหาร <i class="fa-solid fa-chevron-down text-xs"></i></a>
-                <ul class="dropdown-content">
-                    <li><a href="#" onclick="filterFromNav('all')">ทั้งหมด</a></li>
-                    <li><a href="#" onclick="filterFromNav('main')">อาหารจานหลัก</a></li>
-                    <li><a href="#" onclick="filterFromNav('dessert')">ของหวาน</a></li>
-                    <li><a href="#" onclick="filterFromNav('drink')">เครื่องดื่ม</a></li>
-                    <li><a href="#" onclick="filterFromNav('appetizer')">ทานเล่น / ทอด</a></li>
-                </ul>
-            </li>
-
-            <li class="dropdown">
-                <a href="#" class="dropbtn"><i class="fa-solid fa-info-circle"></i> เกี่ยวกับเรา <i class="fa-solid fa-chevron-down text-xs"></i></a>
-                <ul class="dropdown-content">
-                    <li><a href="#">ทีมงานผู้พัฒนา</a></li>
-                    <li><a href="#">วิสัยทัศน์ & พันธกิจ</a></li>
-                    <li><a href="#">ผลงานของเรา</a></li>
-                </ul>
-            </li>
-
-            <li><a href="#"><i class="fa-solid fa-envelope"></i> ติดต่อเรา</a></li>
-            <li><a href="/demo-container/Food/foote.html">เพิ่มเมนูอาหาร</a></li>
-        </ul>
-    </nav>
-
-    <div class="container">
-        <div class="header-section">
-            <h2><i class="fa-solid fa-fire"></i> เมนูอาหารยอดนิยม</h2>
-            <p>เลือกหมวดหมู่อาหารที่คุณชื่นชอบ หรือกดดูรายละเอียดเมนูเพิ่มเติม</p>
-        </div>
-
-        <div class="filter-wrapper">
-            <div id="filter-buttons" class="filter-buttons">
-                <button class="btn-filter active" data-filter="all">
-                    <i class="fa-solid fa-layer-group"></i> ทั้งหมด
-                </button>
-                <button class="btn-filter" data-filter="main">
-                    <i class="fa-solid fa-bowl-rice"></i> อาหารจานหลัก
-                </button>
-                <button class="btn-filter" data-filter="dessert">
-                    <i class="fa-solid fa-ice-cream"></i> ของหวาน
-                </button>
-                <button class="btn-filter" data-filter="drink">
-                    <i class="fa-solid fa-glass-water"></i> เครื่องดื่ม
-                </button>
-                <button class="btn-filter" data-filter="appetizer">
-                    <i class="fa-solid fa-cookie-bite"></i> ของทานเล่น
-                </button>
+            <div class="hero-stats">
+                <div class="stat-pill"><i class="ph ph-bowl-food"></i> 5 หมวดหมู่อาหาร &amp; เครื่องดื่ม</div>
+                <div class="stat-pill"><i class="ph ph-fire"></i> คำนวณแคลอรี่และคุณค่าโภชนาการ</div>
+                <div class="stat-pill"><i class="ph ph-sparkle"></i> วัตถุดิบสดใหม่ ปรุงระดับมืออาชีพ</div>
             </div>
         </div>
+    </section>
+    <main class="container">
+        <div class="grid-2">
+            <article class="topic-card">
+                <div class="topic-header">
+                    <div class="topic-icon">
+                        <i class="ph ph-bowl-food"></i>
+                    </div>
+                    <div>
+                        <h3>1. อาหารจานหลัก (Main Courses)</h3>
+                    </div>
+                </div>
+                <p>หัวใจสำคัญของมื้ออาหารที่ให้พลังงานและสารอาหารหลักครบ 5 หมู่ตามหลักโภชนาการ</p>
+                <ul class="highlight-list">
+                    <li><strong>ผัดไทยกุ้งสด (480 Kcal):</strong> ซอสผัดไทยสูตรเคี่ยวสมุนไพร กุ้งตัวโต เต้าหู้ ถั่วงอก
+                        และถั่วลิสงคั่ว</li>
+                    <li><strong>กระเพราหมูกรอบไข่ดาว (520 Kcal):</strong> รสชาติจัดจ้าน หอมใบกระเพราแท้
+                        เสิร์ฟคู่ไข่ดาวขอบกรอบ</li>
+                    <li><strong>สเต็กเนื้อริบอาย (620 Kcal):</strong> ย่างเนยกระเทียมโรสแมรี่
+                        เสิร์ฟพร้อมมันบดเนียนนุ่มและผักย่าง</li>
+                    <li><strong>ต้มยำกุ้งแม่น้ำหม้อไฟ (450 Kcal):</strong> น้ำข้นมันกุ้งเยิ้ม สมุนไพรสด มะนาวแท้
+                        รสชาติเข้มข้นกลมกล่อม</li>
+                </ul>
+            </article>
+            <article class="topic-card">
+                <div class="topic-header">
+                    <div class="topic-icon">
+                        <i class="ph ph-cake"></i>
+                    </div>
+                    <div>
+                        <h3>2. ของหวานและเบเกอรี่ (Desserts)</h3>
+                    </div>
+                </div>
+                <p>เติมเต็มความสุขปิดท้ายมื้ออาหารด้วยรสสัมผัสหอมหวานและเทคนิคการทำขนมที่ลงตัว</p>
+                <ul class="highlight-list">
+                    <li><strong>บิงซูสตรอว์เบอร์รี (310 Kcal):</strong> น้ำแข็งไสนมหิมะเนื้อเนียน
+                        ท็อปปิ้งสตรอว์เบอร์รีสดและซอสผลไม้</li>
+                    <li><strong>ฮันนี่โทสต์ผลไม้รวม (520 Kcal):</strong> ขนมปังอบเนยสดแท้ หอมกรอบนอกนุ่มใน
+                        เสิร์ฟคู่ไอศกรีมวานิลลา</li>
+                    <li><strong>เค้กช็อกโกแลตหน้านุ่ม (380 Kcal):</strong> เนื้อสปองจ์นุ่มเบา
+                        ราดหน้าช็อกโกแลตฟัดจ์เข้มข้นไม่หวานจัด</li>
+                </ul>
+            </article>
 
+            <!-- Topic Card 3 -->
+            <article class="topic-card">
+                <div class="topic-header">
+                    <div class="topic-icon">
+                        <i class="ph ph-brandy"></i>
+                    </div>
+                    <div>
+                        <h3>3. เครื่องดื่มและชาสกัดสด (Beverages)</h3>
+                    </div>
+                </div>
+                <p>เครื่องดื่มเติมความสดชื่น คลายร้อน พร้อมคุณประโยชน์จากวัตถุดิบธรรมชาติแท้</p>
+                <ul class="highlight-list">
+                    <li><strong>ชาไทยเย็นนมสดแท้ (190 Kcal):</strong> ใบชาไทยคั่วบดสกัดสด ผสมผสานนมสดแท้ 100%
+                        หวานมันกำลังดี</li>
+                    <li><strong>มัทฉะลาเต้เกียวโต (190 Kcal):</strong> ชาเขียวมัทฉะแท้นำเข้าจากอุจิ เกียวโต
+                        ชงแก้วต่อแก้วกลิ่นหอมละมุน</li>
+                    <li><strong>น้ำส้มคั้นสด 100% (110 Kcal):</strong> อุดมด้วยวิตามินซีธรรมชาติ คั้นสดใหม่ ไม่ผสมน้ำตาล
+                    </li>
+                </ul>
+            </article>
+
+            <!-- Topic Card 4 -->
+            <article class="topic-card">
+                <div class="topic-header">
+                    <div class="topic-icon">
+                        <i class="ph ph-cookie"></i>
+                    </div>
+                    <div>
+                        <h3>4. ของทานเล่นและอาหารว่าง (Appetizers)</h3>
+                    </div>
+                </div>
+                <p>เมนูเรียกน้ำย่อยและของว่างทานเล่น ทำง่าย ทานเพลิน เหมาะสำหรับทุกโอกาสสังสรรค์</p>
+                <ul class="highlight-list">
+                    <li><strong>เกี๊ยวซ่าซอสเกาหลี (350 Kcal):</strong> ไส้หมูสับแน่นเต็มคำ ทอดกรอบนอกนุ่มใน
+                        ราดซอสเกาหลีเข้มข้น</li>
+                    <li><strong>เฟรนช์ฟรายส์ราดชีส (410 Kcal):</strong> มันฝรั่งแท่งทอดสีเหลืองทอง ไม่อมน้ำมัน
+                        ราดชีสซอสหอมมันนัว</li>
+                </ul>
+            </article>
+
+        </div>
+    </main>
+    <div class="img-conrra">
+        <a href="#catalog-section">
+            <div class="con-rra">
+                <img src="../../img/3888952-bicycle-1872682_1920.jpg" alt="การคัดสรรวัตถุดิบ">
+                <div class="overlay-text">
+                    <h3>ศาสตร์การเลือกวัตถุดิบ</h3>
+                    <p>คัดเลือกผักสด เนื้อสัตว์ และเครื่องปรุงคุณภาพเพื่อสุขภาพและรสชาติที่ดีที่สุด...</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="#catalog-section">
+            <div class="con-rra">
+                <img src="../../img/ralf1403-hiking-10374972_1920.jpg" alt="เทคนิคการควบคุมไฟและรสชาติ">
+                <div class="overlay-text">
+                    <h3>เทคนิคการปรุงรสและควบคุมไฟ</h3>
+                    <p>เข้าใจปฏิกิริยาความร้อน การใช้เครื่องเทศ และเวลาในการปรุงให้คงคุณค่าสารอาหาร...</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="foote.html">
+            <div class="con-rra">
+                <img src="../../img/choi-kang-trees-4051288_1920.jpg" alt="บันทึกสูตรอาหารส่วนตัว">
+                <div class="overlay-text">
+                    <h3>บันทึกสูตรอาหารส่วนตัว</h3>
+                    <p>ระบบบันทึกสูตรอาหาร คำนวณปริมาณวัตถุดิบ และประมาณการแคลอรี่...</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="all-pro" id="catalog-section">
+        <h2><i class="fa-solid fa-utensils"></i> แคตตาล็อกเมนูอาหารและคุณค่าโภชนาการ</h2>
+        <div class="catalog-toolbar">
+            <div class="search-box-wrapper">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="foodSearchInput" class="search-input"
+                    placeholder="ค้นหาชื่ออาหาร เช่น ผัดไทย, บิงซู, สเต็ก, ชาไทย...">
+            </div>
+
+            <div class="filter-wrapper">
+                <div id="filter-buttons" class="filter-buttons">
+                    <button class="btn-filter active" data-filter="all">
+                        <i class="fa-solid fa-layer-group"></i> ทั้งหมด
+                    </button>
+                    <button class="btn-filter" data-filter="main">
+                        <i class="fa-solid fa-bowl-rice"></i> อาหารจานหลัก
+                    </button>
+                    <button class="btn-filter" data-filter="dessert">
+                        <i class="fa-solid fa-ice-cream"></i> ของหวาน
+                    </button>
+                    <button class="btn-filter" data-filter="drink">
+                        <i class="fa-solid fa-glass-water"></i> เครื่องดื่ม
+                    </button>
+                    <button class="btn-filter" data-filter="appetizer">
+                        <i class="fa-solid fa-cookie-bite"></i> ของทานเล่น
+                    </button>
+                </div>
+            </div>
+        </div>
         <div id="filterable-cards" class="cards-grid">
-            
-            <div class="card" data-name="main" 
-                 data-title="ผัดไทยกุ้งสด" 
-                 data-price="฿89" 
-                 data-desc="ผัดไทยสูตรดั้งเดิม รสชาติเข้มข้น หอมกลิ่นกระทะ เสิร์ฟพร้อมกุ้งสดตัวโต ถั่วลันเตา ถั่วพูล และมะนาวสด"
-                 data-cal="480 Kcal"
-                 data-img="https://images.unsplash.com/photo-1559847844-5315695dadae?auto=format&fit=crop&w=600&q=80">
+            <div class="card" data-name="main" data-title="ผัดไทยกุ้งสด" data-price="฿89"
+                data-desc="ผัดไทยสูตรดั้งเดิม รสชาติเข้มข้น หอมกลิ่นกระทะ เสิร์ฟพร้อมกุ้งสดตัวโต ถั่วงอก มะนาวสด และถั่วลิสงคั่วบดใหม่"
+                data-cal="480 Kcal"
+                data-img="https://images.unsplash.com/photo-1559847844-5315695dadae?auto=format&fit=crop&w=600&q=80">
                 <div class="card-img-wrapper">
                     <span class="badge badge-main">จานหลัก</span>
-                    <img src="https://images.unsplash.com/photo-1559847844-5315695dadae?auto=format&fit=crop&w=600&q=80" alt="ผัดไทยกุ้งสด" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=Food+Image'">
+                    <img src="https://images.unsplash.com/photo-1559847844-5315695dadae?auto=format&fit=crop&w=600&q=80"
+                        alt="ผัดไทยกุ้งสด">
                 </div>
                 <div class="card-body">
                     <div class="card-header-row">
                         <h3 class="card-title">ผัดไทยกุ้งสด</h3>
                         <span class="card-price">฿89</span>
                     </div>
-                    <p class="card-text">ผัดไทยสูตรดั้งเดิม รสชาติเข้มข้น เสิร์ฟพร้อมกุ้งตัวโต...</p>
+                    <div class="card-meta-row">
+                        <span class="card-cal"><i class="fa-solid fa-fire"></i> 480 Kcal</span>
+                    </div>
+                    <p class="card-text">ผัดไทยสูตรดั้งเดิม รสชาติเข้มข้น หอมกลิ่นกระทะ เสิร์ฟพร้อมกุ้งสดตัวโต...</p>
                     <button class="btn-detail" onclick="openDetailModal(this)">
                         <i class="fa-solid fa-circle-info"></i> ดูรายละเอียด
                     </button>
                 </div>
             </div>
-
-            <div class="card" data-name="main"
-                 data-title="ข้าวผัดกระเพราไข่ดาว" 
-                 data-price="฿65" 
-                 data-desc="ผัดกระเพรารสจัดจ้าน กลมกล่อมด้วยใบกระเพราแท้ หอมเตะจมูก เสิร์ฟคู่กับไข่ดาวกรอบขอบกรอบยางมะตอย"
-                 data-cal="520 Kcal"
-                 data-img="https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=600&q=80">
+            <div class="card" data-name="main" data-title="กระเพราหมูกรอบไข่ดาว" data-price="฿65"
+                data-desc="ผัดกระเพรารสจัดจ้าน กลมกล่อมด้วยใบกระเพราแท้ หอมเตะจมูก เสิร์ฟคู่กับไข่ดาวกรอบขอบทอง ไข่แดงเยิ้ม"
+                data-cal="520 Kcal"
+                data-img="https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=600&q=80">
                 <div class="card-img-wrapper">
                     <span class="badge badge-main">จานหลัก</span>
-                    <img src="https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=600&q=80" alt="กระเพรา" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=Food+Image'">
+                    <img src="https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=600&q=80"
+                        alt="กระเพราหมูกรอบ">
                 </div>
                 <div class="card-body">
                     <div class="card-header-row">
-                        <h3 class="card-title">กระเพราหมูกรอบ</h3>
+                        <h3 class="card-title">กระเพราหมูกรอบไข่ดาว</h3>
                         <span class="card-price">฿65</span>
                     </div>
-                    <p class="card-text">ผัดกระเพรารสจัดจ้าน หอมใบกระเพราแท้ เสิร์ฟพร้อมไข่ดาว...</p>
+                    <div class="card-meta-row">
+                        <span class="card-cal"><i class="fa-solid fa-fire"></i> 520 Kcal</span>
+                    </div>
+                    <p class="card-text">ผัดกระเพรารสจัดจ้าน หอมใบกระเพราแท้ เสิร์ฟพร้อมไข่ดาวขอบกรอบ...</p>
                     <button class="btn-detail" onclick="openDetailModal(this)">
                         <i class="fa-solid fa-circle-info"></i> ดูรายละเอียด
                     </button>
                 </div>
             </div>
 
-            <!-- Item 3: Appetizer -->
-            <div class="card" data-name="appetizer"
-                 data-title="เกี๊ยวซ่าซอสเกาหลี" 
-                 data-price="฿79" 
-                 data-desc="เกี๊ยวซ่าไส้แน่น ทอดจนกรอบนอกนุ่มใน ราดด้วยซอสสไตล์เกาหลีเผ็ดหวาน โรยด้วยงาขาวและต้นหอม"
-                 data-cal="350 Kcal"
-                 data-img="https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=600&q=80">
+            <!-- Item 3: Gyoza -->
+            <div class="card" data-name="appetizer" data-title="เกี๊ยวซ่าซอสเกาหลี" data-price="฿79"
+                data-desc="เกี๊ยวซ่าไส้แน่นหมูสับและผัก ทอดจนกรอบนอกนุ่มใน ราดด้วยซอสสไตล์เกาหลีเผ็ดหวาน โรยด้วยงาขาวและต้นหอมซอย"
+                data-cal="350 Kcal"
+                data-img="https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=600&q=80">
                 <div class="card-img-wrapper">
                     <span class="badge badge-appetizer">ของทานเล่น</span>
-                    <img src="https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=600&q=80" alt="เกี๊ยวซ่า" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=Food+Image'">
+                    <img src="https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=600&q=80"
+                        alt="เกี๊ยวซ่า">
                 </div>
                 <div class="card-body">
                     <div class="card-header-row">
                         <h3 class="card-title">เกี๊ยวซ่าซอสเกาหลี</h3>
                         <span class="card-price">฿79</span>
                     </div>
-                    <p class="card-text">เกี๊ยวซ่ากรอบนอกนุ่มใน ราดซอสเกาหลีสูตรพิเศษ...</p>
+                    <div class="card-meta-row">
+                        <span class="card-cal"><i class="fa-solid fa-fire"></i> 350 Kcal</span>
+                    </div>
+                    <p class="card-text">เกี๊ยวซ่ากรอบนอกนุ่มใน ราดซอสเกาหลีสูตรพิเศษ หอมกลิ่นงาขาว...</p>
                     <button class="btn-detail" onclick="openDetailModal(this)">
                         <i class="fa-solid fa-circle-info"></i> ดูรายละเอียด
                     </button>
                 </div>
             </div>
 
-            <div class="card" data-name="dessert"
-                 data-title="บิงซูสตรอว์เบอร์รี" 
-                 data-price="฿129" 
-                 data-desc="เกล็ดหิมะรสนมเนื้อเนียนนุ่ม ท็อปปิ้งด้วยสตรอว์เบอร์รีสดชิ้นโตและซอสสตรอว์เบอร์รีเข้มข้น หวานฉ่ำสดชื่น"
-                 data-cal="310 Kcal"
-                 data-img="https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=600&q=80">
+            <!-- Item 4: Bingsu -->
+            <div class="card" data-name="dessert" data-title="บิงซูสตรอว์เบอร์รี" data-price="฿129"
+                data-desc="เกล็ดหิมะรสนมเนื้อเนียนนุ่ม ท็อปปิ้งด้วยสตรอว์เบอร์รีสดชิ้นโตและซอสสตรอว์เบอร์รีเข้มข้น หวานฉ่ำสดชื่นถึงใจ"
+                data-cal="310 Kcal"
+                data-img="https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=600&q=80">
                 <div class="card-img-wrapper">
                     <span class="badge badge-dessert">ของหวาน</span>
-                    <img src="https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=600&q=80" alt="บิงซู" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=Food+Image'">
+                    <img src="https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=600&q=80"
+                        alt="บิงซูสตรอว์เบอร์รี">
                 </div>
                 <div class="card-body">
                     <div class="card-header-row">
                         <h3 class="card-title">บิงซูสตรอว์เบอร์รี</h3>
                         <span class="card-price">฿129</span>
                     </div>
-                    <p class="card-text">น้ำแข็งไสสไตล์เกาหลี รสนมหอมหวาน พร้อมเนื้อสตรอว์เบอร์รีสด...</p>
+                    <div class="card-meta-row">
+                        <span class="card-cal"><i class="fa-solid fa-fire"></i> 310 Kcal</span>
+                    </div>
+                    <p class="card-text">น้ำแข็งไสสไตล์เกาหลี รสนมหอมหวาน พร้อมเนื้อสตรอว์เบอร์รีสดชิ้นโต...</p>
                     <button class="btn-detail" onclick="openDetailModal(this)">
                         <i class="fa-solid fa-circle-info"></i> ดูรายละเอียด
                     </button>
                 </div>
             </div>
-
-            <!-- Item 5: Drink -->
-            <div class="card" data-name="drink"
-                 data-title="ชาไทยเย็นนมสด" 
-                 data-price="฿55" 
-                 data-desc="ชาไทยสูตรเข้มข้น หอมกลิ่นชาไทยสกัดสด ผสมผสานนมสดแท้รสชาติกลมกล่อม หวานกำลังดี"
-                 data-cal="190 Kcal"
-                 data-img="https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=600&q=80">
+            <div class="card" data-name="drink" data-title="ชาไทยเย็นนมสดแท้" data-price="฿55"
+                data-desc="ชาไทยสูตรเข้มข้น หอมกลิ่นใบชาไทยสกัดสด ผสมผสานนมสดแท้รสชาติกลมกล่อม หวานมันกำลังดี ไม่เลี่ยน"
+                data-cal="190 Kcal"
+                data-img="https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=600&q=80">
                 <div class="card-img-wrapper">
                     <span class="badge badge-drink">เครื่องดื่ม</span>
-                    <img src="https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=600&q=80" alt="ชาไทย" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=Food+Image'">
+                    <img src="https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=600&q=80"
+                        alt="ชาไทย">
                 </div>
                 <div class="card-body">
                     <div class="card-header-row">
-                        <h3 class="card-title">ชาไทยเย็นนมสด</h3>
+                        <h3 class="card-title">ชาไทยเย็นนมสดแท้</h3>
                         <span class="card-price">฿55</span>
                     </div>
-                    <p class="card-text">ชาไทยสกัดสด หอมเข้มกลมกล่อม ผสมนมสดแท้ 100%...</p>
+                    <div class="card-meta-row">
+                        <span class="card-cal"><i class="fa-solid fa-fire"></i> 190 Kcal</span>
+                    </div>
+                    <p class="card-text">ชาไทยสกัดสด หอมเข้มกลมกล่อม ผสมนมสดแท้ 100% หวานมันกำลังพอดี...</p>
                     <button class="btn-detail" onclick="openDetailModal(this)">
                         <i class="fa-solid fa-circle-info"></i> ดูรายละเอียด
                     </button>
                 </div>
             </div>
 
-
-            <div class="card" data-name="drink"
-                 data-title="น้ำส้มคั้นสด 100%" 
-                 data-price="฿45" 
-                 data-desc="น้ำส้มคั้นสดไม่ผสมน้ำตาล อุดมด้วยวิตามินซี ให้ความสดชื่นคลายร้อนอย่างเป็นธรรมชาติ"
-                 data-cal="110 Kcal"
-                 data-img="https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=600&q=80">
+            <!-- Item 6: Orange Juice -->
+            <div class="card" data-name="drink" data-title="น้ำส้มคั้นสด 100%" data-price="฿45"
+                data-desc="น้ำส้มธรรมชาติคั้นสดใหม่ทุกวัน ไม่ผสมน้ำตาล อุดมด้วยวิตามินซีธรรมชาติ ให้ความสดชื่นคลายร้อนอย่างเต็มที่"
+                data-cal="110 Kcal"
+                data-img="https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=600&q=80">
                 <div class="card-img-wrapper">
                     <span class="badge badge-drink">เครื่องดื่ม</span>
-                    <img src="https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=600&q=80" alt="น้ำส้มคั้น" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=Food+Image'">
+                    <img src="https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=600&q=80"
+                        alt="น้ำส้มคั้น">
                 </div>
                 <div class="card-body">
                     <div class="card-header-row">
                         <h3 class="card-title">น้ำส้มคั้นสด 100%</h3>
                         <span class="card-price">฿45</span>
                     </div>
-                    <p class="card-text">น้ำส้มธรรมชาติ คั้นสดใหม่ทุกวัน เพิ่มความสดชื่นทันทีที่ดื่ม...</p>
+                    <div class="card-meta-row">
+                        <span class="card-cal"><i class="fa-solid fa-fire"></i> 110 Kcal</span>
+                    </div>
+                    <p class="card-text">น้ำส้มธรรมชาติ คั้นสดใหม่ทุกวัน อุดมวิตามินซี เพิ่มความสดชื่นทันใจ...</p>
                     <button class="btn-detail" onclick="openDetailModal(this)">
                         <i class="fa-solid fa-circle-info"></i> ดูรายละเอียด
                     </button>
                 </div>
             </div>
 
-            <div class="card" data-name="dessert"
-                 data-title="เค้กช็อกโกแลตหน้าร้าน" 
-                 data-price="฿95" 
-                 data-desc="เค้กช็อกโกแลตเนื้อนุ่ม สอดไส้และราดหน้าด้วยช็อกโกแลตฟัดจ์เข้มข้น ไม่หวานจัด"
-                 data-cal="380 Kcal"
-                 data-img="https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=600&q=80">
+            <!-- Item 7: Chocolate Cake -->
+            <div class="card" data-name="dessert" data-title="เค้กช็อกโกแลตหน้านุ่ม" data-price="฿95"
+                data-desc="เค้กช็อกโกแลตเนื้อสปองจ์นุ่มฟู สอดไส้และราดหน้าด้วยช็อกโกแลตฟัดจ์เข้มข้น รสชาติหวานปนขมนิดๆ อร่อยลงตัว"
+                data-cal="380 Kcal"
+                data-img="https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=600&q=80">
                 <div class="card-img-wrapper">
                     <span class="badge badge-dessert">ของหวาน</span>
-                    <img src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=600&q=80" alt="เค้กช็อกโกแลต" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=Food+Image'">
+                    <img src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=600&q=80"
+                        alt="เค้กช็อกโกแลต">
                 </div>
                 <div class="card-body">
                     <div class="card-header-row">
                         <h3 class="card-title">เค้กช็อกโกแลตหน้านุ่ม</h3>
                         <span class="card-price">฿95</span>
                     </div>
-                    <p class="card-text">เค้กช็อกโกแลตเนื้อนุ่ม ราดซอสช็อกโกแลตเข้มข้นเต็มคำ...</p>
+                    <div class="card-meta-row">
+                        <span class="card-cal"><i class="fa-solid fa-fire"></i> 380 Kcal</span>
+                    </div>
+                    <p class="card-text">เค้กช็อกโกแลตเนื้อนุ่ม ราดซอสช็อกโกแลตเข้มข้นเต็มคำ รสชาติกลมกล่อม...</p>
                     <button class="btn-detail" onclick="openDetailModal(this)">
                         <i class="fa-solid fa-circle-info"></i> ดูรายละเอียด
                     </button>
                 </div>
             </div>
 
-           
-            <div class="card" data-name="appetizer"
-                 data-title="เฟรนช์ฟรายส์ชีสราด" 
-                 data-price="฿69" 
-                 data-desc="เฟรนช์ฟรายส์ทอดกรอบสีเหลืองทอง ราดด้วยชีสซอสเข้มข้น รสชาตินัวเค็มหวานกำลังดี"
-                 data-cal="410 Kcal"
-                 data-img="https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=600&q=80">
+            <!-- Item 8: French Fries -->
+            <div class="card" data-name="appetizer" data-title="เฟรนช์ฟรายส์ราดชีส" data-price="฿69"
+                data-desc="เฟรนช์ฟรายส์ทอดกรอบสีเหลืองทอง ไม่อมน้ำมัน ราดด้วยชีสซอสเข้มข้น รสชาตินัวเค็มมันหวานกำลังดี ทานเพลิน"
+                data-cal="410 Kcal"
+                data-img="https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=600&q=80">
                 <div class="card-img-wrapper">
                     <span class="badge badge-appetizer">ของทานเล่น</span>
-                    <img src="https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=600&q=80" alt="เฟรนช์ฟรายส์" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=Food+Image'">
+                    <img src="https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=600&q=80"
+                        alt="เฟรนช์ฟรายส์">
                 </div>
                 <div class="card-body">
                     <div class="card-header-row">
                         <h3 class="card-title">เฟรนช์ฟรายส์ราดชีส</h3>
                         <span class="card-price">฿69</span>
                     </div>
-                    <p class="card-text">เฟรนช์ฟรายส์ทอดกรอบ ร้อนๆ ราดซอสชีสเต็มๆ จาน...</p>
+                    <div class="card-meta-row">
+                        <span class="card-cal"><i class="fa-solid fa-fire"></i> 410 Kcal</span>
+                    </div>
+                    <p class="card-text">เฟรนช์ฟรายส์ทอดกรอบ ร้อนๆ ราดซอสชีสเต็มๆ จาน ทานคู่ของว่าง...</p>
                     <button class="btn-detail" onclick="openDetailModal(this)">
                         <i class="fa-solid fa-circle-info"></i> ดูรายละเอียด
                     </button>
@@ -253,10 +380,9 @@
 
         </div>
     </div>
-
     <div id="detailModal" class="modal-backdrop">
         <div class="modal-content">
-            <button class="modal-close" onclick="closeDetailModal()">&times;</button>
+            <button class="modal-close" onclick="closeDetailModal()" aria-label="ปิด">&times;</button>
             <div class="modal-grid">
                 <div class="modal-img-container">
                     <img id="modalImage" src="" alt="Food detail">
@@ -268,133 +394,183 @@
                     </div>
                     <p id="modalCal" class="modal-cal"><i class="fa-solid fa-fire"></i> พลังงาน: 0 Kcal</p>
                     <hr class="modal-divider">
-                    <h3>รายละเอียดเมนู</h3>
+                    <h3>รายละเอียดและคุณค่าทางอาหาร</h3>
                     <p id="modalDesc" class="modal-desc">คำอธิบายรายละเอียดอาหาร...</p>
-                    
+
                     <div class="modal-actions">
-                        <button class="btn-order" onclick="alert('เพิ่มเมนูนี้เรียบร้อย!')">
-                            <i class="fa-solid fa-cart-plus"></i> สั่งเมนูนี้
+                        <button class="btn-order" onclick="alert('เพิ่มเมนูนี้เรียบร้อยแล้ว!')">
+                            <i class="fa-solid fa-cart-plus"></i> สั่งเมนูนี้ทันที
                         </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="container swiper">
-        <div class="header-section">
-            <h2><i class="fa-solid fa-star"></i> เมนูแนะนำพิเศษ & โปรโมชั่นยอดฮิต</h2>
-            <p>สัมผัสรสชาติความอร่อยที่เชฟคัดสรรมาเป็นพิเศษ การันตีความสดใหม่และรสชาติระดับพรีเมียม</p>
-        </div>
+    <aside class="sidebar">
+        <ul class="nav-menu">
+            <!-- Menu 1 -->
+            <li class="nav-item dropdown">
+                <button class="nav-link dropdown-btn">
+                    <span class="link-text">หมวดหมู่อาหาร</span>
+                    <i class="fa-solid fa-chevron-down arrow-icon"></i>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a href="javascript:void(0)" onclick="filterCategory('all')"
+                            class="dropdown-link">เมนูทั้งหมด</a></li>
+                    <li><a href="javascript:void(0)" onclick="filterCategory('main')"
+                            class="dropdown-link">อาหารจานหลัก</a></li>
+                    <li><a href="javascript:void(0)" onclick="filterCategory('dessert')" class="dropdown-link">ของหวาน
+                            &amp; เบเกอรี่</a></li>
+                    <li><a href="javascript:void(0)" onclick="filterCategory('drink')"
+                            class="dropdown-link">เครื่องดื่มสกัดสด</a></li>
+                    <li><a href="javascript:void(0)" onclick="filterCategory('appetizer')"
+                            class="dropdown-link">ของทานเล่น &amp; ทอด</a></li>
+                </ul>
+            </li>
 
-        <div class="card-wrapper">
-            <ul class="card-list swiper-wrapper">
+            <!-- Menu 2 -->
+            <li class="nav-item dropdown">
+                <button class="nav-link dropdown-btn">
+                    <span class="link-text">ระบบสูตรอาหาร</span>
+                    <i class="fa-solid fa-chevron-down arrow-icon"></i>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a href="foote.html" class="dropdown-link">เพิ่มสูตรอาหารใหม่</a></li>
+                    <li><a href="#catalog-section" class="dropdown-link">รายการอาหารยอดนิยม</a></li>
+                </ul>
+            </li>
 
-                <li class="card card-item swiper-slide"
-                    data-name="main"
-                    data-title="สเต็กเนื้อริบอายย่างเนยกระเทียม"
-                    data-price="฿329"
-                    data-desc="เนื้อริบอายคัดพิเศษระดับพรีเมียม นุ่มชุ่มฉ่ำ ย่างเนยกระเทียมและโรสแมรี่หอมกรุ่น เสิร์ฟคู่กับมันบดเนียนนุ่มและผักย่างสดใหม่"
-                    data-cal="620 Kcal"
-                    data-img="https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80">
-                    <div class="card-link">
-                        <img src="https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80" alt="สเต็กเนื้อริบอาย" class="card-image" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=Steak'">
-                        <span class="badge">เมนูแนะนำ</span>
-                        <h3 class="card-title">สเต็กเนื้อริบอายย่างเนยกระเทียม</h3>
-                        <p class="card-desc">เนื้อริบอายคัดเกรดพรีเมียม นุ่มชุ่มฉ่ำ หอมกลิ่นเนยกระเทียมย่างกระทะร้อน เสิร์ฟพร้อมมันบดสูตรโฮมเมด</p>
-                        <div class="card-footer-row">
-                            <span class="card-price">฿329</span>
-                            <button class="card-button" title="ดูรายละเอียด" onclick="openDetailModal(this)"><i class="fa-solid fa-arrow-right"></i></button>
-                        </div>
-                    </div>
-                </li>
-                <li class="card card-item swiper-slide"
-                    data-name="main"
-                    data-title="ต้มยำกุ้งแม่น้ำหม้อไฟโบราณ"
-                    data-price="฿259"
-                    data-desc="ต้มยำน้ำข้นสูตรดั้งเดิม มันกุ้งเยิ้มๆ ปรุงรสด้วยสมุนไพรสด หอมกลิ่นมะนาวแท้และน้ำพริกเผา รสชาติจัดจ้านถึงใจ"
-                    data-cal="450 Kcal"
-                    data-img="https://images.unsplash.com/photo-1555126634-323283e090fa?auto=format&fit=crop&w=600&q=80">
-                    <div class="card-link">
-                        <img src="https://images.unsplash.com/photo-1555126634-323283e090fa?auto=format&fit=crop&w=600&q=80" alt="ต้มยำกุ้งแม่น้ำ" class="card-image" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=TomYum'">
-                        <span class="badge">ซิกเนเจอร์</span>
-                        <h3 class="card-title">ต้มยำกุ้งแม่น้ำหม้อไฟโบราณ</h3>
-                        <p class="card-desc">ต้มยำกุ้งแม่น้ำตัวโต มันกุ้งเยิ้ม รสชาติเข้มข้นจัดจ้าน ครบรส เปรี้ยว เค็ม เผ็ด หวานกลมกล่อม</p>
-                        <div class="card-footer-row">
-                            <span class="card-price">฿259</span>
-                            <button class="card-button" title="ดูรายละเอียด" onclick="openDetailModal(this)"><i class="fa-solid fa-arrow-right"></i></button>
-                        </div>
-                    </div>
-                </li>
+            <!-- Menu 3 -->
+            <li class="nav-item dropdown">
+                <button class="nav-link dropdown-btn">
+                    <span class="link-text">คลังรายวิชาอื่น</span>
+                    <i class="fa-solid fa-chevron-down arrow-icon"></i>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a href="../Coding/coding.html" class="dropdown-link">การเขียนโค้ด (Coding)</a></li>
+                    <li><a href="../Circuit-building basics/circuits.html" class="dropdown-link">วงจรไฟฟ้าและ IoT</a>
+                    </li>
+                    <li><a href="../Tourism/travel.html" class="dropdown-link">การท่องเที่ยว &amp; เดินทาง</a></li>
+                    <li><a href="../../index.php" class="dropdown-link">ออกแบบ UX/UI หน้าเว็บ</a></li>
+                    <li><a href="../student.html" class="dropdown-link">กลับหน้ารวมรายวิชา</a></li>
+                </ul>
+            </li>
 
-                <!-- Slide 3 -->
-                <li class="card card-item swiper-slide"
-                    data-name="dessert"
-                    data-title="ฮันนี่โทสต์ผลไม้สดไอศกรีม"
-                    data-price="฿159"
-                    data-desc="ขนมปังอบเนยแท้ชุ่มฉ่ำ หอมกรอบนอกนุ่มใน ท็อปปิ้งด้วยสตรอว์เบอร์รีและกล้วยหอมสด ราดน้ำผึ้งแท้ เสิร์ฟคู่ไอศกรีมวานิลลา"
-                    data-cal="520 Kcal"
-                    data-img="https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?auto=format&fit=crop&w=600&q=80">
-                    <div class="card-link">
-                        <img src="https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?auto=format&fit=crop&w=600&q=80" alt="ฮันนี่โทสต์ผลไม้สด" class="card-image" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=HoneyToast'">
-                        <span class="badge">ของหวานยอดฮิต</span>
-                        <h3 class="card-title">ฮันนี่โทสต์ผลไม้สดไอศกรีม</h3>
-                        <p class="card-desc">โทสต์อบเนยหอมกรุ่น กรอบนอกนุ่มใน เสิร์ฟคู่ผลไม้สดและไอศกรีมพรีเมียม ราดน้ำผึ้งธรรมชาติแท้ 100%</p>
-                        <div class="card-footer-row">
-                            <span class="card-price">฿159</span>
-                            <button class="card-button" title="ดูรายละเอียด" onclick="openDetailModal(this)"><i class="fa-solid fa-arrow-right"></i></button>
-                        </div>
-                    </div>
-                </li>
+            <div id="program-grid1">
+                <a href="#catalog-section">ไปยังแคตตาล็อกเมนูอาหาร</a>
+            </div>
+        </ul>
+    </aside>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Sidebar Accordion Logic
+            const dropdownBtns = document.querySelectorAll(".dropdown-btn");
+            dropdownBtns.forEach((btn) => {
+                btn.addEventListener("click", function () {
+                    const parentDropdown = this.parentElement;
+                    document.querySelectorAll(".dropdown").forEach((item) => {
+                        if (item !== parentDropdown) {
+                            item.classList.remove("open");
+                        }
+                    });
+                    parentDropdown.classList.toggle("open");
+                });
+            });
 
-                <!-- Slide 4 -->
-                <li class="card card-item swiper-slide"
-                    data-name="drink"
-                    data-title="มัทฉะลาเต้พรีเมียมเกียวโต"
-                    data-price="฿85"
-                    data-desc="ชาเขียวมัทฉะเกรดพิธีการนำเข้าจากอุจิ เกียวโต ตีสดแก้วต่อแก้ว ผสมกับนมสดแท้รสละมุน หอมหวานมันกำลังดี"
-                    data-cal="190 Kcal"
-                    data-img="https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=600&q=80">
-                    <div class="card-link">
-                        <img src="https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=600&q=80" alt="มัทฉะลาเต้" class="card-image" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=Matcha'">
-                        <span class="badge">เครื่องดื่มขายดี</span>
-                        <h3 class="card-title">มัทฉะลาเต้พรีเมียมเกียวโต</h3>
-                        <p class="card-desc">ชาเขียวมัทฉะแท้เกรดพรีเมียม หอมเข้มข้นละมุนลิ้น ผสมนมสดแท้ ดื่มง่าย เติมพลังความสดชื่นได้ตลอดวัน</p>
-                        <div class="card-footer-row">
-                            <span class="card-price">฿85</span>
-                            <button class="card-button" title="ดูรายละเอียด" onclick="openDetailModal(this)"><i class="fa-solid fa-arrow-right"></i></button>
-                        </div>
-                    </div>
-                </li>
+            // Food Filtering & Live Search
+            const filterButtons = document.querySelectorAll("#filter-buttons .btn-filter");
+            const filterableCards = document.querySelectorAll("#filterable-cards .card");
+            const searchInput = document.getElementById("foodSearchInput");
 
-                <!-- Slide 5 -->
-                <li class="card card-item swiper-slide"
-                    data-name="main"
-                    data-title="พิซซ่าเตาถ่านซีฟู้ดทรัฟเฟิล"
-                    data-price="฿299"
-                    data-desc="แป้งพิซซ่าโฮมเมดบางกรอบสไตล์อิตาเลียน อบในเตาถ่านความร้อนสูง ท็อปด้วยกุ้ง หมึก หอยแมลงภู่นิวซีแลนด์ และซอสเห็ดทรัฟเฟิล"
-                    data-cal="680 Kcal"
-                    data-img="https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80">
-                    <div class="card-link">
-                        <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80" alt="พิซซ่าเตาถ่านซีฟู้ด" class="card-image" onerror="this.src='https://placehold.co/600x400/1e293b/f8fafc?text=Pizza'">
-                        <span class="badge">สเปเชียล</span>
-                        <h3 class="card-title">พิซซ่าเตาถ่านซีฟู้ดทรัฟเฟิล</h3>
-                        <p class="card-desc">พิซซ่าแป้งบางกรอบหอมเตาถ่าน อัดแน่นด้วยอาหารทะเลสดพรีเมียม ผสานความหอมเลอค่าของซอสทรัฟเฟิลเข้มข้น</p>
-                        <div class="card-footer-row">
-                            <span class="card-price">฿299</span>
-                            <button class="card-button" title="ดูรายละเอียด" onclick="openDetailModal(this)"><i class="fa-solid fa-arrow-right"></i></button>
-                        </div>
-                    </div>
-                </li>
-            </ul>
+            let currentCategory = 'all';
 
-            <div class="swiper-pagination"></div>
-            <div class="swiper-slide-button swiper-button-prev"></div>
-            <div class="swiper-slide-button swiper-button-next"></div>
-        </div>
-    </div>
-    <!-- Swiper JS CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-    <script src="jsdw/cs.js"></script>
-    <script src="../demo-container/Food/jsdw/cs.js"></script>
+            function applyFilter() {
+                const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+                filterableCards.forEach(card => {
+                    const cardCat = card.dataset.name || '';
+                    const cardTitle = (card.dataset.title || '').toLowerCase();
+                    const cardDesc = (card.dataset.desc || '').toLowerCase();
+
+                    const matchesCat = (currentCategory === 'all' || cardCat === currentCategory);
+                    const matchesQuery = (!query || cardTitle.includes(query) || cardDesc.includes(query));
+
+                    if (matchesCat && matchesQuery) {
+                        card.classList.remove('hide');
+                        card.classList.add('show');
+                    } else {
+                        card.classList.add('hide');
+                        card.classList.remove('show');
+                    }
+                });
+            }
+
+            filterButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    filterButtons.forEach(b => b.classList.remove('active'));
+                    e.currentTarget.classList.add('active');
+                    currentCategory = e.currentTarget.dataset.filter || 'all';
+                    applyFilter();
+                });
+            });
+
+            if (searchInput) {
+                searchInput.addEventListener('input', applyFilter);
+            }
+
+            window.filterCategory = function (cat) {
+                currentCategory = cat;
+                const targetBtn = document.querySelector(`#filter-buttons button[data-filter="${cat}"]`);
+                if (targetBtn) {
+                    filterButtons.forEach(b => b.classList.remove('active'));
+                    targetBtn.classList.add('active');
+                }
+                applyFilter();
+                const section = document.getElementById('catalog-section');
+                if (section) {
+                    section.scrollIntoView({ behavior: 'smooth' });
+                }
+            };
+
+            // Modal Dialog Logic
+            const modal = document.getElementById("detailModal");
+            const modalImg = document.getElementById("modalImage");
+            const modalTitle = document.getElementById("modalTitle");
+            const modalPrice = document.getElementById("modalPrice");
+            const modalCal = document.getElementById("modalCal");
+            const modalDesc = document.getElementById("modalDesc");
+
+            window.openDetailModal = function (btn) {
+                const card = btn.closest(".card");
+                if (!card || !modal) return;
+
+                modalImg.src = card.dataset.img || '';
+                modalTitle.textContent = card.dataset.title || '';
+                modalPrice.textContent = card.dataset.price || '';
+                modalCal.innerHTML = `<i class="fa-solid fa-fire"></i> พลังงาน: ${card.dataset.cal || '350 Kcal'}`;
+                modalDesc.textContent = card.dataset.desc || '';
+
+                modal.classList.add("active");
+                document.body.style.overflow = "hidden";
+            };
+
+            window.closeDetailModal = function () {
+                if (!modal) return;
+                modal.classList.remove("active");
+                document.body.style.overflow = "";
+            };
+
+            if (modal) {
+                modal.addEventListener("click", (e) => {
+                    if (e.target === modal) closeDetailModal();
+                });
+            }
+            window.addEventListener("keydown", (e) => {
+                if (e.key === "Escape") closeDetailModal();
+            });
+        });
+    </script>
+
 </body>
+
 </html>

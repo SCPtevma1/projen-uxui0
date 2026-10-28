@@ -4,502 +4,350 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>เขียนโค้ด | ITDevTeam Coding</title>
+  <title>การเขียนโค้ดและพัฒนาโปรแกรม (Coding & Development) | คลังความรู้รายวิชา</title>
   <meta name="description" content="เรียนรู้การเขียนโปรแกรมตั้งแต่พื้นฐาน HTML, CSS, JavaScript, Python และอื่น ๆ">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&display=swap"
-    rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  <link rel="stylesheet" href="/demo-container/Coding/quizzedw5/[[['.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="coding.css">
 </head>
 
 <body>
-  <nav class="navbar">
+  <header class="top-navbar">
+    <a href="../student.html" class="back-btn">
+      <i class="ph ph-arrow-left"></i> กลับไปหน้ารวมรายวิชา
+    </a>
+    <span class="page-tag">ระดับ 2 • การเขียนโค้ดและพัฒนาโปรแกรม</span>
+  </header>
+  <section class="hero">
+    <div class="hero-container">
+      <div class="hero-badge">
+        <i class="ph ph-code"></i> การเขียนโปรแกรมและการพัฒนาซอฟต์แวร์ (Coding & Software Development)
+      </div>
+      <h1>การเขียนโค้ดและพัฒนาโปรแกรม (Coding & Development)</h1>
+      <p>เรียนรู้หัวใจของการสร้างซอฟต์แวร์ กฎการเขียนโค้ดที่มีประสิทธิภาพ ตั้งแต่การทำหน้าเว็บ ระบบฐานข้อมูล
+        สู่การประยุกต์ใช้ปัญญาประดิษฐ์และนวัตกรรมดิจิทัล</p>
 
-    <div class="navbar-top">
-      <a href="../../index.php" class="navbar-brand">
-        <div class="brand-icon"><i class="ph ph-code"></i></div>
-        <span>ITDevTeam</span>
+      <div class="hero-stats">
+        <div class="stat-pill"><i class="ph ph-browsers"></i> เว็บพัฒนา HTML / CSS / JS</div>
+        <div class="stat-pill"><i class="ph ph-terminal"></i> ไพทอน & ภาษา C / C++ / PHP</div>
+        <div class="stat-pill"><i class="ph ph-database"></i> ฐานข้อมูล SQL & Data Science R</div>
+      </div>
+    </div>
+  </section>
+  <main class="container">
+    <div class="grid-2">
+
+      <!-- Topic Card 1 -->
+      <article class="topic-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="ph ph-browsers"></i>
+          </div>
+          <div>
+            <h3>1. การพัฒนาเว็บไซต์ (Web Development)</h3>
+          </div>
+        </div>
+        <p>รากฐานสำคัญในการสร้างสรรค์เว็บไซต์และเว็บแอปพลิเคชันที่สามารถโต้ตอบกับผู้ใช้งานได้แบบเรียลไทม์</p>
+        <ul class="highlight-list">
+          <li><strong>HTML5:</strong> โครงสร้างพื้นฐาน วางเลย์เอาต์ ข้อความ รูปภาพ และองค์ประกอบความหมาย</li>
+          <li><strong>CSS3:</strong> ตกแต่งความสวยงาม จัดระเบียบ Responsive Design และแอนิเมชันที่ลื่นไหล</li>
+          <li><strong>JavaScript:</strong> เพิ่มการโต้ตอบ Logic จัดการ Event และเชื่อมต่อ API ฝั่ง Frontend</li>
+          <li><strong>PHP:</strong> ภาษาฝั่งเซิร์ฟเวอร์ (Backend) สำหรับจัดการฐานข้อมูล เซสชัน และความปลอดภัย</li>
+        </ul>
+      </article>
+
+      <!-- Topic Card 2 -->
+      <article class="topic-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="ph ph-snake"></i>
+          </div>
+          <div>
+            <h3>2. ไพทอนและปัญญาประดิษฐ์ (Python & AI)</h3>
+          </div>
+        </div>
+        <p>ภาษายอดนิยมอันดับหนึ่งสำหรับการสร้างระบบ Automation, Data Science และ Machine Learning ยุคใหม่</p>
+        <ul class="highlight-list">
+          <li><strong>ไวยากรณ์เข้าใจง่าย:</strong> ออกแบบให้ใกล้เคียงภาษามนุษย์ เหมาะสำหรับผู้เริ่มต้นและมืออาชีพ</li>
+          <li><strong>วิทยาการข้อมูล (Data Science):</strong> วิเคราะห์ ประมวลผลข้อมูล และทำภาพจำลองด้วย Pandas & NumPy
+          </li>
+          <li><strong>AI & Machine Learning:</strong> สถาปัตยกรรมโมเดล Deep Learning และระบบรู้จำอัตโนมัติ</li>
+          <li><strong>Backend Automation:</strong> เขียนสคริปต์ดึงข้อมูล จัดการไฟล์ และสร้าง REST API อัตโนมัติ</li>
+        </ul>
+      </article>
+
+      <!-- Topic Card 3 -->
+      <article class="topic-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="ph ph-cpu"></i>
+          </div>
+          <div>
+            <h3>3. ภาษาเชิงระบบและเกม (C & C++)</h3>
+          </div>
+        </div>
+        <p>ก้าวสู่ระดับลึกของการเขียนโปรแกรมที่เน้นประสิทธิภาพสูงสุด การควบคุมหน่วยความจำ และระบบฝังตัว</p>
+        <ul class="highlight-list">
+          <li><strong>ภาษา C:</strong> เข้าใจการทำงานของคอมพิวเตอร์อย่างถ่องแท้ การจัดการ Pointer และ Memory</li>
+          <li><strong>C++ และ OOP:</strong> เขียนโปรแกรมเชิงวัตถุ ออกแบบระบบขนาดใหญ่สำหรับเกมระดับ AAA</li>
+          <li><strong>ความเร็วระดับฮาร์ดแวร์:</strong> ใช้ในระบบปฏิบัติการ ซอฟต์แวร์กราฟิก และไมโครคอนโทรลเลอร์</li>
+        </ul>
+      </article>
+
+      <!-- Topic Card 4 -->
+      <article class="topic-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="ph ph-database"></i>
+          </div>
+          <div>
+            <h3>4. ฐานข้อมูลและสถิติ (SQL & R)</h3>
+          </div>
+        </div>
+        <p>การจัดเก็บ ค้นหา จัดการข้อมูล และการประมวลผลทางสถิติเพื่อการตัดสินใจทางธุรกิจและงานวิจัย</p>
+        <ul class="highlight-list">
+          <li><strong>SQL Relational Database:</strong> เขียนคำสั่ง Query ค้นหา จัดกลุ่ม และเชื่อมโยงตารางข้อมูล</li>
+          <li><strong>Data Integrity & Indexing:</strong> เพิ่มความเร็วในการค้นหาข้อมูลปริมาณมหาศาลและรักษาความถูกต้อง
+          </li>
+          <li><strong>ภาษา R:</strong> การวิเคราะห์สถิติขั้นสูง โมเดลพยากรณ์ และ Data Visualization ระดับงานวิจัย</li>
+        </ul>
+      </article>
+
+    </div>
+  </main>
+  <div class="img-conrra">
+    <a href="../subjects/Enter the lesson/HTML.HTML">
+      <div class="con-rra">
+        <img src="../../img/ahmetyuksek-winding-path-9840681_1920.jpg" alt="เส้นทางสู่ Frontend Developer">
+        <div class="overlay-text">
+          <h3>เส้นทาง Web Developer</h3>
+          <p>เรียนรู้ HTML, CSS และ JavaScript สู่การเป็นนักพัฒนาส่วนหน้ามืออาชีพ...</p>
+        </div>
+      </div>
+    </a>
+
+    <a href="../subjects/Enter the lesson/Pyton.HTML">
+      <div class="con-rra">
+        <img src="../../img/chiemseherin-milky-way-8149815_1920.jpg" alt="พัฒนาระบบด้วย Python & AI">
+        <div class="overlay-text">
+          <h3>เปิดโลก Python & AI</h3>
+          <p>ก้าวข้ามขีดจำกัดด้วยการวิเคราะห์ข้อมูลและเทคโนโลยีปัญญาประดิษฐ์...</p>
+        </div>
+      </div>
+    </a>
+
+    <a href="../subjects/Enter the lesson/SQL.HTML">
+      <div class="con-rra">
+        <img src="../../img/ahmetyuksek-mountain-range-9842371_1920.jpg" alt="การจัดการฐานข้อมูล">
+        <div class="overlay-text">
+          <h3>สถาปัตยกรรม Database</h3>
+          <p>ออกแบบโครงสร้างข้อมูลที่มีเสถียรภาพและรองรับการเติบโตของระบบ...</p>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="all-pro" id="program-grid">
+    <h2><i class="ph ph-code-block"></i> รวมภาษาโปรแกรมและเครื่องมือสำหรับนักพัฒนา</h2>
+
+    <div class="program-grid">
+      <!-- HTML -->
+      <a href="../subjects/Enter the lesson/HTML.HTML" class="program-card">
+        <div class="logo-box">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg" alt="HTML5 Logo">
+        </div>
+        <span class="program-name">HTML5</span>
       </a>
 
-      <div class="navbar-links">
-        <a href="../student.html">หน้าหลัก</a>
-        <a href="../student.html">หน้าหลัก</a>
-        <a href="../student.html">หน้าหลัก</a>
-        <a href="../student.html">หน้าหลัก</a>
-        <a href="../student.html">หน้าหลัก</a>
-      </div>
-
-      <div class="navbar-actions">
-        <a href="../student.html" class="btn-back">
-          <i class="ph ph-arrow-left"></i> กลับหน้ารวม
-        </a>
-      </div>
-    </div>
-
-    <div class="navbar-sub">
-      <div class="sub-nav-inner">
-        <a href="#roadmap" class="sub-link active"><i class="ph ph-map-trifold"></i> Roadmap</a>
-        <a href="#languages" class="sub-link"><i class="ph ph-code-block"></i> ภาษาทั้งหมด</a>
-
-        <div class="dropdown">
-          <a href="#" class="sub-link"><i class="ph ph-browsers"></i> เว็บพัฒนา <i class="ph ph-caret-down"
-              style="margin-left:2px;font-size:0.7rem;"></i></a>
-          <div class="dropdown-menu">
-            <a href="/demo-container/subjects/Enter the lesson/HTML.HTML"><i class="ph ph-file-html"></i> HTML</a>
-            <a href="/demo-container/subjects/Enter the lesson/CSS.HTML"><i class="ph ph-paint-brush"></i> CSS</a>
-            <a href="/demo-container/subjects/Enter the lesson/JavaScript.HTML"><i class="ph ph-lightning"></i>
-              JavaScript</a>
-            <a href="/demo-container/subjects/Enter the lesson/PHP.HTML"><i class="ph ph-server"></i> PHP</a>
-          </div>
+      <!-- CSS -->
+      <a href="../subjects/Enter the lesson/CSS.HTML" class="program-card">
+        <div class="logo-box">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg" alt="CSS3 Logo">
         </div>
+        <span class="program-name">CSS3</span>
+      </a>
 
-        <div class="dropdown">
-          <a href="#" class="sub-link"><i class="ph ph-terminal"></i> ภาษาอื่น ๆ <i class="ph ph-caret-down"
-              style="margin-left:2px;font-size:0.7rem;"></i></a>
-          <div class="dropdown-menu">
-            <a href="/demo-container/subjects/Enter the lesson/Pyton.HTML"><i class="ph ph-snake"></i> Python</a>
-            <a href="/demo-container/subjects/Enter the lesson/C.HTML"><i class="ph ph-brackets-curly"></i> C</a>
-            <a href="/demo-container/subjects/Enter the lesson/C++.HTML"><i class="ph ph-brackets-curly"></i> C++</a>
-            <a href="/demo-container/subjects/Enter the lesson/R.HTML"><i class="ph ph-chart-bar"></i> R</a>
-            <a href="/demo-container/subjects/Enter the lesson/SQL.HTML"><i class="ph ph-database"></i> SQL</a>
-          </div>
+      <!-- JavaScript -->
+      <a href="../subjects/Enter the lesson/JS.HTML" class="program-card">
+        <div class="logo-box">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg"
+            alt="JavaScript Logo">
         </div>
+        <span class="program-name">JavaScript</span>
+      </a>
 
-        <a href="#mindset" class="sub-link"><i class="ph ph-brain"></i> Mindset</a>
-        <a href="#community" class="sub-link"><i class="ph ph-users-three"></i> Community</a>
-      </div>
-    </div>
-  </nav>
-  <section class="hero">
-    <div class="hero-eyebrow"><i class="ph ph-code"></i> เส้นทางการเขียนโปรแกรม</div>
-    <h1>เรียนรู้ Coding<br>จาก 0 สู่โปรแกรมเมอร์</h1>
-    <p>ทุกภาษาเขียนโปรแกรมที่คุณต้องการ · เรียนตามลำดับ · มีคลิป ตัวอย่าง และแบบทดสอบ</p>
-
-    <div class="hero-stats">
-      <div class="stat-item">
-        <div class="stat-num">9</div>
-        <div class="stat-label">ภาษาโปรแกรม</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-num">120+</div>
-        <div class="stat-label">บทเรียน</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-num">24/7</div>
-        <div class="stat-label">เรียนได้ทุกเวลา</div>
-      </div>
-    </div>
-  </section>
-
-  <div class="page-content">
-
-    <aside class="roadmap-panel" id="roadmap">
-
-      <div class="panel-header">
-        <div class="badge-pill"><i class="ph ph-map-trifold"></i> Path &amp; Roadmap</div>
-        <h2>เส้นทางการเรียนรู้</h2>
-        <p>เรียนตามลำดับ ตั้งแต่พื้นฐานจนถึงโปรเจกต์จริง</p>
-      </div>
-
-      <div class="roadmap-path">
-        <div class="roadmap-node">
-          <div class="node-num">1</div>
-          <a href="/demo-container/subjects/Enter the lesson/HTML.HTML" class="node-btn">
-            <div class="node-btn-left">
-              <div class="lang-icon lang-html">H</div>
-              <span>HTML</span>
-            </div>
-            <i class="ph ph-arrow-right node-arrow"></i>
-          </a>
+      <!-- Python -->
+      <a href="../subjects/Enter the lesson/Pyton.HTML" class="program-card">
+        <div class="logo-box">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" alt="Python Logo">
         </div>
-        <div class="roadmap-node">
-          <div class="node-num">2</div>
-          <a href="/demo-container/subjects/Enter the lesson/CSS.HTML" class="node-btn">
-            <div class="node-btn-left">
-              <div class="lang-icon lang-css">C</div>
-              <span>CSS</span>
-            </div>
-            <i class="ph ph-arrow-right node-arrow"></i>
-          </a>
-        </div>
-        <div class="roadmap-node">
-          <div class="node-num">3</div>
-          <a href="/demo-container/subjects/Enter the lesson/JavaScript.HTML" class="node-btn">
-            <div class="node-btn-left">
-              <div class="lang-icon lang-js">JS</div>
-              <span>JavaScript</span>
-            </div>
-            <i class="ph ph-arrow-right node-arrow"></i>
-          </a>
-        </div>
-        <div class="roadmap-node">
-          <div class="node-num">4</div>
-          <a href="/demo-container/subjects/Enter the lesson/Pyton.HTML" class="node-btn">
-            <div class="node-btn-left">
-              <div class="lang-icon lang-py">Py</div>
-              <span>Python</span>
-            </div>
-            <i class="ph ph-arrow-right node-arrow"></i>
-          </a>
-        </div>
-        <div class="roadmap-node">
-          <div class="node-num">5</div>
-          <a href="/demo-container/subjects/Enter the lesson/C.HTML" class="node-btn">
-            <div class="node-btn-left">
-              <div class="lang-icon lang-c">C</div>
-              <span>ภาษา C</span>
-            </div>
-            <i class="ph ph-arrow-right node-arrow"></i>
-          </a>
-        </div>
-        <div class="roadmap-node">
-          <div class="node-num">6</div>
-          <a href="/demo-container/subjects/Enter the lesson/C++.HTML" class="node-btn">
-            <div class="node-btn-left">
-              <div class="lang-icon lang-cpp">C++</div>
-              <span>C++</span>
-            </div>
-            <i class="ph ph-arrow-right node-arrow"></i>
-          </a>
-        </div>
-        <div class="roadmap-node">
-          <div class="node-num">7</div>
-          <a href="/demo-container/subjects/Enter the lesson/R.HTML" class="node-btn">
-            <div class="node-btn-left">
-              <div class="lang-icon lang-r">R</div>
-              <span>R Language</span>
-            </div>
-            <i class="ph ph-arrow-right node-arrow"></i>
-          </a>
-        </div>
-        <div class="roadmap-node">
-          <div class="node-num">8</div>
-          <a href="/demo-container/subjects/Enter the lesson/SQL.HTML" class="node-btn">
-            <div class="node-btn-left">
-              <div class="lang-icon lang-sql">SQL</div>
-              <span>SQL</span>
-            </div>
-            <i class="ph ph-arrow-right node-arrow"></i>
-          </a>
-        </div>
-        <div class="roadmap-node">
-          <div class="node-num">9</div>
-          <a href="/demo-container/subjects/Enter the lesson/PHP.HTML" class="node-btn">
-            <div class="node-btn-left">
-              <div class="lang-icon lang-php">PHP</div>
-              <span>PHP</span>
-            </div>
-            <i class="ph ph-arrow-right node-arrow"></i>
-          </a>
-        </div>
-      </div>
+        <span class="program-name">Python</span>
+      </a>
 
-      <div class="roadmap-progress">
-        <div class="progress-label">
-          <span>ความคืบหน้ารวม</span>
-          <span>1 / 9 วิชา</span>
+      <!-- C -->
+      <a href="../subjects/Enter the lesson/C.HTML" class="program-card">
+        <div class="logo-box">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/c/c-original.svg" alt="C Logo">
         </div>
-        <div class="progress-bar">
-          <div class="progress-fill"></div>
+        <span class="program-name">ภาษา C</span>
+      </a>
+
+      <!-- C++ -->
+      <a href="../subjects/Enter the lesson/C++.HTML" class="program-card">
+        <div class="logo-box">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg" alt="C++ Logo">
         </div>
-      </div>
-    </aside>
+        <span class="program-name">C++</span>
+      </a>
 
-
-    <div class="content-right">
-
-      <section id="languages">
-        <div class="section-label">
-          <div class="label-bar"></div>
-          <h2>ภาษาโปรแกรมทั้งหมด</h2>
+      <!-- PHP -->
+      <a href="../subjects/Enter the lesson/PHP.HTML" class="program-card">
+        <div class="logo-box">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/php/php-original.svg" alt="PHP Logo">
         </div>
+        <span class="program-name">PHP</span>
+      </a>
 
-        <div class="lang-cards-grid">
-          <a href="/demo-container/subjects/Enter the lesson/HTML.HTML" class="lang-card">
-            <div class="lang-card-icon lang-html">HTML</div>
-            <h3>HTML</h3>
-            <p>โครงสร้างหลักของหน้าเว็บ</p>
-            <span class="card-tag">พื้นฐาน</span>
-          </a>
-          <a href="/demo-container/subjects/Enter the lesson/CSS.HTML" class="lang-card">
-            <div class="lang-card-icon lang-css">CSS</div>
-            <h3>CSS</h3>
-            <p>ตกแต่ง สี Layout และ Animation</p>
-            <span class="card-tag">พื้นฐาน</span>
-          </a>
-          <a href="/demo-container/subjects/Enter the lesson/JavaScript.HTML" class="lang-card">
-            <div class="lang-card-icon lang-js">JS</div>
-            <h3>JavaScript</h3>
-            <p>เพิ่มลูกเล่นและ Interactive</p>
-            <span class="card-tag">ยอดนิยม</span>
-          </a>
-          <a href="/demo-container/subjects/Enter the lesson/Pyton.HTML" class="lang-card">
-            <div class="lang-card-icon lang-py">Py</div>
-            <h3>Python</h3>
-            <p>AI, Data Science, Backend</p>
-            <span class="card-tag">ยอดนิยม</span>
-          </a>
-          <a href="/demo-container/subjects/Enter the lesson/C.HTML" class="lang-card">
-            <div class="lang-card-icon lang-c">C</div>
-            <h3>C</h3>
-            <p>พื้นฐานระบบ & หน่วยความจำ</p>
-            <span class="card-tag">ขั้นสูง</span>
-          </a>
-          <a href="/demo-container/subjects/Enter the lesson/C++.HTML" class="lang-card">
-            <div class="lang-card-icon lang-cpp">C++</div>
-            <h3>C++</h3>
-            <p>ประสิทธิภาพสูง, เกม & ระบบ</p>
-            <span class="card-tag">ขั้นสูง</span>
-          </a>
-          <a href="/demo-container/subjects/Enter the lesson/R.HTML" class="lang-card">
-            <div class="lang-card-icon lang-r">R</div>
-            <h3>R</h3>
-            <p>สถิติและวิเคราะห์ข้อมูล</p>
-            <span class="card-tag">Data</span>
-          </a>
-          <a href="/demo-container/subjects/Enter the lesson/SQL.HTML" class="lang-card">
-            <div class="lang-card-icon lang-sql">SQL</div>
-            <h3>SQL</h3>
-            <p>จัดการฐานข้อมูล</p>
-            <span class="card-tag">Database</span>
-          </a>
-          <a href="/demo-container/subjects/Enter the lesson/PHP.HTML" class="lang-card">
-            <div class="lang-card-icon lang-php">PHP</div>
-            <h3>PHP</h3>
-            <p>Backend เว็บไซต์ & API</p>
-            <span class="card-tag">Backend</span>
-          </a>
+      <!-- SQL -->
+      <a href="../subjects/Enter the lesson/SQL.HTML" class="program-card">
+        <div class="logo-box">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mysql/mysql-original.svg" alt="SQL Logo">
         </div>
-      </section>
+        <span class="program-name">SQL Database</span>
+      </a>
 
-      <section id="mindset">
-        <div class="section-label">
-          <div class="label-bar"></div>
-          <h2>ฝึกคิดแบบโปรแกรมเมอร์ยุค AI</h2>
+      <!-- R -->
+      <a href="../subjects/Enter the lesson/R.HTML" class="program-card">
+        <div class="logo-box">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/r/r-original.svg" alt="R Logo">
         </div>
+        <span class="program-name">R Language</span>
+      </a>
 
-        <div class="article-box">
-          <h3>ทำไมพื้นฐานและวิเคราะห์ศาสตร์จึงสำคัญกว่าที่เคย</h3>
-
-          <p>ในยุคที่ AI สามารถเจนโค้ด แก้ไขบั๊กจุกจิก หรือสร้างแอปพลิเคชันพื้นฐานขึ้นมาได้ภายในไม่กี่วินาที
-            โปรแกรมเมอร์อย่างเราจะรับมือ ปรับตัว และยืนหยัดอยู่ในสายงานนี้ได้อย่างไร?</p>
-
-          <h4><i class="ph ph-robot"></i> 1. AI คือ "ผู้ช่วยป้อนโค้ด" แต่เราคือ "สถาปนิกและคนตรวจงาน"</h4>
-          <p>โค้ดที่รันผ่านในครั้งแรกอาจซ่อนปัญหาใหญ่ไว้ — Performance, Edge Cases, Security Vulnerability
-            หรือ Architecture ที่ไม่รองรับการเติบโต คนที่มี<strong>พื้นฐานแน่น</strong>เท่านั้นที่จะมองออก</p>
-
-          <h4><i class="ph ph-puzzle-piece"></i> 2. ทักษะการตั้งโจทย์และย่อยปัญหา (Problem Decomposition)</h4>
-          <p>AI จะตอบคำถามได้ดีเท่ากับระดับความชัดเจนของโจทย์ที่เราป้อนให้ การเข้าใจ Data Flow, System Architecture
-            และ Business Logic จึงเป็นทักษะที่ AI ไม่สามารถคิดแทนได้ทั้งหมด</p>
-
-          <h4><i class="ph ph-graduation-cap"></i> 3. Fundamentals Matter</h4>
-          <p>Data Structures, Algorithms, Networking, Database Design และ Memory Management
-            ยังคงเดิมแม้เทคโนโลยีหมุนไวเพียงใด</p>
-
-          <h4><i class="ph ph-question"></i> 4. ตั้งคำถามกับทุกโค้ดที่ AI สร้าง</h4>
-          <ul>
-            <li>ทำไม AI ถึงเลือกวิธีนี้ แก้ด้วยวิธีอื่นได้ไหม?</li>
-            <li>ถ้าข้อมูลเพิ่มขึ้น 100 เท่า โค้ดนี้ยังทำงานได้ดีอยู่หรือไม่?</li>
-            <li>ความปลอดภัยของข้อมูลถูกละเลยไปในจุดไหนบ้าง?</li>
-          </ul>
-
-          <div class="article-summary">
-            <strong>สรุป:</strong> AI ไม่ได้มาแทนที่คนที่คิดเป็น แต่จะมาแทนที่คนที่ทำหน้าที่เพียงแค่
-            "แปลคำสั่งเป็นโค้ด" การปรับตัวที่แท้จริงคือการย้อนกลับมาเสริมสร้างพื้นฐาน
-            กระบวนการคิดวิเคราะห์ เพื่อให้เราควบคุม AI ได้อย่างมั่นใจ
-          </div>
+      <!-- VS Code -->
+      <a href="https://code.visualstudio.com/" target="_blank" class="program-card">
+        <div class="logo-box">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vscode/vscode-original.svg" alt="VS Code Logo">
         </div>
-      </section>
+        <span class="program-name">VS Code</span>
+      </a>
 
+      <!-- Git -->
+      <a href="https://git-scm.com/" target="_blank" class="program-card">
+        <div class="logo-box">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg" alt="Git Logo">
+        </div>
+        <span class="program-name">Git SCM</span>
+      </a>
+
+      <!-- Docker -->
+      <a href="https://www.docker.com/" target="_blank" class="program-card">
+        <div class="logo-box">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg" alt="Docker Logo">
+        </div>
+        <span class="program-name">Docker</span>
+      </a>
     </div>
   </div>
-  <section class="carousel-section" id="community">
-    <div class="section-label">
-      <div class="label-bar"></div>
-      <h2>จากชุมชนผู้เรียน</h2>
+  <div class="all-pro">
+    <h2><i class="ph ph-brain"></i> ฝึกคิดแบบโปรแกรมเมอร์และการทำงานร่วมกับ AI</h2>
+
+    <div class="tutorial-card">
+      <h3><i class="ph ph-robot"></i> 1. AI คือผู้ช่วยป้อนโค้ด แต่มนุษย์คือสถาปนิกและคนตรวจงาน</h3>
+      <p>โค้ดที่คอมไพล์ผ่านในครั้งแรกอาจซ่อนปัญหาใหญ่ไว้ ทั้งด้าน Performance, Security Vulnerability และ Edge Cases
+        คนที่มีพื้นฐานแน่นเท่านั้นที่จะมองจุดบกพร่องออก</p>
     </div>
 
-    <div class="carousel-wrapper">
-      <button class="carousel-arrow" id="carouselPrev"><i class="ph ph-caret-left"></i></button>
-
-      <div class="carousel-track-wrap">
-        <div class="carousel-track" id="carouselTrack">
-          <div class="carousel-card">
-            <img src="../../img/ahmetyuksek-winding-path-9840681_1920.jpg" alt="Community" class="card-img">
-            <div class="card-body">
-              <h3>เส้นทางของผู้เรียน</h3>
-              <span>ประสบการณ์จากเพื่อนนักเรียน</span>
-            </div>
-          </div>
-          <div class="carousel-card">
-            <img src="../../img/chiemseherin-milky-way-8149815_1920.jpg" alt="Community" class="card-img">
-            <div class="card-body">
-              <h3>เปิดโลกด้วยโค้ด</h3>
-              <span>ก้าวข้ามขีดจำกัดด้วยโปรแกรมมิ่ง</span>
-            </div>
-          </div>
-          <div class="carousel-card">
-            <img src="../../img/3888952-bicycle-1872682_1920.jpg" alt="Community" class="card-img">
-            <div class="card-body">
-              <h3>ใช้ชีวิตด้วยทักษะ</h3>
-              <span>เรียนแล้วนำไปใช้จริง</span>
-            </div>
-          </div>
-          <div class="carousel-card">
-            <img src="../../img/name/haninabz-man-8685735_1920.png" alt="Community" class="card-img">
-            <div class="card-body">
-              <h3>พัฒนาตัวเองทุกวัน</h3>
-              <span>เรียนรู้ไม่มีวันหยุด</span>
-            </div>
-          </div>
-          <div class="carousel-card">
-            <img src="../../img/ahmetyuksek-mountain-range-9842371_1920.jpg" alt="Community" class="card-img">
-            <div class="card-body">
-              <h3>ยอดแห่งความสำเร็จ</h3>
-              <span>สู่จุดหมายที่ตั้งไว้</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <button class="carousel-arrow" id="carouselNext"><i class="ph ph-caret-right"></i></button>
+    <div class="tutorial-card">
+      <h3><i class="ph ph-puzzle-piece"></i> 2. ทักษะการตั้งโจทย์และย่อยปัญหา (Problem Decomposition)</h3>
+      <p>AI จะตอบคำถามได้มีประสิทธิภาพเท่ากับความชัดเจนของโจทย์ที่เราป้อนให้ การเข้าใจ Data Flow และ Business Logic
+        จึงเป็นทักษะแกนหลักที่สำคัญที่สุด</p>
     </div>
-  </section>
 
+    <div class="tutorial-card">
+      <h3><i class="ph ph-check-circle"></i> 3. ตั้งคำถามกับทุกโค้ดที่ระบบสร้างขึ้น</h3>
+      <ul>
+        <li>ถ้าข้อมูลเพิ่มขึ้นเป็น 100 เท่า โค้ดนี้ยังทำงานได้ดีอยู่หรือไม่?</li>
+        <li>มีกรณี Edge Cases ใดบ้างที่อาจทำให้ฟังก์ชันพัง?</li>
+        <li>ความปลอดภัยของข้อมูลถูกละเลยไปในจุดใดบ้าง?</li>
+      </ul>
+    </div>
+  </div>
 
-  <footer>
-    <div class="footer-inner">
-
-      <div>
-        <div class="footer-brand-logo">
-          <img src="../../img/ahmetyuksek-mountain-range-9842371_1920.jpg" alt="ITDevTeam Logo" class="brand-img">
-          <div>
-            <h3>ITDevTeam Coding</h3>
-            <span class="badge-ft">Learning Platform</span>
-          </div>
-        </div>
-        <p class="footer-desc">สร้างสรรค์การเรียนรู้การเขียนโค้ดและพัฒนาเว็บไซต์ ให้สนุก เข้าใจง่าย
-          และพร้อมนำไปประยุกต์ใช้งานจริง</p>
-        <div class="footer-socials">
-          <a href="../../index.php" class="social-btn" aria-label="Website"><i class="ph ph-globe"></i></a>
-          <a href="../../hok/hok-2/hok-3.html" class="social-btn" aria-label="Linktree"><i
-              class="ph ph-tree-structure"></i></a>
-          <a href="#" class="social-btn" aria-label="Facebook"><i class="ph ph-facebook-logo"></i></a>
-          <a href="#" class="social-btn" aria-label="Instagram"><i class="ph ph-instagram-logo"></i></a>
-        </div>
-      </div>
-
-      <div class="footer-col">
-        <h4><i class="ph ph-book-open"></i> หมวดหมู่วิชาเรียน</h4>
-        <ul class="footer-links">
-          <li><a href="coding.html"><i class="ph ph-caret-right"></i> เขียนโค้ด (Coding)</a></li>
-          <li><a href="circuits.html"><i class="ph ph-caret-right"></i> วงจรไฟฟ้า &amp; IoT</a></li>
-          <li><a href="networking.html"><i class="ph ph-caret-right"></i> เครือข่าย (Networking)</a></li>
-          <li><a href="finance.html"><i class="ph ph-caret-right"></i> การเงิน &amp; การลงทุน</a></li>
-          <li><a href="space.html"><i class="ph ph-caret-right"></i> อวกาศ &amp; ดาราศาสตร์</a></li>
+  <!-- ==========================================
+       FLOATING LEFT SIDEBAR (DARK NAVY)
+       ========================================== -->
+  <aside class="sidebar">
+    <ul class="nav-menu">
+      <!-- Menu 1 -->
+      <li class="nav-item dropdown">
+        <button class="nav-link dropdown-btn">
+          <span class="link-text">หมวดภาษาโปรแกรม</span>
+          <i class="fa-solid fa-chevron-down arrow-icon"></i>
+        </button>
+        <ul class="dropdown-menu">
+          <li><a href="../subjects/Enter the lesson/HTML.HTML" class="dropdown-link">HTML5 / CSS3</a></li>
+          <li><a href="../subjects/Enter the lesson/JS.HTML" class="dropdown-link">JavaScript</a></li>
+          <li><a href="../subjects/Enter the lesson/Pyton.HTML" class="dropdown-link">Python & AI</a></li>
+          <li><a href="../subjects/Enter the lesson/C.HTML" class="dropdown-link">ภาษา C / C++</a></li>
+          <li><a href="../subjects/Enter the lesson/PHP.HTML" class="dropdown-link">PHP Backend</a></li>
+          <li><a href="../subjects/Enter the lesson/SQL.HTML" class="dropdown-link">SQL Database</a></li>
+          <li><a href="../subjects/Enter the lesson/R.HTML" class="dropdown-link">ภาษา R สถิติ</a></li>
         </ul>
-      </div>
+      </li>
 
-      <div class="footer-col">
-        <h4><i class="ph ph-sparkle"></i> บริการผู้เรียน</h4>
-        <ul class="footer-links">
-          <li><a href="#"><i class="ph ph-caret-right"></i> ระบบเรียนออนไลน์ 24 ชม.</a></li>
-          <li><a href="#"><i class="ph ph-caret-right"></i> แบบทดสอบเขียนโค้ด</a></li>
-          <li><a href="#"><i class="ph ph-caret-right"></i> ส่งการบ้าน &amp; ตรวจโค้ด</a></li>
-          <li><a href="#"><i class="ph ph-caret-right"></i> รับใบประกาศนียบัตร</a></li>
-          <li><a href="../../hok/pro.html"><i class="ph ph-caret-right"></i> โปรโมชั่น &amp; แพ็กเกจ</a></li>
+      <!-- Menu 2 -->
+      <li class="nav-item dropdown">
+        <button class="nav-link dropdown-btn">
+          <span class="link-text">เครื่องมือ & ลิงก์ภายนอก</span>
+          <i class="fa-solid fa-chevron-down arrow-icon"></i>
+        </button>
+        <ul class="dropdown-menu">
+          <li><a href="https://code.visualstudio.com/" target="_blank" class="dropdown-link">VS Code</a></li>
+          <li><a href="https://github.com/" target="_blank" class="dropdown-link">GitHub</a></li>
+          <li><a href="https://www.w3schools.com/" target="_blank" class="dropdown-link">W3Schools Tutorial</a></li>
+          <li><a href="https://developer.mozilla.org/" target="_blank" class="dropdown-link">MDN Web Docs</a></li>
         </ul>
-      </div>
+      </li>
 
-      <div class="footer-col">
-        <h4><i class="ph ph-envelope-simple"></i> ช่วยเหลือ &amp; ติดต่อ</h4>
-        <ul class="footer-contact">
-          <li><i class="ph ph-map-pin"></i> <span>กรุงเทพมหานคร ประเทศไทย</span></li>
-          <li><i class="ph ph-envelope"></i> <span>support@itdevteam.local</span></li>
-          <li><i class="ph ph-clock"></i> <span>เปิดให้บริการทุกวัน 09:00 - 18:00 น.</span></li>
+      <!-- Menu 3 -->
+      <li class="nav-item dropdown">
+        <button class="nav-link dropdown-btn">
+          <span class="link-text">คลังรายวิชาอื่น</span>
+          <i class="fa-solid fa-chevron-down arrow-icon"></i>
+        </button>
+        <ul class="dropdown-menu">
+          <li><a href="../Food/food.html" class="dropdown-link">อาหาร &amp; โภชนาการ</a></li>
+          <li><a href="../Circuit-building basics/circuits.html" class="dropdown-link">วงจรไฟฟ้าและ IoT</a></li>
+          <li><a href="../Tourism/travel.html" class="dropdown-link">การท่องเที่ยว &amp; เดินทาง</a></li>
+          <li><a href="../../index.php" class="dropdown-link">ออกแบบ UX/UI หน้าเว็บ</a></li>
+          <li><a href="../student.html" class="dropdown-link">กลับหน้ารวมรายวิชา</a></li>
         </ul>
-        <a href="../../hok/hok-2/hok-3.html" class="footer-cta-btn">
-          <i class="ph ph-chat-circle-dots"></i> ช่องทางติดต่อทั้งหมด
-        </a>
+      </li>
+
+      <div id="program-grid1">
+        <a href="#program-grid">ภาษาและโปรแกรมพร้อมใช้งาน</a>
       </div>
-
-    </div>
-
-    <div class="footer-bottom">
-      <div class="footer-bottom-inner">
-        <p>© 2026 ITDevTeam Coding. สงวนลิขสิทธิ์ทั้งหมด</p>
-        <div class="footer-bottom-links">
-          <a href="#">นโยบายความเป็นส่วนตัว</a>
-          <span>•</span>
-          <a href="#">เงื่อนไขการให้บริการ</a>
-          <span>•</span>
-          <a href="#" class="back-to-top"><i class="ph ph-arrow-up"></i> กลับขึ้นด้านบน</a>
-        </div>
-      </div>
-    </div>
-  </footer>
-
-
+    </ul>
+  </aside>
   <script>
-    // Carousel logic
-    const track = document.getElementById('carouselTrack');
-    const prevBtn = document.getElementById('carouselPrev');
-    const nextBtn = document.getElementById('carouselNext');
-    let currentIndex = 0;
+    document.addEventListener("DOMContentLoaded", function () {
+      const dropdownBtns = document.querySelectorAll(".dropdown-btn");
 
-    function getVisible() {
-      return window.innerWidth <= 640 ? 1 : window.innerWidth <= 1024 ? 2 : 3;
-    }
+      dropdownBtns.forEach((btn) => {
+        btn.addEventListener("click", function () {
+          const parentDropdown = this.parentElement;
 
-    function getCardWidth() {
-      const card = track.querySelector('.carousel-card');
-      return card ? card.offsetWidth + 16 : 0;
-    }
+          document.querySelectorAll(".dropdown").forEach((item) => {
+            if (item !== parentDropdown) {
+              item.classList.remove("open");
+            }
+          });
 
-    function maxIndex() {
-      return track.querySelectorAll('.carousel-card').length - getVisible();
-    }
-
-    function updateCarousel() {
-      const offset = currentIndex * getCardWidth();
-      track.style.transform = `translateX(-${offset}px)`;
-    }
-
-    nextBtn.addEventListener('click', () => {
-      currentIndex = Math.min(currentIndex + 1, maxIndex());
-      updateCarousel();
-    });
-
-    prevBtn.addEventListener('click', () => {
-      currentIndex = Math.max(currentIndex - 1, 0);
-      updateCarousel();
-    });
-
-    window.addEventListener('resize', () => { currentIndex = 0; updateCarousel(); });
-
-    // Smooth scroll for sub-nav links
-    document.querySelectorAll('.sub-link[href^="#"]').forEach(link => {
-      link.addEventListener('click', e => {
-        e.preventDefault();
-        const target = document.querySelector(link.getAttribute('href'));
-        if (target) {
-          const offset = 64 + 48 + 16;
-          const top = target.getBoundingClientRect().top + window.scrollY - offset;
-          window.scrollTo({ top, behavior: 'smooth' });
-        }
-        document.querySelectorAll('.sub-link').forEach(l => l.classList.remove('active'));
-        link.classList.add('active');
-      });
-    });
-
-    // Back to top
-    document.querySelectorAll('.back-to-top').forEach(btn => {
-      btn.addEventListener('click', e => {
-        e.preventDefault();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+          parentDropdown.classList.toggle("open");
+        });
       });
     });
   </script>
