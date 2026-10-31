@@ -66,8 +66,6 @@ body {
     opacity: 0.7;
     animation: animateWave_02 3s linear infinite;
 }
-
-/* Keyframes สั่งให้คลื่นขยับ (ตรวจสอบตัวพิมพ์เล็ก-ใหญ่ให้ตรงกับ animation ด้านบน) */
 @keyframes animateWave {
     0% {
         background-position-x: 1000px;
