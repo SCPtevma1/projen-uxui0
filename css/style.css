@@ -29,26 +29,96 @@ a {
   border-color: #007bff;
   box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
-
 .site-header {
   display: flex;
-  position: relative;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  gap: 1.25rem;
-  padding: 1.25rem 7vw;
-  border-bottom: 1px solid var(--line);
+  padding: 1rem 7vw;
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--line, #e5e7eb);
+  position: relative;
 }
-.site-header a {
-  color: #0F172A;
-}
+
 .brand {
-  position: absolute;
-  left: 7vw;
-  font-weight: 700;
+  font-size: 1.2rem;
+  font-weight: 700px;
+  color: #0f172a;
   text-decoration: none;
 }
 
+/* --- Navigation & Menu List --- */
+nav .nav-menu {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  list-style: none; /* ลบจุด Bullet ออกจากเมนูหลัก */
+  margin: 0;
+  padding: 0;
+}
+
+nav .nav-menu li {
+  position: relative; /* สำคัญ: เพื่อให้ Dropdown อิงตำแหน่งจากหัวข้อนี้ */
+  list-style: none;
+}
+
+nav a {
+  text-decoration: none;
+  color: #334155;
+  font-weight: 500;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+nav a:hover {
+  color: #2563eb;
+  background-color: #f1f5f9;
+}
+
+/* --- Dropdown Content --- */
+.dropdown-content {
+  display: none; /* ซ่อนเมนูย่อยไว้ก่อน */
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 220px;
+  background-color: #ffffff;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.5rem 0;
+  margin-top: 0.25rem;
+  list-style: none; /* ลบจุด Bullet ใน Dropdown */
+  z-index: 1000;
+}
+
+.dropdown-content li {
+  width: 100%;
+}
+
+.dropdown-content a {
+  display: block;
+  padding: 0.6rem 1rem;
+  color: #475569;
+  white-space: nowrap;
+  border-radius: 0;
+}
+
+.dropdown-content a:hover {
+  background-color: #f8fafc;
+  color: #2563eb;
+}
+
+/* แสดงเมนูย่อยเมื่อชี้เมาส์ที่หัวข้อ */
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+/* สัญลักษณ์ลูกศรลง */
+.arrow {
+  font-size: 0.8em;
+  margin-left: 4px;
+}
 nav {
   display: flex;
   justify-content: center;
