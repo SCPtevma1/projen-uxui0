@@ -41,23 +41,21 @@ a {
 
 .brand {
   font-size: 1.2rem;
-  font-weight: 700px;
+  font-weight: 10 0px;
   color: #0f172a;
   text-decoration: none;
 }
-
-/* --- Navigation & Menu List --- */
 nav .nav-menu {
   display: flex;
   align-items: center;
   gap: 1.5rem;
-  list-style: none; /* ลบจุด Bullet ออกจากเมนูหลัก */
+  list-style: none; 
   margin: 0;
   padding: 0;
 }
 
 nav .nav-menu li {
-  position: relative; /* สำคัญ: เพื่อให้ Dropdown อิงตำแหน่งจากหัวข้อนี้ */
+  position: relative;
   list-style: none;
 }
 

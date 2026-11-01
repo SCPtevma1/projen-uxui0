@@ -1,0 +1,148 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 20px;
+  color: var(--ink, #1d1d1d);
+  background: var(--paper, #f7f7f7);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.hero,
+.content {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 12vh 7vw;
+}
+
+.hero {
+  text-align: center;
+}
+
+.input-style {
+  width: min(420px, 80vw);
+  padding: 12px 16px;
+  margin-top: 16px;
+  border: 1px solid #d0d7de;
+  border-radius: 999px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-style:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+}
+
+.menu {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  background-color: #333;
+  display: flex;
+  flex-wrap: wrap;
+  border-radius: 5px;
+}
+
+.menu-item {
+  position: relative;
+}
+
+.menu-item > a {
+  display: block;
+  color: white;
+  text-decoration: none;
+  padding: 15px 25px;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+.menu-item > a:hover,
+.menu-item > a:focus-visible {
+  background-color: #555;
+}
+
+.submenu,
+.sub-submenu {
+  display: none;
+  position: absolute;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background-color: #444;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+.submenu {
+  top: 100%;
+  left: 0;
+  min-width: 220px;
+  border-radius: 0 0 5px 5px;
+}
+
+.submenu li,
+.sub-submenu li {
+  position: relative;
+}
+
+.submenu li a,
+.sub-submenu li a {
+  color: #ddd;
+  text-decoration: none;
+  display: block;
+  padding: 12px 20px;
+  border-bottom: 1px solid #555;
+  transition: background 0.2s, color 0.2s;
+}
+
+.submenu li:last-child a,
+.sub-submenu li:last-child a {
+  border-bottom: none;
+}
+
+.submenu li a:hover,
+.sub-submenu li a:hover,
+.submenu li a:focus-visible,
+.sub-submenu li a:focus-visible {
+  background-color: #007bff;
+  color: white;
+}
+
+.menu-item:hover > .submenu,
+.menu-item:focus-within > .submenu,
+.has-submenu:hover > .sub-submenu,
+.has-submenu:focus-within > .sub-submenu {
+  display: block;
+}
+
+.has-submenu {
+  position: relative;
+}
+
+.has-submenu > a {
+  position: relative;
+  padding-right: 42px;
+}
+
+.arrow {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8em;
+}
+
+.sub-submenu {
+  top: 0;
+  left: 100%;
+  min-width: 240px;
+  border-radius: 0 5px 5px 5px;
+}
+
+.main-nav {
+  margin-top: 20px;
+}
