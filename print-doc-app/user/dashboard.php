@@ -21,6 +21,7 @@ require __DIR__ . '/../includes/header.php';
     <p class="eyebrow">พื้นที่ส่วนตัว</p><h1>คลังเอกสารของฉัน</h1>
     <p class="muted">ไฟล์ในคลังนี้มองเห็นได้เฉพาะบัญชีของคุณ</p>
     <a class="button button-primary" href="<?= APP_URL ?>/index.php">+ สั่งพิมพ์เอกสาร</a>
+    <a class="button button-secondary" href="<?= APP_URL ?>/user/account.php">จัดการบัญชี</a>
 </section>
 <section class="content-card">
     <div class="section-heading"><h2>เอกสารที่อัปโหลด</h2><span class="count-pill"><?= count($documents) ?> ไฟล์</span></div>

@@ -1,5 +1,12 @@
 # PrintDoc
 
+## Page structure
+
+- `../Our Services/document.html` is the public service homepage with the price estimator, service details, and ordering guide.
+- `index.php` is the signed-in print workflow for uploading documents and creating orders.
+- `user/dashboard.php` is the private document library and order history.
+- `user/account.php` lets signed-in users update their name, email, and password.
+
 ## Run locally with XAMPP
 
 1. Start Apache and MySQL, and create the MySQL database `oopp` (or set `PRINT_DOC_DB_NAME`).

@@ -18,6 +18,7 @@ $signedInUser = current_user();
         <?php if ($signedInUser): ?>
             <a href="<?= APP_URL ?>/index.php">สั่งพิมพ์</a>
             <a href="<?= APP_URL ?>/user/dashboard.php">คลังเอกสาร</a>
+            <a href="<?= APP_URL ?>/user/account.php">บัญชีของฉัน</a>
             <?php if ($signedInUser['role'] === 'admin'): ?>
                 <a href="<?= APP_URL ?>/admin/pricing.php">จัดการราคา</a>
             <?php endif; ?>
