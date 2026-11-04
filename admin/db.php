@@ -1,9 +1,9 @@
 <?php
 // ตั้งค่าการเชื่อมต่อฐานข้อมูล MySQL
-$host = "localhost";
-$user = "root";
-$pass = "";
-$dbname = "oopp";
+$host = getenv('DB_HOST') ?: 'localhost';
+$user = getenv('DB_USER') ?: 'root';
+$pass = getenv('DB_PASSWORD') ?: '';
+$dbname = getenv('DB_NAME') ?: 'oopp';
 
 // ปิดการโยน uncaught mysqli_sql_exception เพื่อจัดการ error เองอย่างปลอดภัย
 mysqli_report(MYSQLI_REPORT_OFF);
