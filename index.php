@@ -221,7 +221,7 @@
     <div class="info-card__image-box1">
       <img src="./img/chiemseherin-milky-way-8149815_1920.jpg" alt="บริการ">
     </div>
-    <p>รับทำ SEO</p>
+    <p>รวบรวมข้อมูล</p>
     <h3>รับทำ SEO</h3>
   </div>
 

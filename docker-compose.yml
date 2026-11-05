@@ -7,13 +7,9 @@ services:
       - "127.0.0.1:${APP_PORT:-8080}:80"
     environment:
       DB_HOST: db
-      DB_NAME: ${MYSQL_DATABASE:?Set MYSQL_DATABASE in .env}
-      DB_USER: ${MYSQL_USER:?Set MYSQL_USER in .env}
-      DB_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
-      PRINT_DOC_DB_HOST: db
-      PRINT_DOC_DB_NAME: ${MYSQL_DATABASE:?Set MYSQL_DATABASE in .env}
-      PRINT_DOC_DB_USER: ${MYSQL_USER:?Set MYSQL_USER in .env}
-      PRINT_DOC_DB_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
+      DB_NAME: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - .:/var/www/html
     depends_on:
@@ -23,31 +19,31 @@ services:
   db:
     image: mysql:8.0
     environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE:?Set MYSQL_DATABASE in .env}
-      MYSQL_USER: ${MYSQL_USER:?Set MYSQL_USER in .env}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
       interval: 5s
       timeout: 5s
       retries: 20
-phpmyadmin:
-  image: phpmyadmin:latest
-  restart: always
-  ports:
-    - "8082:80"
-  environment:
-    PMA_HOST: db
-    MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-  depends_on:
-    - db
-    
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    restart: always
+    ports:
+      - "8083:80"
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    depends_on:
+      - db
+
 volumes:
   mysql_data:
