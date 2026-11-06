@@ -221,42 +221,41 @@
     <div class="info-card__image-box1">
       <img src="./img/chiemseherin-milky-way-8149815_1920.jpg" alt="บริการ">
     </div>
+    <h3>รับทำ SEO</h3>
     <p>รวบรวมข้อมูล</p>
-    <h3>รับทำ SEO</h3>
   </div>
 
   <div class="info-card__body-box1">
     <div class="info-card__image-box1">
       <img src="./img/chiemseherin-milky-way-8149815_1920.jpg" alt="บริการ">
     </div>
+    <h3>รับทำ SEO</h3>
     <p>เช็กโครงสร้างเว็บไซต์</p>
-    <h3>รับทำ SEO</h3>
   </div>
 
   <div class="info-card__body-box1">
     <div class="info-card__image-box1">
       <img src="./img/chiemseherin-milky-way-8149815_1920.jpg" alt="บริการ">
     </div>
-    <p>ออกแบบหน้าเว็บ</p>
     <h3>รับทำ SEO</h3>
+    <p>ออกแบบหน้าเว็บ</p>
   </div>
 </div>
-<!------>
 <div class="process-cards">
   <div class="info-card__body-box1">
     <div class="info-card__image-box1">
       <img src="./img/chiemseherin-milky-way-8149815_1920.jpg" alt="บริการ">
     </div>
-    <p>รับทำ SEO</p>
     <h3>รับทำ SEO</h3>
+    <p>รับทำ SEO</p>
   </div>
 
   <div class="info-card__body-box1">
     <div class="info-card__image-box1">
       <img src="./img/chiemseherin-milky-way-8149815_1920.jpg" alt="บริการ">
     </div>
-    <p>เช็กโครงสร้างเว็บไซต์</p>
     <h3>รับทำ SEO</h3>
+    <p>เช็กโครงสร้างเว็บไซต์</p>
   </div>
 
   <div class="info-card__body-box1">

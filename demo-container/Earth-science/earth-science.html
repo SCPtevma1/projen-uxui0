@@ -11,10 +11,7 @@
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <link rel="stylesheet" href="/demo-container/Earth-science/csdv.css">
 </head>
-
 <body>
-
-  <!-- Top Navigation -->
   <header class="top-navbar">
     <a href="../student.html" class="back-btn">
       <i class="ph ph-arrow-left"></i> กลับไปหน้ารวมรายวิชา
@@ -104,8 +101,6 @@
           </li>
         </ul>
       </article>
-
-      <!-- Card 4 -->
       <article class="topic-card">
         <div class="topic-header">
           <div class="topic-icon">
@@ -124,84 +119,8 @@
           <li><strong>แนวทางแก้ไข:</strong> ลดการเผาไหม้เชื้อเพลิงฟอสซิล ใช้พลังงานสะอาด และฟื้นฟูป่าไม้</li>
         </ul>
       </article>
-
     </div>
-
-    <!-- Interactive Knowledge Check Section -->
-    <section class="interactive-box">
-      <div class="interactive-header">
-        <h2><i class="ph ph-seal-question" style="color: var(--primary);"></i> Quick Knowledge Check:
-          ทดสอบความเข้าใจสั้นๆ</h2>
-        <span style="font-size: 0.85rem; color: var(--text-muted);">คลิกเลือกคำตอบที่ถูกต้องเพื่อดูเฉลยทันที</span>
-      </div>
-
-      <!-- Question 1 -->
-      <div class="quiz-card" id="q1">
-        <div class="quiz-question">คำถามที่ 1: ส่วนใดของโลกที่หมุนวนจนสร้าง "สนามแม่เหล็กโลก"
-          ป้องกันอนุภาคจากดวงอาทิตย์?</div>
-        <div class="quiz-options">
-          <button class="quiz-opt" onclick="checkAnswer('q1', this, false)">ก. เปลือกโลกทวีป</button>
-          <button class="quiz-opt" onclick="checkAnswer('q1', this, true)">ข. แก่นโลกชั้นนอกที่เป็นของเหลว (Outer
-            Core)</button>
-          <button class="quiz-opt" onclick="checkAnswer('q1', this, false)">ค. ชั้นโอโซนในบรรยากาศ</button>
-        </div>
-        <div class="quiz-feedback" id="q1-fb"></div>
-      </div>
-
-      <!-- Question 2 -->
-      <div class="quiz-card" id="q2">
-        <div class="quiz-question">คำถามที่ 2: ชั้นบรรยากาศใดที่เป็นศูนย์กลางการเกิดเมฆ ฝน พายุ และลมฟ้าอากาศทั้งหมด?
-        </div>
-        <div class="quiz-options">
-          <button class="quiz-opt" onclick="checkAnswer('q2', this, true)">ก. โทรโพสเฟียร์ (Troposphere)</button>
-          <button class="quiz-opt" onclick="checkAnswer('q2', this, false)">ข. สตราโทสเฟียร์ (Stratosphere)</button>
-          <button class="quiz-opt" onclick="checkAnswer('q2', this, false)">ค. เทอร์โมสเฟียร์ (Thermosphere)</button>
-        </div>
-        <div class="quiz-feedback" id="q2-fb"></div>
-      </div>
-
-    </section>
-
-    <!-- Summary Box -->
-    <section class="summary-banner">
-      <div class="summary-text">
-        <h3><i class="ph ph-lightbulb-filament"></i> สรุปใจความสำคัญ</h3>
-        <p>โลกเป็นระบบที่มีปฏิสัมพันธ์ระหว่างหิน น้ำ อากาศ และสิ่งมีชีวิตอย่างกลมกลืน
-          การเข้าใจโลกช่วยให้เราอนุรักษ์โลกได้อย่างยั่งยืน</p>
-      </div>
-      <div class="summary-actions">
-        <a href="../student.html" class="btn-action">
-          <i class="ph ph-squares-four"></i> ดูรายวิชาอื่นในระดับนี้
-        </a>
-      </div>
-    </section>
-
   </main>
-
-  <script>
-    function checkAnswer(qId, btn, isCorrect) {
-      const parent = document.getElementById(qId);
-      const options = parent.querySelectorAll('.quiz-opt');
-      const feedback = document.getElementById(qId + '-fb');
-
-      options.forEach(opt => {
-        opt.disabled = true;
-        opt.style.cursor = 'default';
-      });
-
-      if (isCorrect) {
-        btn.classList.add('correct');
-        feedback.innerHTML = '🎉 ถูกต้องแล้ว! ยอดเยี่ยมมากครับ';
-        feedback.style.color = '#059669';
-      } else {
-        btn.classList.add('wrong');
-        feedback.innerHTML = '💡 ยังไม่ถูกต้อง ลองทบทวนเนื้อหาด้านบนดูนะครับ';
-        feedback.style.color = '#dc2626';
-      }
-      feedback.style.display = 'block';
-    }
-  </script>
-
 </body>
 
 </html>
