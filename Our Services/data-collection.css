@@ -1,0 +1,14 @@
+.service-detail-page--data-collection {
+    --service-detail-green: #477a9c;
+    --service-detail-dark: #345b76;
+    --service-detail-paper: #f4f8fb;
+    --service-detail-line: #dfe9f0;
+}
+
+.service-detail-page--data-collection .service-detail-hero {
+    background: radial-gradient(circle at 88% 40%, rgba(190, 218, 237, .74), transparent 29%), var(--service-detail-paper);
+}
+
+.service-detail-page--data-collection .service-detail-hero__decoration {
+    color: rgba(71, 122, 156, .13);
+}

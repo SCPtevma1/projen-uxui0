@@ -1,0 +1,14 @@
+.service-detail-page--computer-trading {
+    --service-detail-green: #416d9a;
+    --service-detail-dark: #2d4f73;
+    --service-detail-paper: #f5f8fb;
+    --service-detail-line: #e0e8f0;
+}
+
+.service-detail-page--computer-trading .service-detail-hero {
+    background: radial-gradient(circle at 88% 40%, rgba(192, 216, 239, .72), transparent 29%), var(--service-detail-paper);
+}
+
+.service-detail-page--computer-trading .service-detail-hero__decoration {
+    color: rgba(65, 109, 154, .12);
+}

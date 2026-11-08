@@ -1,0 +1,14 @@
+.service-detail-page--iot-installation {
+    --service-detail-green: #287c82;
+    --service-detail-dark: #1d5e63;
+    --service-detail-paper: #f3f9f8;
+    --service-detail-line: #dcebea;
+}
+
+.service-detail-page--iot-installation .service-detail-hero {
+    background: radial-gradient(circle at 88% 40%, rgba(181, 226, 218, .76), transparent 29%), var(--service-detail-paper);
+}
+
+.service-detail-page--iot-installation .service-detail-hero__decoration {
+    color: rgba(40, 124, 130, .13);
+}

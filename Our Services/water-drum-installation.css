@@ -1,0 +1,14 @@
+.service-detail-page--water-drum-installation {
+    --service-detail-green: #37808c;
+    --service-detail-dark: #285f68;
+    --service-detail-paper: #f2f8f9;
+    --service-detail-line: #dce9eb;
+}
+
+.service-detail-page--water-drum-installation .service-detail-hero {
+    background: radial-gradient(circle at 88% 40%, rgba(183, 221, 225, .74), transparent 29%), var(--service-detail-paper);
+}
+
+.service-detail-page--water-drum-installation .service-detail-hero__decoration {
+    color: rgba(55, 128, 140, .13);
+}

@@ -1,11 +1,8 @@
 <?php
-// ตั้งค่าการเชื่อมต่อฐานข้อมูล MySQL
 $host = getenv('DB_HOST') ?: 'localhost';
 $user = getenv('DB_USER') ?: 'root';
 $pass = getenv('DB_PASSWORD') ?: '';
 $dbname = getenv('DB_NAME') ?: 'oopp';
-
-// ปิดการโยน uncaught mysqli_sql_exception เพื่อจัดการ error เองอย่างปลอดภัย
 mysqli_report(MYSQLI_REPORT_OFF);
 
 $conn = @new mysqli($host, $user, $pass, $dbname);
@@ -46,7 +43,17 @@ function ensureDatabaseSchema(mysqli $conn, bool $force = false): void
         INDEX idx_service_orders_status (status)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
-    // 3. ตาราง service_carousel_images
+    $memberSchema = $conn->query("CREATE TABLE IF NOT EXISTS parts_members (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        full_name VARCHAR(120) NOT NULL,
+        email VARCHAR(190) NOT NULL UNIQUE,
+        phone VARCHAR(30) NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    if (!$memberSchema) {
+        error_log('Unable to create parts_members table: ' . $conn->error);
+    }
     $conn->query("CREATE TABLE IF NOT EXISTS service_carousel_images (
         id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
         service_id INT NOT NULL,
@@ -115,10 +122,6 @@ function ensureDatabaseSchema(mysqli $conn, bool $force = false): void
     seedDefaultContactMessagesIfEmpty($conn);
     seedDefaultSettingsIfEmpty($conn);
 }
-
-/**
- * Seed ข้อมูลข้อความติดต่อเริ่มต้น
- */
 function seedDefaultContactMessagesIfEmpty(mysqli $conn): void
 {
     $check = $conn->query("SELECT COUNT(*) AS total FROM contact_messages");
@@ -137,10 +140,6 @@ function seedDefaultContactMessagesIfEmpty(mysqli $conn): void
         }
     }
 }
-
-/**
- * Seed ข้อมูลความคิดเห็นเริ่มต้นสำหรับหน้าบ้าน
- */
 function seedDefaultCommentsIfEmpty(mysqli $conn): void
 {
     $check = $conn->query("SELECT COUNT(*) AS total FROM site_comments");
@@ -160,10 +159,6 @@ function seedDefaultCommentsIfEmpty(mysqli $conn): void
         }
     }
 }
-
-/**
- * Seed ข้อมูลเริ่มต้นสำหรับส่วน Footer ในกรณีที่ยังไม่มีข้อมูลในฐานข้อมูล
- */
 function seedDefaultFooterIfEmpty(mysqli $conn): void
 {
     $check = $conn->query("SELECT COUNT(*) AS total FROM footer_sections");
@@ -221,12 +216,7 @@ function seedDefaultFooterIfEmpty(mysqli $conn): void
             $stmtLink->close();
         }
     }
-}
-
-/**
- * Seed ค่าตั้งค่าเว็บไซต์เริ่มต้น
- */
-function seedDefaultSettingsIfEmpty(mysqli $conn): void
+}function seedDefaultSettingsIfEmpty(mysqli $conn): void
 {
     $check = $conn->query("SELECT COUNT(*) AS total FROM site_settings");
     if ($check && ($row = $check->fetch_assoc()) && (int)$row['total'] === 0) {
@@ -253,5 +243,4 @@ function seedDefaultSettingsIfEmpty(mysqli $conn): void
     }
 }
 
-// ตรวจสอบความสมบูรณ์ของโครงสร้างและข้อมูลเริ่มต้น
 ensureDatabaseSchema($conn);

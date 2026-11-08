@@ -1,0 +1,14 @@
+.service-detail-page--equipment-check {
+    --service-detail-green: #5f6e86;
+    --service-detail-dark: #414e65;
+    --service-detail-paper: #f5f7fa;
+    --service-detail-line: #e1e6ed;
+}
+
+.service-detail-page--equipment-check .service-detail-hero {
+    background: radial-gradient(circle at 88% 40%, rgba(205, 215, 231, .74), transparent 29%), var(--service-detail-paper);
+}
+
+.service-detail-page--equipment-check .service-detail-hero__decoration {
+    color: rgba(95, 110, 134, .13);
+}

@@ -1,0 +1,1222 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Kanit:wght@400;500;600;700&display=swap');
+
+.parts-store-page {
+    --parts-store-ink: #17241f;
+    --parts-store-muted: #68756f;
+    --parts-store-green: #1d765b;
+    --parts-store-green-dark: #155b46;
+    --parts-store-lime: #d7ed9f;
+    --parts-store-paper: #f6f8f5;
+    --parts-store-line: #e4e9e3;
+    margin: 0;
+    background: var(--parts-store-paper);
+    color: var(--parts-store-ink);
+    font-family: "DM Sans", "Kanit", sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+.parts-store-page *,
+.parts-store-page *::before,
+.parts-store-page *::after {
+    box-sizing: border-box;
+}
+
+.parts-store-page [hidden] {
+    display: none !important;
+}
+
+.parts-store-page a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.parts-store-page button,
+.parts-store-page input {
+    font: inherit;
+}
+
+.parts-store-header {
+    position: relative;
+    z-index: 5;
+    border-bottom: 1px solid rgba(23, 36, 31, .07);
+    background: rgba(246, 248, 245, .94);
+}
+
+.parts-store-header__inner {
+    width: min(1180px, calc(100% - 48px));
+    min-height: 82px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+}
+
+.parts-store-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
+}
+
+.parts-store-brand__mark {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border-radius: 13px;
+    background: var(--parts-store-green);
+    color: #fff;
+    font-family: "Kanit", sans-serif;
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.parts-store-brand__text {
+    display: grid;
+    color: var(--parts-store-ink);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    line-height: 1.1;
+}
+
+.parts-store-brand__text span {
+    margin-top: 4px;
+    color: var(--parts-store-muted);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: .2em;
+}
+
+.parts-store-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(18px, 3vw, 40px);
+}
+
+.parts-store-nav__link {
+    color: #53615a;
+    font-size: 13px;
+    font-weight: 600;
+    transition: color .2s ease;
+}
+
+.parts-store-nav__link:hover,
+.parts-store-nav__link:focus-visible {
+    color: var(--parts-store-green);
+}
+
+.parts-store-header__cta {
+    padding: 11px 17px;
+    border: 1px solid #cdd9d0;
+    border-radius: 999px;
+    color: var(--parts-store-green-dark);
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    transition: background .2s ease, border-color .2s ease;
+}
+
+.parts-store-header__cta:hover {
+    border-color: var(--parts-store-green);
+    background: #eaf2e9;
+}
+
+.parts-store-header__cta span {
+    margin-left: 6px;
+}
+
+.parts-store-hero {
+    width: min(1180px, calc(100% - 48px));
+    min-height: 550px;
+    margin: 0 auto;
+    padding: 62px 0 72px;
+    display: grid;
+    grid-template-columns: 1fr .95fr;
+    align-items: center;
+    gap: 48px;
+}
+
+.parts-store-hero__content {
+    position: relative;
+    z-index: 1;
+    padding: 12px 0;
+}
+
+.parts-store-eyebrow {
+    margin: 0 0 17px;
+    color: var(--parts-store-green);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .2em;
+}
+
+.parts-store-eyebrow__dot {
+    width: 8px;
+    height: 8px;
+    margin-right: 7px;
+    display: inline-block;
+    border-radius: 50%;
+    background: #86ad54;
+    vertical-align: 1px;
+}
+
+.parts-store-hero__title {
+    margin: 0;
+    font-family: "Kanit", sans-serif;
+    font-size: clamp(42px, 5.3vw, 68px);
+    font-weight: 600;
+    letter-spacing: -.035em;
+    line-height: 1.15;
+}
+
+.parts-store-hero__title span {
+    color: var(--parts-store-green);
+}
+
+.parts-store-hero__description {
+    max-width: 480px;
+    margin: 23px 0 0;
+    color: var(--parts-store-muted);
+    font-size: 15px;
+    line-height: 1.9;
+}
+
+.parts-store-hero__actions {
+    margin-top: 29px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.parts-store-button {
+    min-height: 48px;
+    padding: 0 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    transition: transform .2s ease, background .2s ease, border-color .2s ease;
+}
+
+.parts-store-button:hover {
+    transform: translateY(-2px);
+}
+
+.parts-store-button--primary {
+    background: var(--parts-store-green);
+    color: #fff !important;
+}
+
+.parts-store-button--primary:hover {
+    background: var(--parts-store-green-dark);
+}
+
+.parts-store-button--quiet {
+    border-color: var(--parts-store-line);
+    background: #fff;
+    color: var(--parts-store-ink);
+}
+
+.parts-store-button--quiet:hover {
+    border-color: #b7c8bb;
+}
+
+.parts-store-hero__trust {
+    margin-top: 28px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    color: var(--parts-store-muted);
+    font-size: 11px;
+}
+
+.parts-store-hero__trust span span {
+    margin-right: 5px;
+    color: var(--parts-store-green);
+    font-weight: 700;
+}
+
+.parts-store-hero-art {
+    position: relative;
+    min-height: 405px;
+    display: grid;
+    place-items: center;
+    isolation: isolate;
+}
+
+.parts-store-hero-art__circle {
+    position: absolute;
+    z-index: -1;
+    width: min(380px, 88%);
+    aspect-ratio: 1;
+    border: 1px solid rgba(29, 118, 91, .16);
+    border-radius: 50%;
+    background: radial-gradient(circle at 54% 46%, #edf2d7 0, #e1edcf 47%, #d7e8d8 72%, rgba(215, 232, 216, .12) 73%);
+}
+
+.parts-store-hero-art__circle::before,
+.parts-store-hero-art__circle::after {
+    position: absolute;
+    content: "";
+    border: 1px solid rgba(29, 118, 91, .12);
+    border-radius: 50%;
+}
+
+.parts-store-hero-art__circle::before {
+    inset: -23px;
+}
+
+.parts-store-hero-art__circle::after {
+    inset: 20px;
+}
+
+.parts-store-hero-art__device--laptop {
+    position: absolute;
+    top: 87px;
+    left: 12%;
+    width: 62%;
+    transform: rotate(-8deg);
+    filter: drop-shadow(0 22px 18px rgba(37, 58, 45, .2));
+}
+
+.parts-store-hero-art__screen {
+    height: 190px;
+    display: grid;
+    place-items: center;
+    border: 9px solid #26352f;
+    border-bottom-width: 13px;
+    border-radius: 14px 14px 7px 7px;
+    background: linear-gradient(140deg, #bed7bd, #8eb6a1 48%, #467c68);
+    color: rgba(255, 255, 255, .9);
+    font-size: 66px;
+}
+
+.parts-store-hero-art__base {
+    height: 15px;
+    margin: 0 -18px;
+    display: block;
+    border-radius: 3px 3px 16px 16px;
+    background: linear-gradient(#a8b5ae, #697971);
+}
+
+.parts-store-hero-art__device--phone {
+    position: absolute;
+    top: 123px;
+    right: 12%;
+    width: 112px;
+    height: 205px;
+    display: grid;
+    place-items: center;
+    border: 8px solid #26352f;
+    border-radius: 23px;
+    background: linear-gradient(150deg, #e6ecce, #a4caad 60%, #58917b);
+    box-shadow: 0 20px 25px rgba(37, 58, 45, .22);
+    transform: rotate(9deg);
+}
+
+.parts-store-hero-art__phone-camera {
+    position: absolute;
+    top: 8px;
+    width: 28px;
+    height: 7px;
+    border-radius: 8px;
+    background: #26352f;
+}
+
+.parts-store-hero-art__phone-glow {
+    color: rgba(255, 255, 255, .88);
+    font-size: 56px;
+}
+
+.parts-store-hero-art__spark {
+    position: absolute;
+    color: #8cae56;
+}
+
+.parts-store-hero-art__spark--one {
+    top: 43px;
+    right: 24%;
+    font-size: 30px;
+}
+
+.parts-store-hero-art__spark--two {
+    bottom: 91px;
+    left: 15%;
+    color: #d09b56;
+    font-size: 23px;
+}
+
+.parts-store-hero-art__note {
+    position: absolute;
+    right: 1%;
+    bottom: 27px;
+    padding: 13px 17px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    border: 1px solid rgba(23, 36, 31, .06);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .92);
+    box-shadow: 0 14px 34px rgba(29, 55, 39, .1);
+    color: var(--parts-store-muted);
+    font-size: 10px;
+    line-height: 1.6;
+}
+
+.parts-store-hero-art__note > span:first-child {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
+    background: #e9f1dc;
+    color: var(--parts-store-green);
+    font-size: 17px;
+}
+
+.parts-store-hero-art__note strong {
+    color: var(--parts-store-ink);
+    font-size: 11px;
+}
+
+.parts-store-catalog {
+    padding: 78px max(24px, calc((100% - 1180px) / 2)) 86px;
+    background: #fff;
+}
+
+.parts-store-section-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.parts-store-section-heading .parts-store-eyebrow,
+.parts-store-order__intro .parts-store-eyebrow {
+    margin-bottom: 11px;
+}
+
+.parts-store-section-heading__title {
+    margin: 0;
+    font-family: "Kanit", sans-serif;
+    font-size: clamp(27px, 3vw, 36px);
+    font-weight: 500;
+    letter-spacing: -.02em;
+}
+
+.parts-store-section-heading__copy {
+    max-width: 640px;
+    margin: 9px 0 0;
+    color: var(--parts-store-muted);
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+.parts-store-catalog__count {
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: #f1f5ef;
+    color: #58675e;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.parts-store-controls {
+    margin: 29px 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+}
+
+.parts-store-search {
+    width: min(420px, 100%);
+    min-height: 46px;
+    padding: 0 13px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--parts-store-line);
+    border-radius: 8px;
+    background: #fff;
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.parts-store-search:focus-within {
+    border-color: #8caf99;
+    box-shadow: 0 0 0 3px rgba(29, 118, 91, .09);
+}
+
+.parts-store-search__icon {
+    color: var(--parts-store-green);
+    font-size: 25px;
+    line-height: 1;
+}
+
+.parts-store-search__input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--parts-store-ink);
+    font-size: 12px;
+}
+
+.parts-store-search__input::placeholder {
+    color: #9aa49e;
+}
+
+.parts-store-search__hint {
+    color: #89958e;
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+.parts-store-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.parts-store-filter {
+    min-height: 38px;
+    padding: 0 14px;
+    border: 1px solid var(--parts-store-line);
+    border-radius: 999px;
+    background: #fff;
+    color: #67736d;
+    cursor: pointer;
+    font-size: 11px;
+    transition: background .2s ease, border-color .2s ease, color .2s ease;
+}
+
+.parts-store-filter:hover {
+    border-color: #a7bea9;
+    color: var(--parts-store-green);
+}
+
+.parts-store-filter--active {
+    border-color: var(--parts-store-green);
+    background: var(--parts-store-green);
+    color: #fff;
+}
+
+.parts-store-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 19px;
+}
+
+.parts-store-card {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid #e8ece7;
+    border-radius: 12px;
+    background: #fff;
+    transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+}
+
+.parts-store-card:hover {
+    transform: translateY(-4px);
+    border-color: #d3dfd2;
+    box-shadow: 0 16px 32px rgba(26, 55, 38, .08);
+}
+
+.parts-store-card__visual {
+    position: relative;
+    height: 175px;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    background: #edf2e8;
+}
+
+.parts-store-card__visual::before,
+.parts-store-card__visual::after {
+    position: absolute;
+    content: "";
+    border: 1px solid rgba(35, 83, 61, .1);
+    border-radius: 50%;
+}
+
+.parts-store-card__visual::before {
+    width: 155px;
+    height: 155px;
+}
+
+.parts-store-card__visual::after {
+    width: 205px;
+    height: 205px;
+}
+
+.parts-store-card__visual--screen {
+    background: #edf1f5;
+}
+
+.parts-store-card__visual--keyboard {
+    background: #f2eee6;
+}
+
+.parts-store-card__visual--mobile-screen {
+    background: #e9f1ed;
+}
+
+.parts-store-card__visual--mobile-battery {
+    background: #f0eee4;
+}
+
+.parts-store-card__visual--mobile-parts {
+    background: #eeeaf2;
+}
+
+.parts-store-card__category {
+    position: absolute;
+    z-index: 1;
+    top: 14px;
+    left: 15px;
+    padding: 6px 9px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .78);
+    color: #5e6d63;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: .13em;
+}
+
+.parts-store-card__emoji {
+    position: relative;
+    z-index: 1;
+    color: #4a705a;
+    font-size: 69px;
+    line-height: 1;
+    filter: drop-shadow(0 11px 8px rgba(40, 65, 48, .16));
+}
+
+.parts-store-card__visual--screen .parts-store-card__emoji {
+    color: #657f98;
+}
+
+.parts-store-card__visual--keyboard .parts-store-card__emoji {
+    color: #8b7557;
+}
+
+.parts-store-card__visual--mobile-screen .parts-store-card__emoji {
+    color: #4e8d72;
+}
+
+.parts-store-card__visual--mobile-battery .parts-store-card__emoji {
+    color: #8e8153;
+}
+
+.parts-store-card__visual--mobile-parts .parts-store-card__emoji {
+    color: #806b91;
+}
+
+.parts-store-card__visual-caption {
+    position: absolute;
+    right: 14px;
+    bottom: 12px;
+    color: rgba(32, 63, 45, .52);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: .16em;
+}
+
+.parts-store-card__body {
+    padding: 17px 18px 19px;
+}
+
+.parts-store-card__brand {
+    margin: 0 0 6px;
+    color: var(--parts-store-green);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .1em;
+}
+
+.parts-store-card__title {
+    margin: 0;
+    font-family: "Kanit", sans-serif;
+    font-size: 19px;
+    font-weight: 500;
+}
+
+.parts-store-card__description {
+    min-height: 43px;
+    margin: 7px 0 16px;
+    color: var(--parts-store-muted);
+    font-size: 11px;
+    line-height: 1.8;
+}
+
+.parts-store-card__link {
+    padding-top: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid #edf0ec;
+    color: var(--parts-store-green-dark) !important;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.parts-store-card__link span {
+    font-size: 17px;
+    transition: transform .2s ease;
+}
+
+.parts-store-card__link:hover span {
+    transform: translateX(4px);
+}
+
+.parts-store-empty {
+    margin: 24px 0 0;
+    color: var(--parts-store-muted);
+    font-size: 13px;
+    text-align: center;
+}
+
+.parts-store-empty a {
+    margin-left: 5px;
+    color: var(--parts-store-green);
+    font-weight: 700;
+    text-decoration: underline;
+}
+
+.parts-store-order {
+    width: min(1180px, calc(100% - 48px));
+    margin: 0 auto;
+    padding: 79px 0 84px;
+}
+
+.parts-store-order__intro {
+    max-width: 620px;
+}
+
+.parts-store-steps {
+    margin-top: 31px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.parts-store-step {
+    min-height: 175px;
+    padding: 21px 22px;
+    border: 1px solid #e3e9e2;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, .66);
+}
+
+.parts-store-step__number {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: #e5efd9;
+    color: var(--parts-store-green);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.parts-store-step h3 {
+    margin: 15px 0 5px;
+    font-family: "Kanit", sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.parts-store-step p {
+    margin: 0;
+    color: var(--parts-store-muted);
+    font-size: 11px;
+    line-height: 1.8;
+}
+
+.parts-store-contact {
+    position: relative;
+    width: min(1180px, calc(100% - 48px));
+    min-height: 205px;
+    margin: 0 auto 75px;
+    padding: 36px 45px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 30px;
+    border-radius: 14px;
+    background: var(--parts-store-green-dark);
+    color: #fff;
+}
+
+.parts-store-contact__copy,
+.parts-store-contact__actions {
+    position: relative;
+    z-index: 1;
+}
+
+.parts-store-contact .parts-store-eyebrow {
+    margin-bottom: 11px;
+    color: #c9e69d;
+}
+
+.parts-store-contact h2 {
+    margin: 0;
+    font-family: "Kanit", sans-serif;
+    font-size: clamp(25px, 3vw, 35px);
+    font-weight: 500;
+    line-height: 1.35;
+}
+
+.parts-store-contact h2 span {
+    color: #c9e69d;
+}
+
+.parts-store-contact__copy > p:last-child {
+    max-width: 480px;
+    margin: 9px 0 0;
+    color: rgba(255, 255, 255, .73);
+    font-size: 12px;
+    line-height: 1.8;
+}
+
+.parts-store-contact__actions {
+    min-width: 190px;
+    display: grid;
+    justify-items: start;
+    gap: 12px;
+}
+
+.parts-store-button--light {
+    background: #fff;
+    color: var(--parts-store-green-dark) !important;
+}
+
+.parts-store-button--light:hover {
+    background: #eff5e9;
+}
+
+.parts-store-contact__phone {
+    color: rgba(255, 255, 255, .8) !important;
+    font-size: 11px;
+}
+
+.parts-store-contact__decoration {
+    position: absolute;
+    right: 21%;
+    bottom: -96px;
+    color: rgba(255, 255, 255, .055);
+    font-size: 280px;
+    line-height: 1;
+}
+
+.parts-store-footer {
+    padding: 52px max(24px, calc((100% - 1180px) / 2)) 0;
+    background: #17241f;
+    color: #fff;
+}
+
+.parts-store-footer__main {
+    padding-bottom: 39px;
+    display: grid;
+    grid-template-columns: 1.6fr repeat(3, 1fr);
+    gap: 36px;
+}
+
+.parts-store-brand--footer .parts-store-brand__text {
+    color: #fff;
+}
+
+.parts-store-brand--footer .parts-store-brand__text span {
+    color: #a8b9ae;
+}
+
+.parts-store-footer__brand p {
+    max-width: 275px;
+    margin: 15px 0 0;
+    color: #a9b5ad;
+    font-size: 11px;
+    line-height: 1.9;
+}
+
+.parts-store-footer__column {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 11px;
+}
+
+.parts-store-footer__column h2 {
+    margin: 3px 0 4px;
+    color: #fff;
+    font-family: "Kanit", sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.parts-store-footer__column a {
+    color: #a9b5ad;
+    font-size: 11px;
+    transition: color .2s ease;
+}
+
+.parts-store-footer__column a:hover {
+    color: #d7ed9f;
+}
+
+.parts-store-footer__bottom {
+    min-height: 55px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border-top: 1px solid rgba(255, 255, 255, .12);
+    color: #91a096;
+    font-size: 10px;
+}
+
+.parts-store-page :focus-visible {
+    outline: 3px solid #a9cb70;
+    outline-offset: 3px;
+}
+
+@media (max-width: 900px) {
+    .parts-store-header__inner {
+        width: min(100% - 36px, 720px);
+        min-height: 72px;
+        flex-wrap: wrap;
+        gap: 12px 20px;
+    }
+
+    .parts-store-nav {
+        order: 3;
+        width: 100%;
+        padding: 0 0 14px;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .parts-store-header__cta {
+        margin-left: auto;
+    }
+
+    .parts-store-hero {
+        width: min(100% - 40px, 720px);
+        min-height: 0;
+        padding: 53px 0 58px;
+        grid-template-columns: 1fr .86fr;
+        gap: 20px;
+    }
+
+    .parts-store-hero-art {
+        min-height: 330px;
+    }
+
+    .parts-store-hero-art__device--laptop {
+        top: 81px;
+    }
+
+    .parts-store-hero-art__screen {
+        height: 140px;
+    }
+
+    .parts-store-hero-art__device--phone {
+        top: 119px;
+        width: 86px;
+        height: 160px;
+    }
+
+    .parts-store-hero-art__note {
+        right: 0;
+        bottom: 9px;
+        padding: 10px;
+    }
+
+    .parts-store-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .parts-store-footer__main {
+        grid-template-columns: 1.3fr 1fr 1fr;
+        gap: 28px;
+    }
+
+    .parts-store-footer__brand {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 620px) {
+    .parts-store-header__inner {
+        width: calc(100% - 32px);
+        min-height: 66px;
+    }
+
+    .parts-store-brand__mark {
+        width: 36px;
+        height: 36px;
+    }
+
+    .parts-store-header__cta {
+        padding: 9px 12px;
+        font-size: 11px;
+    }
+
+    .parts-store-nav {
+        overflow-x: auto;
+        justify-content: flex-start;
+        gap: 22px;
+        scrollbar-width: none;
+    }
+
+    .parts-store-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .parts-store-nav__link {
+        flex: 0 0 auto;
+        font-size: 11px;
+    }
+
+    .parts-store-hero {
+        width: calc(100% - 36px);
+        padding: 42px 0 48px;
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+
+    .parts-store-hero__title {
+        font-size: clamp(43px, 12vw, 59px);
+    }
+
+    .parts-store-hero__description {
+        max-width: 520px;
+        margin-top: 16px;
+        font-size: 13px;
+    }
+
+    .parts-store-hero__trust {
+        margin-top: 20px;
+        gap: 11px 15px;
+        font-size: 10px;
+    }
+
+    .parts-store-hero-art {
+        min-height: 290px;
+        margin-top: 4px;
+    }
+
+    .parts-store-hero-art__circle {
+        width: min(290px, 78%);
+    }
+
+    .parts-store-hero-art__device--laptop {
+        top: 62px;
+        left: 16%;
+        width: 61%;
+    }
+
+    .parts-store-hero-art__screen {
+        height: 132px;
+        border-width: 7px;
+        border-bottom-width: 11px;
+        font-size: 48px;
+    }
+
+    .parts-store-hero-art__base {
+        height: 11px;
+    }
+
+    .parts-store-hero-art__device--phone {
+        top: 84px;
+        right: 12%;
+        width: 77px;
+        height: 147px;
+        border-width: 6px;
+    }
+
+    .parts-store-hero-art__phone-glow {
+        font-size: 40px;
+    }
+
+    .parts-store-hero-art__note {
+        right: 2%;
+        bottom: 4px;
+    }
+
+    .parts-store-catalog {
+        padding: 56px 18px 60px;
+    }
+
+    .parts-store-section-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 13px;
+    }
+
+    .parts-store-section-heading__copy {
+        font-size: 12px;
+    }
+
+    .parts-store-controls {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .parts-store-search {
+        width: 100%;
+    }
+
+    .parts-store-filters {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        padding-bottom: 3px;
+    }
+
+    .parts-store-filter {
+        flex: 0 0 auto;
+    }
+
+    .parts-store-grid {
+        grid-template-columns: 1fr;
+        gap: 13px;
+    }
+
+    .parts-store-card {
+        display: grid;
+        grid-template-columns: minmax(112px, 34%) 1fr;
+    }
+
+    .parts-store-card__visual {
+        height: 100%;
+        min-height: 185px;
+    }
+
+    .parts-store-card__visual::before {
+        width: 110px;
+        height: 110px;
+    }
+
+    .parts-store-card__visual::after {
+        width: 145px;
+        height: 145px;
+    }
+
+    .parts-store-card__emoji {
+        font-size: 52px;
+    }
+
+    .parts-store-card__category {
+        top: 9px;
+        left: 8px;
+        padding: 5px 7px;
+        font-size: 7px;
+    }
+
+    .parts-store-card__visual-caption {
+        right: 6px;
+        bottom: 8px;
+        font-size: 6px;
+    }
+
+    .parts-store-card__body {
+        padding: 14px 12px;
+    }
+
+    .parts-store-card__title {
+        font-size: 16px;
+    }
+
+    .parts-store-card__description {
+        min-height: 0;
+        margin: 5px 0 12px;
+        font-size: 10px;
+    }
+
+    .parts-store-card__link {
+        padding-top: 9px;
+        font-size: 10px;
+    }
+
+    .parts-store-order {
+        width: calc(100% - 36px);
+        padding: 57px 0;
+    }
+
+    .parts-store-steps {
+        margin-top: 23px;
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .parts-store-step {
+        min-height: 0;
+        padding: 16px;
+    }
+
+    .parts-store-step h3 {
+        margin-top: 11px;
+    }
+
+    .parts-store-contact {
+        width: calc(100% - 36px);
+        margin-bottom: 54px;
+        padding: 28px 22px;
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 22px;
+    }
+
+    .parts-store-contact__actions {
+        gap: 10px;
+    }
+
+    .parts-store-contact__decoration {
+        right: -25px;
+        bottom: -85px;
+        font-size: 210px;
+    }
+
+    .parts-store-footer {
+        padding: 40px 20px 0;
+    }
+
+    .parts-store-footer__main {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 28px 20px;
+    }
+
+    .parts-store-footer__brand {
+        grid-column: 1 / -1;
+    }
+
+    .parts-store-footer__bottom {
+        min-height: 64px;
+        align-items: flex-start;
+        flex-direction: column;
+        justify-content: center;
+        gap: 5px;
+        font-size: 9px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .parts-store-page *,
+    .parts-store-page *::before,
+    .parts-store-page *::after {
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+    }
+}

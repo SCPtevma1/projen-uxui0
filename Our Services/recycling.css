@@ -1,0 +1,14 @@
+.service-detail-page--recycling {
+    --service-detail-green: #578345;
+    --service-detail-dark: #3e6232;
+    --service-detail-paper: #f6f9f2;
+    --service-detail-line: #e2eadb;
+}
+
+.service-detail-page--recycling .service-detail-hero {
+    background: radial-gradient(circle at 88% 40%, rgba(207, 229, 174, .72), transparent 29%), var(--service-detail-paper);
+}
+
+.service-detail-page--recycling .service-detail-hero__decoration {
+    color: rgba(87, 131, 69, .13);
+}

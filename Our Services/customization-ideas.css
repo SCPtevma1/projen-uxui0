@@ -1,0 +1,14 @@
+.service-detail-page--customization-ideas {
+    --service-detail-green: #a05269;
+    --service-detail-dark: #773c4f;
+    --service-detail-paper: #fbf5f7;
+    --service-detail-line: #efdee4;
+}
+
+.service-detail-page--customization-ideas .service-detail-hero {
+    background: radial-gradient(circle at 88% 40%, rgba(238, 197, 211, .68), transparent 29%), var(--service-detail-paper);
+}
+
+.service-detail-page--customization-ideas .service-detail-hero__decoration {
+    color: rgba(160, 82, 105, .13);
+}

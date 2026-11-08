@@ -1,0 +1,14 @@
+.service-detail-page--leaf-collection {
+    --service-detail-green: #75863c;
+    --service-detail-dark: #57652c;
+    --service-detail-paper: #f8f8ef;
+    --service-detail-line: #e9e9d8;
+}
+
+.service-detail-page--leaf-collection .service-detail-hero {
+    background: radial-gradient(circle at 88% 40%, rgba(226, 230, 177, .72), transparent 29%), var(--service-detail-paper);
+}
+
+.service-detail-page--leaf-collection .service-detail-hero__decoration {
+    color: rgba(117, 134, 60, .14);
+}

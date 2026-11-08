@@ -1,0 +1,14 @@
+.service-detail-page--design {
+    --service-detail-green: #7154a3;
+    --service-detail-dark: #543c80;
+    --service-detail-paper: #f8f6fb;
+    --service-detail-line: #e9e3f0;
+}
+
+.service-detail-page--design .service-detail-hero {
+    background: radial-gradient(circle at 88% 40%, rgba(216, 203, 239, .72), transparent 29%), var(--service-detail-paper);
+}
+
+.service-detail-page--design .service-detail-hero__decoration {
+    color: rgba(113, 84, 163, .12);
+}

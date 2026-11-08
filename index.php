@@ -41,24 +41,6 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-  <style>
-    #servicesCarousel > .services-pagination {
-      position: static;
-      margin: 1.25rem 0 0;
-    }
-    #servicesCarousel > .services-pagination [data-bs-target] {
-      background-color: #4f46e5;
-    }
-    .service-gallery-carousel,
-    .service-gallery-carousel .carousel-inner,
-    .service-gallery-carousel .carousel-item {
-      height: 100%;
-    }
-    .service-gallery-indicators {
-      z-index: 2;
-      margin-bottom: 6px;
-    }
-  </style>
 </head>
 <body>
   <header class="site-header">
@@ -72,8 +54,17 @@
         <ul class="dropdown-content">
           <li><a href="/Our Services/document.html">รับเก็บเอกสารทุกรูปแบบ</a></li>
           <li><a href="/Our Services/Our Services.html">ซื้อขายอะไหล่โน๊ตบุ๊คมือถือทุกยีห้อ</a></li>
-          <li><a href="#">รับงานออกแบบ</a></li>
-          <li><a href="#">ออกแบบ UX/UI หน้าเว็บ</a></li>
+          <li><a href="/Our%20Services/design.html">รับงานออกแบบ</a></li>
+          <li><a href="/Our%20Services/computer-trading.html">รับซื้อขายอุปกรณ์คอมพิวเตอร์</a></li>
+          <li><a href="/Our%20Services/iot-installation.html">รับติดตั้งระบบIOT</a></li>
+          <li><a href="/Our%20Services/recycling.html">รับซื้อขายขยะ</a></li>
+          <li><a href="/Our%20Services/parts-service.html">รับซ้อมชิ้นส่วน</a></li>
+          <li><a href="/Our%20Services/data-collection.html">เก็บข้อมูล</a></li>
+          <li><a href="/Our%20Services/leaf-collection.html">รับเก็บใบม้าย</a></li>
+          <li><a href="/Our%20Services/equipment-check.html">เช็กชิดสวนของอุปกรณ์</a></li>
+          <li><a href="/Our%20Services/installation.html">รับติดตั้ง</a></li>
+          <li><a href="/Our%20Services/water-drum-installation.html">ติดตั้งกลองน้ำ</a></li>
+          <li><a href="/Our%20Services/customization-ideas.html">รวมไอเดียปรับแต่ง</a></li>
         </ul>
       </li>
     </ul>
@@ -81,7 +72,57 @@
 </header>
   <main class="hero">
     <h1>ออกแบบUXUIหน้าเว็ปพร้อมใช้งาน</h1>
-    <input placeholder="Enter text here" class="input-style" type="text">
+    <div class="search-orb-container">
+  <div class="gooey-background-layer">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="blob-bridge"></div>
+  </div>
+
+  <div class="input-overlay">
+    <div class="search-icon-wrapper">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="search-icon"
+      >
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+    </div>
+    <input
+      type="text"
+      class="modern-input"
+      placeholder="Explore the digital void..."
+    />
+    <div class="focus-indicator"></div>
+  </div>
+
+  <svg class="gooey-svg-filter" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <filter id="enhanced-goo">
+        <feGaussianBlur
+          in="SourceGraphic"
+          stdDeviation="12"
+          result="blur"
+        ></feGaussianBlur>
+        <feColorMatrix
+          in="blur"
+          mode="matrix"
+          values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -10"
+          result="goo"
+        ></feColorMatrix>
+        <feComposite in="SourceGraphic" in2="goo" operator="atop"></feComposite>
+      </filter>
+    </defs>
+  </svg>
+</div>
+
   </main>
 <div id="demo-container" class="card-container">
                 <a href="demo-container/student.html" class="card-item group">
@@ -145,7 +186,7 @@
 </div>
 <section class="coco" aria-label="เว็บไซต์และบริการ">
   <h2 class="text-center mb-4">เว็บไซต์และแพ็กเกจ</h2>
-  <?php if ($serviceSlides): ?>
+  <?php if (!empty($serviceSlides)): ?>
   <div id="servicesCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="8000" aria-label="รายการเว็บไซต์">
     <div class="carousel-inner">
       <?php foreach ($serviceSlides as $slideIndex => $slide): ?>
@@ -154,33 +195,38 @@
           <?php foreach ($slide as $row): ?>
           <article class="service-box-item">
             <div class="service-box__image-wrapper">
-              <?php $imageSlides = $row['carousel_images']; ?>
-              <?php if (count($imageSlides) > 1): ?>
-                <div id="service-gallery-<?= (int) $row['id'] ?>" class="carousel slide service-gallery-carousel" data-bs-ride="carousel" data-bs-interval="4000" data-bs-pause="false" aria-label="รูปภาพ <?= htmlspecialchars($row['title']) ?>">
+              <?php $imageSlides = $row['carousel_images'] ?? []; ?>
+              <?php if (is_array($imageSlides) && count($imageSlides) > 1): ?>
+                <div id="service-gallery-<?= (int) ($row['id'] ?? 0) ?>" class="carousel slide service-gallery-carousel" data-bs-ride="carousel" data-bs-interval="4000" data-bs-pause="false" aria-label="รูปภาพ <?= htmlspecialchars($row['title'] ?? '') ?>">
                   <div class="carousel-inner">
                     <?php foreach ($imageSlides as $imageIndex => $imagePath): ?>
                       <div class="carousel-item <?= $imageIndex === 0 ? 'active' : '' ?>">
-                        <img class="service-box__image" src="<?= htmlspecialchars($imagePath) ?>" alt="<?= htmlspecialchars($row['title']) ?> รูปที่ <?= $imageIndex + 1 ?>" loading="<?= $imageIndex === 0 ? 'eager' : 'lazy' ?>">
+                        <img class="service-box__image" src="<?= htmlspecialchars($imagePath) ?>" alt="<?= htmlspecialchars($row['title'] ?? '') ?> รูปที่ <?= $imageIndex + 1 ?>" loading="<?= $imageIndex === 0 ? 'eager' : 'lazy' ?>">
                       </div>
                     <?php endforeach; ?>
                   </div>
                   <div class="carousel-indicators service-gallery-indicators">
                     <?php foreach ($imageSlides as $imageIndex => $imagePath): ?>
-                      <button type="button" data-bs-target="#service-gallery-<?= (int) $row['id'] ?>" data-bs-slide-to="<?= $imageIndex ?>" class="<?= $imageIndex === 0 ? 'active' : '' ?>" aria-label="รูปที่ <?= $imageIndex + 1 ?>" <?= $imageIndex === 0 ? 'aria-current="true"' : '' ?>></button>
+                      <button type="button" data-bs-target="#service-gallery-<?= (int) ($row['id'] ?? 0) ?>" data-bs-slide-to="<?= $imageIndex ?>" class="<?= $imageIndex === 0 ? 'active' : '' ?>" aria-label="รูปที่ <?= $imageIndex + 1 ?>" <?= $imageIndex === 0 ? 'aria-current="true"' : '' ?>></button>
                     <?php endforeach; ?>
                   </div>
                 </div>
               <?php elseif (!empty($imageSlides[0])): ?>
-                <img class="service-box__image" src="<?= htmlspecialchars($imageSlides[0]) ?>" alt="<?= htmlspecialchars($row['title']) ?>" loading="lazy">
+                <img class="service-box__image" src="<?= htmlspecialchars($imageSlides[0]) ?>" alt="<?= htmlspecialchars($row['title'] ?? '') ?>" loading="lazy">
               <?php else: ?>
                 <div class="service-box__image" role="img" aria-label="ไม่มีรูปภาพ"></div>
               <?php endif; ?>
               <?php if (!empty($row['web_type'])): ?><span class="web-type-badge"><?= htmlspecialchars($row['web_type']) ?></span><?php endif; ?>
             </div>
             <div class="service-box__body">
-              <p class="eyebrow"><?= htmlspecialchars($row['eyebrow']) ?></p>
-              <h2><?= htmlspecialchars($row['title']) ?></h2>
-              <p class="desc-text"><?= htmlspecialchars($row['description']) ?></p>
+              
+              <?php if (!empty($row['eyebrow'])): ?>
+                <p class="eyebrow"><?= htmlspecialchars($row['eyebrow']) ?></p>
+              <?php endif; ?>
+
+              <h2><?= htmlspecialchars($row['title'] ?? '') ?></h2>
+              <p class="desc-text"><?= htmlspecialchars($row['description'] ?? '') ?></p>
+              
               <?php if (!empty($row['tech_tags'])): ?>
                 <div class="tech-tags-wrapper">
                   <?php foreach (explode(',', $row['tech_tags']) as $tag): $cleanTag = trim($tag); if ($cleanTag !== ''): ?>
@@ -189,8 +235,8 @@
                 </div>
               <?php endif; ?>
               <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-auto">
-                <strong class="text-white">฿<?= number_format((float) $row['price'], 2) ?></strong>
-                <a class="service-box__button" href="detail.php?id=<?= (int) $row['id'] ?>">ดูรายละเอียด / สั่งซื้อ</a>
+                <strong class="text-white">฿<?= number_format((float) ($row['price'] ?? 0), 2) ?></strong>
+                <a class="service-box__button" href="detail.php?id=<?= (int) ($row['id'] ?? 0) ?>">ดูรายละเอียด / สั่งซื้อ</a>
               </div>
             </div>
           </article>
@@ -215,55 +261,51 @@
 <div class="projor">
   <h1>ขั้นตอนการทำงาน-ตรวจเช็กงาน</h1>
 </div>
-
 <div class="process-cards">
   <div class="info-card__body-box1">
     <div class="info-card__image-box1">
-      <img src="./img/chiemseherin-milky-way-8149815_1920.jpg" alt="บริการ">
+      <img src="./img/chiemseherin-milky-way-8149815_1920.jpg" alt="รวบรวมข้อมูล">
     </div>
-    <h3>รับทำ SEO</h3>
-    <p>รวบรวมข้อมูล</p>
+    <h3>รวบรวมข้อมูล</h3>
+    <p>พูดคุยความต้องการและวางเป้าหมายธุรกิจ<br>พร้อมสรุปขอบเขตงานทั้งหมดก่อนเริ่มทำ</p>
   </div>
-
   <div class="info-card__body-box1">
     <div class="info-card__image-box1">
-      <img src="./img/chiemseherin-milky-way-8149815_1920.jpg" alt="บริการ">
+      <img src="./img/chiemseherin-milky-way-8149815_1920.jpg" alt="วางโครงสร้างเว็บไซต์">
     </div>
-    <h3>รับทำ SEO</h3>
-    <p>เช็กโครงสร้างเว็บไซต์</p>
+    <h3>วางโครงสร้างเว็บไซต์</h3>
+    <p>จัดทำ Sitemap และวางโครงร่าง Wireframe<br>เพื่อให้ระบบใช้งานง่ายและตรงตามโจทย์</p>
   </div>
-
   <div class="info-card__body-box1">
     <div class="info-card__image-box1">
-      <img src="./img/chiemseherin-milky-way-8149815_1920.jpg" alt="บริการ">
+      <img src="./img/chiemseherin-milky-way-8149815_1920.jpg" alt="ออกแบบหน้าเว็บ (UI/UX)">
     </div>
-    <h3>รับทำ SEO</h3>
-    <p>ออกแบบหน้าเว็บ</p>
+    <h3>ออกแบบหน้าเว็บ (UI/UX)</h3>
+    <p>ดีไซน์หน้าเว็บให้สวยงาม ทันสมัย<br>และรองรับการแสดงผลสมบูรณ์ทุกอุปกรณ์</p>
   </div>
 </div>
+
 <div class="process-cards">
   <div class="info-card__body-box1">
     <div class="info-card__image-box1">
-      <img src="./img/chiemseherin-milky-way-8149815_1920.jpg" alt="บริการ">
+      <img src="./img/chiemseherin-milky-way-8149815_1920.jpg" alt="พัฒนาเว็บไซต์">
     </div>
-    <h3>รับทำ SEO</h3>
-    <p>รับทำ SEO</p>
+    <h3>พัฒนาเว็บไซต์</h3>
+    <p>เขียนโค้ด พัฒนาระบบการทำงานต่าง ๆ<br>พร้อมใส่ข้อมูลและเนื้อหาลงในเว็บไซต์</p>
   </div>
-
   <div class="info-card__body-box1">
     <div class="info-card__image-box1">
-      <img src="./img/chiemseherin-milky-way-8149815_1920.jpg" alt="บริการ">
+      <img src="./img/chiemseherin-milky-way-8149815_1920.jpg" alt="ปรับแต่ง On-Page SEO">
     </div>
-    <h3>รับทำ SEO</h3>
-    <p>เช็กโครงสร้างเว็บไซต์</p>
+    <h3>ปรับแต่ง On-Page SEO</h3>
+    <p>ตั้งค่า SEO เบื้องต้น จัดโครงสร้างภาพ<br>และปรับความเร็วเว็บไซต์ให้พร้อมติดหน้าแรก</p>
   </div>
-
   <div class="info-card__body-box1">
     <div class="info-card__image-box1">
-      <img src="./img/chiemseherin-milky-way-8149815_1920.jpg" alt="บริการ">
+      <img src="./img/chiemseherin-milky-way-8149815_1920.jpg" alt="ตรวจเช็กงาน & ส่งมอบ">
     </div>
-    <p>ออกแบบหน้าเว็บ</p>
-    <h3>รับทำ SEO</h3>
+    <h3>ตรวจเช็กงาน & ส่งมอบ</h3>
+    <p>ทดสอบระบบ ตรวจสอบความถูกต้อง<br>และสอนวิธีใช้งานก่อนส่งมอบงานจริง</p>
   </div>
 </div>
 <div class="projor"><h1>ดูแลหลังการขาย</h1></div>
@@ -330,7 +372,7 @@
             <div id="homeMsgAlert" style="display:none;" class="alert py-2 mb-3"></div>
             <div class="row g-3">
               <div class="col-md-6">
-                <label class="form-label small fw-bold">ชื่อของคุณ / องค์กร <span class="text-danger">*</span></label>
+                <label class="form-label small fw- bold">ชื่อของคุณ / องค์กร <span class="text-danger">*</span></label>
                 <input type="text" name="sender_name" class="form-control" placeholder="ชื่อ-นามสกุล" required>
               </div>
               <div class="col-md-6">
@@ -358,7 +400,6 @@
   </section>
 
   <script>
-    // ส่งข้อความผ่าน AJAX ไปยัง send_message.php
     document.getElementById('homeContactForm')?.addEventListener('submit', async function(e) {
       e.preventDefault();
       const form = this;
@@ -388,7 +429,6 @@
           alertBox.style.display = 'block';
         }
       } catch (err) {
-        // Fallback ส่งแบบ standard POST หากเกิดปัญหาเครือข่าย
         form.submit();
       } finally {
         btn.disabled = false;
@@ -426,6 +466,24 @@
           <li><a href="html2/page-06.html">นโยบายการให้บริการ</a></li>
           <li><a href="html2/page-10.html">คู่มือการใช้งาน</a></li>
           <li><a href="html2/page-11.html">แจ้งปัญหาการใช้งาน</a></li>
+        </ul>
+      </div>
+      <div class="site-footer__column">
+        <h4>บริการเพื่มเต็มของเรา</h4>
+        <ul>
+          <li><a href="/Our Services/document.html">รับเก็บเอกสารทุกรูปแบบ</a></li>
+          <li><a href="/Our Services/Our Services.html">ซื้อขายอะไหล่โน๊ตบุ๊คมือถือทุกยีห้อ</a></li>
+          <li><a href="/Our%20Services/design.html">รับงานออกแบบ</a></li>
+          <li><a href="/Our%20Services/computer-trading.html">รับซื้อขายอุปกรณ์คอมพิวเตอร์</a></li>
+          <li><a href="/Our%20Services/iot-installation.html">รับติดตั้งระบบIOT</a></li>
+          <li><a href="/Our%20Services/recycling.html">รับซื้อขายขยะ</a></li>
+          <li><a href="/Our%20Services/parts-service.html">รับซ้อมชิ้นส่วน</a></li>
+          <li><a href="/Our%20Services/data-collection.html">เก็บข้อมูล</a></li>
+          <li><a href="/Our%20Services/leaf-collection.html">รับเก็บใบม้าย</a></li>
+          <li><a href="/Our%20Services/equipment-check.html">เช็กชิดสวนของอุปกรณ์</a></li>
+          <li><a href="/Our%20Services/installation.html">รับติดตั้ง</a></li>
+          <li><a href="/Our%20Services/water-drum-installation.html">ติดตั้งกลองน้ำ</a></li>
+          <li><a href="/Our%20Services/customization-ideas.html">รวมไอเดียปรับแต่ง</a></li>
         </ul>
       </div>
       <div class="site-footer__column">

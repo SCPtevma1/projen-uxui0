@@ -1,0 +1,14 @@
+.service-detail-page--parts-service {
+    --service-detail-green: #b06b38;
+    --service-detail-dark: #80502e;
+    --service-detail-paper: #fbf7f2;
+    --service-detail-line: #eee3d7;
+}
+
+.service-detail-page--parts-service .service-detail-hero {
+    background: radial-gradient(circle at 88% 40%, rgba(240, 211, 176, .7), transparent 29%), var(--service-detail-paper);
+}
+
+.service-detail-page--parts-service .service-detail-hero__decoration {
+    color: rgba(176, 107, 56, .13);
+}
