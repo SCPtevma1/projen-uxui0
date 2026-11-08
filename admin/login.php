@@ -1,32 +1,30 @@
 <?php
 session_start();
 
-// ดึงไฟล์เชื่อมต่อฐานข้อมูล
 require_once 'db.php';
 
 $error = '';
-
-// --- ตั้งค่าระบบป้องกัน (Rate Limiting Settings) ---
 $max_attempts = 5;       // จำนวนครั้งสูงสุดที่อนุญาตให้ล็อกอินผิด
-$lockout_minutes = 15;   // เวลาที่ระงับการล็อกอิน (นาที)
+$lockout_minutes = 15;
 
-// ฟังก์ชันดึง IP Address ที่แท้จริงของผู้ใช้งาน
 function getUserIP() {
-    if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-        return $_SERVER['HTTP_CLIENT_IP'];
-    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-        $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-        return trim($ips[0]);
-    }
     return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 }
 function record_failed_attempt($conn, $ip, $username, $current_failed, $max_attempts, &$error) {
     $stmt_log = $conn->prepare("INSERT INTO login_logs (ip_address, username, attempted_at) VALUES (?, ?, NOW())");
-    if ($stmt_log) {
-        $stmt_log->bind_param("ss", $ip, $username);
-        $stmt_log->execute();
-        $stmt_log->close();
+    if (!$stmt_log) {
+        error_log('Unable to prepare login attempt log: ' . $conn->error);
+        $error = "ระบบตรวจสอบการเข้าสู่ระบบขัดข้อง กรุณาลองใหม่ภายหลัง";
+        return;
     }
+    $stmt_log->bind_param("ss", $ip, $username);
+    if (!$stmt_log->execute()) {
+        error_log('Unable to save login attempt: ' . $stmt_log->error);
+        $error = "ระบบตรวจสอบการเข้าสู่ระบบขัดข้อง กรุณาลองใหม่ภายหลัง";
+        $stmt_log->close();
+        return;
+    }
+    $stmt_log->close();
 
     $new_failed_count = $current_failed + 1;
     $remaining_attempts = $max_attempts - $new_failed_count;
@@ -40,9 +38,9 @@ function record_failed_attempt($conn, $ip, $username, $current_failed, $max_atte
 
 $user_ip = getUserIP();
 
-// 1. ตรวจสอบจำนวนครั้งที่ล็อกอินผิดจาก IP นี้ภายในระยะเวลาที่กำหนด
 $failed_attempts = 0;
 $is_locked_out = false;
+$login_system_ready = true;
 
 $stmt_check = $conn->prepare("
     SELECT COUNT(*) AS failed_count, MAX(attempted_at) AS last_attempt 
@@ -50,14 +48,30 @@ $stmt_check = $conn->prepare("
     WHERE ip_address = ? AND attempted_at >= NOW() - INTERVAL ? MINUTE
 ");
 
-if ($stmt_check) {
+if (!$stmt_check) {
+    error_log('Unable to prepare login lockout check: ' . $conn->error);
+    $error = "ระบบตรวจสอบการเข้าสู่ระบบขัดข้อง กรุณาลองใหม่ภายหลัง";
+    $login_system_ready = false;
+} else {
     $stmt_check->bind_param("si", $user_ip, $lockout_minutes);
-    $stmt_check->execute();
-    $check_result = $stmt_check->get_result()->fetch_assoc();
-    $failed_attempts = $check_result['failed_count'] ?? 0;
+    if (!$stmt_check->execute()) {
+        error_log('Unable to execute login lockout check: ' . $stmt_check->error);
+        $error = "ระบบตรวจสอบการเข้าสู่ระบบขัดข้อง กรุณาลองใหม่ภายหลัง";
+        $login_system_ready = false;
+    } else {
+        $check_result_set = $stmt_check->get_result();
+        if (!$check_result_set) {
+            error_log('Unable to read login lockout result: ' . $stmt_check->error);
+            $error = "ระบบตรวจสอบการเข้าสู่ระบบขัดข้อง กรุณาลองใหม่ภายหลัง";
+            $login_system_ready = false;
+        } else {
+            $check_result = $check_result_set->fetch_assoc();
+            $failed_attempts = (int)($check_result['failed_count'] ?? 0);
+        }
+    }
     $stmt_check->close();
 
-    if ($failed_attempts >= $max_attempts) {
+    if ($login_system_ready && $failed_attempts >= $max_attempts) {
         $is_locked_out = true;
         $last_attempt_time = strtotime($check_result['last_attempt']);
         $unlock_time = $last_attempt_time + ($lockout_minutes * 60);
@@ -68,39 +82,49 @@ if ($stmt_check) {
     }
 }
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!$is_locked_out) {
+    if ($login_system_ready && !$is_locked_out) {
         $username = trim($_POST['username'] ?? '');
         $password = trim($_POST['password'] ?? '');
         if (!empty($username) && !empty($password)) {
             $stmt = $conn->prepare("SELECT id, password FROM users WHERE username = ?");
             if (!$stmt) {
-                die("SQL Error: " . $conn->error);
-            }
-            $stmt->bind_param("s", $username);
-            $stmt->execute();
-            $result = $stmt->get_result();
-
-            if ($user = $result->fetch_assoc()) {
-                if (password_verify($password, $user['password'])) {
-                    // ล็อกอินสำเร็จ -> ลบประวัติการล็อกอินผิดของ IP นี้
-                    $stmt_clear = $conn->prepare("DELETE FROM login_logs WHERE ip_address = ?");
-                    if ($stmt_clear) {
-                        $stmt_clear->bind_param("s", $user_ip);
-                        $stmt_clear->execute();
-                        $stmt_clear->close();
-                    }
-
-                    session_regenerate_id(true);
-                    $_SESSION['admin_user'] = $username;
-                    header("Location: dashboard.php");
-                    exit;
-                } else {
-                    record_failed_attempt($conn, $user_ip, $username, $failed_attempts, $max_attempts, $error);
-                }
+                error_log('Unable to prepare admin login query: ' . $conn->error);
+                $error = "ไม่สามารถตรวจสอบบัญชีได้ กรุณาลองใหม่ภายหลัง";
             } else {
-                record_failed_attempt($conn, $user_ip, $username, $failed_attempts, $max_attempts, $error);
+                $stmt->bind_param("s", $username);
+                if (!$stmt->execute()) {
+                    error_log('Unable to execute admin login query: ' . $stmt->error);
+                    $error = "ไม่สามารถตรวจสอบบัญชีได้ กรุณาลองใหม่ภายหลัง";
+                } else {
+                    $result = $stmt->get_result();
+                    if ($user = $result->fetch_assoc()) {
+                        if (password_verify($password, $user['password'])) {
+                            $stmt_clear = $conn->prepare("DELETE FROM login_logs WHERE ip_address = ?");
+                            if (!$stmt_clear) {
+                                error_log('Unable to prepare login attempt cleanup: ' . $conn->error);
+                                $error = "ระบบตรวจสอบการเข้าสู่ระบบขัดข้อง กรุณาลองใหม่ภายหลัง";
+                            } else {
+                                $stmt_clear->bind_param("s", $user_ip);
+                                if (!$stmt_clear->execute()) {
+                                    error_log('Unable to clear login attempts: ' . $stmt_clear->error);
+                                    $error = "ระบบตรวจสอบการเข้าสู่ระบบขัดข้อง กรุณาลองใหม่ภายหลัง";
+                                } else {
+                                    session_regenerate_id(true);
+                                    $_SESSION['admin_user'] = $username;
+                                    header("Location: dashboard.php");
+                                    exit;
+                                }
+                                $stmt_clear->close();
+                            }
+                        } else {
+                            record_failed_attempt($conn, $user_ip, $username, $failed_attempts, $max_attempts, $error);
+                        }
+                    } else {
+                        record_failed_attempt($conn, $user_ip, $username, $failed_attempts, $max_attempts, $error);
+                    }
+                }
+                $stmt->close();
             }
-            $stmt->close();
         } else {
             $error = "กรุณากรอกข้อมูลให้ครบถ้วน";
         }

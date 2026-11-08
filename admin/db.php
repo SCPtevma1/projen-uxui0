@@ -24,6 +24,17 @@ function ensureDatabaseSchema(mysqli $conn, bool $force = false): void
         return;
     }
     $alreadyRun = true;
+    $loginLogsSchema = $conn->query("CREATE TABLE IF NOT EXISTS login_logs (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        ip_address VARCHAR(45) NOT NULL,
+        username VARCHAR(255) NOT NULL,
+        attempted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_login_logs_ip_attempted (ip_address, attempted_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    if (!$loginLogsSchema) {
+        error_log('Unable to create login_logs table: ' . $conn->error);
+    }
+
     $priceCheck = $conn->query("SHOW COLUMNS FROM services LIKE 'price'");
     if ($priceCheck && $priceCheck->num_rows === 0) {
         $conn->query("ALTER TABLE services ADD COLUMN price DECIMAL(10,2) NOT NULL DEFAULT 0.00");
