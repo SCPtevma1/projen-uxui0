@@ -180,9 +180,10 @@
             </div>
 <div class="VVS">
   <button type="button" onclick="window.location.href='hok/hok-2/hok-3.html'">จ้างงาน</button>
-  <button type="button" onclick="window.location.href='html/จ่างาน.html'">อนิเมะ</button>
-  <button type="button" onclick="window.location.href='html/จ่างาน.html'">ภาคเสียงภาษาต่างๆ</button>
-  <button type="button" onclick="window.location.href='html/จ่างาน.html'">รับทำระบบPOS</button>
+  <button type="button" onclick="window.location.href='hok/hok-2/hok-4.html'">อนิเมะ</button>
+  <button type="button" onclick="window.location.href='hok/hok-2/hok-5.html'">ภาคเสียงภาษาต่างๆ</button>
+  <button type="button" onclick="window.location.href='hok/hok-2/hok-6.html'">รับทำระบบPOS</button>
+  <button type="button" onclick="window.location.href='hok/hok-2/hok-7.html'">โปรเจ็กใหม่ๆในอนาคต</button>
 </div>
 <section class="coco" aria-label="เว็บไซต์และบริการ">
   <h2 class="text-center mb-4">เว็บไซต์และแพ็กเกจ</h2>
